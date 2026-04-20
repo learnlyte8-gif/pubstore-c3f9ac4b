@@ -1,0 +1,4 @@
+ALTER TABLE public.suppliers
+  ADD COLUMN IF NOT EXISTS latitude NUMERIC,
+  ADD COLUMN IF NOT EXISTS longitude NUMERIC,
+  ADD COLUMN IF NOT EXISTS location_address TEXT;
