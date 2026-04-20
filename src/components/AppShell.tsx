@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Home, Search, PlusSquare, Heart, User, Send } from "lucide-react";
+import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
+import { Home, Search, PlusSquare, Heart, User, Send, ShoppingCart } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { useShop } from "@/store/shop";
 import logo from "@/assets/pubstore-logo.png";
 
 export default function AppShell() {
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
   const [checked, setChecked] = useState(false);
+  const { cartCount } = useShop();
 
   useEffect(() => {
     const verifyProfile = async (s: Session) => {
@@ -47,7 +49,15 @@ export default function AppShell() {
             <img src={logo} alt="" width={28} height={28} className="w-7 h-7" />
             <span className="font-brand text-2xl tracking-wide">PUBSTORE</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <Link to="/cart" aria-label="Cart" className="relative p-1">
+              <ShoppingCart className="w-6 h-6" strokeWidth={1.8} />
+              {cartCount > 0 && (
+                <span className="absolute -top-0.5 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              )}
+            </Link>
             <button aria-label="Activity" className="p-1">
               <Heart className="w-6 h-6" strokeWidth={1.8} />
             </button>
