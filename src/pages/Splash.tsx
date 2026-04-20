@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/pubstore-logo.png";
+import ShoppingBackdrop from "@/components/ShoppingBackdrop";
 
 export default function Splash() {
   const navigate = useNavigate();
@@ -24,9 +25,10 @@ export default function Splash() {
         exiting ? "opacity-0" : "opacity-100"
       }`}
     >
-      <div className="flex-1" />
+      <ShoppingBackdrop variant="light" opacity={0.22} />
+      <div className="relative flex-1" />
 
-      <div className="flex flex-col items-center gap-5 animate-splash-in">
+      <div className="relative flex flex-col items-center gap-5 animate-splash-in">
         <div className="bg-white/15 backdrop-blur-xl rounded-3xl p-5 shadow-2xl animate-splash-pulse">
           <img
             src={logo}
@@ -41,7 +43,7 @@ export default function Splash() {
         </h1>
       </div>
 
-      <div className="pb-12 flex flex-col items-center gap-2 animate-splash-in">
+      <div className="relative pb-12 flex flex-col items-center gap-2 animate-splash-in">
         <p className="text-white/80 text-xs uppercase tracking-[0.3em]">from</p>
         <p className="text-white font-semibold text-sm">PUBSTORE Inc.</p>
       </div>
