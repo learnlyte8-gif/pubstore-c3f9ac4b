@@ -61,6 +61,8 @@ const Home = () => {
 
       <PromoBanner />
 
+      <SupplierStories />
+
       <div className="px-4">
         <StatsBar />
       </div>
