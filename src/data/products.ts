@@ -41,6 +41,9 @@ export type Supplier = {
   logo: string;
   banner: string;
   about: string;
+  latitude: number | null;
+  longitude: number | null;
+  locationAddress: string | null;
 };
 
 export type Review = {
@@ -127,6 +130,9 @@ type DbSupplier = {
   logo: string | null;
   banner: string | null;
   about: string | null;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
+  location_address?: string | null;
 };
 
 type DbProduct = {
@@ -169,6 +175,9 @@ export const mapSupplier = (s: DbSupplier): Supplier => ({
   logo: s.logo ?? PLACEHOLDER_IMG,
   banner: s.banner ?? PLACEHOLDER_IMG,
   about: s.about ?? "",
+  latitude: s.latitude != null ? Number(s.latitude) : null,
+  longitude: s.longitude != null ? Number(s.longitude) : null,
+  locationAddress: s.location_address ?? null,
 });
 
 export const mapProduct = (p: DbProduct): Product => ({
