@@ -202,6 +202,8 @@ function LiveRoom({ stream, onLeave }: { stream: EnrichedStream; onLeave: () => 
   const [showProducts, setShowProducts] = useState(false);
   const [pinned, setPinned] = useState<Product[]>([]);
   const [me, setMe] = useState<{ id: string; name: string } | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
+  const [pinnedId, setPinnedId] = useState<string | null>(stream.pinned_product_id);
   const chatRef = useRef<HTMLDivElement>(null);
   const sentViewerBumpRef = useRef(false);
 
