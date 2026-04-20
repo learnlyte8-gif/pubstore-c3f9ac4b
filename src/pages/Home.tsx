@@ -71,7 +71,7 @@ const Home = () => {
           {name && (
             <div className="px-4 pt-3">
               <p className="text-xs text-muted-foreground">Welcome back</p>
-              <h1 className="text-lg font-semibold">{name} 👋</h1>
+              <h1 className="text-lg font-semibold">{name}</h1>
             </div>
           )}
 
