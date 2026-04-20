@@ -2,14 +2,38 @@ import { Link } from "react-router-dom";
 import { Heart, Trash2, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { useShop } from "@/store/shop";
-import { getProduct, discountPct } from "@/data/products";
+import { discountPct } from "@/data/products";
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { mapProduct, type Product } from "@/data/products";
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
 
 export default function Wishlist() {
   const { wishlist, toggleWishlist, addToCart } = useShop();
-  const items = wishlist.map((id) => getProduct(id)).filter(Boolean) as ReturnType<typeof getProduct>[];
+  const [items, setItems] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (wishlist.length === 0) {
+        setItems([]);
+        setLoading(false);
+        return;
+      }
+      const { data } = await supabase.from("products").select("*").in("id", wishlist);
+      if (!alive) return;
+      setItems((data ?? []).map((p) => mapProduct(p as Parameters<typeof mapProduct>[0])));
+      setLoading(false);
+    })();
+    return () => { alive = false; };
+  }, [wishlist]);
+
+  if (loading) {
+    return <div className="px-4 py-10 text-center text-sm text-muted-foreground">Loading…</div>;
+  }
 
   if (items.length === 0) {
     return (
@@ -37,7 +61,6 @@ export default function Wishlist() {
 
       <ul className="space-y-3">
         {items.map((p) => {
-          if (!p) return null;
           const off = discountPct(p);
           return (
             <li key={p.id} className="bg-card rounded-2xl border border-border shadow-card overflow-hidden flex">
@@ -61,8 +84,8 @@ export default function Wishlist() {
                   <Button
                     size="sm"
                     className="h-8 text-xs flex-1 shadow-soft"
-                    onClick={() => {
-                      addToCart(p.id, p.moq);
+                    onClick={async () => {
+                      await addToCart(p.id, p.moq);
                       toast.success("Added to cart", { description: p.title });
                     }}
                   >
