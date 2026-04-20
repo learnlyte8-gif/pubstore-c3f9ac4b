@@ -12,6 +12,7 @@ import ProductCard from "@/components/marketplace/ProductCard";
 import StatsBar from "@/components/marketplace/StatsBar";
 import TopSuppliers from "@/components/marketplace/TopSuppliers";
 import VerticalFeed from "@/components/marketplace/VerticalFeed";
+import SuppliersNearMe from "@/components/marketplace/SuppliersNearMe";
 import TapsonAssistant from "@/components/TapsonAssistant";
 import EmptyState from "@/components/EmptyState";
 import { useProducts, useSuppliers } from "@/hooks/useCatalog";
@@ -92,6 +93,8 @@ const Home = () => {
                   <TopSuppliers suppliers={suppliers} />
                 </section>
               )}
+
+              <SuppliersNearMe />
 
               <section className="px-4 mt-6">
                 <SectionHeader icon={Sparkles} title="For you" subtitle="Picked from your interests" />

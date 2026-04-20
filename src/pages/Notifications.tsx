@@ -51,6 +51,7 @@ export default function Notifications() {
 
   useEffect(() => {
     let alive = true;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!alive || !user) { setLoading(false); return; }
@@ -58,18 +59,21 @@ export default function Notifications() {
       const { data } = await supabase
         .from("notifications").select("*").eq("user_id", user.id)
         .order("created_at", { ascending: false }).limit(100);
+      if (!alive) return;
       setItems((data ?? []) as Notif[]);
       setLoading(false);
 
-      const ch = supabase
-        .channel(`notif:${user.id}`)
+      channel = supabase
+        .channel(`notif:${user.id}:${Math.random().toString(36).slice(2, 8)}`)
         .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, (payload) => {
           setItems((prev) => [payload.new as Notif, ...prev]);
         })
         .subscribe();
-      return () => { supabase.removeChannel(ch); };
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+      if (channel) supabase.removeChannel(channel);
+    };
   }, []);
 
   const visible = items.filter((n) => filter === "all" || n.type.startsWith(filter));
