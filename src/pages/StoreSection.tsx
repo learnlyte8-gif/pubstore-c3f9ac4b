@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProducts, fetchMySupplier, fetchCategories } from "@/data/products";
 import EmptyState from "@/components/EmptyState";
+import LocationPicker from "@/components/LocationPicker";
 
 const titles: Record<string, { title: string; sub: string }> = {
   products: { title: "My products", sub: "Manage your catalog" },
@@ -636,7 +637,10 @@ function ShippingView() {
 function ProfileView() {
   const { data: supplier } = useQuery({ queryKey: ["my-supplier"], queryFn: fetchMySupplier });
   const qc = useQueryClient();
-  const [form, setForm] = useState({ name: "", country: "", about: "", logo: "", banner: "" });
+  const [form, setForm] = useState({
+    name: "", country: "", about: "", logo: "", banner: "",
+    latitude: null as number | null, longitude: null as number | null, locationAddress: "",
+  });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<"logo" | "banner" | null>(null);
   const logoRef = useRef<HTMLInputElement>(null);
@@ -649,6 +653,9 @@ function ProfileView() {
       about: supplier.about,
       logo: supplier.logo || "",
       banner: supplier.banner || "",
+      latitude: supplier.latitude,
+      longitude: supplier.longitude,
+      locationAddress: supplier.locationAddress || "",
     });
   }, [supplier]);
 
@@ -674,6 +681,20 @@ function ProfileView() {
       toast.error(err.message || "Upload failed");
     } finally {
       setUploading(null);
+    }
+  };
+
+  const handlePin = async (next: { lat: number; lng: number; address: string }) => {
+    if (!supplier) return;
+    setForm((f) => ({ ...f, latitude: next.lat, longitude: next.lng, locationAddress: next.address }));
+    const { error } = await supabase.from("suppliers").update({
+      latitude: next.lat, longitude: next.lng, location_address: next.address,
+    }).eq("id", supplier.id);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Location pinned");
+      qc.invalidateQueries({ queryKey: ["my-supplier"] });
+      qc.invalidateQueries({ queryKey: ["supplier", supplier.id] });
     }
   };
 
@@ -751,6 +772,18 @@ function ProfileView() {
       <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Store name" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
       <input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} placeholder="Country" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
       <textarea value={form.about} onChange={(e) => setForm({ ...form, about: e.target.value })} placeholder="About your store" rows={4} className="w-full rounded-xl border bg-background p-4 text-sm" />
+
+      {/* Location pin */}
+      <div>
+        <p className="text-xs font-bold mb-2 text-muted-foreground uppercase tracking-wide">Store location</p>
+        <LocationPicker
+          lat={form.latitude}
+          lng={form.longitude}
+          address={form.locationAddress}
+          onChange={handlePin}
+        />
+      </div>
+
       <Button type="submit" disabled={saving} className="w-full h-12">{saving ? "Saving…" : "Save changes"}</Button>
     </form>
   );

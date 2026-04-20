@@ -39,6 +39,7 @@ export default function Live() {
   const [activeId, setActiveId] = useState<string | null>(id ?? null);
   const [streams, setStreams] = useState<EnrichedStream[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ownerMap, setOwnerMap] = useState<Map<string, string>>(new Map());
 
   useEffect(() => {
     let cancelled = false;
@@ -50,11 +51,17 @@ export default function Live() {
         .order("started_at", { ascending: false });
       const list = (data ?? []) as DbStream[];
       const supplierIds = Array.from(new Set(list.map((s) => s.supplier_id)));
-      const suppliers = await Promise.all(supplierIds.map((sid) => fetchSupplier(sid)));
+      const [suppliers, ownersRes] = await Promise.all([
+        Promise.all(supplierIds.map((sid) => fetchSupplier(sid))),
+        supabase.from("suppliers").select("id, owner_id").in("id", supplierIds.length ? supplierIds : ["00000000-0000-0000-0000-000000000000"]),
+      ]);
       const map = new Map<string, Supplier>();
       suppliers.forEach((s) => s && map.set(s.id, s));
+      const owners = new Map<string, string>();
+      (ownersRes.data ?? []).forEach((r: any) => owners.set(r.id, r.owner_id));
       if (!cancelled) {
         setStreams(list.map((s) => ({ ...s, supplier: map.get(s.supplier_id) })));
+        setOwnerMap(owners);
         setLoading(false);
       }
     };
@@ -83,7 +90,13 @@ export default function Live() {
   }
 
   if (active) {
-    return <LiveRoom stream={active} onLeave={() => { setActiveId(null); navigate("/live"); }} />;
+    return (
+      <LiveRoom
+        stream={active}
+        hostUserId={ownerMap.get(active.supplier_id) ?? null}
+        onLeave={() => { setActiveId(null); navigate("/live"); }}
+      />
+    );
   }
 
   return <LiveBrowser streams={streams} loading={loading} onPick={(s) => setActiveId(s.id)} onBack={() => navigate(-1)} />;
@@ -192,7 +205,7 @@ type ChatLine = {
   created_at: string;
 };
 
-function LiveRoom({ stream, onLeave }: { stream: EnrichedStream; onLeave: () => void }) {
+function LiveRoom({ stream, hostUserId, onLeave }: { stream: EnrichedStream; hostUserId: string | null; onLeave: () => void }) {
   const { addToCart } = useShop();
   const [viewers, setViewers] = useState(stream.viewer_count);
   const [likes, setLikes] = useState(0);
@@ -438,14 +451,24 @@ function LiveRoom({ stream, onLeave }: { stream: EnrichedStream; onLeave: () => 
         {chat.length === 0 && (
           <p className="text-[12px] text-white/60 italic">Be the first to say hi 👋</p>
         )}
-        {chat.map((c) => (
-          <div key={c.id} className="text-[12px] leading-snug">
-            <p>
-              <span className="font-bold mr-1">{c.username || "Guest"}</span>
-              <span className="text-white/95">{c.body}</span>
-            </p>
-          </div>
-        ))}
+        {chat.map((c) => {
+          const isHost = !!hostUserId && c.user_id === hostUserId;
+          return (
+            <div key={c.id} className="text-[12px] leading-snug">
+              <p>
+                {isHost && (
+                  <span className="inline-flex items-center mr-1.5 px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-[9px] font-extrabold uppercase tracking-wide align-middle">
+                    Host
+                  </span>
+                )}
+                <span className={`font-bold mr-1 ${isHost ? "text-primary-foreground bg-primary/30 px-1 rounded" : ""}`}>
+                  {c.username || "Guest"}
+                </span>
+                <span className="text-white/95">{c.body}</span>
+              </p>
+            </div>
+          );
+        })}
       </div>
 
       {FloatingPinned}

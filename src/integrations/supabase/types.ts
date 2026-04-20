@@ -946,7 +946,10 @@ export type Database = {
           created_at: string
           gold: boolean | null
           id: string
+          latitude: number | null
+          location_address: string | null
           logo: string | null
+          longitude: number | null
           name: string
           on_time_delivery: number | null
           owner_id: string
@@ -967,7 +970,10 @@ export type Database = {
           created_at?: string
           gold?: boolean | null
           id?: string
+          latitude?: number | null
+          location_address?: string | null
           logo?: string | null
+          longitude?: number | null
           name: string
           on_time_delivery?: number | null
           owner_id: string
@@ -988,7 +994,10 @@ export type Database = {
           created_at?: string
           gold?: boolean | null
           id?: string
+          latitude?: number | null
+          location_address?: string | null
           logo?: string | null
+          longitude?: number | null
           name?: string
           on_time_delivery?: number | null
           owner_id?: string
