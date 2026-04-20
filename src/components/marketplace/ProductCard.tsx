@@ -26,8 +26,6 @@ function useDealCountdown(endsAt?: string | null) {
   const s = totalSec % 60;
   return { h, m, s, urgent: ms < 1000 * 60 * 60 };
 }
-const fmtSold = (n: number) =>
-  n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k+ sold` : `${n} sold`;
 
 const badgeStyle: Record<NonNullable<Product["badge"]>, string> = {
   Hot: "bg-destructive text-destructive-foreground",
