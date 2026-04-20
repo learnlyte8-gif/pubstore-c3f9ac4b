@@ -627,20 +627,227 @@ function ProductsView() {
         />
       ) : (
         products.map((p) => (
-          <Link key={p.id} to={`/product/${p.id}`} className="bg-card border rounded-2xl shadow-card p-3 flex gap-3">
-            <img src={p.image} alt={p.title} className="w-20 h-20 rounded-xl object-cover bg-muted" />
+          <div key={p.id} className="bg-card border rounded-2xl shadow-card p-3 flex gap-3">
+            <Link to={`/product/${p.id}`} className="shrink-0">
+              <img src={p.image} alt={p.title} className="w-20 h-20 rounded-xl object-cover bg-muted" />
+            </Link>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold line-clamp-2">{p.title}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">${p.price} · MOQ {p.moq}</p>
-              <div className="flex items-center gap-3 mt-1.5 text-[11px] text-muted-foreground">
-                <span className="flex items-center gap-1"><ShoppingBag className="w-3 h-3" /> {p.sold}</span>
-                <span className="flex items-center gap-1"><Star className="w-3 h-3" /> {p.rating.toFixed(1)}</span>
+              <Link to={`/product/${p.id}`} className="block">
+                <p className="text-sm font-bold line-clamp-2">{p.title}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">${p.price} · MOQ {p.moq}</p>
+                <div className="flex items-center gap-3 mt-1.5 text-[11px] text-muted-foreground">
+                  <span className="flex items-center gap-1"><ShoppingBag className="w-3 h-3" /> {p.sold}</span>
+                  <span className="flex items-center gap-1"><Star className="w-3 h-3" /> {p.rating.toFixed(1)}</span>
+                </div>
+              </Link>
+              <div className="flex gap-2 mt-2">
+                <Button asChild size="sm" variant="outline" className="h-8 text-xs">
+                  <Link to={`/store/product-edit/${p.id}`}><Pencil className="w-3 h-3 mr-1" /> Edit</Link>
+                </Button>
               </div>
             </div>
-          </Link>
+          </div>
         ))
       )}
     </div>
+  );
+}
+
+// ---------------- Edit product ----------------
+function EditProductView({ productId }: { productId: string }) {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const { data: cats = [] } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
+
+  const { data: product, isLoading } = useQuery({
+    queryKey: ["edit-product", productId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", productId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const [form, setForm] = useState({
+    title: "", description: "", price: "", original_price: "",
+    moq: "1", unit: "piece", lead_time: "", ship_from: "",
+    category_slug: "electronics", free_shipping: false, active: true,
+  });
+  const [gallery, setGallery] = useState<string[]>([]);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [newPreviews, setNewPreviews] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    if (!product) return;
+    setForm({
+      title: product.title ?? "",
+      description: product.description ?? "",
+      price: String(product.price ?? ""),
+      original_price: product.original_price ? String(product.original_price) : "",
+      moq: String(product.moq ?? 1),
+      unit: product.unit ?? "piece",
+      lead_time: product.lead_time ?? "",
+      ship_from: product.ship_from ?? "",
+      category_slug: product.category_slug ?? "electronics",
+      free_shipping: !!product.free_shipping,
+      active: product.active !== false,
+    });
+    const g: string[] = Array.isArray(product.gallery) ? product.gallery.filter(Boolean) : [];
+    if (g.length === 0 && product.image) g.push(product.image);
+    setGallery(g);
+  }, [product]);
+
+  const onFiles = (list: FileList | null) => {
+    if (!list) return;
+    const arr = Array.from(list).slice(0, 6);
+    setNewFiles(arr);
+    setNewPreviews(arr.map((f) => URL.createObjectURL(f)));
+  };
+  const removeExisting = (i: number) => setGallery((g) => g.filter((_, idx) => idx !== i));
+  const removeNewAt = (i: number) => {
+    setNewFiles((p) => p.filter((_, idx) => idx !== i));
+    setNewPreviews((p) => p.filter((_, idx) => idx !== i));
+  };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.title.trim() || !form.price) { toast.error("Title and price required"); return; }
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { navigate("/auth"); return; }
+
+      const uploaded: string[] = [];
+      for (const file of newFiles) {
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("product-images").upload(path, file, {
+          cacheControl: "3600", upsert: false,
+        });
+        if (upErr) throw upErr;
+        const { data: { publicUrl } } = supabase.storage.from("product-images").getPublicUrl(path);
+        uploaded.push(publicUrl);
+      }
+      const finalGallery = [...gallery, ...uploaded];
+
+      const { error } = await supabase.from("products").update({
+        title: form.title.trim(),
+        description: form.description.trim() || null,
+        image: finalGallery[0] ?? null,
+        gallery: finalGallery,
+        price: Number(form.price),
+        original_price: form.original_price ? Number(form.original_price) : null,
+        moq: Number(form.moq) || 1,
+        unit: form.unit || "piece",
+        lead_time: form.lead_time || null,
+        ship_from: form.ship_from || null,
+        category_slug: form.category_slug,
+        free_shipping: form.free_shipping,
+        active: form.active,
+        updated_at: new Date().toISOString(),
+      }).eq("id", productId);
+      if (error) throw error;
+
+      toast.success("Product updated");
+      qc.invalidateQueries({ queryKey: ["my-products"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["edit-product", productId] });
+      navigate("/store/products");
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to update");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm("Delete this product? This cannot be undone.")) return;
+    setDeleting(true);
+    const { error } = await supabase.from("products").delete().eq("id", productId);
+    setDeleting(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Product deleted");
+    qc.invalidateQueries({ queryKey: ["my-products"] });
+    qc.invalidateQueries({ queryKey: ["products"] });
+    navigate("/store/products");
+  };
+
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+  if (!product) return <EmptyState title="Product not found" description="It may have been deleted." />;
+
+  return (
+    <form onSubmit={submit} className="px-4 py-4 space-y-4">
+      <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => onFiles(e.target.files)} />
+
+      <div>
+        <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2 px-1">Photos</p>
+        <div className="grid grid-cols-3 gap-2">
+          {gallery.map((src, i) => (
+            <div key={`g-${i}`} className="relative aspect-square rounded-xl overflow-hidden bg-muted">
+              <img src={src} alt="" className="w-full h-full object-cover" />
+              <button type="button" onClick={() => removeExisting(i)} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-foreground/70 text-background flex items-center justify-center">
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+          {newPreviews.map((src, i) => (
+            <div key={`n-${i}`} className="relative aspect-square rounded-xl overflow-hidden bg-muted ring-2 ring-primary">
+              <img src={src} alt="" className="w-full h-full object-cover" />
+              <button type="button" onClick={() => removeNewAt(i)} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-foreground/70 text-background flex items-center justify-center">
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+          {gallery.length + newPreviews.length < 8 && (
+            <button type="button" onClick={() => fileRef.current?.click()} className="aspect-square rounded-xl border-2 border-dashed bg-muted/40 flex items-center justify-center text-muted-foreground">
+              <Plus className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Product title *" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+      <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description" rows={4} className="w-full rounded-xl border bg-background p-4 text-sm" />
+      <div className="grid grid-cols-2 gap-3">
+        <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="Price *" type="number" step="0.01" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+        <input value={form.original_price} onChange={(e) => setForm({ ...form, original_price: e.target.value })} placeholder="Original price" type="number" step="0.01" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <input value={form.moq} onChange={(e) => setForm({ ...form, moq: e.target.value })} placeholder="MOQ" type="number" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+        <input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="Unit (piece, set, kg…)" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <input value={form.lead_time} onChange={(e) => setForm({ ...form, lead_time: e.target.value })} placeholder="Lead time" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+        <input value={form.ship_from} onChange={(e) => setForm({ ...form, ship_from: e.target.value })} placeholder="Ships from" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+      </div>
+      <select value={form.category_slug} onChange={(e) => setForm({ ...form, category_slug: e.target.value })} className="w-full h-12 rounded-xl border bg-background px-4 text-sm">
+        {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+      </select>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={form.free_shipping} onChange={(e) => setForm({ ...form, free_shipping: e.target.checked })} />
+        Free shipping
+      </label>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
+        Listed (visible to buyers)
+      </label>
+
+      <div className="flex gap-2 pt-2">
+        <Button type="submit" disabled={saving} className="flex-1 h-12">
+          {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving…</> : "Save changes"}
+        </Button>
+        <Button type="button" variant="outline" disabled={deleting} onClick={handleDelete} className="h-12 text-destructive border-destructive/30 hover:bg-destructive/10">
+          {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+        </Button>
+      </div>
+    </form>
   );
 }
 
