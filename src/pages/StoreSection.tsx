@@ -369,25 +369,204 @@ function AnalyticsView() {
   );
 }
 
+// ---------------- Coupons (real CRUD) ----------------
+type Coupon = {
+  id: string;
+  code: string;
+  discount_type: "percent" | "fixed";
+  discount_value: number;
+  min_subtotal: number;
+  max_uses: number | null;
+  uses_count: number;
+  expires_at: string | null;
+  active: boolean;
+};
+
 function PromoteView() {
+  const qc = useQueryClient();
+  const { data: supplier } = useQuery({ queryKey: ["my-supplier"], queryFn: fetchMySupplier });
+  const { data: coupons = [], isLoading } = useQuery({
+    queryKey: ["my-coupons", supplier?.id],
+    queryFn: async () => {
+      if (!supplier) return [];
+      const { data } = await supabase
+        .from("coupons")
+        .select("*")
+        .eq("supplier_id", supplier.id)
+        .order("created_at", { ascending: false });
+      return (data ?? []) as Coupon[];
+    },
+    enabled: !!supplier,
+  });
+
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    code: "",
+    discount_type: "percent" as "percent" | "fixed",
+    discount_value: "",
+    min_subtotal: "0",
+    max_uses: "",
+    expires_at: "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  const create = async () => {
+    if (!supplier) return;
+    const code = form.code.trim().toUpperCase();
+    if (!/^[A-Z0-9_-]{3,30}$/.test(code)) {
+      toast.error("Code must be 3-30 chars (A-Z, 0-9, _, -)");
+      return;
+    }
+    const value = Number(form.discount_value);
+    if (!Number.isFinite(value) || value <= 0) { toast.error("Enter a valid discount value"); return; }
+    if (form.discount_type === "percent" && value > 100) { toast.error("Percent must be ≤100"); return; }
+    setSaving(true);
+    const { error } = await supabase.from("coupons").insert({
+      supplier_id: supplier.id,
+      code,
+      discount_type: form.discount_type,
+      discount_value: value,
+      min_subtotal: Number(form.min_subtotal) || 0,
+      max_uses: form.max_uses ? Number(form.max_uses) : null,
+      expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
+      active: true,
+    });
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Coupon ${code} created`);
+    setForm({ code: "", discount_type: "percent", discount_value: "", min_subtotal: "0", max_uses: "", expires_at: "" });
+    setShowForm(false);
+    qc.invalidateQueries({ queryKey: ["my-coupons"] });
+  };
+
+  const toggle = async (c: Coupon) => {
+    const { error } = await supabase.from("coupons").update({ active: !c.active }).eq("id", c.id);
+    if (error) { toast.error(error.message); return; }
+    qc.invalidateQueries({ queryKey: ["my-coupons"] });
+  };
+
+  const remove = async (c: Coupon) => {
+    if (!confirm(`Delete coupon ${c.code}?`)) return;
+    const { error } = await supabase.from("coupons").delete().eq("id", c.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Coupon deleted");
+    qc.invalidateQueries({ queryKey: ["my-coupons"] });
+  };
+
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+
   return (
     <div className="px-4 py-4 space-y-3">
-      {[
-        { icon: Megaphone, title: "Sponsored listing", desc: "Boost product to top of search" },
-        { icon: DollarSign, title: "Coupons", desc: "Create discount codes for buyers" },
-        { icon: TrendingUp, title: "Flash deal", desc: "Time-limited price drop on the home feed" },
-      ].map((c) => (
-        <div key={c.title} className="bg-card rounded-2xl border shadow-card p-4">
-          <div className="flex gap-3">
-            <span className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center"><c.icon className="w-5 h-5" /></span>
-            <div className="flex-1"><p className="font-bold text-sm">{c.title}</p><p className="text-xs text-muted-foreground">{c.desc}</p></div>
+      <Button onClick={() => setShowForm(!showForm)} className="w-full h-11">
+        <Plus className="w-4 h-4 mr-2" /> {showForm ? "Cancel" : "New coupon"}
+      </Button>
+
+      {showForm && (
+        <div className="bg-card rounded-2xl border shadow-card p-4 space-y-3">
+          <input
+            value={form.code}
+            onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase().slice(0, 30) })}
+            placeholder="Code (e.g. WELCOME10)"
+            className="w-full h-11 rounded-xl border bg-background px-4 text-sm font-mono uppercase tracking-wider"
+            maxLength={30}
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <select
+              value={form.discount_type}
+              onChange={(e) => setForm({ ...form, discount_type: e.target.value as any })}
+              className="h-11 rounded-xl border bg-background px-3 text-sm"
+            >
+              <option value="percent">Percent off</option>
+              <option value="fixed">Fixed amount</option>
+            </select>
+            <input
+              value={form.discount_value}
+              onChange={(e) => setForm({ ...form, discount_value: e.target.value })}
+              placeholder={form.discount_type === "percent" ? "e.g. 10 (%)" : "e.g. 5 ($)"}
+              type="number"
+              step="0.01"
+              className="h-11 rounded-xl border bg-background px-4 text-sm"
+            />
           </div>
-          <Button className="w-full mt-3 h-10" disabled>Coming soon</Button>
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              value={form.min_subtotal}
+              onChange={(e) => setForm({ ...form, min_subtotal: e.target.value })}
+              placeholder="Min subtotal ($)"
+              type="number"
+              step="0.01"
+              className="h-11 rounded-xl border bg-background px-4 text-sm"
+            />
+            <input
+              value={form.max_uses}
+              onChange={(e) => setForm({ ...form, max_uses: e.target.value })}
+              placeholder="Max uses (optional)"
+              type="number"
+              className="h-11 rounded-xl border bg-background px-4 text-sm"
+            />
+          </div>
+          <input
+            value={form.expires_at}
+            onChange={(e) => setForm({ ...form, expires_at: e.target.value })}
+            type="datetime-local"
+            placeholder="Expires (optional)"
+            className="w-full h-11 rounded-xl border bg-background px-4 text-sm"
+          />
+          <Button onClick={create} disabled={saving} className="w-full h-11">
+            {saving ? "Creating…" : "Create coupon"}
+          </Button>
         </div>
-      ))}
+      )}
+
+      {coupons.length === 0 ? (
+        <EmptyState
+          icon={<DollarSign className="w-7 h-7 text-muted-foreground" />}
+          title="No coupons yet"
+          description="Create your first discount code to attract more buyers."
+        />
+      ) : (
+        coupons.map((c) => {
+          const expired = c.expires_at && new Date(c.expires_at).getTime() < Date.now();
+          const exhausted = c.max_uses !== null && c.uses_count >= c.max_uses;
+          return (
+            <div key={c.id} className="bg-card rounded-2xl border shadow-card p-4">
+              <div className="flex items-start gap-3">
+                <span className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                  <DollarSign className="w-5 h-5" />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm font-mono uppercase tracking-wider">{c.code}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {c.discount_type === "percent" ? `${c.discount_value}% off` : `$${c.discount_value} off`}
+                    {Number(c.min_subtotal) > 0 && ` · min $${c.min_subtotal}`}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    Used {c.uses_count}{c.max_uses ? `/${c.max_uses}` : ""}
+                    {c.expires_at && ` · expires ${new Date(c.expires_at).toLocaleDateString()}`}
+                  </p>
+                  {(expired || exhausted || !c.active) && (
+                    <p className="text-[10px] font-bold text-destructive mt-0.5">
+                      {expired ? "Expired" : exhausted ? "Exhausted" : "Inactive"}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-2 mt-3">
+                <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => toggle(c)}>
+                  {c.active ? "Pause" : "Activate"}
+                </Button>
+                <Button size="sm" variant="outline" className="h-9 text-destructive" onClick={() => remove(c)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          );
+        })
+      )}
     </div>
   );
 }
+
 
 // ---------------- Reviews (real) ----------------
 function ReviewsView() {

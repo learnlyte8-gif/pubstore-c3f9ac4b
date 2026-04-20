@@ -11,6 +11,8 @@ import {
   Eye,
   ShieldCheck,
   Award,
+  Pin,
+  PinOff,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShop } from "@/store/shop";
@@ -200,24 +202,26 @@ function LiveRoom({ stream, onLeave }: { stream: EnrichedStream; onLeave: () => 
   const [showProducts, setShowProducts] = useState(false);
   const [pinned, setPinned] = useState<Product[]>([]);
   const [me, setMe] = useState<{ id: string; name: string } | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
+  const [pinnedId, setPinnedId] = useState<string | null>(stream.pinned_product_id);
   const chatRef = useRef<HTMLDivElement>(null);
   const sentViewerBumpRef = useRef(false);
 
-  // Get user
+  // Get user + check ownership
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("display_name,username")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      const [{ data: prof }, { data: sup }] = await Promise.all([
+        supabase.from("profiles").select("display_name,username").eq("user_id", user.id).maybeSingle(),
+        supabase.from("suppliers").select("owner_id").eq("id", stream.supplier_id).maybeSingle(),
+      ]);
       setMe({
         id: user.id,
         name: prof?.display_name || prof?.username || (user.email?.split("@")[0] ?? "Guest"),
       });
+      setIsOwner(sup?.owner_id === user.id);
     });
-  }, []);
+  }, [stream.supplier_id]);
 
   // Load supplier products + initial chat
   useEffect(() => {
@@ -284,6 +288,7 @@ function LiveRoom({ stream, onLeave }: { stream: EnrichedStream; onLeave: () => 
         (payload) => {
           const next = payload.new as DbStream;
           setViewers(next.viewer_count);
+          setPinnedId(next.pinned_product_id);
           if (next.status === "ended") {
             toast.info("This stream just ended");
             onLeave();
@@ -334,6 +339,17 @@ function LiveRoom({ stream, onLeave }: { stream: EnrichedStream; onLeave: () => 
     addToCart(p.id, p.moq);
     toast.success("Added to cart");
   };
+
+  const togglePin = async (productId: string) => {
+    if (!isOwner) return;
+    const next = pinnedId === productId ? null : productId;
+    const { error } = await supabase.from("live_streams").update({ pinned_product_id: next }).eq("id", stream.id);
+    if (error) { toast.error(error.message); return; }
+    setPinnedId(next);
+    toast.success(next ? "Product pinned" : "Product unpinned");
+  };
+
+  const pinnedProduct = pinned.find((p) => p.id === pinnedId);
 
   const startedMin = Math.max(1, Math.floor((Date.now() - new Date(stream.started_at).getTime()) / 60000));
 
@@ -477,23 +493,40 @@ function LiveRoom({ stream, onLeave }: { stream: EnrichedStream; onLeave: () => 
               {pinned.length === 0 ? (
                 <p className="text-center text-sm text-muted-foreground py-6">No products listed yet</p>
               ) : (
-                pinned.map((p) => (
-                  <div key={p.id} className="flex items-center gap-3 rounded-2xl border border-border p-2 shadow-soft">
-                    <Link to={`/product/${p.id}`} onClick={() => setShowProducts(false)} className="shrink-0">
-                      <img src={p.image} alt="" className="w-16 h-16 rounded-xl object-cover" />
-                    </Link>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold line-clamp-2">{p.title}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
-                        MOQ {p.moq} {p.unit} · {p.leadTime}
-                      </p>
-                      <p className="text-sm font-bold mt-0.5">${p.price}</p>
-                    </div>
-                    <button
-                      onClick={() => quickBuy(p)}
-                      className="px-3 h-9 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-card"
-                    >
-                      Buy now
+                pinned.map((p) => {
+                  const isPinned = p.id === pinnedId;
+                  return (
+                    <div key={p.id} className={`flex items-center gap-3 rounded-2xl border p-2 shadow-soft ${isPinned ? "border-primary bg-primary/5 ring-2 ring-primary/30" : "border-border"}`}>
+                      <Link to={`/product/${p.id}`} onClick={() => setShowProducts(false)} className="shrink-0 relative">
+                        <img src={p.image} alt="" className="w-16 h-16 rounded-xl object-cover" />
+                        {isPinned && (
+                          <span className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-card">
+                            <Pin className="w-3 h-3" />
+                          </span>
+                        )}
+                      </Link>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold line-clamp-2">{p.title}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          MOQ {p.moq} {p.unit} · {p.leadTime}
+                        </p>
+                        <p className="text-sm font-bold mt-0.5">${p.price}</p>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        {isOwner && (
+                          <button
+                            onClick={() => togglePin(p.id)}
+                            aria-label={isPinned ? "Unpin" : "Pin"}
+                            className={`px-2 h-8 rounded-full text-[10px] font-bold flex items-center gap-1 ${isPinned ? "bg-muted text-foreground" : "bg-amber-400 text-foreground"}`}
+                          >
+                            {isPinned ? <><PinOff className="w-3 h-3" /> Unpin</> : <><Pin className="w-3 h-3" /> Pin</>}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => quickBuy(p)}
+                          className="px-3 h-8 rounded-full bg-primary text-primary-foreground text-[10px] font-bold shadow-card"
+                        >
+                          Buy now
                     </button>
                   </div>
                 ))
