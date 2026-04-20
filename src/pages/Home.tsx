@@ -24,6 +24,7 @@ import StatsBar from "@/components/marketplace/StatsBar";
 import DealOfTheDay from "@/components/marketplace/DealOfTheDay";
 import TopSuppliers from "@/components/marketplace/TopSuppliers";
 import LiveFeed from "@/components/marketplace/LiveFeed";
+import LiveStreamsRail from "@/components/marketplace/LiveStreamsRail";
 import BrandSpotlight from "@/components/marketplace/BrandSpotlight";
 import NewArrivals from "@/components/marketplace/NewArrivals";
 import RegionSourcing from "@/components/marketplace/RegionSourcing";
@@ -112,6 +113,8 @@ const Home = () => {
             <QuickActions />
           </div>
           <FlashDeals />
+
+          <LiveStreamsRail />
 
           <section className="px-4 mt-6">
             <SectionHeader icon={Flame} title="Deal of the day" subtitle="Limited stock — ends soon" />

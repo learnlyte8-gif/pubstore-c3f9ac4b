@@ -22,6 +22,7 @@ import Orders from "./pages/Orders.tsx";
 import RFQ from "./pages/RFQ.tsx";
 import Notifications from "./pages/Notifications.tsx";
 import Compare from "./pages/Compare.tsx";
+import Live from "./pages/Live.tsx";
 import Placeholder from "./pages/Placeholder.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -51,6 +52,8 @@ const App = () => (
                 <Route path="/rfq" element={<RFQ />} />
                 <Route path="/notifications" element={<Notifications />} />
                 <Route path="/compare" element={<Compare />} />
+                <Route path="/live" element={<Live />} />
+                <Route path="/live/:id" element={<Live />} />
                 <Route path="/supplier/:id" element={<Supplier />} />
                 <Route path="/profile" element={<Account />} />
                 <Route path="/account" element={<Account />} />
