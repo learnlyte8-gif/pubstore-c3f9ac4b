@@ -12,9 +12,16 @@ export default function Splash() {
     const timer = setTimeout(async () => {
       setExiting(true);
       const { data } = await supabase.auth.getSession();
-      setTimeout(() => {
-        navigate(data.session ? "/home" : "/auth", { replace: true });
-      }, 300);
+      let dest = "/auth";
+      if (data.session) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("profile_completed")
+          .eq("user_id", data.session.user.id)
+          .maybeSingle();
+        dest = prof?.profile_completed ? "/home" : "/onboarding";
+      }
+      setTimeout(() => navigate(dest, { replace: true }), 300);
     }, 2200);
     return () => clearTimeout(timer);
   }, [navigate]);
