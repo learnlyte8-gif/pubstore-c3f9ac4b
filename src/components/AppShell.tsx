@@ -5,6 +5,8 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useShop } from "@/store/shop";
 import RotatingHint from "@/components/RotatingHint";
+import LiveActivityToaster from "@/components/LiveActivityToaster";
+import InstallPrompt from "@/components/InstallPrompt";
 import logo from "@/assets/pubstore-logo.png";
 
 export default function AppShell() {
@@ -114,6 +116,9 @@ export default function AppShell() {
           <TabItem to="/profile" icon={User} label="Account" />
         </ul>
       </nav>
+
+      <LiveActivityToaster />
+      <InstallPrompt />
     </div>
   );
 }
