@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   TrendingUp, Sparkles, LayoutGrid, Building2, Compass, Users, Home as HomeIcon, Store as StoreIcon,
+  Globe2, Award, Newspaper, Zap,
   type LucideIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -13,6 +14,12 @@ import StatsBar from "@/components/marketplace/StatsBar";
 import TopSuppliers from "@/components/marketplace/TopSuppliers";
 import VerticalFeed from "@/components/marketplace/VerticalFeed";
 import SuppliersNearMe from "@/components/marketplace/SuppliersNearMe";
+import SupplierStories from "@/components/marketplace/SupplierStories";
+import QuickActions from "@/components/marketplace/QuickActions";
+import BrandSpotlight from "@/components/marketplace/BrandSpotlight";
+import RegionSourcing from "@/components/marketplace/RegionSourcing";
+import LiveFeed from "@/components/marketplace/LiveFeed";
+import LiveStreamsRail from "@/components/marketplace/LiveStreamsRail";
 import TapsonAssistant from "@/components/TapsonAssistant";
 import EmptyState from "@/components/EmptyState";
 import { useProducts, useSuppliers } from "@/hooks/useCatalog";
@@ -62,8 +69,12 @@ const Home = () => {
       {tab === "home" && (
         <div className="animate-fade-in">
           <PromoBanner />
+          <SupplierStories />
+          <div className="px-4"><QuickActions /></div>
           <div className="px-4"><StatsBar /></div>
           <CategoryGrid />
+
+          <LiveStreamsRail />
 
           {isLoading ? (
             <p className="px-4 py-8 text-center text-sm text-muted-foreground">Loading marketplace…</p>
@@ -78,6 +89,15 @@ const Home = () => {
             </div>
           ) : (
             <>
+              {trending.length > 0 && (
+                <section className="px-4 mt-6">
+                  <SectionHeader icon={Zap} title="Flash deals" subtitle="Limited time · ships fast" />
+                  <div className="flex gap-3 overflow-x-auto scrollbar-none mt-3 -mx-1 px-1 pb-1">
+                    {trending.map((p) => (<ProductCard key={`fd-${p.id}`} product={p} variant="compact" />))}
+                  </div>
+                </section>
+              )}
+
               {trending.length > 0 && (
                 <section className="px-4 mt-6">
                   <SectionHeader icon={TrendingUp} title="Trending now" subtitle="Most ordered this week" />
@@ -95,6 +115,21 @@ const Home = () => {
               )}
 
               <SuppliersNearMe />
+
+              <section className="px-4 mt-6">
+                <SectionHeader icon={Award} title="Brand spotlight" subtitle="Featured collections" />
+                <BrandSpotlight />
+              </section>
+
+              <section className="px-4 mt-6">
+                <SectionHeader icon={Globe2} title="Source by region" subtitle="Verified factories worldwide" />
+                <RegionSourcing />
+              </section>
+
+              <section className="px-4 mt-6">
+                <SectionHeader icon={Newspaper} title="Live activity" subtitle="What buyers are doing right now" />
+                <LiveFeed />
+              </section>
 
               <section className="px-4 mt-6">
                 <SectionHeader icon={Sparkles} title="For you" subtitle="Picked from your interests" />
