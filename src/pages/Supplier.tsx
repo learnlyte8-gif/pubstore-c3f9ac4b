@@ -15,14 +15,15 @@ import {
   Heart,
 } from "lucide-react";
 import { useState } from "react";
-import { getSupplier, getProductsBySupplier } from "@/data/products";
+import { useSupplier, useProducts } from "@/hooks/useCatalog";
 import ProductCard from "@/components/marketplace/ProductCard";
 
 export default function Supplier() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const supplier = id ? getSupplier(id) : undefined;
-  const products = id ? getProductsBySupplier(id) : [];
+  const { data: supplier, isLoading } = useSupplier(id);
+  const { data: products = [] } = useProducts({ supplierId: id });
+  if (isLoading) return <p className="p-12 text-center text-sm text-muted-foreground">Loading…</p>;
   const [tab, setTab] = useState<"products" | "about" | "certs">("products");
   const [following, setFollowing] = useState(false);
 

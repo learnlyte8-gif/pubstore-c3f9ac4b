@@ -1,7 +1,12 @@
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Plus, TrendingUp, Eye, ShoppingBag, DollarSign, Star, Megaphone, Truck, Package, Settings, Image as ImageIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, Plus, TrendingUp, Eye, ShoppingBag, DollarSign, Star, Megaphone, Truck, Package, Settings, Image as ImageIcon, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PRODUCTS as products } from "@/data/products";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchProducts, fetchMySupplier, fetchCategories } from "@/data/products";
+import EmptyState from "@/components/EmptyState";
 
 const titles: Record<string, { title: string; sub: string }> = {
   products: { title: "My products", sub: "Manage your catalog" },
@@ -23,7 +28,9 @@ export default function StoreSection() {
   return (
     <div className="pb-24">
       <header className="sticky top-0 z-20 bg-background/90 backdrop-blur border-b px-3 py-3 flex items-center gap-2">
-        <Link to="/store" className="w-9 h-9 rounded-full hover:bg-muted flex items-center justify-center"><ArrowLeft className="w-4 h-4" /></Link>
+        <Link to="/store" className="w-9 h-9 rounded-full hover:bg-muted flex items-center justify-center">
+          <ArrowLeft className="w-4 h-4" />
+        </Link>
         <div className="flex-1 min-w-0">
           <h1 className="font-bold text-base leading-tight truncate">{meta.title}</h1>
           <p className="text-[11px] text-muted-foreground truncate">{meta.sub}</p>
@@ -43,161 +50,249 @@ export default function StoreSection() {
   );
 }
 
+// ---------------- Products list ----------------
 function ProductsView() {
-  const my = products.slice(0, 8);
+  const { data: supplier } = useQuery({ queryKey: ["my-supplier"], queryFn: fetchMySupplier });
+  const { data: products = [], isLoading } = useQuery({
+    queryKey: ["my-products", supplier?.id],
+    queryFn: () => (supplier ? fetchProducts({ supplierId: supplier.id }) : Promise.resolve([])),
+    enabled: !!supplier,
+  });
+
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+
   return (
     <div className="px-4 py-4 space-y-3">
-      <Button asChild className="w-full h-11"><Link to="/store/products/new"><Plus className="w-4 h-4 mr-2" /> Add product</Link></Button>
-      {my.map((p) => (
-        <Link key={p.id} to={`/product/${p.id}`} className="bg-card border rounded-2xl shadow-card p-3 flex gap-3">
-          <img src={p.image} alt={p.title} className="w-20 h-20 rounded-xl object-cover" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold line-clamp-2">{p.title}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">${p.price} · MOQ {p.moq}</p>
-            <div className="flex items-center gap-3 mt-1.5 text-[11px] text-muted-foreground">
-              <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> 1.2k</span>
-              <span className="flex items-center gap-1"><ShoppingBag className="w-3 h-3" /> 24</span>
-              <span className="flex items-center gap-1"><Star className="w-3 h-3" /> {p.rating}</span>
+      <Button asChild className="w-full h-11">
+        <Link to="/store/products/new"><Plus className="w-4 h-4 mr-2" /> Add product</Link>
+      </Button>
+      {products.length === 0 ? (
+        <EmptyState
+          icon={<Package className="w-7 h-7 text-muted-foreground" />}
+          title="No products yet"
+          description="Add your first product so buyers can find your store."
+          action={<Button asChild><Link to="/store/products/new"><Plus className="w-4 h-4 mr-1.5" /> Add product</Link></Button>}
+        />
+      ) : (
+        products.map((p) => (
+          <Link key={p.id} to={`/product/${p.id}`} className="bg-card border rounded-2xl shadow-card p-3 flex gap-3">
+            <img src={p.image} alt={p.title} className="w-20 h-20 rounded-xl object-cover bg-muted" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold line-clamp-2">{p.title}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">${p.price} · MOQ {p.moq}</p>
+              <div className="flex items-center gap-3 mt-1.5 text-[11px] text-muted-foreground">
+                <span className="flex items-center gap-1"><ShoppingBag className="w-3 h-3" /> {p.sold}</span>
+                <span className="flex items-center gap-1"><Star className="w-3 h-3" /> {p.rating.toFixed(1)}</span>
+              </div>
             </div>
+          </Link>
+        ))
+      )}
+    </div>
+  );
+}
+
+// ---------------- New product ----------------
+function NewProductView() {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({
+    title: "", description: "", price: "", original_price: "",
+    moq: "1", unit: "piece", lead_time: "7-15 days", ship_from: "",
+    category_slug: "electronics", free_shipping: false,
+  });
+  const { data: cats = [] } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
+
+  const onFiles = (list: FileList | null) => {
+    if (!list) return;
+    const arr = Array.from(list).slice(0, 6);
+    setFiles(arr);
+    setPreviews(arr.map((f) => URL.createObjectURL(f)));
+  };
+  const removeAt = (i: number) => {
+    setFiles((p) => p.filter((_, idx) => idx !== i));
+    setPreviews((p) => p.filter((_, idx) => idx !== i));
+  };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.title.trim() || !form.price) { toast.error("Title and price required"); return; }
+    setSubmitting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { navigate("/auth"); return; }
+      const supplier = await fetchMySupplier();
+      if (!supplier) { toast.error("Create your store first"); navigate("/become-supplier"); return; }
+
+      // Upload images
+      const urls: string[] = [];
+      for (const file of files) {
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("product-images").upload(path, file, {
+          cacheControl: "3600", upsert: false,
+        });
+        if (upErr) throw upErr;
+        const { data: { publicUrl } } = supabase.storage.from("product-images").getPublicUrl(path);
+        urls.push(publicUrl);
+      }
+
+      const { data: product, error } = await supabase.from("products").insert({
+        supplier_id: supplier.id,
+        title: form.title.trim(),
+        description: form.description.trim() || null,
+        image: urls[0] ?? null,
+        gallery: urls,
+        price: Number(form.price),
+        original_price: form.original_price ? Number(form.original_price) : null,
+        moq: Number(form.moq) || 1,
+        unit: form.unit || "piece",
+        lead_time: form.lead_time || null,
+        ship_from: form.ship_from || supplier.country || null,
+        category_slug: form.category_slug,
+        free_shipping: form.free_shipping,
+        active: true,
+      }).select().single();
+      if (error) throw error;
+
+      toast.success("Product published 🎉");
+      qc.invalidateQueries({ queryKey: ["my-products"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      navigate(`/product/${product.id}`);
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to publish");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={submit} className="px-4 py-4 space-y-4">
+      <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => onFiles(e.target.files)} />
+      {previews.length === 0 ? (
+        <button type="button" onClick={() => fileRef.current?.click()} className="w-full aspect-video rounded-2xl border-2 border-dashed bg-muted/40 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+          <ImageIcon className="w-8 h-8" />
+          <p className="text-sm font-bold">Upload product photos</p>
+          <p className="text-[11px]">JPG/PNG · up to 6 images · 10MB each</p>
+        </button>
+      ) : (
+        <div>
+          <div className="grid grid-cols-3 gap-2">
+            {previews.map((src, i) => (
+              <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-muted">
+                <img src={src} alt="" className="w-full h-full object-cover" />
+                <button type="button" onClick={() => removeAt(i)} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-foreground/70 text-background flex items-center justify-center">
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+            {previews.length < 6 && (
+              <button type="button" onClick={() => fileRef.current?.click()} className="aspect-square rounded-xl border-2 border-dashed bg-muted/40 flex items-center justify-center text-muted-foreground">
+                <Plus className="w-5 h-5" />
+              </button>
+            )}
           </div>
-        </Link>
+        </div>
+      )}
+
+      <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Product title *" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+      <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description" rows={4} className="w-full rounded-xl border bg-background p-4 text-sm" />
+      <div className="grid grid-cols-2 gap-3">
+        <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="Price *" type="number" step="0.01" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+        <input value={form.original_price} onChange={(e) => setForm({ ...form, original_price: e.target.value })} placeholder="Original price" type="number" step="0.01" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <input value={form.moq} onChange={(e) => setForm({ ...form, moq: e.target.value })} placeholder="MOQ" type="number" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+        <input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="Unit (piece, set, kg…)" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <input value={form.lead_time} onChange={(e) => setForm({ ...form, lead_time: e.target.value })} placeholder="Lead time" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+        <input value={form.ship_from} onChange={(e) => setForm({ ...form, ship_from: e.target.value })} placeholder="Ships from" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+      </div>
+      <select value={form.category_slug} onChange={(e) => setForm({ ...form, category_slug: e.target.value })} className="w-full h-12 rounded-xl border bg-background px-4 text-sm">
+        {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+      </select>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={form.free_shipping} onChange={(e) => setForm({ ...form, free_shipping: e.target.checked })} />
+        Free shipping
+      </label>
+      <Button type="submit" disabled={submitting} className="w-full h-12">
+        {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Publishing…</> : "Publish product"}
+      </Button>
+    </form>
+  );
+}
+
+// ---------------- Orders (real) ----------------
+function OrdersView() {
+  const { data: supplier } = useQuery({ queryKey: ["my-supplier"], queryFn: fetchMySupplier });
+  const { data: orders = [], isLoading } = useQuery({
+    queryKey: ["store-orders", supplier?.id],
+    queryFn: async () => {
+      if (!supplier) return [];
+      const { data } = await supabase.from("orders").select("*, order_items(*)")
+        .eq("supplier_id", supplier.id).order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!supplier,
+  });
+
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+  if (!orders.length) {
+    return <EmptyState title="No orders yet" description="When buyers purchase your products they'll appear here." />;
+  }
+  return (
+    <div className="px-4 py-4 space-y-3">
+      {orders.map((o: any) => (
+        <div key={o.id} className="bg-card border rounded-2xl shadow-card p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold">{o.ref_code}</p>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600">{o.status}</span>
+          </div>
+          <p className="text-sm font-semibold mt-2">{o.order_items?.length ?? 0} items · ${Number(o.total).toFixed(2)}</p>
+          <p className="text-[11px] text-muted-foreground">{new Date(o.created_at).toLocaleString()}</p>
+        </div>
       ))}
     </div>
   );
 }
 
-function NewProductView() {
-  return (
-    <form onSubmit={(e) => { e.preventDefault(); }} className="px-4 py-4 space-y-4">
-      <button type="button" className="w-full aspect-video rounded-2xl border-2 border-dashed bg-muted/40 flex flex-col items-center justify-center gap-2 text-muted-foreground">
-        <ImageIcon className="w-8 h-8" />
-        <p className="text-sm font-bold">Upload photos & video</p>
-        <p className="text-[11px]">JPG/PNG up to 10MB · MP4 up to 60s</p>
-      </button>
-      <input placeholder="Product title" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
-      <textarea placeholder="Description" rows={4} className="w-full rounded-xl border bg-background p-4 text-sm" />
-      <div className="grid grid-cols-2 gap-3">
-        <input placeholder="Price" type="number" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
-        <input placeholder="MOQ" type="number" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
-      </div>
-      <input placeholder="Category" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
-      <Button className="w-full h-12">Publish product</Button>
-    </form>
-  );
-}
-
-function OrdersView() {
-  const tabs = ["Pending", "Shipped", "Delivered", "Refunds"];
-  return (
-    <div>
-      <div className="flex gap-2 px-4 py-3 overflow-x-auto border-b">
-        {tabs.map((t, i) => <button key={t} className={`px-3 h-8 rounded-full text-xs font-bold whitespace-nowrap ${i === 0 ? "bg-foreground text-background" : "bg-muted"}`}>{t}</button>)}
-      </div>
-      <div className="px-4 py-4 space-y-3">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-card border rounded-2xl shadow-card p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold">Order #PB{1000 + i}</p>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600">Pending</span>
-            </div>
-            <p className="text-sm font-semibold mt-2">2 items · $148.00</p>
-            <p className="text-[11px] text-muted-foreground">Buyer: jane.d@example.com · 2h ago</p>
-            <div className="flex gap-2 mt-3">
-              <Button size="sm" className="flex-1">Mark shipped</Button>
-              <Button size="sm" variant="outline" className="flex-1">Message</Button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
+// ---------------- Stub views (Phase 2-4) ----------------
 function AnalyticsView() {
-  const stats = [
-    { icon: Eye, label: "Visitors", value: "2,418", trend: "+12%" },
-    { icon: ShoppingBag, label: "Orders", value: "184", trend: "+8%" },
-    { icon: DollarSign, label: "Revenue", value: "$12,840", trend: "+24%" },
-    { icon: TrendingUp, label: "Conversion", value: "3.4%", trend: "+0.6%" },
-  ];
-  return (
-    <div className="px-4 py-4 space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        {stats.map((s) => (
-          <div key={s.label} className="bg-card rounded-2xl border shadow-card p-4">
-            <s.icon className="w-4 h-4 text-primary" />
-            <p className="text-xl font-bold mt-2">{s.value}</p>
-            <p className="text-[11px] text-muted-foreground">{s.label}</p>
-            <p className="text-[10px] font-bold text-emerald-600 mt-1">{s.trend} vs last week</p>
-          </div>
-        ))}
-      </div>
-      <div className="bg-card rounded-2xl border shadow-card p-4">
-        <p className="font-bold text-sm mb-3">Sales — last 7 days</p>
-        <div className="flex items-end gap-1.5 h-32">
-          {[40, 65, 50, 80, 95, 70, 100].map((h, i) => (
-            <div key={i} className="flex-1 bg-gradient-to-t from-primary to-primary/40 rounded-t-lg" style={{ height: `${h}%` }} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  return <EmptyState title="Analytics coming soon" description="Once you start receiving orders we'll show traffic, conversion and revenue trends here." />;
 }
-
 function PromoteView() {
   return (
     <div className="px-4 py-4 space-y-3">
       {[
-        { icon: Megaphone, title: "Sponsored listing", desc: "Boost product to top of search", cta: "Boost from $5/day" },
-        { icon: DollarSign, title: "Coupons", desc: "Create discount codes for buyers", cta: "Create coupon" },
-        { icon: TrendingUp, title: "Flash deal", desc: "Time-limited price drop on the home feed", cta: "Schedule deal" },
+        { icon: Megaphone, title: "Sponsored listing", desc: "Boost product to top of search" },
+        { icon: DollarSign, title: "Coupons", desc: "Create discount codes for buyers" },
+        { icon: TrendingUp, title: "Flash deal", desc: "Time-limited price drop on the home feed" },
       ].map((c) => (
         <div key={c.title} className="bg-card rounded-2xl border shadow-card p-4">
           <div className="flex gap-3">
             <span className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center"><c.icon className="w-5 h-5" /></span>
             <div className="flex-1"><p className="font-bold text-sm">{c.title}</p><p className="text-xs text-muted-foreground">{c.desc}</p></div>
           </div>
-          <Button className="w-full mt-3 h-10">{c.cta}</Button>
+          <Button className="w-full mt-3 h-10" disabled>Coming soon</Button>
         </div>
       ))}
     </div>
   );
 }
-
 function ReviewsView() {
-  const reviews = [
-    { user: "Maria K.", rating: 5, text: "Quality is excellent, packaging was perfect. Will reorder!", date: "2d ago" },
-    { user: "Ahmed R.", rating: 4, text: "Good product, shipping took a bit longer than expected.", date: "5d ago" },
-    { user: "Lisa W.", rating: 5, text: "Exactly as described. Supplier was very responsive.", date: "1w ago" },
-  ];
-  return (
-    <div className="px-4 py-4 space-y-3">
-      <div className="bg-card rounded-2xl border shadow-card p-4 flex items-center gap-4">
-        <div className="text-center"><p className="text-3xl font-bold">4.9</p><p className="text-[10px] text-muted-foreground">312 reviews</p></div>
-        <div className="flex-1 space-y-1">
-          {[5, 4, 3, 2, 1].map((s, i) => (
-            <div key={s} className="flex items-center gap-2"><span className="text-[10px] w-3">{s}</span><div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full bg-amber-400" style={{ width: `${[80, 14, 4, 1, 1][i]}%` }} /></div></div>
-          ))}
-        </div>
-      </div>
-      {reviews.map((r, i) => (
-        <div key={i} className="bg-card border rounded-2xl shadow-card p-4">
-          <div className="flex items-center justify-between"><p className="font-bold text-sm">{r.user}</p><p className="text-[11px] text-muted-foreground">{r.date}</p></div>
-          <div className="flex gap-0.5 my-1.5">{Array.from({ length: 5 }).map((_, j) => <Star key={j} className={`w-3 h-3 ${j < r.rating ? "fill-amber-400 text-amber-400" : "text-muted"}`} />)}</div>
-          <p className="text-xs text-muted-foreground leading-relaxed">{r.text}</p>
-        </div>
-      ))}
-    </div>
-  );
+  return <EmptyState icon={<Star className="w-7 h-7 text-muted-foreground" />} title="No reviews yet" description="Buyer reviews will appear here once your products are purchased." />;
 }
-
 function ShippingView() {
   return (
     <div className="px-4 py-4 space-y-3">
       {[
         { name: "Standard", time: "7-15 days", cost: "$4.99", carriers: "DHL, UPS" },
         { name: "Express", time: "3-5 days", cost: "$14.99", carriers: "FedEx" },
-        { name: "Sea freight", time: "30-45 days", cost: "By weight", carriers: "Maersk" },
       ].map((s) => (
         <div key={s.name} className="bg-card rounded-2xl border shadow-card p-4">
           <div className="flex items-center gap-3">
@@ -207,32 +302,43 @@ function ShippingView() {
           </div>
         </div>
       ))}
-      <Button className="w-full h-11"><Plus className="w-4 h-4 mr-2" /> Add shipping template</Button>
     </div>
   );
 }
-
 function ProfileView() {
+  const { data: supplier } = useQuery({ queryKey: ["my-supplier"], queryFn: fetchMySupplier });
+  const qc = useQueryClient();
+  const [form, setForm] = useState({ name: "", country: "", about: "" });
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    if (supplier) setForm({ name: supplier.name, country: supplier.country, about: supplier.about });
+  }, [supplier]);
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supplier) return;
+    setSaving(true);
+    const { error } = await supabase.from("suppliers").update({
+      name: form.name, country: form.country, about: form.about,
+    }).eq("id", supplier.id);
+    setSaving(false);
+    if (error) toast.error(error.message); else { toast.success("Saved"); qc.invalidateQueries({ queryKey: ["my-supplier"] }); }
+  };
   return (
-    <form className="px-4 py-4 space-y-4">
-      <button type="button" className="w-full aspect-[3/1] rounded-2xl border-2 border-dashed bg-muted/40 flex items-center justify-center text-muted-foreground"><ImageIcon className="w-6 h-6 mr-2" /> Banner image</button>
-      <button type="button" className="w-20 h-20 rounded-2xl border-2 border-dashed bg-muted/40 flex items-center justify-center text-muted-foreground"><ImageIcon className="w-5 h-5" /></button>
-      <input placeholder="Store name" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
-      <textarea placeholder="About your store" rows={4} className="w-full rounded-xl border bg-background p-4 text-sm" />
-      <input placeholder="Country" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
-      <Button className="w-full h-12">Save changes</Button>
+    <form onSubmit={save} className="px-4 py-4 space-y-4">
+      <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Store name" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+      <input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} placeholder="Country" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+      <textarea value={form.about} onChange={(e) => setForm({ ...form, about: e.target.value })} placeholder="About your store" rows={4} className="w-full rounded-xl border bg-background p-4 text-sm" />
+      <Button type="submit" disabled={saving} className="w-full h-12">{saving ? "Saving…" : "Save changes"}</Button>
     </form>
   );
 }
-
 function SettingsView() {
   return (
     <div className="px-4 py-4 space-y-3">
       {[
-        { icon: DollarSign, label: "Payouts", hint: "Bank account, schedule" },
-        { icon: Package, label: "Tax & invoicing", hint: "VAT, business ID" },
-        { icon: Settings, label: "Store hours", hint: "Mon–Fri · 9am–6pm" },
-        { icon: Megaphone, label: "Auto-reply messages", hint: "Welcome, away" },
+        { icon: DollarSign, label: "Payouts", hint: "Coming in Phase 2" },
+        { icon: Package, label: "Tax & invoicing", hint: "Coming in Phase 2" },
+        { icon: Settings, label: "Store hours", hint: "Coming in Phase 2" },
       ].map((s) => (
         <div key={s.label} className="bg-card rounded-2xl border shadow-card p-4 flex items-center gap-3">
           <span className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center"><s.icon className="w-5 h-5" /></span>

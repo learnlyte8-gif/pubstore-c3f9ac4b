@@ -1,23 +1,26 @@
+// Catalog data layer — DB-backed.
+// Keeps the legacy `Product` / `Supplier` / `Category` shape so existing
+// components (ProductCard, SupplierCard, etc.) keep working without changes.
 import type { LucideIcon } from "lucide-react";
 import {
-  Shirt,
   Smartphone,
+  Shirt,
   Home as HomeIcon,
   Sparkles,
   Dumbbell,
-  Gamepad2,
+  ToyBrick,
   Car,
-  ShoppingBasket,
-  BookOpen,
-  PawPrint,
+  Factory,
+  Sprout,
+  Package,
+  Briefcase,
+  HeartPulse,
+  ShoppingBag,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
-export type Category = {
-  id: string;
-  name: string;
-  icon: LucideIcon;
-};
-
+// ---------- Types ----------
+export type Category = { id: string; name: string; icon: LucideIcon };
 export type TierPrice = { minQty: number; price: number };
 export type Variant = { id: string; name: string; image?: string };
 export type VariantGroup = { name: string; options: Variant[] };
@@ -63,7 +66,6 @@ export type Product = {
   category: string;
   badge?: "Hot" | "New" | "Deal" | "Top";
   freeShipping?: boolean;
-  // B2B
   supplierId: string;
   moq: number;
   unit: string;
@@ -76,381 +78,216 @@ export type Product = {
   reviewList?: Review[];
 };
 
+// ---------- Categories ----------
+const ICON_MAP: Record<string, LucideIcon> = {
+  Smartphone, Shirt, Home: HomeIcon, Sparkles, Dumbbell, ToyBrick,
+  Car, Factory, Sprout, Package, Briefcase, HeartPulse,
+};
+const fallbackIcon = ShoppingBag;
+
 export const CATEGORIES: Category[] = [
-  { id: "fashion", name: "Fashion", icon: Shirt },
   { id: "electronics", name: "Electronics", icon: Smartphone },
-  { id: "home", name: "Home", icon: HomeIcon },
+  { id: "fashion", name: "Fashion", icon: Shirt },
+  { id: "home", name: "Home & Garden", icon: HomeIcon },
   { id: "beauty", name: "Beauty", icon: Sparkles },
   { id: "sports", name: "Sports", icon: Dumbbell },
-  { id: "toys", name: "Toys", icon: Gamepad2 },
-  { id: "auto", name: "Auto", icon: Car },
-  { id: "grocery", name: "Grocery", icon: ShoppingBasket },
-  { id: "books", name: "Books", icon: BookOpen },
-  { id: "pets", name: "Pets", icon: PawPrint },
+  { id: "toys", name: "Toys", icon: ToyBrick },
+  { id: "automotive", name: "Automotive", icon: Car },
+  { id: "industrial", name: "Industrial", icon: Factory },
+  { id: "agriculture", name: "Agriculture", icon: Sprout },
+  { id: "packaging", name: "Packaging", icon: Package },
+  { id: "office", name: "Office", icon: Briefcase },
+  { id: "health", name: "Health", icon: HeartPulse },
 ];
 
-const img = (seed: string, w = 800, h = 800) =>
-  `https://picsum.photos/seed/pubstore-${seed}/${w}/${h}`;
+export async function fetchCategories(): Promise<Category[]> {
+  const { data } = await supabase.from("categories").select("*").order("sort_order");
+  if (!data?.length) return CATEGORIES;
+  return data.map((c) => ({
+    id: c.slug,
+    name: c.name,
+    icon: ICON_MAP[c.icon ?? ""] ?? fallbackIcon,
+  }));
+}
 
-export const SUPPLIERS: Supplier[] = [
-  {
-    id: "s1",
-    name: "Shenzhen Aurora Electronics Co., Ltd",
-    country: "China",
-    countryCode: "CN",
-    yearsActive: 8,
-    responseRate: 98,
-    responseTime: "≤ 2h",
-    onTimeDelivery: 96,
-    rating: 4.8,
-    verified: true,
-    gold: true,
-    tradeAssurance: true,
-    logo: img("sup-aurora-logo", 120, 120),
-    banner: img("sup-aurora-banner", 1200, 400),
-    about: "Leading manufacturer of consumer electronics with 12+ production lines and a 6,000m² facility.",
-  },
-  {
-    id: "s2",
-    name: "Guangzhou Lumière Apparel Group",
-    country: "China",
-    countryCode: "CN",
-    yearsActive: 12,
-    responseRate: 95,
-    responseTime: "≤ 4h",
-    onTimeDelivery: 93,
-    rating: 4.7,
-    verified: true,
-    gold: true,
-    tradeAssurance: true,
-    logo: img("sup-lumiere-logo", 120, 120),
-    banner: img("sup-lumiere-banner", 1200, 400),
-    about: "Full-package fashion supplier specializing in private label and OEM since 2012.",
-  },
-  {
-    id: "s3",
-    name: "Yiwu HomeCraft Trading Co.",
-    country: "China",
-    countryCode: "CN",
-    yearsActive: 5,
-    responseRate: 91,
-    responseTime: "≤ 6h",
-    onTimeDelivery: 90,
-    rating: 4.5,
-    verified: true,
-    gold: false,
-    tradeAssurance: true,
-    logo: img("sup-homecraft-logo", 120, 120),
-    banner: img("sup-homecraft-banner", 1200, 400),
-    about: "Sourcing partner for home, kitchen and lifestyle goods across 30+ factories.",
-  },
-  {
-    id: "s4",
-    name: "Mumbai Wellness Naturals Pvt Ltd",
-    country: "India",
-    countryCode: "IN",
-    yearsActive: 6,
-    responseRate: 94,
-    responseTime: "≤ 3h",
-    onTimeDelivery: 92,
-    rating: 4.6,
-    verified: true,
-    gold: true,
-    tradeAssurance: true,
-    logo: img("sup-mumbai-logo", 120, 120),
-    banner: img("sup-mumbai-banner", 1200, 400),
-    about: "Ayurvedic and natural beauty manufacturer with GMP & ISO 22716 certifications.",
-  },
-  {
-    id: "s5",
-    name: "Istanbul Atlas Sports Industries",
-    country: "Türkiye",
-    countryCode: "TR",
-    yearsActive: 9,
-    responseRate: 90,
-    responseTime: "≤ 5h",
-    onTimeDelivery: 91,
-    rating: 4.5,
-    verified: true,
-    gold: false,
-    tradeAssurance: false,
-    logo: img("sup-atlas-logo", 120, 120),
-    banner: img("sup-atlas-banner", 1200, 400),
-    about: "Manufacturer and exporter of sports equipment and outdoor gear since 2015.",
-  },
-];
-
-const gallery = (seed: string) => [
-  img(`${seed}-1`),
-  img(`${seed}-2`),
-  img(`${seed}-3`),
-  img(`${seed}-4`),
-  img(`${seed}-5`),
-];
-
-const sampleReviews = (seed: string): Review[] => [
-  {
-    id: `${seed}-r1`,
-    user: "Alex M.",
-    country: "United States",
-    rating: 5,
-    date: "2025-02-12",
-    text: "Excellent quality, exactly as described. Packaging was professional and delivery was faster than expected.",
-    variant: "Black",
-  },
-  {
-    id: `${seed}-r2`,
-    user: "Maya K.",
-    country: "Germany",
-    rating: 4,
-    date: "2025-01-28",
-    text: "Good product overall, the supplier was very responsive. Would order again for our next batch.",
-  },
-  {
-    id: `${seed}-r3`,
-    user: "Carlos R.",
-    country: "Mexico",
-    rating: 5,
-    date: "2025-01-15",
-    text: "Great communication and the samples matched the production order perfectly.",
-    variant: "Large",
-  },
-];
-
-const colors: VariantGroup = {
-  name: "Color",
-  options: [
-    { id: "black", name: "Black" },
-    { id: "white", name: "White" },
-    { id: "blue", name: "Navy Blue" },
-    { id: "beige", name: "Beige" },
-  ],
-};
-const sizes: VariantGroup = {
-  name: "Size",
-  options: [
-    { id: "s", name: "S" },
-    { id: "m", name: "M" },
-    { id: "l", name: "L" },
-    { id: "xl", name: "XL" },
-  ],
+// ---------- Mappers ----------
+type DbSupplier = {
+  id: string;
+  name: string;
+  country: string | null;
+  country_code: string | null;
+  years_active: number | null;
+  response_rate: number | null;
+  response_time: string | null;
+  on_time_delivery: number | null;
+  rating: number | null;
+  verified: boolean | null;
+  gold: boolean | null;
+  trade_assurance: boolean | null;
+  logo: string | null;
+  banner: string | null;
+  about: string | null;
 };
 
-const enrich = (p: Omit<Product, "supplierId" | "moq" | "unit" | "leadTime" | "shipFrom"> & Partial<Product>): Product => ({
-  ...p,
-  gallery: p.gallery ?? gallery(p.id),
-  supplierId: p.supplierId ?? "s1",
-  moq: p.moq ?? 1,
-  unit: p.unit ?? "piece",
-  leadTime: p.leadTime ?? "7–15 days",
-  shipFrom: p.shipFrom ?? "Shenzhen, China",
-  tierPrices: p.tierPrices,
-  variants: p.variants,
-  specs: p.specs,
-  description: p.description,
-  reviewList: p.reviewList ?? sampleReviews(p.id),
+type DbProduct = {
+  id: string;
+  supplier_id: string;
+  title: string;
+  description: string | null;
+  image: string | null;
+  gallery: string[] | null;
+  price: number;
+  original_price: number | null;
+  category_slug: string | null;
+  badge: string | null;
+  free_shipping: boolean | null;
+  moq: number | null;
+  unit: string | null;
+  lead_time: string | null;
+  ship_from: string | null;
+  specs: unknown;
+  rating: number | null;
+  review_count: number | null;
+  sold: number | null;
+};
+
+const PLACEHOLDER_IMG = "/placeholder.svg";
+
+export const mapSupplier = (s: DbSupplier): Supplier => ({
+  id: s.id,
+  name: s.name,
+  country: s.country ?? "",
+  countryCode: s.country_code ?? "",
+  yearsActive: s.years_active ?? 0,
+  responseRate: s.response_rate ?? 0,
+  responseTime: s.response_time ?? "—",
+  onTimeDelivery: s.on_time_delivery ?? 0,
+  rating: Number(s.rating ?? 0),
+  verified: !!s.verified,
+  gold: !!s.gold,
+  tradeAssurance: !!s.trade_assurance,
+  logo: s.logo ?? PLACEHOLDER_IMG,
+  banner: s.banner ?? PLACEHOLDER_IMG,
+  about: s.about ?? "",
 });
 
-export const PRODUCTS: Product[] = [
-  enrich({
-    id: "p1", title: "Wireless Bluetooth Earbuds Pro Noise Cancelling",
-    image: img("earbuds"), price: 24.99, originalPrice: 79.99, rating: 4.7, reviews: 1283, sold: 12500,
-    category: "electronics", badge: "Hot", freeShipping: true,
-    supplierId: "s1", moq: 2, unit: "pair", leadTime: "5–10 days", shipFrom: "Shenzhen, China",
-    tierPrices: [
-      { minQty: 2, price: 24.99 },
-      { minQty: 50, price: 21.5 },
-      { minQty: 200, price: 18.9 },
-      { minQty: 1000, price: 15.5 },
-    ],
-    variants: [colors],
-    specs: [
-      { label: "Driver", value: "10mm dynamic" },
-      { label: "Battery life", value: "8h + 32h with case" },
-      { label: "Bluetooth", value: "5.3" },
-      { label: "Water resistance", value: "IPX5" },
-      { label: "Charging", value: "USB-C / Wireless Qi" },
-    ],
-    description:
-      "Active noise cancelling true wireless earbuds with hi-fi audio, transparency mode and a 40-hour total battery life. OEM and private label available.",
-  }),
-  enrich({
-    id: "p2", title: "Women's Oversized Cotton Blazer Jacket Beige",
-    image: img("blazer"), price: 39.5, originalPrice: 89.0, rating: 4.6, reviews: 642, sold: 4800,
-    category: "fashion", badge: "Deal", freeShipping: true,
-    supplierId: "s2", moq: 10, unit: "piece", leadTime: "12–20 days", shipFrom: "Guangzhou, China",
-    tierPrices: [
-      { minQty: 10, price: 39.5 },
-      { minQty: 100, price: 32.0 },
-      { minQty: 500, price: 27.5 },
-    ],
-    variants: [
-      { name: "Color", options: [{ id: "beige", name: "Beige" }, { id: "black", name: "Black" }, { id: "cream", name: "Cream" }] },
-      sizes,
-    ],
-    specs: [
-      { label: "Material", value: "70% Cotton, 30% Polyester" },
-      { label: "Fit", value: "Oversized" },
-      { label: "Care", value: "Machine wash cold" },
-    ],
-    description: "Tailored oversized blazer with structured shoulders and double-button closure. Custom labels and packaging available.",
-  }),
-  enrich({
-    id: "p3", title: "Smart Watch Series 9 Fitness Tracker",
-    image: img("smartwatch"), price: 49.99, originalPrice: 149.99, rating: 4.8, reviews: 3104, sold: 28000,
-    category: "electronics", badge: "Top", freeShipping: true,
-    supplierId: "s1", moq: 1, unit: "piece", leadTime: "5–10 days",
-    tierPrices: [
-      { minQty: 1, price: 49.99 },
-      { minQty: 50, price: 42.0 },
-      { minQty: 500, price: 35.0 },
-    ],
-    variants: [{ name: "Strap", options: [{ id: "black", name: "Black" }, { id: "silver", name: "Silver" }, { id: "rose", name: "Rose Gold" }] }],
-    specs: [
-      { label: "Display", value: "1.85\" AMOLED" },
-      { label: "Sensors", value: "Heart rate, SpO2, accelerometer" },
-      { label: "Water resistance", value: "5 ATM" },
-      { label: "Battery", value: "Up to 14 days" },
-    ],
-  }),
-  enrich({
-    id: "p4", title: "Minimalist Ceramic Coffee Mug Set (4-pack)",
-    image: img("mugs"), price: 18.9, originalPrice: 35.0, rating: 4.5, reviews: 412, sold: 2100,
-    category: "home", badge: "Deal",
-    supplierId: "s3", moq: 20, unit: "set", leadTime: "10–18 days", shipFrom: "Yiwu, China",
-    tierPrices: [
-      { minQty: 20, price: 18.9 },
-      { minQty: 200, price: 15.5 },
-      { minQty: 1000, price: 12.0 },
-    ],
-  }),
-  enrich({
-    id: "p5", title: "Hydrating Vitamin C Serum 30ml",
-    image: img("serum"), price: 12.49, originalPrice: 29.99, rating: 4.9, reviews: 5821, sold: 41000,
-    category: "beauty", badge: "Hot", freeShipping: true,
-    supplierId: "s4", moq: 50, unit: "bottle", leadTime: "10–15 days", shipFrom: "Mumbai, India",
-    tierPrices: [
-      { minQty: 50, price: 12.49 },
-      { minQty: 500, price: 9.9 },
-      { minQty: 5000, price: 7.5 },
-    ],
-    specs: [
-      { label: "Volume", value: "30 ml" },
-      { label: "Skin type", value: "All" },
-      { label: "Certifications", value: "GMP, ISO 22716" },
-      { label: "Shelf life", value: "24 months" },
-    ],
-  }),
-  enrich({
-    id: "p6", title: "Pro Football Soccer Ball Match Size 5",
-    image: img("football"), price: 22.0, rating: 4.4, reviews: 187, sold: 1400, category: "sports",
-    supplierId: "s5", moq: 10, unit: "ball", leadTime: "7–14 days", shipFrom: "Istanbul, Türkiye",
-  }),
-  enrich({
-    id: "p7", title: "Plush Teddy Bear Soft Toy 60cm",
-    image: img("teddy"), price: 19.99, originalPrice: 34.0, rating: 4.7, reviews: 803, sold: 6700,
-    category: "toys", badge: "New",
-    supplierId: "s3", moq: 24, unit: "piece", leadTime: "12–18 days",
-  }),
-  enrich({
-    id: "p8", title: "Car Phone Holder Magnetic Dashboard Mount",
-    image: img("carmount"), price: 9.99, originalPrice: 24.99, rating: 4.3, reviews: 2210, sold: 15800,
-    category: "auto", badge: "Deal", freeShipping: true,
-    supplierId: "s1", moq: 5, unit: "piece", leadTime: "5–10 days",
-  }),
-  enrich({
-    id: "p9", title: "Mechanical Keyboard RGB 87 Keys Hot-Swap",
-    image: img("keyboard"), price: 59.0, originalPrice: 119.0, rating: 4.8, reviews: 1542, sold: 9300,
-    category: "electronics", badge: "Top",
-    supplierId: "s1", moq: 2, unit: "piece", leadTime: "7–12 days",
-    variants: [{ name: "Switch", options: [{ id: "red", name: "Red" }, { id: "brown", name: "Brown" }, { id: "blue", name: "Blue" }] }],
-  }),
-  enrich({
-    id: "p10", title: "Men's Slim Fit Linen Shirt Summer",
-    image: img("linen"), price: 28.5, rating: 4.5, reviews: 309, sold: 1800,
-    category: "fashion", freeShipping: true,
-    supplierId: "s2", moq: 10, unit: "piece", leadTime: "12–18 days",
-    variants: [colors, sizes],
-  }),
-  enrich({
-    id: "p11", title: "LED Strip Lights 10m WiFi Smart App",
-    image: img("ledstrip"), price: 14.9, originalPrice: 39.9, rating: 4.6, reviews: 4120, sold: 33000,
-    category: "home", badge: "Hot", freeShipping: true,
-    supplierId: "s1", moq: 5, unit: "piece", leadTime: "5–10 days",
-  }),
-  enrich({
-    id: "p12", title: "Air Fryer 5L Digital Touchscreen",
-    image: img("airfryer"), price: 79.0, originalPrice: 159.0, rating: 4.7, reviews: 2034, sold: 11200,
-    category: "home", badge: "Deal", freeShipping: true,
-    supplierId: "s3", moq: 5, unit: "piece", leadTime: "12–20 days",
-  }),
-  enrich({
-    id: "p13", title: "Yoga Mat Eco TPE 6mm Non-Slip",
-    image: img("yogamat"), price: 21.0, rating: 4.6, reviews: 528, sold: 3700,
-    category: "sports", badge: "New",
-    supplierId: "s5", moq: 20, unit: "piece", leadTime: "10–15 days",
-  }),
-  enrich({
-    id: "p14", title: "Sneakers Unisex Lightweight Running",
-    image: img("sneakers"), price: 42.0, originalPrice: 89.0, rating: 4.5, reviews: 1102, sold: 7800,
-    category: "fashion", badge: "Deal", freeShipping: true,
-    supplierId: "s2", moq: 10, unit: "pair", leadTime: "12–18 days",
-    variants: [{ name: "Size", options: [{ id: "40", name: "40" }, { id: "41", name: "41" }, { id: "42", name: "42" }, { id: "43", name: "43" }, { id: "44", name: "44" }] }],
-  }),
-  enrich({
-    id: "p15", title: "4K Action Camera Waterproof 30m",
-    image: img("actioncam"), price: 64.99, originalPrice: 199.0, rating: 4.4, reviews: 612, sold: 4100,
-    category: "electronics",
-    supplierId: "s1", moq: 2, unit: "piece", leadTime: "7–12 days",
-  }),
-  enrich({
-    id: "p16", title: "Organic Green Tea Loose Leaf 200g",
-    image: img("greentea"), price: 11.9, rating: 4.8, reviews: 245, sold: 1600,
-    category: "grocery", badge: "New",
-    supplierId: "s4", moq: 30, unit: "pack", leadTime: "10–15 days",
-  }),
-  enrich({
-    id: "p17", title: "Hardcover Notebook A5 Premium Paper",
-    image: img("book1"), price: 9.5, rating: 4.7, reviews: 1340, sold: 8800,
-    category: "books", badge: "Top",
-    supplierId: "s3", moq: 50, unit: "piece", leadTime: "10–15 days",
-  }),
-  enrich({
-    id: "p18", title: "Pet Bed Cushion Soft Washable Medium",
-    image: img("petbed"), price: 26.0, originalPrice: 49.0, rating: 4.6, reviews: 421, sold: 2900,
-    category: "pets", badge: "Deal", freeShipping: true,
-    supplierId: "s3", moq: 10, unit: "piece", leadTime: "10–18 days",
-  }),
-];
+export const mapProduct = (p: DbProduct): Product => ({
+  id: p.id,
+  title: p.title,
+  image: p.image ?? PLACEHOLDER_IMG,
+  gallery: p.gallery?.length ? p.gallery : [p.image ?? PLACEHOLDER_IMG],
+  price: Number(p.price),
+  originalPrice: p.original_price != null ? Number(p.original_price) : undefined,
+  rating: Number(p.rating ?? 0),
+  reviews: p.review_count ?? 0,
+  sold: p.sold ?? 0,
+  category: p.category_slug ?? "",
+  badge: (p.badge as Product["badge"]) ?? undefined,
+  freeShipping: !!p.free_shipping,
+  supplierId: p.supplier_id,
+  moq: p.moq ?? 1,
+  unit: p.unit ?? "piece",
+  leadTime: p.lead_time ?? "—",
+  shipFrom: p.ship_from ?? "—",
+  specs: Array.isArray(p.specs) ? (p.specs as { label: string; value: string }[]) : [],
+  description: p.description ?? "",
+});
 
-export const FLASH_DEALS = PRODUCTS.filter((p) => p.originalPrice).slice(0, 8);
-export const TRENDING = [...PRODUCTS].sort((a, b) => b.sold - a.sold).slice(0, 6);
+// ---------- Fetchers ----------
+export async function fetchProducts(opts: {
+  category?: string;
+  supplierId?: string;
+  search?: string;
+  limit?: number;
+  sortBy?: "newest" | "sold" | "price_asc" | "price_desc" | "rating";
+} = {}): Promise<Product[]> {
+  let q = supabase.from("products").select("*").eq("active", true);
+  if (opts.category) q = q.eq("category_slug", opts.category);
+  if (opts.supplierId) q = q.eq("supplier_id", opts.supplierId);
+  if (opts.search) q = q.ilike("title", `%${opts.search}%`);
+  switch (opts.sortBy) {
+    case "sold": q = q.order("sold", { ascending: false }); break;
+    case "price_asc": q = q.order("price", { ascending: true }); break;
+    case "price_desc": q = q.order("price", { ascending: false }); break;
+    case "rating": q = q.order("rating", { ascending: false }); break;
+    default: q = q.order("created_at", { ascending: false });
+  }
+  if (opts.limit) q = q.limit(opts.limit);
+  const { data, error } = await q;
+  if (error || !data) return [];
+  return (data as DbProduct[]).map(mapProduct);
+}
 
+export async function fetchProduct(id: string): Promise<Product | null> {
+  const { data } = await supabase.from("products").select("*").eq("id", id).maybeSingle();
+  return data ? mapProduct(data as DbProduct) : null;
+}
+
+export async function fetchSupplier(id: string): Promise<Supplier | null> {
+  const { data } = await supabase.from("suppliers").select("*").eq("id", id).maybeSingle();
+  return data ? mapSupplier(data as DbSupplier) : null;
+}
+
+export async function fetchSuppliers(opts: { limit?: number; verifiedOnly?: boolean } = {}): Promise<Supplier[]> {
+  let q = supabase.from("suppliers").select("*").order("rating", { ascending: false });
+  if (opts.verifiedOnly) q = q.eq("verified", true);
+  if (opts.limit) q = q.limit(opts.limit);
+  const { data } = await q;
+  return ((data ?? []) as DbSupplier[]).map(mapSupplier);
+}
+
+export async function fetchMySupplier(): Promise<Supplier | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await supabase.from("suppliers").select("*").eq("owner_id", user.id).maybeSingle();
+  return data ? mapSupplier(data as DbSupplier) : null;
+}
+
+export async function fetchProductTierPrices(productId: string): Promise<TierPrice[]> {
+  const { data } = await supabase
+    .from("product_tier_prices").select("*").eq("product_id", productId).order("min_qty");
+  return (data ?? []).map((t) => ({ minQty: t.min_qty, price: Number(t.price) }));
+}
+
+export async function fetchProductReviews(productId: string): Promise<Review[]> {
+  const { data } = await supabase
+    .from("reviews").select("*").eq("product_id", productId)
+    .order("created_at", { ascending: false }).limit(50);
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    user: "Buyer",
+    country: r.country ?? "",
+    rating: r.rating,
+    date: new Date(r.created_at).toLocaleDateString(),
+    text: r.text ?? "",
+    variant: r.variant ?? undefined,
+  }));
+}
+
+// ---------- Helpers (still synchronous, work on a Product instance) ----------
 export const discountPct = (p: Product) =>
   p.originalPrice ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100) : 0;
-
-export const getRecommended = (interests: string[] = []) => {
-  if (!interests.length) return PRODUCTS;
-  const lower = interests.map((i) => i.toLowerCase());
-  const matchCat = (c: string) => lower.some((i) => c.includes(i) || i.includes(c));
-  const liked = PRODUCTS.filter((p) => matchCat(p.category));
-  const others = PRODUCTS.filter((p) => !matchCat(p.category));
-  return [...liked, ...others];
-};
-
-export const getProduct = (id: string) => PRODUCTS.find((p) => p.id === id);
-export const getSupplier = (id: string) => SUPPLIERS.find((s) => s.id === id);
-export const getProductsBySupplier = (supplierId: string) =>
-  PRODUCTS.filter((p) => p.supplierId === supplierId);
-export const getRelated = (p: Product, limit = 6) =>
-  PRODUCTS.filter((x) => x.id !== p.id && x.category === p.category).slice(0, limit);
 
 export const tierPriceFor = (p: Product, qty: number): number => {
   if (!p.tierPrices?.length) return p.price;
   const sorted = [...p.tierPrices].sort((a, b) => a.minQty - b.minQty);
   let price = sorted[0].price;
-  for (const tier of sorted) {
-    if (qty >= tier.minQty) price = tier.price;
-  }
+  for (const tier of sorted) if (qty >= tier.minQty) price = tier.price;
   return price;
 };
+
+// ---------- Legacy exports (now empty, kept for compatibility) ----------
+// These exports are referenced in places we haven't refactored yet (Live, RFQ,
+// Orders, Notifications, Messages, etc.). Returning empty arrays keeps the app
+// from crashing while we migrate those pages to live data in later phases.
+export const PRODUCTS: Product[] = [];
+export const SUPPLIERS: Supplier[] = [];
+export const FLASH_DEALS: Product[] = [];
+export const TRENDING: Product[] = [];
+
+// Sync helpers used by old code paths — return undefined/empty.
+export const getProduct = (_id: string): Product | undefined => undefined;
+export const getSupplier = (_id: string): Supplier | undefined => undefined;
+export const getProductsBySupplier = (_id: string): Product[] => [];
+export const getRelated = (_p: Product, _limit = 6): Product[] => [];
+export const getRecommended = (_interests: string[] = []): Product[] => [];
