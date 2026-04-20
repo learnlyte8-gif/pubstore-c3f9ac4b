@@ -5,6 +5,7 @@ import {
 import { useEffect, useState } from "react";
 import { useSupplier, useProducts } from "@/hooks/useCatalog";
 import ProductCard from "@/components/marketplace/ProductCard";
+import SupplierLocationMap from "@/components/SupplierLocationMap";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -157,6 +158,14 @@ export default function Supplier() {
             <h3 className="text-sm font-bold mb-1.5 flex items-center gap-1.5"><Package className="w-4 h-4 text-primary" /> Company overview</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">{supplier.about || "No company description yet."}</p>
           </div>
+          {supplier.latitude != null && supplier.longitude != null && (
+            <SupplierLocationMap
+              lat={supplier.latitude}
+              lng={supplier.longitude}
+              address={supplier.locationAddress}
+              name={supplier.name}
+            />
+          )}
           <div className="rounded-2xl bg-card border border-border shadow-card p-4">
             <h3 className="text-sm font-bold mb-2">Business details</h3>
             <ul className="text-xs space-y-2">
