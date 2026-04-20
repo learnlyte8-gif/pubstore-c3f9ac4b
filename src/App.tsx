@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Splash from "./pages/Splash.tsx";
 import Auth from "./pages/Auth.tsx";
+import Onboarding from "./pages/Onboarding.tsx";
 import AppShell from "./components/AppShell.tsx";
 import Home from "./pages/Home.tsx";
 import Placeholder from "./pages/Placeholder.tsx";
@@ -23,6 +24,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Splash />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/onboarding" element={<Onboarding />} />
             <Route element={<AppShell />}>
               <Route path="/home" element={<Home />} />
               <Route path="/search" element={<Placeholder title="Search" hint="Discover products, creators, and trends." />} />

@@ -11,14 +11,27 @@ export default function AppShell() {
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
+    const verifyProfile = async (s: Session) => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("profile_completed")
+        .eq("user_id", s.user.id)
+        .maybeSingle();
+      if (!data?.profile_completed) {
+        navigate("/onboarding", { replace: true });
+      }
+    };
+
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
       if (!s) navigate("/auth", { replace: true });
+      else setTimeout(() => verifyProfile(s), 0);
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setChecked(true);
       if (!session) navigate("/auth", { replace: true });
+      else verifyProfile(session);
     });
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
