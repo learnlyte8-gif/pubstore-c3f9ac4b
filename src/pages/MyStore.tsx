@@ -196,6 +196,7 @@ export default function MyStore() {
       <div className="px-4 mt-6 space-y-4">
         <Section title="Manage">
           <Row icon={Package} label="Products" hint={`${myProducts.length} listed`} to="/store/products" />
+          {canImport && <Row icon={Download} label="Import from the web" hint="Alibaba, Amazon, Shopify · beta" to="/store/import" />}
           <Row icon={ShoppingBag} label="Orders" hint={stats?.pendingOrders ? `${stats.pendingOrders} pending` : "View store orders"} to="/store/orders" />
           <Row icon={Truck} label="Shipping & logistics" hint="Templates, carriers" to="/store/shipping" />
           <Row icon={MessageCircle} label="Customer messages" hint="Buyer chats" to="/messages" />
