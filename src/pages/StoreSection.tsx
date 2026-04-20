@@ -1,7 +1,7 @@
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Plus, TrendingUp, Eye, ShoppingBag, DollarSign, Star, Megaphone, Truck, Package, Settings, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { products } from "@/data/products";
+import { PRODUCTS as products } from "@/data/products";
 
 const titles: Record<string, { title: string; sub: string }> = {
   products: { title: "My products", sub: "Manage your catalog" },

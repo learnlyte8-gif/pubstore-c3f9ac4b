@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Store, Package, BarChart3, Megaphone, Truck, Star, Plus, Eye, ShoppingBag, TrendingUp, Video, MessageCircle, Settings, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { suppliers, products } from "@/data/products";
+import { SUPPLIERS as suppliers, PRODUCTS as products } from "@/data/products";
 
 export default function MyStore() {
   const navigate = useNavigate();
