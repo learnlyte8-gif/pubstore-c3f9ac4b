@@ -288,6 +288,7 @@ function LiveRoom({ stream, onLeave }: { stream: EnrichedStream; onLeave: () => 
         (payload) => {
           const next = payload.new as DbStream;
           setViewers(next.viewer_count);
+          setPinnedId(next.pinned_product_id);
           if (next.status === "ended") {
             toast.info("This stream just ended");
             onLeave();
