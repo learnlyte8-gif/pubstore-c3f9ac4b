@@ -656,8 +656,10 @@ function ProfileView() {
     if (!supplier) return;
     setUploading(kind);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not signed in");
       const ext = file.name.split(".").pop() || "jpg";
-      const path = `${supplier.id}/${kind}-${Date.now()}.${ext}`;
+      const path = `${user.id}/store/${kind}-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("product-images").upload(path, file, { upsert: true });
       if (upErr) throw upErr;
       const { data } = supabase.storage.from("product-images").getPublicUrl(path);
