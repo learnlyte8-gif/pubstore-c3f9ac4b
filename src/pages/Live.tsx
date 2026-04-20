@@ -207,21 +207,21 @@ function LiveRoom({ stream, onLeave }: { stream: EnrichedStream; onLeave: () => 
   const chatRef = useRef<HTMLDivElement>(null);
   const sentViewerBumpRef = useRef(false);
 
-  // Get user
+  // Get user + check ownership
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("display_name,username")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      const [{ data: prof }, { data: sup }] = await Promise.all([
+        supabase.from("profiles").select("display_name,username").eq("user_id", user.id).maybeSingle(),
+        supabase.from("suppliers").select("owner_id").eq("id", stream.supplier_id).maybeSingle(),
+      ]);
       setMe({
         id: user.id,
         name: prof?.display_name || prof?.username || (user.email?.split("@")[0] ?? "Guest"),
       });
+      setIsOwner(sup?.owner_id === user.id);
     });
-  }, []);
+  }, [stream.supplier_id]);
 
   // Load supplier products + initial chat
   useEffect(() => {
