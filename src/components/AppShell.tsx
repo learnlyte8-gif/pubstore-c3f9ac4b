@@ -4,6 +4,7 @@ import { Home, Search, LayoutGrid, Heart, User, ShoppingCart, Bell, MessageCircl
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useShop } from "@/store/shop";
+import RotatingHint from "@/components/RotatingHint";
 import logo from "@/assets/pubstore-logo.png";
 
 export default function AppShell() {
