@@ -1,39 +1,73 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft,
-  ShieldCheck,
-  Award,
-  MessageCircle,
-  Clock,
-  Truck,
-  Star,
-  MapPin,
-  Calendar,
-  Package,
-  FileText,
-  Share2,
-  Heart,
+  ArrowLeft, ShieldCheck, Award, MessageCircle, Clock, Truck, Star, MapPin, Calendar, Package, FileText, Share2, Heart,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSupplier, useProducts } from "@/hooks/useCatalog";
 import ProductCard from "@/components/marketplace/ProductCard";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export default function Supplier() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: supplier, isLoading } = useSupplier(id);
   const { data: products = [] } = useProducts({ supplierId: id });
-  if (isLoading) return <p className="p-12 text-center text-sm text-muted-foreground">Loading…</p>;
   const [tab, setTab] = useState<"products" | "about" | "certs">("products");
   const [following, setFollowing] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [supplierOwner, setSupplierOwner] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    let alive = true;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!alive) return;
+      setUserId(user?.id ?? null);
+
+      const [{ count }, ownerRes, followRes] = await Promise.all([
+        supabase.from("followers").select("id", { count: "exact", head: true }).eq("supplier_id", id),
+        supabase.from("suppliers").select("owner_id").eq("id", id).maybeSingle(),
+        user
+          ? supabase.from("followers").select("id").eq("supplier_id", id).eq("user_id", user.id).maybeSingle()
+          : Promise.resolve({ data: null } as { data: null }),
+      ]);
+      if (!alive) return;
+      setFollowerCount(count ?? 0);
+      setSupplierOwner(ownerRes.data?.owner_id ?? null);
+      setFollowing(!!followRes.data);
+    })();
+    return () => { alive = false; };
+  }, [id]);
+
+  const toggleFollow = async () => {
+    if (!userId || !id) { toast.error("Sign in to follow"); return; }
+    if (following) {
+      setFollowing(false);
+      setFollowerCount((n) => Math.max(0, n - 1));
+      await supabase.from("followers").delete().eq("supplier_id", id).eq("user_id", userId);
+    } else {
+      setFollowing(true);
+      setFollowerCount((n) => n + 1);
+      await supabase.from("followers").insert({ supplier_id: id, user_id: userId });
+      if (supplierOwner && supplierOwner !== userId) {
+        await supabase.from("notifications").insert({
+          user_id: supplierOwner, type: "follower",
+          title: "New follower", body: "Someone just followed your store.", link: `/supplier/${id}`,
+        });
+      }
+    }
+  };
+
+  if (isLoading) return <p className="p-12 text-center text-sm text-muted-foreground">Loading…</p>;
 
   if (!supplier) {
     return (
       <div className="p-8 text-center">
         <p className="text-sm text-muted-foreground">Supplier not found.</p>
-        <Link to="/home" className="text-primary text-sm font-semibold mt-2 inline-block">
-          Back to home
-        </Link>
+        <Link to="/home" className="text-primary text-sm font-semibold mt-2 inline-block">Back to home</Link>
       </div>
     );
   }
@@ -44,25 +78,14 @@ export default function Supplier() {
         <img src={supplier.banner} alt="" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
         <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-          <button
-            onClick={() => navigate(-1)}
-            aria-label="Back"
-            className="w-9 h-9 rounded-full bg-background/85 backdrop-blur flex items-center justify-center shadow-card"
-          >
+          <button onClick={() => navigate(-1)} aria-label="Back" className="w-9 h-9 rounded-full bg-background/85 backdrop-blur flex items-center justify-center shadow-card">
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div className="flex gap-2">
-            <button
-              aria-label="Share"
-              className="w-9 h-9 rounded-full bg-background/85 backdrop-blur flex items-center justify-center shadow-card"
-            >
+            <button aria-label="Share" className="w-9 h-9 rounded-full bg-background/85 backdrop-blur flex items-center justify-center shadow-card">
               <Share2 className="w-4 h-4" />
             </button>
-            <button
-              onClick={() => setFollowing((v) => !v)}
-              aria-label="Follow"
-              className="w-9 h-9 rounded-full bg-background/85 backdrop-blur flex items-center justify-center shadow-card"
-            >
+            <button onClick={toggleFollow} aria-label={following ? "Unfollow" : "Follow"} className="w-9 h-9 rounded-full bg-background/85 backdrop-blur flex items-center justify-center shadow-card">
               <Heart className={`w-4 h-4 ${following ? "fill-destructive text-destructive" : ""}`} />
             </button>
           </div>
@@ -71,51 +94,34 @@ export default function Supplier() {
 
       <div className="px-4 -mt-10 relative">
         <div className="flex items-end gap-3">
-          <img
-            src={supplier.logo}
-            alt={supplier.name}
-            className="w-20 h-20 rounded-2xl object-cover border-4 border-background shadow-elevated bg-card"
-          />
+          <img src={supplier.logo} alt={supplier.name} className="w-20 h-20 rounded-2xl object-cover border-4 border-background shadow-elevated bg-card" />
           <div className="flex-1 pb-1">
             <div className="flex flex-wrap gap-1">
-              {supplier.verified && (
-                <Badge icon={ShieldCheck} label="Verified" tone="primary" />
-              )}
+              {supplier.verified && <Badge icon={ShieldCheck} label="Verified" tone="primary" />}
               {supplier.gold && <Badge icon={Award} label="Gold" tone="gold" />}
-              {supplier.tradeAssurance && (
-                <Badge icon={ShieldCheck} label="Trade Assured" tone="success" />
-              )}
+              {supplier.tradeAssurance && <Badge icon={ShieldCheck} label="Trade Assured" tone="success" />}
             </div>
           </div>
         </div>
 
         <h1 className="text-lg font-bold mt-2 leading-tight">{supplier.name}</h1>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <MapPin className="w-3 h-3" /> {supplier.country}
-          </span>
-          <span className="flex items-center gap-1">
-            <Calendar className="w-3 h-3" /> {supplier.yearsActive} yrs on PUBSTORE
-          </span>
-          <span className="flex items-center gap-1">
-            <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-            <span className="font-medium text-foreground">{supplier.rating.toFixed(1)}</span>
-          </span>
+          <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {supplier.country}</span>
+          <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {supplier.yearsActive} yrs on PUBSTORE</span>
+          <span className="flex items-center gap-1"><Star className="w-3 h-3 fill-amber-500 text-amber-500" /><span className="font-medium text-foreground">{supplier.rating.toFixed(1)}</span></span>
+          <span className="flex items-center gap-1"><Heart className="w-3 h-3" /> {followerCount} follower{followerCount === 1 ? "" : "s"}</span>
         </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <Link
-            to="/messages"
-            className="h-10 rounded-full bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-1.5 shadow-pop"
-          >
-            <MessageCircle className="w-4 h-4" /> Contact supplier
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <Link to={`/messages?supplier=${supplier.id}`} className="h-10 rounded-full bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-1.5 shadow-pop">
+            <MessageCircle className="w-4 h-4" /> Contact
           </Link>
-          <Link
-            to="/rfq"
-            className="h-10 rounded-full bg-foreground text-background font-semibold text-sm flex items-center justify-center gap-1.5 shadow-card"
-          >
-            <FileText className="w-4 h-4" /> Request quote
+          <Link to="/rfq" className="h-10 rounded-full bg-foreground text-background font-semibold text-sm flex items-center justify-center gap-1.5 shadow-card">
+            <FileText className="w-4 h-4" /> RFQ
           </Link>
+          <button onClick={toggleFollow} className={`h-10 rounded-full font-semibold text-sm flex items-center justify-center gap-1.5 shadow-card ${following ? "bg-destructive/10 text-destructive" : "bg-card border border-border"}`}>
+            <Heart className={`w-4 h-4 ${following ? "fill-destructive" : ""}`} /> {following ? "Following" : "Follow"}
+          </button>
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-2 rounded-2xl bg-card border border-border shadow-card p-3">
@@ -127,29 +133,19 @@ export default function Supplier() {
 
       <div className="mt-5 px-4 border-b border-border">
         <div className="flex gap-1">
-          <TabBtn active={tab === "products"} onClick={() => setTab("products")}>
-            Products ({products.length})
-          </TabBtn>
-          <TabBtn active={tab === "about"} onClick={() => setTab("about")}>
-            About
-          </TabBtn>
-          <TabBtn active={tab === "certs"} onClick={() => setTab("certs")}>
-            Certifications
-          </TabBtn>
+          <TabBtn active={tab === "products"} onClick={() => setTab("products")}>Products ({products.length})</TabBtn>
+          <TabBtn active={tab === "about"} onClick={() => setTab("about")}>About</TabBtn>
+          <TabBtn active={tab === "certs"} onClick={() => setTab("certs")}>Certifications</TabBtn>
         </div>
       </div>
 
       {tab === "products" && (
         <div className="px-4 mt-4">
           {products.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-12">
-              No products listed yet.
-            </p>
+            <p className="text-sm text-muted-foreground text-center py-12">No products listed yet.</p>
           ) : (
             <div className="grid grid-cols-2 gap-3">
-              {products.map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
+              {products.map((p) => <ProductCard key={p.id} product={p} />)}
             </div>
           )}
         </div>
@@ -158,10 +154,8 @@ export default function Supplier() {
       {tab === "about" && (
         <div className="px-4 mt-4 space-y-3">
           <div className="rounded-2xl bg-card border border-border shadow-card p-4">
-            <h3 className="text-sm font-bold mb-1.5 flex items-center gap-1.5">
-              <Package className="w-4 h-4 text-primary" /> Company overview
-            </h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">{supplier.about}</p>
+            <h3 className="text-sm font-bold mb-1.5 flex items-center gap-1.5"><Package className="w-4 h-4 text-primary" /> Company overview</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">{supplier.about || "No company description yet."}</p>
           </div>
           <div className="rounded-2xl bg-card border border-border shadow-card p-4">
             <h3 className="text-sm font-bold mb-2">Business details</h3>
@@ -172,6 +166,7 @@ export default function Supplier() {
               <Row label="Avg. reply time" value={supplier.responseTime} />
               <Row label="On-time delivery" value={`${supplier.onTimeDelivery}%`} />
               <Row label="Rating" value={`${supplier.rating.toFixed(1)} / 5`} />
+              <Row label="Followers" value={`${followerCount}`} />
             </ul>
           </div>
         </div>
@@ -179,43 +174,14 @@ export default function Supplier() {
 
       {tab === "certs" && (
         <div className="px-4 mt-4 space-y-2">
-          {[
-            { name: "Business License Verified", by: "TÜV SÜD", date: "2024-08" },
-            { name: "ISO 9001:2015", by: "Bureau Veritas", date: "2025-01" },
-            { name: "Trade Assurance", by: "PUBSTORE", date: "2025-03" },
-            { name: "Factory Audit Report", by: "SGS", date: "2024-11" },
-          ].map((c) => (
-            <div
-              key={c.name}
-              className="rounded-xl bg-card border border-border shadow-card p-3 flex items-center gap-3"
-            >
-              <span className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                <ShieldCheck className="w-5 h-5" />
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold leading-tight">{c.name}</p>
-                <p className="text-[11px] text-muted-foreground">
-                  By {c.by} · {c.date}
-                </p>
-              </div>
-              <button className="text-[11px] font-semibold text-primary">View</button>
-            </div>
-          ))}
+          <p className="text-sm text-muted-foreground text-center py-8">Certifications coming soon.</p>
         </div>
       )}
     </div>
   );
 }
 
-function Stat({
-  icon: Icon,
-  value,
-  label,
-}: {
-  icon: typeof ShieldCheck;
-  value: string;
-  label: string;
-}) {
+function Stat({ icon: Icon, value, label }: { icon: typeof ShieldCheck; value: string; label: string }) {
   return (
     <div className="text-center">
       <div className="flex items-center justify-center gap-1">
@@ -227,46 +193,22 @@ function Stat({
   );
 }
 
-function Badge({
-  icon: Icon,
-  label,
-  tone,
-}: {
-  icon: typeof ShieldCheck;
-  label: string;
-  tone: "primary" | "gold" | "success";
-}) {
+function Badge({ icon: Icon, label, tone }: { icon: typeof ShieldCheck; label: string; tone: "primary" | "gold" | "success" }) {
   const tones = {
     primary: "bg-primary/15 text-primary backdrop-blur",
     gold: "bg-amber-500/20 text-amber-700 dark:text-amber-300 backdrop-blur",
     success: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 backdrop-blur",
   };
   return (
-    <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shadow-soft ${tones[tone]}`}
-    >
-      <Icon className="w-3 h-3" />
-      {label}
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shadow-soft ${tones[tone]}`}>
+      <Icon className="w-3 h-3" />{label}
     </span>
   );
 }
 
-function TabBtn({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
+function TabBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button
-      onClick={onClick}
-      className={`px-4 h-10 text-sm font-semibold border-b-2 transition ${
-        active ? "border-primary text-primary" : "border-transparent text-muted-foreground"
-      }`}
-    >
+    <button onClick={onClick} className={`px-4 h-10 text-sm font-semibold border-b-2 transition ${active ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>
       {children}
     </button>
   );
