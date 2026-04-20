@@ -205,7 +205,7 @@ type ChatLine = {
   created_at: string;
 };
 
-function LiveRoom({ stream, onLeave }: { stream: EnrichedStream; onLeave: () => void }) {
+function LiveRoom({ stream, hostUserId, onLeave }: { stream: EnrichedStream; hostUserId: string | null; onLeave: () => void }) {
   const { addToCart } = useShop();
   const [viewers, setViewers] = useState(stream.viewer_count);
   const [likes, setLikes] = useState(0);
