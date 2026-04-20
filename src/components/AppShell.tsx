@@ -53,11 +53,12 @@ export default function AppShell() {
 
           <Link
             to="/search"
-            className="flex-1 h-9 rounded-full bg-muted hover:bg-muted/80 transition flex items-center gap-2 px-4 text-sm text-muted-foreground shadow-soft"
+            className="flex-1 h-9 rounded-full bg-muted hover:bg-muted/80 transition flex items-center gap-2 px-4 text-sm text-muted-foreground shadow-soft min-w-0"
             aria-label="Search products"
           >
-            <Search className="w-4 h-4" strokeWidth={2} />
-            <span className="truncate">Search products, suppliers...</span>
+            <Search className="w-4 h-4 shrink-0" strokeWidth={2} />
+            <span className="text-xs sm:text-sm shrink-0">Try</span>
+            <RotatingHint className="text-xs sm:text-sm font-medium text-foreground/80 truncate" />
           </Link>
 
           <div className="flex items-center gap-1 shrink-0">
