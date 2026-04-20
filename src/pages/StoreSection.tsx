@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Plus, TrendingUp, Eye, ShoppingBag, DollarSign, Star, Megaphone, Truck, Package, Settings, Image as ImageIcon, X, Loader2, Link2, Download, Sparkles } from "lucide-react";
+import { ArrowLeft, Plus, TrendingUp, Eye, ShoppingBag, DollarSign, Star, Megaphone, Truck, Package, Settings, Image as ImageIcon, X, Loader2, Link2, Download, Sparkles, Percent, Check, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -69,14 +69,60 @@ type ImportedProduct = {
   unit?: string | null;
 };
 
+type BulkCandidate = {
+  url: string;
+  title: string;
+  image: string | null;
+  price: number | null;
+  source: string;
+  status: "pending" | "importing" | "done" | "skipped" | "error";
+  error?: string;
+  productId?: string;
+};
+
+type MarkupMode = "percent" | "flat" | "none";
+
+function applyMarkup(price: number | null, mode: MarkupMode, value: number): number | null {
+  if (price == null || isNaN(price)) return price;
+  if (mode === "none" || !value) return Math.round(price * 100) / 100;
+  const v = Number(value) || 0;
+  const out = mode === "percent" ? price * (1 + v / 100) : price + v;
+  return Math.round(out * 100) / 100;
+}
+
+// Mirror up to 6 remote images into our storage so they stay available.
+async function mirrorImages(userId: string, urls: string[], slug: string) {
+  const stored: string[] = [];
+  for (let i = 0; i < Math.min(urls.length, 6); i++) {
+    const src = urls[i];
+    try {
+      const r = await fetch(src);
+      if (!r.ok) { stored.push(src); continue; }
+      const blob = await r.blob();
+      const ext = (blob.type.split("/")[1] || "jpg").split("+")[0];
+      const path = `${userId}/imported-${slug}-${Date.now()}-${i}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("product-images")
+        .upload(path, blob, { cacheControl: "3600", upsert: false, contentType: blob.type });
+      if (upErr) { stored.push(src); continue; }
+      const { data: { publicUrl } } = supabase.storage.from("product-images").getPublicUrl(path);
+      stored.push(publicUrl);
+    } catch {
+      stored.push(src);
+    }
+  }
+  return stored;
+}
+
 function ImportView() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [email, setEmail] = useState<string | null>(null);
-  const [url, setUrl] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [preview, setPreview] = useState<ImportedProduct | null>(null);
+  const [mode, setMode] = useState<"single" | "bulk">("single");
+
+  // markup (shared by both modes)
+  const [markupMode, setMarkupMode] = useState<MarkupMode>("percent");
+  const [markupValue, setMarkupValue] = useState<string>("30");
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -87,28 +133,100 @@ function ImportView() {
 
   const allowed = !!email && ALLOWED_IMPORT_EMAILS.includes(email);
 
+  if (email === null) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+
+  if (!allowed) {
+    return (
+      <div className="px-4 py-8">
+        <EmptyState
+          icon={<Sparkles className="w-7 h-7 text-muted-foreground" />}
+          title="Private beta"
+          description="Auto-import from Alibaba, Amazon and Shopify stores is currently limited to invited suppliers."
+          action={<Button variant="outline" asChild><Link to="/store">Back to store</Link></Button>}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 py-4 space-y-4">
+      {/* Mode toggle */}
+      <div className="flex bg-muted rounded-full p-1">
+        {(["single", "bulk"] as const).map((m) => (
+          <button
+            key={m}
+            onClick={() => setMode(m)}
+            className={`flex-1 h-9 rounded-full text-xs font-bold transition ${mode === m ? "bg-background shadow-card" : "text-muted-foreground"}`}
+          >
+            {m === "single" ? "Single URL" : "Bulk import"}
+          </button>
+        ))}
+      </div>
+
+      {/* Markup controls — shared */}
+      <div className="rounded-2xl border bg-card p-3 shadow-card">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+            <Percent className="w-3.5 h-3.5" />
+          </span>
+          <p className="text-sm font-bold">Auto markup</p>
+          <p className="text-[11px] text-muted-foreground">applied to every imported price</p>
+        </div>
+        <div className="flex gap-2">
+          <select
+            value={markupMode}
+            onChange={(e) => setMarkupMode(e.target.value as MarkupMode)}
+            className="h-10 rounded-xl border bg-background px-2 text-xs font-semibold"
+          >
+            <option value="percent">+ %</option>
+            <option value="flat">+ flat</option>
+            <option value="none">No markup</option>
+          </select>
+          <input
+            type="number"
+            step="0.01"
+            value={markupValue}
+            disabled={markupMode === "none"}
+            onChange={(e) => setMarkupValue(e.target.value)}
+            className="flex-1 h-10 rounded-xl border bg-background px-3 text-sm disabled:opacity-50"
+            placeholder={markupMode === "percent" ? "30" : "5.00"}
+          />
+        </div>
+      </div>
+
+      {mode === "single" ? (
+        <SingleImport markupMode={markupMode} markupValue={Number(markupValue) || 0} qc={qc} navigate={navigate} />
+      ) : (
+        <BulkImport markupMode={markupMode} markupValue={Number(markupValue) || 0} qc={qc} />
+      )}
+    </div>
+  );
+}
+
+// ---------------- Single URL import ----------------
+function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: MarkupMode; markupValue: number; qc: ReturnType<typeof useQueryClient>; navigate: ReturnType<typeof useNavigate> }) {
+  const [url, setUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [preview, setPreview] = useState<ImportedProduct | null>(null);
+
   const fetchProduct = async () => {
     if (!url.trim()) { toast.error("Paste a product URL"); return; }
-    setLoading(true);
-    setPreview(null);
+    setLoading(true); setPreview(null);
     try {
-      const { data, error } = await supabase.functions.invoke("import-product", {
-        body: { url: url.trim() },
-      });
+      const { data, error } = await supabase.functions.invoke("import-product", { body: { url: url.trim() } });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       const p = (data as any)?.product as ImportedProduct | undefined;
       if (!p) throw new Error("Nothing returned");
-      setPreview(p);
+      // Pre-apply markup to the price shown in the preview.
+      setPreview({ ...p, price: applyMarkup(p.price, markupMode, markupValue), original_price: p.price });
     } catch (err: any) {
       toast.error(err?.message ?? "Could not import that URL");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
-  const updatePreview = (patch: Partial<ImportedProduct>) =>
-    setPreview((p) => (p ? { ...p, ...patch } : p));
+  const updatePreview = (patch: Partial<ImportedProduct>) => setPreview((p) => (p ? { ...p, ...patch } : p));
 
   const save = async () => {
     if (!preview) return;
@@ -121,27 +239,7 @@ function ImportView() {
       const supplier = await fetchMySupplier();
       if (!supplier) { toast.error("Create your store first"); navigate("/become-supplier"); return; }
 
-      // Mirror the first few remote images into our storage so they stay available.
-      const stored: string[] = [];
-      for (let i = 0; i < Math.min(preview.images.length, 6); i++) {
-        const src = preview.images[i];
-        try {
-          const r = await fetch(src);
-          if (!r.ok) { stored.push(src); continue; }
-          const blob = await r.blob();
-          const ext = (blob.type.split("/")[1] || "jpg").split("+")[0];
-          const path = `${user.id}/imported-${Date.now()}-${i}.${ext}`;
-          const { error: upErr } = await supabase.storage
-            .from("product-images")
-            .upload(path, blob, { cacheControl: "3600", upsert: false, contentType: blob.type });
-          if (upErr) { stored.push(src); continue; }
-          const { data: { publicUrl } } = supabase.storage.from("product-images").getPublicUrl(path);
-          stored.push(publicUrl);
-        } catch {
-          stored.push(src);
-        }
-      }
-
+      const stored = await mirrorImages(user.id, preview.images, "single");
       const { data: product, error } = await supabase.from("products").insert({
         supplier_id: supplier.id,
         title: preview.title.trim(),
@@ -164,28 +262,11 @@ function ImportView() {
       navigate(`/product/${product.id}`);
     } catch (err: any) {
       toast.error(err?.message ?? "Failed to import");
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
 
-  if (email === null) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
-
-  if (!allowed) {
-    return (
-      <div className="px-4 py-8">
-        <EmptyState
-          icon={<Sparkles className="w-7 h-7 text-muted-foreground" />}
-          title="Private beta"
-          description="Auto-import from Alibaba, Amazon and Shopify stores is currently limited to invited suppliers."
-          action={<Button variant="outline" asChild><Link to="/store">Back to store</Link></Button>}
-        />
-      </div>
-    );
-  }
-
   return (
-    <div className="px-4 py-4 space-y-4">
+    <>
       <div className="rounded-2xl border bg-card p-4 shadow-card">
         <div className="flex items-center gap-2 mb-2">
           <span className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
@@ -212,9 +293,6 @@ function ImportView() {
             <span className="ml-1.5 hidden sm:inline">Fetch</span>
           </Button>
         </div>
-        <p className="text-[10px] text-muted-foreground mt-2">
-          We pull the title, price, images and description. Review and edit before publishing.
-        </p>
       </div>
 
       {loading && !preview && (
@@ -234,52 +312,14 @@ function ImportView() {
             </div>
           )}
           <div className="p-4 space-y-3">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Title</label>
-              <input
-                value={preview.title}
-                onChange={(e) => updatePreview({ title: e.target.value })}
-                className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1"
-              />
+            <LabeledInput label="Title" value={preview.title} onChange={(v) => updatePreview({ title: v })} />
+            <div className="grid grid-cols-2 gap-2">
+              <LabeledInput label={`Price${preview.currency ? ` (${preview.currency})` : ""}`} type="number" value={preview.price ?? ""} onChange={(v) => updatePreview({ price: v === "" ? null : Number(v) })} />
+              <LabeledInput label="Original" type="number" value={preview.original_price ?? ""} onChange={(v) => updatePreview({ original_price: v === "" ? null : Number(v) })} />
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Price {preview.currency ? `(${preview.currency})` : ""}</label>
-                <input
-                  type="number" step="0.01"
-                  value={preview.price ?? ""}
-                  onChange={(e) => updatePreview({ price: e.target.value === "" ? null : Number(e.target.value) })}
-                  className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Original</label>
-                <input
-                  type="number" step="0.01"
-                  value={preview.original_price ?? ""}
-                  onChange={(e) => updatePreview({ original_price: e.target.value === "" ? null : Number(e.target.value) })}
-                  className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">MOQ</label>
-                <input
-                  type="number"
-                  value={preview.moq ?? 1}
-                  onChange={(e) => updatePreview({ moq: Number(e.target.value) || 1 })}
-                  className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Unit</label>
-                <input
-                  value={preview.unit ?? "piece"}
-                  onChange={(e) => updatePreview({ unit: e.target.value })}
-                  className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1"
-                />
-              </div>
+              <LabeledInput label="MOQ" type="number" value={preview.moq ?? 1} onChange={(v) => updatePreview({ moq: Number(v) || 1 })} />
+              <LabeledInput label="Unit" value={preview.unit ?? "piece"} onChange={(v) => updatePreview({ unit: v })} />
             </div>
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Description</label>
@@ -299,9 +339,268 @@ function ImportView() {
           </div>
         </div>
       )}
+    </>
+  );
+}
+
+// ---------------- Bulk import ----------------
+function BulkImport({ markupMode, markupValue, qc }: { markupMode: MarkupMode; markupValue: number; qc: ReturnType<typeof useQueryClient> }) {
+  const [url, setUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [items, setItems] = useState<BulkCandidate[]>([]);
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [runState, setRunState] = useState<"idle" | "running" | "done">("idle");
+  const [progress, setProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
+
+  const listAll = async () => {
+    if (!url.trim()) { toast.error("Paste a collection / seller URL"); return; }
+    setLoading(true);
+    setItems([]);
+    try {
+      const { data, error } = await supabase.functions.invoke("import-list", { body: { url: url.trim(), limit: 40 } });
+      if (error) throw error;
+      if ((data as any)?.error && !((data as any)?.items?.length)) throw new Error((data as any).error);
+      const raw = ((data as any)?.items || []) as Array<Omit<BulkCandidate, "status">>;
+      setItems(raw.map((r) => ({ ...r, status: "pending" })));
+      if (raw.length === 0) toast.error("No products found on that page");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Could not list products");
+    } finally { setLoading(false); }
+  };
+
+  const updateItem = (idx: number, patch: Partial<BulkCandidate>) =>
+    setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
+
+  const toggleSkip = (idx: number) =>
+    updateItem(idx, { status: items[idx].status === "skipped" ? "pending" : "skipped" });
+
+  const importAll = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const supplier = await fetchMySupplier();
+    if (!supplier) { toast.error("Create your store first"); return; }
+
+    const queue = items.map((it, i) => ({ it, i })).filter(({ it }) => it.status === "pending");
+    setRunState("running");
+    setProgress({ done: 0, total: queue.length });
+    let done = 0;
+
+    for (const { it, i } of queue) {
+      updateItem(i, { status: "importing" });
+      try {
+        // 1) Fetch detailed info
+        const { data, error } = await supabase.functions.invoke("import-product", { body: { url: it.url } });
+        if (error) throw error;
+        if ((data as any)?.error) throw new Error((data as any).error);
+        const p = (data as any)?.product as ImportedProduct | undefined;
+        if (!p) throw new Error("Empty response");
+
+        // 2) Apply markup
+        const finalPrice = applyMarkup(p.price, markupMode, markupValue);
+        if (finalPrice == null) throw new Error("No price found");
+
+        // 3) Mirror images
+        const stored = await mirrorImages(user.id, p.images, `bulk-${i}`);
+
+        // 4) Insert
+        const { data: product, error: insErr } = await supabase.from("products").insert({
+          supplier_id: supplier.id,
+          title: (it.title?.trim() || p.title || "Imported product").slice(0, 200),
+          description: p.description || null,
+          image: stored[0] ?? null,
+          gallery: stored,
+          price: finalPrice,
+          original_price: p.price ?? null,
+          moq: p.moq ?? 1,
+          unit: p.unit ?? "piece",
+          ship_from: supplier.country ?? null,
+          badge: `Imported · ${p.source}`,
+          active: true,
+        }).select("id").single();
+        if (insErr) throw insErr;
+
+        updateItem(i, { status: "done", productId: product.id });
+      } catch (err: any) {
+        updateItem(i, { status: "error", error: err?.message ?? "Failed" });
+      }
+      done++;
+      setProgress({ done, total: queue.length });
+    }
+
+    setRunState("done");
+    qc.invalidateQueries({ queryKey: ["my-products"] });
+    qc.invalidateQueries({ queryKey: ["products"] });
+    toast.success(`Bulk import finished · ${done}/${queue.length} processed`);
+  };
+
+  const pendingCount = items.filter((i) => i.status === "pending").length;
+  const doneCount = items.filter((i) => i.status === "done").length;
+  const errorCount = items.filter((i) => i.status === "error").length;
+  const running = runState === "running";
+
+  return (
+    <>
+      <div className="rounded-2xl border bg-card p-4 shadow-card">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+            <Download className="w-4 h-4" />
+          </span>
+          <div>
+            <p className="font-bold text-sm leading-tight">Paste a collection or seller page</p>
+            <p className="text-[11px] text-muted-foreground">Shopify /collections/… · Alibaba seller page · AliExpress store</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <div className="flex-1 relative">
+            <Link2 className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://yourstore.com/collections/all"
+              className="w-full h-12 rounded-xl border bg-background pl-9 pr-3 text-sm"
+              onKeyDown={(e) => e.key === "Enter" && listAll()}
+              disabled={running}
+            />
+          </div>
+          <Button onClick={listAll} disabled={loading || running} className="h-12 px-4">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            <span className="ml-1.5 hidden sm:inline">List</span>
+          </Button>
+        </div>
+      </div>
+
+      {loading && items.length === 0 && (
+        <div className="rounded-2xl border bg-card p-8 flex flex-col items-center gap-2 text-muted-foreground">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <p className="text-xs">Scanning catalog…</p>
+        </div>
+      )}
+
+      {items.length > 0 && (
+        <>
+          {/* progress + action bar */}
+          <div className="rounded-2xl border bg-card p-3 shadow-card sticky top-[56px] z-10">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-bold">
+                {running
+                  ? `Importing ${progress.done}/${progress.total}…`
+                  : runState === "done"
+                  ? `Done · ${doneCount} imported${errorCount ? `, ${errorCount} errored` : ""}`
+                  : `${pendingCount} selected of ${items.length}`}
+              </p>
+              <Button size="sm" onClick={importAll} disabled={running || pendingCount === 0} className="h-8">
+                {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5 mr-1" />}
+                {running ? "Running" : `Import ${pendingCount}`}
+              </Button>
+            </div>
+            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all"
+                style={{ width: progress.total ? `${(progress.done / progress.total) * 100}%` : "0%" }}
+              />
+            </div>
+          </div>
+
+          {items.map((it, idx) => {
+            const expanded = editingIdx === idx;
+            return (
+              <div key={idx} className={`rounded-2xl border bg-card p-3 shadow-card flex gap-3 ${it.status === "skipped" ? "opacity-50" : ""}`}>
+                <div className="w-16 h-16 rounded-xl bg-muted overflow-hidden flex-shrink-0">
+                  {it.image ? <img src={it.image} alt="" className="w-full h-full object-cover" /> : <ImageIcon className="w-5 h-5 text-muted-foreground m-auto mt-5" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  {expanded ? (
+                    <div className="space-y-2">
+                      <input
+                        value={it.title}
+                        onChange={(e) => updateItem(idx, { title: e.target.value })}
+                        className="w-full h-9 rounded-lg border bg-background px-2 text-sm"
+                      />
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number" step="0.01"
+                          value={it.price ?? ""}
+                          onChange={(e) => updateItem(idx, { price: e.target.value === "" ? null : Number(e.target.value) })}
+                          className="h-9 rounded-lg border bg-background px-2 text-sm w-28"
+                          placeholder="Base"
+                        />
+                        <span className="text-[10px] text-muted-foreground">→ sells at <span className="font-bold">{applyMarkup(it.price, markupMode, markupValue) ?? "—"}</span></span>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm font-semibold truncate">{it.title}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {it.price != null ? (
+                          <>Base {it.price} · <span className="font-semibold text-foreground">sells at {applyMarkup(it.price, markupMode, markupValue)}</span></>
+                        ) : (
+                          "Price fetched on import"
+                        )}
+                      </p>
+                    </>
+                  )}
+                  <p className="text-[10px] text-muted-foreground truncate mt-0.5">{it.url}</p>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <BulkStatus status={it.status} />
+                  {!running && it.status !== "done" && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setEditingIdx(expanded ? null : idx)}
+                        className="w-7 h-7 rounded-lg hover:bg-muted flex items-center justify-center"
+                        aria-label="Edit"
+                      >
+                        {expanded ? <Check className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+                      </button>
+                      <button
+                        onClick={() => toggleSkip(idx)}
+                        className="w-7 h-7 rounded-lg hover:bg-muted flex items-center justify-center"
+                        aria-label="Skip"
+                      >
+                        {it.status === "skipped" ? <Plus className="w-3.5 h-3.5" /> : <Trash2 className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  )}
+                  {it.status === "done" && it.productId && (
+                    <Link to={`/product/${it.productId}`} className="text-[10px] font-bold text-primary">View</Link>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
+    </>
+  );
+}
+
+function BulkStatus({ status }: { status: BulkCandidate["status"] }) {
+  const map: Record<BulkCandidate["status"], { label: string; cls: string }> = {
+    pending: { label: "Queued", cls: "bg-muted text-muted-foreground" },
+    importing: { label: "…", cls: "bg-primary/15 text-primary" },
+    done: { label: "Done", cls: "bg-primary text-primary-foreground" },
+    skipped: { label: "Skip", cls: "bg-muted text-muted-foreground line-through" },
+    error: { label: "Error", cls: "bg-destructive text-destructive-foreground" },
+  };
+  const m = map[status];
+  return <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${m.cls}`}>{m.label}</span>;
+}
+
+function LabeledInput({ label, value, onChange, type = "text" }: { label: string; value: any; onChange: (v: any) => void; type?: string }) {
+  return (
+    <div>
+      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</label>
+      <input
+        type={type}
+        step={type === "number" ? "0.01" : undefined}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1"
+      />
     </div>
   );
 }
+
 
 // ---------------- Products list ----------------
 function ProductsView() {
