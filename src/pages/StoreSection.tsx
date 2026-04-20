@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Plus, TrendingUp, Eye, ShoppingBag, DollarSign, Star, Megaphone, Truck, Package, Settings, Image as ImageIcon, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, TrendingUp, Eye, ShoppingBag, DollarSign, Star, Megaphone, Truck, Package, Settings, Image as ImageIcon, X, Loader2, Link2, Download, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ const titles: Record<string, { title: string; sub: string }> = {
   profile: { title: "Store profile", sub: "Banner, logo, about" },
   settings: { title: "Store settings", sub: "Payouts, taxes, hours" },
   "products/new": { title: "Add new product", sub: "List something new" },
+  import: { title: "Import from the web", sub: "Alibaba, Amazon, Shopify URLs" },
 };
 
 export default function StoreSection() {
@@ -47,6 +48,257 @@ export default function StoreSection() {
       {key === "shipping" && <ShippingView />}
       {key === "profile" && <ProfileView />}
       {key === "settings" && <SettingsView />}
+      {key === "import" && <ImportView />}
+    </div>
+  );
+}
+
+// ---------------- Import from URL (private beta) ----------------
+const ALLOWED_IMPORT_EMAILS = ["kukistacks8@gmail.com"];
+
+type ImportedProduct = {
+  title: string;
+  price: number | null;
+  original_price: number | null;
+  currency: string | null;
+  description: string;
+  images: string[];
+  source: string;
+  source_url: string;
+  moq?: number | null;
+  unit?: string | null;
+};
+
+function ImportView() {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [email, setEmail] = useState<string | null>(null);
+  const [url, setUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [preview, setPreview] = useState<ImportedProduct | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) { navigate("/auth"); return; }
+      setEmail((user.email || "").toLowerCase());
+    });
+  }, [navigate]);
+
+  const allowed = !!email && ALLOWED_IMPORT_EMAILS.includes(email);
+
+  const fetchProduct = async () => {
+    if (!url.trim()) { toast.error("Paste a product URL"); return; }
+    setLoading(true);
+    setPreview(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("import-product", {
+        body: { url: url.trim() },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const p = (data as any)?.product as ImportedProduct | undefined;
+      if (!p) throw new Error("Nothing returned");
+      setPreview(p);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Could not import that URL");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updatePreview = (patch: Partial<ImportedProduct>) =>
+    setPreview((p) => (p ? { ...p, ...patch } : p));
+
+  const save = async () => {
+    if (!preview) return;
+    if (!preview.title.trim()) { toast.error("Title required"); return; }
+    if (preview.price == null || isNaN(preview.price)) { toast.error("Price required"); return; }
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { navigate("/auth"); return; }
+      const supplier = await fetchMySupplier();
+      if (!supplier) { toast.error("Create your store first"); navigate("/become-supplier"); return; }
+
+      // Mirror the first few remote images into our storage so they stay available.
+      const stored: string[] = [];
+      for (let i = 0; i < Math.min(preview.images.length, 6); i++) {
+        const src = preview.images[i];
+        try {
+          const r = await fetch(src);
+          if (!r.ok) { stored.push(src); continue; }
+          const blob = await r.blob();
+          const ext = (blob.type.split("/")[1] || "jpg").split("+")[0];
+          const path = `${user.id}/imported-${Date.now()}-${i}.${ext}`;
+          const { error: upErr } = await supabase.storage
+            .from("product-images")
+            .upload(path, blob, { cacheControl: "3600", upsert: false, contentType: blob.type });
+          if (upErr) { stored.push(src); continue; }
+          const { data: { publicUrl } } = supabase.storage.from("product-images").getPublicUrl(path);
+          stored.push(publicUrl);
+        } catch {
+          stored.push(src);
+        }
+      }
+
+      const { data: product, error } = await supabase.from("products").insert({
+        supplier_id: supplier.id,
+        title: preview.title.trim(),
+        description: preview.description || null,
+        image: stored[0] ?? null,
+        gallery: stored,
+        price: Number(preview.price),
+        original_price: preview.original_price ?? null,
+        moq: preview.moq ?? 1,
+        unit: preview.unit ?? "piece",
+        ship_from: supplier.country ?? null,
+        badge: `Imported · ${preview.source}`,
+        active: true,
+      }).select().single();
+      if (error) throw error;
+
+      toast.success("Product imported 🎉");
+      qc.invalidateQueries({ queryKey: ["my-products"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      navigate(`/product/${product.id}`);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to import");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (email === null) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+
+  if (!allowed) {
+    return (
+      <div className="px-4 py-8">
+        <EmptyState
+          icon={<Sparkles className="w-7 h-7 text-muted-foreground" />}
+          title="Private beta"
+          description="Auto-import from Alibaba, Amazon and Shopify stores is currently limited to invited suppliers."
+          action={<Button variant="outline" asChild><Link to="/store">Back to store</Link></Button>}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 py-4 space-y-4">
+      <div className="rounded-2xl border bg-card p-4 shadow-card">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+            <Sparkles className="w-4 h-4" />
+          </span>
+          <div>
+            <p className="font-bold text-sm leading-tight">Paste a product link</p>
+            <p className="text-[11px] text-muted-foreground">Alibaba · AliExpress · Amazon · any Shopify store</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <div className="flex-1 relative">
+            <Link2 className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://www.alibaba.com/product-detail/…"
+              className="w-full h-12 rounded-xl border bg-background pl-9 pr-3 text-sm"
+              onKeyDown={(e) => e.key === "Enter" && fetchProduct()}
+            />
+          </div>
+          <Button onClick={fetchProduct} disabled={loading} className="h-12 px-4">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            <span className="ml-1.5 hidden sm:inline">Fetch</span>
+          </Button>
+        </div>
+        <p className="text-[10px] text-muted-foreground mt-2">
+          We pull the title, price, images and description. Review and edit before publishing.
+        </p>
+      </div>
+
+      {loading && !preview && (
+        <div className="rounded-2xl border bg-card p-8 flex flex-col items-center gap-2 text-muted-foreground">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <p className="text-xs">Reading that page…</p>
+        </div>
+      )}
+
+      {preview && (
+        <div className="rounded-2xl border bg-card shadow-card overflow-hidden">
+          {preview.images.length > 0 && (
+            <div className="flex gap-1 overflow-x-auto p-2 bg-muted/30">
+              {preview.images.slice(0, 6).map((src, i) => (
+                <img key={i} src={src} alt="" className="w-24 h-24 rounded-lg object-cover bg-muted flex-shrink-0" />
+              ))}
+            </div>
+          )}
+          <div className="p-4 space-y-3">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Title</label>
+              <input
+                value={preview.title}
+                onChange={(e) => updatePreview({ title: e.target.value })}
+                className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Price {preview.currency ? `(${preview.currency})` : ""}</label>
+                <input
+                  type="number" step="0.01"
+                  value={preview.price ?? ""}
+                  onChange={(e) => updatePreview({ price: e.target.value === "" ? null : Number(e.target.value) })}
+                  className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Original</label>
+                <input
+                  type="number" step="0.01"
+                  value={preview.original_price ?? ""}
+                  onChange={(e) => updatePreview({ original_price: e.target.value === "" ? null : Number(e.target.value) })}
+                  className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">MOQ</label>
+                <input
+                  type="number"
+                  value={preview.moq ?? 1}
+                  onChange={(e) => updatePreview({ moq: Number(e.target.value) || 1 })}
+                  className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Unit</label>
+                <input
+                  value={preview.unit ?? "piece"}
+                  onChange={(e) => updatePreview({ unit: e.target.value })}
+                  className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Description</label>
+              <textarea
+                value={preview.description}
+                onChange={(e) => updatePreview({ description: e.target.value })}
+                rows={5}
+                className="w-full rounded-xl border bg-background p-3 text-sm mt-1"
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground break-all">
+              Source: <span className="font-semibold capitalize">{preview.source}</span> · {preview.source_url}
+            </p>
+            <Button onClick={save} disabled={saving} className="w-full h-12">
+              {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Importing…</> : <><Plus className="w-4 h-4 mr-2" /> Import to my store</>}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

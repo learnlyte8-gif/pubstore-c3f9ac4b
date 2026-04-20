@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Store, Package, BarChart3, Megaphone, Truck, Star, Plus, ShoppingBag, Video, MessageCircle, Settings, ChevronRight, ImagePlus, Radio, StopCircle, Loader2 } from "lucide-react";
+import { Store, Package, BarChart3, Megaphone, Truck, Star, Plus, ShoppingBag, Video, MessageCircle, Settings, ChevronRight, ImagePlus, Radio, StopCircle, Loader2, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -54,12 +54,16 @@ export default function MyStore() {
   const [showGoLive, setShowGoLive] = useState(false);
   const [streamTitle, setStreamTitle] = useState("");
   const [starting, setStarting] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) navigate("/auth");
+      if (!session) { navigate("/auth"); return; }
+      setUserEmail((session.user.email || "").toLowerCase());
     });
   }, [navigate]);
+
+  const canImport = userEmail === "kukistacks8@gmail.com";
 
   const startStream = async () => {
     if (!supplier) return;
@@ -192,6 +196,7 @@ export default function MyStore() {
       <div className="px-4 mt-6 space-y-4">
         <Section title="Manage">
           <Row icon={Package} label="Products" hint={`${myProducts.length} listed`} to="/store/products" />
+          {canImport && <Row icon={Download} label="Import from the web" hint="Alibaba, Amazon, Shopify · beta" to="/store/import" />}
           <Row icon={ShoppingBag} label="Orders" hint={stats?.pendingOrders ? `${stats.pendingOrders} pending` : "View store orders"} to="/store/orders" />
           <Row icon={Truck} label="Shipping & logistics" hint="Templates, carriers" to="/store/shipping" />
           <Row icon={MessageCircle} label="Customer messages" hint="Buyer chats" to="/messages" />
