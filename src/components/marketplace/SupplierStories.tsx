@@ -1,59 +1,113 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { X, ChevronLeft, ChevronRight, ShieldCheck, MessageCircle } from "lucide-react";
-import { SUPPLIERS, PRODUCTS } from "@/data/products";
+import { supabase } from "@/integrations/supabase/client";
+
+type StorySupplier = {
+  id: string;
+  name: string;
+  logo: string | null;
+  country: string | null;
+  verified: boolean | null;
+};
+
+type StoryProduct = {
+  id: string;
+  title: string;
+  image: string | null;
+  price: number;
+  created_at: string;
+};
 
 type Story = {
-  supplierId: string;
-  productId: string;
+  supplier: StorySupplier;
+  product: StoryProduct;
   headline: string;
 };
 
-const STORIES: Story[] = [
-  { supplierId: "s1", productId: "p1", headline: "New ANC earbuds — 40% off launch" },
-  { supplierId: "s2", productId: "p2", headline: "Spring blazer drop just landed" },
-  { supplierId: "s3", productId: "p12", headline: "Restocked: Air Fryer 5L" },
-  { supplierId: "s4", productId: "p5", headline: "Vit C serum — 5k orders this week" },
-  { supplierId: "s5", productId: "p13", headline: "Yoga mat eco range expanded" },
-  { supplierId: "s1", productId: "p9", headline: "Hot-swap keyboard, OEM ready" },
-  { supplierId: "s2", productId: "p14", headline: "Sneakers SS26 preview" },
-];
+async function fetchStories(): Promise<Story[]> {
+  // Pull verified suppliers first (fall back to all if none verified yet)
+  const { data: verified } = await supabase
+    .from("suppliers")
+    .select("id,name,logo,country,verified")
+    .eq("verified", true)
+    .limit(20);
+
+  let suppliers: StorySupplier[] = verified ?? [];
+  if (suppliers.length === 0) {
+    const { data: any } = await supabase
+      .from("suppliers")
+      .select("id,name,logo,country,verified")
+      .limit(20);
+    suppliers = any ?? [];
+  }
+  if (suppliers.length === 0) return [];
+
+  const ids = suppliers.map((s) => s.id);
+  const { data: products } = await supabase
+    .from("products")
+    .select("id,title,image,price,created_at,supplier_id")
+    .in("supplier_id", ids)
+    .eq("active", true)
+    .order("created_at", { ascending: false });
+
+  const latestBySupplier = new Map<string, StoryProduct & { supplier_id: string }>();
+  (products ?? []).forEach((p: any) => {
+    if (!latestBySupplier.has(p.supplier_id)) latestBySupplier.set(p.supplier_id, p);
+  });
+
+  return suppliers
+    .filter((s) => latestBySupplier.has(s.id))
+    .map((s) => {
+      const p = latestBySupplier.get(s.id)!;
+      const ageMs = Date.now() - new Date(p.created_at).getTime();
+      const isNew = ageMs < 1000 * 60 * 60 * 24 * 7;
+      const headline = isNew ? `Just listed: ${p.title}` : `Featured: ${p.title}`;
+      return { supplier: s, product: p, headline };
+    });
+}
 
 export default function SupplierStories() {
+  const { data: stories = [] } = useQuery({ queryKey: ["supplier-stories"], queryFn: fetchStories });
   const [openIdx, setOpenIdx] = useState<number | null>(null);
+
+  if (stories.length === 0) return null;
 
   return (
     <>
       <div className="flex gap-3 overflow-x-auto scrollbar-none px-4 mt-3 pb-1">
-        {STORIES.map((st, i) => {
-          const sup = SUPPLIERS.find((s) => s.id === st.supplierId);
-          if (!sup) return null;
-          return (
-            <button
-              key={i}
-              onClick={() => setOpenIdx(i)}
-              className="shrink-0 flex flex-col items-center gap-1 w-16"
-            >
-              <span className="ring-story p-[2px] rounded-full">
-                <span className="block bg-background p-[2px] rounded-full">
+        {stories.map((st, i) => (
+          <button
+            key={st.supplier.id}
+            onClick={() => setOpenIdx(i)}
+            className="shrink-0 flex flex-col items-center gap-1 w-16"
+          >
+            <span className="ring-story p-[2px] rounded-full">
+              <span className="block bg-background p-[2px] rounded-full">
+                {st.supplier.logo ? (
                   <img
-                    src={sup.logo}
-                    alt={sup.name}
+                    src={st.supplier.logo}
+                    alt={st.supplier.name}
                     className="w-12 h-12 rounded-full object-cover"
                   />
-                </span>
+                ) : (
+                  <span className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-xs font-bold">
+                    {st.supplier.name.slice(0, 2).toUpperCase()}
+                  </span>
+                )}
               </span>
-              <span className="text-[10px] leading-tight text-center line-clamp-1 w-full">
-                {sup.name.split(" ")[0]}
-              </span>
-            </button>
-          );
-        })}
+            </span>
+            <span className="text-[10px] leading-tight text-center line-clamp-1 w-full">
+              {st.supplier.name.split(" ")[0]}
+            </span>
+          </button>
+        ))}
       </div>
 
       {openIdx !== null && (
         <StoryViewer
-          stories={STORIES}
+          stories={stories}
           startIdx={openIdx}
           onClose={() => setOpenIdx(null)}
         />
@@ -93,9 +147,8 @@ function StoryViewer({
   }, [idx, stories.length, onClose]);
 
   const story = stories[idx];
-  const sup = SUPPLIERS.find((s) => s.id === story.supplierId);
-  const prod = PRODUCTS.find((p) => p.id === story.productId);
-  if (!sup || !prod) return null;
+  if (!story) return null;
+  const { supplier: sup, product: prod } = story;
 
   const prev = () => idx > 0 && (setIdx(idx - 1), setProgress(0));
   const next = () =>
@@ -116,13 +169,15 @@ function StoryViewer({
         </div>
 
         <div className="absolute top-7 left-3 right-3 flex items-center gap-2 z-10">
-          <img src={sup.logo} alt="" className="w-8 h-8 rounded-full object-cover ring-1 ring-white/40" />
+          {sup.logo && (
+            <img src={sup.logo} alt="" className="w-8 h-8 rounded-full object-cover ring-1 ring-white/40" />
+          )}
           <div className="flex-1 min-w-0">
             <p className="text-white text-xs font-semibold truncate flex items-center gap-1">
               {sup.name}
               {sup.verified && <ShieldCheck className="w-3 h-3 text-sky-400 shrink-0" />}
             </p>
-            <p className="text-white/70 text-[10px]">{sup.country}</p>
+            {sup.country && <p className="text-white/70 text-[10px]">{sup.country}</p>}
           </div>
           <button onClick={onClose} aria-label="Close" className="p-1 text-white">
             <X className="w-5 h-5" />
@@ -144,7 +199,9 @@ function StoryViewer({
           <ChevronRight className="w-6 h-6" />
         </button>
 
-        <img src={prod.image} alt={prod.title} className="absolute inset-0 w-full h-full object-cover opacity-90" />
+        {prod.image && (
+          <img src={prod.image} alt={prod.title} className="absolute inset-0 w-full h-full object-cover opacity-90" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-black/40" />
 
         <div className="absolute bottom-0 left-0 right-0 p-4 text-white z-10">
@@ -155,10 +212,12 @@ function StoryViewer({
             onClick={onClose}
             className="mt-2 flex items-center gap-2 bg-white/15 backdrop-blur rounded-xl p-2"
           >
-            <img src={prod.image} alt="" className="w-12 h-12 rounded-lg object-cover" />
+            {prod.image && (
+              <img src={prod.image} alt="" className="w-12 h-12 rounded-lg object-cover" />
+            )}
             <div className="flex-1 min-w-0">
               <p className="text-xs line-clamp-2 leading-snug">{prod.title}</p>
-              <p className="text-sm font-bold">${prod.price.toFixed(2)}</p>
+              <p className="text-sm font-bold">${Number(prod.price).toFixed(2)}</p>
             </div>
             <span className="text-[10px] font-bold bg-white text-foreground px-2 py-1 rounded-full">
               View

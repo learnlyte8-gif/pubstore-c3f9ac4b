@@ -36,7 +36,13 @@ const Home = () => {
   const [tab, setTab] = useState<Tab>("home");
   const { data: products = [], isLoading } = useProducts({ limit: 50 });
   const { data: trending = [] } = useProducts({ sortBy: "sold", limit: 6 });
+  const { data: dealPool = [] } = useProducts({ sortBy: "newest", limit: 50 });
   const { data: suppliers = [] } = useSuppliers({ limit: 6 });
+
+  // Real flash deals: products with originalPrice and ≥30% off
+  const flashDeals = dealPool
+    .filter((p) => p.originalPrice && p.originalPrice > p.price && (p.originalPrice - p.price) / p.originalPrice >= 0.3)
+    .slice(0, 8);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -89,11 +95,11 @@ const Home = () => {
             </div>
           ) : (
             <>
-              {trending.length > 0 && (
+              {flashDeals.length > 0 && (
                 <section className="px-4 mt-6">
-                  <SectionHeader icon={Zap} title="Flash deals" subtitle="Limited time · ships fast" />
+                  <SectionHeader icon={Zap} title="Flash deals" subtitle="30%+ off · limited time" />
                   <div className="flex gap-3 overflow-x-auto scrollbar-none mt-3 -mx-1 px-1 pb-1">
-                    {trending.map((p) => (<ProductCard key={`fd-${p.id}`} product={p} variant="compact" />))}
+                    {flashDeals.map((p) => (<ProductCard key={`fd-${p.id}`} product={p} variant="compact" />))}
                   </div>
                 </section>
               )}
