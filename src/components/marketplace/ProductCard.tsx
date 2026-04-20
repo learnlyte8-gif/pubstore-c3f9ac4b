@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import { Heart, Star, Plus, Truck } from "lucide-react";
+import { Heart, Star, Plus, Truck, ShieldCheck, Award } from "lucide-react";
 import { toast } from "sonner";
-import { type Product, discountPct } from "@/data/products";
+import { type Product, discountPct, getSupplier } from "@/data/products";
 import { useShop } from "@/store/shop";
 
 const fmtPrice = (n: number) => `$${n.toFixed(2)}`;
@@ -24,6 +24,7 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
   const { addToCart, toggleWishlist, isWishlisted } = useShop();
   const liked = isWishlisted(product.id);
   const off = discountPct(product);
+  const supplier = getSupplier(product.supplierId);
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -119,9 +120,23 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
           <span>{fmtSold(product.sold)}</span>
         </div>
 
-        {product.freeShipping && (
-          <div className="flex items-center gap-1 mt-1 text-[10px] text-primary font-medium">
-            <Truck className="w-3 h-3" /> Free shipping
+        {(product.freeShipping || supplier?.verified || supplier?.gold) && (
+          <div className="flex items-center gap-1.5 mt-1 text-[10px] flex-wrap">
+            {supplier?.verified && (
+              <span className="inline-flex items-center gap-0.5 text-primary font-semibold">
+                <ShieldCheck className="w-3 h-3" /> Verified
+              </span>
+            )}
+            {supplier?.gold && (
+              <span className="inline-flex items-center gap-0.5 text-amber-600 dark:text-amber-400 font-semibold">
+                <Award className="w-3 h-3" /> Gold
+              </span>
+            )}
+            {product.freeShipping && (
+              <span className="inline-flex items-center gap-0.5 text-primary font-medium">
+                <Truck className="w-3 h-3" /> Free
+              </span>
+            )}
           </div>
         )}
 

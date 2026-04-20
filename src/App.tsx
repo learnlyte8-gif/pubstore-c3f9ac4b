@@ -17,6 +17,9 @@ import Categories from "./pages/Categories.tsx";
 import Wishlist from "./pages/Wishlist.tsx";
 import Messages from "./pages/Messages.tsx";
 import Account from "./pages/Account.tsx";
+import Supplier from "./pages/Supplier.tsx";
+import Orders from "./pages/Orders.tsx";
+import RFQ from "./pages/RFQ.tsx";
 import Placeholder from "./pages/Placeholder.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -42,8 +45,11 @@ const App = () => (
                 <Route path="/categories" element={<Categories />} />
                 <Route path="/wishlist" element={<Wishlist />} />
                 <Route path="/messages" element={<Messages />} />
-                <Route path="/orders" element={<Placeholder title="My Orders" hint="Track and manage your purchases." />} />
+                <Route path="/orders" element={<Orders />} />
+                <Route path="/rfq" element={<RFQ />} />
+                <Route path="/supplier/:id" element={<Supplier />} />
                 <Route path="/profile" element={<Account />} />
+                <Route path="/account" element={<Account />} />
               </Route>
               <Route path="/index" element={<Navigate to="/home" replace />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
