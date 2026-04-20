@@ -452,7 +452,7 @@ function LiveRoom({ stream, hostUserId, onLeave }: { stream: EnrichedStream; hos
           <p className="text-[12px] text-white/60 italic">Be the first to say hi 👋</p>
         )}
         {chat.map((c) => {
-          const isHost = stream.supplier && c.user_id === (stream.supplier as any).owner_id;
+          const isHost = !!hostUserId && c.user_id === hostUserId;
           return (
             <div key={c.id} className="text-[12px] leading-snug">
               <p>
