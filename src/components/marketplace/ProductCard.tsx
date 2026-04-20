@@ -1,5 +1,6 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Heart, Star, Plus, Truck, ShieldCheck, Award } from "lucide-react";
+import { Heart, Star, Plus, Truck, ShieldCheck, Award, Timer } from "lucide-react";
 import { toast } from "sonner";
 import { type Product, discountPct, getSupplier } from "@/data/products";
 import { useShop } from "@/store/shop";
@@ -7,6 +8,24 @@ import { useShop } from "@/store/shop";
 const fmtPrice = (n: number) => `$${n.toFixed(2)}`;
 const fmtSold = (n: number) =>
   n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k+ sold` : `${n} sold`;
+
+const pad = (n: number) => n.toString().padStart(2, "0");
+function useDealCountdown(endsAt?: string | null) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!endsAt) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [endsAt]);
+  if (!endsAt) return null;
+  const ms = new Date(endsAt).getTime() - now;
+  if (ms <= 0) return null;
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return { h, m, s, urgent: ms < 1000 * 60 * 60 };
+}
 
 const badgeStyle: Record<NonNullable<Product["badge"]>, string> = {
   Hot: "bg-destructive text-destructive-foreground",
@@ -25,6 +44,7 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
   const liked = isWishlisted(product.id);
   const off = discountPct(product);
   const supplier = getSupplier(product.supplierId);
+  const countdown = useDealCountdown(product.dealEndsAt);
   // Hide internal "Imported · …" badges from public product cards.
   const displayBadge =
     product.badge && !/^imported/i.test(product.badge) ? product.badge : null;
@@ -64,6 +84,12 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
           >
             <Heart className={`w-3.5 h-3.5 ${liked ? "fill-destructive text-destructive" : "text-foreground"}`} />
           </button>
+          {countdown && (
+            <span className={`absolute bottom-1.5 left-1.5 right-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center justify-center gap-0.5 tabular-nums ${countdown.urgent ? "bg-destructive text-destructive-foreground animate-pulse" : "bg-foreground/85 text-background"}`}>
+              <Timer className="w-3 h-3" />
+              {countdown.h > 0 ? `${countdown.h}h ` : ""}{pad(countdown.m)}:{pad(countdown.s)}
+            </span>
+          )}
         </div>
         <div className="mt-1.5">
           <p className="text-[11px] font-bold text-destructive">{fmtPrice(product.price)}</p>
@@ -102,6 +128,12 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
         >
           <Heart className={`w-4 h-4 ${liked ? "fill-destructive text-destructive" : "text-foreground"}`} />
         </button>
+        {countdown && (
+          <span className={`absolute bottom-2 left-2 right-2 text-[10px] font-bold px-2 py-1 rounded flex items-center justify-center gap-1 tabular-nums ${countdown.urgent ? "bg-destructive text-destructive-foreground animate-pulse" : "bg-foreground/85 text-background"}`}>
+            <Timer className="w-3 h-3" />
+            Ends in {countdown.h > 0 ? `${countdown.h}h ` : ""}{pad(countdown.m)}:{pad(countdown.s)}
+          </span>
+        )}
       </div>
 
       <div className="p-2.5">

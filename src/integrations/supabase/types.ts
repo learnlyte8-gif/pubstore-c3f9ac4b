@@ -675,6 +675,7 @@ export type Database = {
           badge: string | null
           category_slug: string | null
           created_at: string
+          deal_ends_at: string | null
           description: string | null
           free_shipping: boolean | null
           gallery: string[] | null
@@ -701,6 +702,7 @@ export type Database = {
           badge?: string | null
           category_slug?: string | null
           created_at?: string
+          deal_ends_at?: string | null
           description?: string | null
           free_shipping?: boolean | null
           gallery?: string[] | null
@@ -727,6 +729,7 @@ export type Database = {
           badge?: string | null
           category_slug?: string | null
           created_at?: string
+          deal_ends_at?: string | null
           description?: string | null
           free_shipping?: boolean | null
           gallery?: string[] | null

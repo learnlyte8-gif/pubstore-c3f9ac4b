@@ -39,9 +39,19 @@ const Home = () => {
   const { data: dealPool = [] } = useProducts({ sortBy: "newest", limit: 50 });
   const { data: suppliers = [] } = useSuppliers({ limit: 6 });
 
-  // Real flash deals: products with originalPrice and ≥30% off
+  // Real flash deals: products with an active deal_ends_at OR ≥30% off
+  const now = Date.now();
   const flashDeals = dealPool
-    .filter((p) => p.originalPrice && p.originalPrice > p.price && (p.originalPrice - p.price) / p.originalPrice >= 0.3)
+    .filter((p) => {
+      const stillRunning = p.dealEndsAt ? new Date(p.dealEndsAt).getTime() > now : false;
+      const bigDiscount = p.originalPrice && p.originalPrice > p.price && (p.originalPrice - p.price) / p.originalPrice >= 0.3;
+      return stillRunning || bigDiscount;
+    })
+    .sort((a, b) => {
+      // products with countdown first
+      if (!!a.dealEndsAt === !!b.dealEndsAt) return 0;
+      return a.dealEndsAt ? -1 : 1;
+    })
     .slice(0, 8);
 
   useEffect(() => {

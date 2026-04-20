@@ -79,6 +79,7 @@ export type Product = {
   specs?: { label: string; value: string }[];
   description?: string;
   reviewList?: Review[];
+  dealEndsAt?: string | null;
 };
 
 // ---------- Categories ----------
@@ -155,6 +156,7 @@ type DbProduct = {
   rating: number | null;
   review_count: number | null;
   sold: number | null;
+  deal_ends_at?: string | null;
 };
 
 const PLACEHOLDER_IMG = "/placeholder.svg";
@@ -200,6 +202,7 @@ export const mapProduct = (p: DbProduct): Product => ({
   shipFrom: p.ship_from ?? "—",
   specs: Array.isArray(p.specs) ? (p.specs as { label: string; value: string }[]) : [],
   description: p.description ?? "",
+  dealEndsAt: p.deal_ends_at ?? null,
 });
 
 // ---------- Fetchers ----------
