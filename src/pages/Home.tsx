@@ -25,6 +25,7 @@ import BrandSpotlight from "@/components/marketplace/BrandSpotlight";
 import NewArrivals from "@/components/marketplace/NewArrivals";
 import RegionSourcing from "@/components/marketplace/RegionSourcing";
 import CategoryStrip from "@/components/marketplace/CategoryStrip";
+import SupplierStories from "@/components/marketplace/SupplierStories";
 import { TRENDING, PRODUCTS, getRecommended } from "@/data/products";
 
 const Home = () => {
