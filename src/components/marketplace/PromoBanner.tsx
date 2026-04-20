@@ -43,7 +43,7 @@ export default function PromoBanner() {
             {s.cta}
           </button>
         </div>
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-7xl opacity-30">🛍️</div>
+        <ShoppingBag className="absolute right-5 top-1/2 -translate-y-1/2 w-20 h-20 text-white/25" strokeWidth={1.4} />
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
           {slides.map((_, idx) => (
             <span
