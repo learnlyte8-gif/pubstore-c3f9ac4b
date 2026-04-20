@@ -70,3 +70,4 @@ export function ShopProvider({ children }: { children: ReactNode }) {
 }
 
 export { ShopContext };
+export { useShop } from "./useShop";
