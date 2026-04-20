@@ -69,8 +69,4 @@ export function ShopProvider({ children }: { children: ReactNode }) {
   return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>;
 }
 
-export const useShop = () => {
-  const ctx = useContext(ShopContext);
-  if (!ctx) throw new Error("useShop must be used within ShopProvider");
-  return ctx;
-};
+export { ShopContext };
