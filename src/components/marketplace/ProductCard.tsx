@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Heart, Star, Plus, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { type Product, discountPct } from "@/data/products";
