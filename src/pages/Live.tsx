@@ -493,23 +493,40 @@ function LiveRoom({ stream, onLeave }: { stream: EnrichedStream; onLeave: () => 
               {pinned.length === 0 ? (
                 <p className="text-center text-sm text-muted-foreground py-6">No products listed yet</p>
               ) : (
-                pinned.map((p) => (
-                  <div key={p.id} className="flex items-center gap-3 rounded-2xl border border-border p-2 shadow-soft">
-                    <Link to={`/product/${p.id}`} onClick={() => setShowProducts(false)} className="shrink-0">
-                      <img src={p.image} alt="" className="w-16 h-16 rounded-xl object-cover" />
-                    </Link>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold line-clamp-2">{p.title}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
-                        MOQ {p.moq} {p.unit} · {p.leadTime}
-                      </p>
-                      <p className="text-sm font-bold mt-0.5">${p.price}</p>
-                    </div>
-                    <button
-                      onClick={() => quickBuy(p)}
-                      className="px-3 h-9 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-card"
-                    >
-                      Buy now
+                pinned.map((p) => {
+                  const isPinned = p.id === pinnedId;
+                  return (
+                    <div key={p.id} className={`flex items-center gap-3 rounded-2xl border p-2 shadow-soft ${isPinned ? "border-primary bg-primary/5 ring-2 ring-primary/30" : "border-border"}`}>
+                      <Link to={`/product/${p.id}`} onClick={() => setShowProducts(false)} className="shrink-0 relative">
+                        <img src={p.image} alt="" className="w-16 h-16 rounded-xl object-cover" />
+                        {isPinned && (
+                          <span className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-card">
+                            <Pin className="w-3 h-3" />
+                          </span>
+                        )}
+                      </Link>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold line-clamp-2">{p.title}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          MOQ {p.moq} {p.unit} · {p.leadTime}
+                        </p>
+                        <p className="text-sm font-bold mt-0.5">${p.price}</p>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        {isOwner && (
+                          <button
+                            onClick={() => togglePin(p.id)}
+                            aria-label={isPinned ? "Unpin" : "Pin"}
+                            className={`px-2 h-8 rounded-full text-[10px] font-bold flex items-center gap-1 ${isPinned ? "bg-muted text-foreground" : "bg-amber-400 text-foreground"}`}
+                          >
+                            {isPinned ? <><PinOff className="w-3 h-3" /> Unpin</> : <><Pin className="w-3 h-3" /> Pin</>}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => quickBuy(p)}
+                          className="px-3 h-8 rounded-full bg-primary text-primary-foreground text-[10px] font-bold shadow-card"
+                        >
+                          Buy now
                     </button>
                   </div>
                 ))
