@@ -20,6 +20,8 @@ import Account from "./pages/Account.tsx";
 import Supplier from "./pages/Supplier.tsx";
 import Orders from "./pages/Orders.tsx";
 import RFQ from "./pages/RFQ.tsx";
+import Notifications from "./pages/Notifications.tsx";
+import Compare from "./pages/Compare.tsx";
 import Placeholder from "./pages/Placeholder.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -47,6 +49,8 @@ const App = () => (
                 <Route path="/messages" element={<Messages />} />
                 <Route path="/orders" element={<Orders />} />
                 <Route path="/rfq" element={<RFQ />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/compare" element={<Compare />} />
                 <Route path="/supplier/:id" element={<Supplier />} />
                 <Route path="/profile" element={<Account />} />
                 <Route path="/account" element={<Account />} />

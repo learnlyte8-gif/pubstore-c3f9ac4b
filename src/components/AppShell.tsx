@@ -60,9 +60,10 @@ export default function AppShell() {
           </Link>
 
           <div className="flex items-center gap-1 shrink-0">
-            <button aria-label="Notifications" className="p-2 rounded-full hover:bg-muted transition">
+            <Link to="/notifications" aria-label="Notifications" className="relative p-2 rounded-full hover:bg-muted transition">
               <Bell className="w-5 h-5" strokeWidth={1.8} />
-            </button>
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-destructive border-2 border-background" />
+            </Link>
             <Link to="/cart" aria-label="Cart" className="relative p-2 rounded-full hover:bg-muted transition">
               <ShoppingCart className="w-5 h-5" strokeWidth={1.8} />
               {cartCount > 0 && (
