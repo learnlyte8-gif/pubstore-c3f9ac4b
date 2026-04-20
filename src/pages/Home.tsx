@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, SlidersHorizontal, Mic } from "lucide-react";
+import { Search, SlidersHorizontal, Mic, TrendingUp, Sparkles, LayoutGrid, type LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import CategoryGrid from "@/components/marketplace/CategoryGrid";
 import PromoBanner from "@/components/marketplace/PromoBanner";
@@ -81,7 +81,7 @@ const Home = () => {
 
           {/* Trending */}
           <section className="px-4 mt-6">
-            <SectionHeader title="🔥 Trending now" subtitle="Most loved this week" />
+            <SectionHeader icon={TrendingUp} title="Trending now" subtitle="Most loved this week" />
             <div className="flex gap-3 overflow-x-auto scrollbar-none mt-3 -mx-1 px-1">
               {TRENDING.map((p) => (
                 <ProductCard key={p.id} product={p} variant="compact" />
@@ -91,7 +91,7 @@ const Home = () => {
 
           {/* Recommended */}
           <section className="px-4 mt-6">
-            <SectionHeader title="✨ For you" subtitle="Picked from your interests" />
+            <SectionHeader icon={Sparkles} title="For you" subtitle="Picked from your interests" />
             <div className="grid grid-cols-2 gap-3 mt-3">
               {recommended.slice(0, 12).map((p) => (
                 <ProductCard key={p.id} product={p} />
@@ -101,7 +101,7 @@ const Home = () => {
 
           {/* All products */}
           <section className="px-4 mt-6">
-            <SectionHeader title="🛍️ Explore more" />
+            <SectionHeader icon={LayoutGrid} title="Explore more" />
             <div className="grid grid-cols-2 gap-3 mt-3">
               {PRODUCTS.map((p) => (
                 <ProductCard key={p.id} product={p} />

@@ -1,8 +1,21 @@
+import type { LucideIcon } from "lucide-react";
+import {
+  Shirt,
+  Smartphone,
+  Home as HomeIcon,
+  Sparkles,
+  Dumbbell,
+  Gamepad2,
+  Car,
+  ShoppingBasket,
+  BookOpen,
+  PawPrint,
+} from "lucide-react";
+
 export type Category = {
   id: string;
   name: string;
-  emoji: string;
-  color: string;
+  icon: LucideIcon;
 };
 
 export type Product = {
@@ -20,16 +33,16 @@ export type Product = {
 };
 
 export const CATEGORIES: Category[] = [
-  { id: "fashion", name: "Fashion", emoji: "👗", color: "from-pink-400 to-rose-500" },
-  { id: "electronics", name: "Electronics", emoji: "📱", color: "from-blue-400 to-indigo-500" },
-  { id: "home", name: "Home", emoji: "🏠", color: "from-amber-400 to-orange-500" },
-  { id: "beauty", name: "Beauty", emoji: "💄", color: "from-fuchsia-400 to-pink-500" },
-  { id: "sports", name: "Sports", emoji: "⚽", color: "from-green-400 to-emerald-500" },
-  { id: "toys", name: "Toys", emoji: "🧸", color: "from-yellow-400 to-amber-500" },
-  { id: "auto", name: "Auto", emoji: "🚗", color: "from-slate-400 to-zinc-500" },
-  { id: "grocery", name: "Grocery", emoji: "🛒", color: "from-lime-400 to-green-500" },
-  { id: "books", name: "Books", emoji: "📚", color: "from-cyan-400 to-sky-500" },
-  { id: "pets", name: "Pets", emoji: "🐾", color: "from-orange-400 to-red-500" },
+  { id: "fashion", name: "Fashion", icon: Shirt },
+  { id: "electronics", name: "Electronics", icon: Smartphone },
+  { id: "home", name: "Home", icon: HomeIcon },
+  { id: "beauty", name: "Beauty", icon: Sparkles },
+  { id: "sports", name: "Sports", icon: Dumbbell },
+  { id: "toys", name: "Toys", icon: Gamepad2 },
+  { id: "auto", name: "Auto", icon: Car },
+  { id: "grocery", name: "Grocery", icon: ShoppingBasket },
+  { id: "books", name: "Books", icon: BookOpen },
+  { id: "pets", name: "Pets", icon: PawPrint },
 ];
 
 // Picsum seed-based images = stable URLs, free, no API needed
