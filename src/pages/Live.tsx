@@ -438,14 +438,24 @@ function LiveRoom({ stream, onLeave }: { stream: EnrichedStream; onLeave: () => 
         {chat.length === 0 && (
           <p className="text-[12px] text-white/60 italic">Be the first to say hi 👋</p>
         )}
-        {chat.map((c) => (
-          <div key={c.id} className="text-[12px] leading-snug">
-            <p>
-              <span className="font-bold mr-1">{c.username || "Guest"}</span>
-              <span className="text-white/95">{c.body}</span>
-            </p>
-          </div>
-        ))}
+        {chat.map((c) => {
+          const isHost = stream.supplier && c.user_id === (stream.supplier as any).owner_id;
+          return (
+            <div key={c.id} className="text-[12px] leading-snug">
+              <p>
+                {isHost && (
+                  <span className="inline-flex items-center mr-1.5 px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-[9px] font-extrabold uppercase tracking-wide align-middle">
+                    Host
+                  </span>
+                )}
+                <span className={`font-bold mr-1 ${isHost ? "text-primary-foreground bg-primary/30 px-1 rounded" : ""}`}>
+                  {c.username || "Guest"}
+                </span>
+                <span className="text-white/95">{c.body}</span>
+              </p>
+            </div>
+          );
+        })}
       </div>
 
       {FloatingPinned}
