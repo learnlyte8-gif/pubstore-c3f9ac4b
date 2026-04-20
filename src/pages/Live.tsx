@@ -340,6 +340,17 @@ function LiveRoom({ stream, onLeave }: { stream: EnrichedStream; onLeave: () => 
     toast.success("Added to cart");
   };
 
+  const togglePin = async (productId: string) => {
+    if (!isOwner) return;
+    const next = pinnedId === productId ? null : productId;
+    const { error } = await supabase.from("live_streams").update({ pinned_product_id: next }).eq("id", stream.id);
+    if (error) { toast.error(error.message); return; }
+    setPinnedId(next);
+    toast.success(next ? "Product pinned" : "Product unpinned");
+  };
+
+  const pinnedProduct = pinned.find((p) => p.id === pinnedId);
+
   const startedMin = Math.max(1, Math.floor((Date.now() - new Date(stream.started_at).getTime()) / 60000));
 
   return (
