@@ -1,10 +1,31 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Heart, Star, Plus, Truck, ShieldCheck, Award } from "lucide-react";
+import { Heart, Star, Plus, Truck, ShieldCheck, Award, Timer } from "lucide-react";
 import { toast } from "sonner";
 import { type Product, discountPct, getSupplier } from "@/data/products";
 import { useShop } from "@/store/shop";
 
 const fmtPrice = (n: number) => `$${n.toFixed(2)}`;
+const fmtSold = (n: number) =>
+  n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k+ sold` : `${n} sold`;
+
+const pad = (n: number) => n.toString().padStart(2, "0");
+function useDealCountdown(endsAt?: string | null) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!endsAt) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [endsAt]);
+  if (!endsAt) return null;
+  const ms = new Date(endsAt).getTime() - now;
+  if (ms <= 0) return null;
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return { h, m, s, urgent: ms < 1000 * 60 * 60 };
+}
 const fmtSold = (n: number) =>
   n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k+ sold` : `${n} sold`;
 
