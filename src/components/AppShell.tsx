@@ -11,7 +11,25 @@ export default function AppShell() {
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
   const [checked, setChecked] = useState(false);
+  const [unreadNotifs, setUnreadNotifs] = useState(0);
   const { cartCount, wishlist } = useShop();
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    const uid = session.user.id;
+    const load = async () => {
+      const { count } = await supabase
+        .from("notifications").select("id", { count: "exact", head: true })
+        .eq("user_id", uid).eq("read", false);
+      setUnreadNotifs(count ?? 0);
+    };
+    load();
+    const ch = supabase
+      .channel(`shell-notif:${uid}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${uid}` }, load)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [session?.user?.id]);
 
   useEffect(() => {
     const verifyProfile = async (s: Session) => {
@@ -64,7 +82,11 @@ export default function AppShell() {
           <div className="flex items-center gap-1 shrink-0">
             <Link to="/notifications" aria-label="Notifications" className="relative p-2 rounded-full hover:bg-muted transition">
               <Bell className="w-5 h-5" strokeWidth={1.8} />
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-destructive border-2 border-background" />
+              {unreadNotifs > 0 && (
+                <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center shadow-soft">
+                  {unreadNotifs > 99 ? "99+" : unreadNotifs}
+                </span>
+              )}
             </Link>
             <Link to="/cart" aria-label="Cart" className="relative p-2 rounded-full hover:bg-muted transition">
               <ShoppingCart className="w-5 h-5" strokeWidth={1.8} />

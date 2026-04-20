@@ -75,9 +75,10 @@ export default function RFQ() {
         quotesByRfq.set(q.rfq_id, arr);
       });
     }
-    const attach = (r: RFQ) => ({ ...r, quotes: quotesByRfq.get(r.id) ?? [] });
-    setRfqs(((mine ?? []) as RFQ[]).map(attach));
-    setBrowseRfqs(((all ?? []) as RFQ[]).filter((r) => r.buyer_id !== user.id).map(attach));
+    type RfqRow = Omit<RFQ, "quotes">;
+    const attach = (r: RfqRow): RFQ => ({ ...r, quotes: quotesByRfq.get(r.id) ?? [] });
+    setRfqs(((mine ?? []) as unknown as RfqRow[]).map(attach));
+    setBrowseRfqs(((all ?? []) as unknown as RfqRow[]).filter((r) => r.buyer_id !== user.id).map(attach));
     setLoading(false);
   };
 
