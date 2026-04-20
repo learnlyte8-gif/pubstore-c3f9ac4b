@@ -44,6 +44,7 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
   const liked = isWishlisted(product.id);
   const off = discountPct(product);
   const supplier = getSupplier(product.supplierId);
+  const countdown = useDealCountdown(product.dealEndsAt);
   // Hide internal "Imported · …" badges from public product cards.
   const displayBadge =
     product.badge && !/^imported/i.test(product.badge) ? product.badge : null;
