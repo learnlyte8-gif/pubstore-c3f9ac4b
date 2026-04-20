@@ -353,6 +353,30 @@ function LiveRoom({ stream, onLeave }: { stream: EnrichedStream; onLeave: () => 
 
   const startedMin = Math.max(1, Math.floor((Date.now() - new Date(stream.started_at).getTime()) / 60000));
 
+  const FloatingPinned = pinnedProduct ? (
+    <div className="absolute left-3 right-3 bottom-32 z-10 pointer-events-auto animate-in slide-in-from-bottom-4 fade-in duration-500">
+      <div className="flex items-center gap-3 rounded-2xl bg-white/95 backdrop-blur text-foreground p-2 pr-3 shadow-elevated border border-white/40 max-w-[calc(100%-3.5rem)]">
+        <Link to={`/product/${pinnedProduct.id}`} className="shrink-0 relative">
+          <img src={pinnedProduct.image} alt="" className="w-14 h-14 rounded-xl object-cover" />
+          <span className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-card">
+            <Pin className="w-3 h-3" />
+          </span>
+        </Link>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-primary">Featured live</p>
+          <p className="text-xs font-semibold line-clamp-1 leading-tight">{pinnedProduct.title}</p>
+          <p className="text-sm font-extrabold leading-tight">${pinnedProduct.price}<span className="text-[10px] font-normal text-muted-foreground ml-1">/ {pinnedProduct.unit}</span></p>
+        </div>
+        <button
+          onClick={() => quickBuy(pinnedProduct)}
+          className="shrink-0 px-3 h-9 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-card whitespace-nowrap"
+        >
+          Buy now
+        </button>
+      </div>
+    </div>
+  ) : null;
+
   return (
     <div className="fixed inset-0 z-50 bg-black text-white flex flex-col">
       {stream.cover && (
@@ -423,6 +447,8 @@ function LiveRoom({ stream, onLeave }: { stream: EnrichedStream; onLeave: () => 
           </div>
         ))}
       </div>
+
+      {FloatingPinned}
 
       <div className="pointer-events-none absolute right-2 bottom-24 z-10 w-20 h-64">
         {hearts.map((h) => (

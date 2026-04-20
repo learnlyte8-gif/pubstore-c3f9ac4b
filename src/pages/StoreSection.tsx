@@ -636,11 +636,45 @@ function ShippingView() {
 function ProfileView() {
   const { data: supplier } = useQuery({ queryKey: ["my-supplier"], queryFn: fetchMySupplier });
   const qc = useQueryClient();
-  const [form, setForm] = useState({ name: "", country: "", about: "" });
+  const [form, setForm] = useState({ name: "", country: "", about: "", logo: "", banner: "" });
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState<"logo" | "banner" | null>(null);
+  const logoRef = useRef<HTMLInputElement>(null);
+  const bannerRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
-    if (supplier) setForm({ name: supplier.name, country: supplier.country, about: supplier.about });
+    if (supplier) setForm({
+      name: supplier.name,
+      country: supplier.country,
+      about: supplier.about,
+      logo: supplier.logo || "",
+      banner: supplier.banner || "",
+    });
   }, [supplier]);
+
+  const uploadImage = async (file: File, kind: "logo" | "banner") => {
+    if (!supplier) return;
+    setUploading(kind);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${supplier.id}/${kind}-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("product-images").upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from("product-images").getPublicUrl(path);
+      setForm((f) => ({ ...f, [kind]: data.publicUrl }));
+      const updatePayload = kind === "logo" ? { logo: data.publicUrl } : { banner: data.publicUrl };
+      const { error: updErr } = await supabase.from("suppliers").update(updatePayload).eq("id", supplier.id);
+      if (updErr) throw updErr;
+      qc.invalidateQueries({ queryKey: ["my-supplier"] });
+      qc.invalidateQueries({ queryKey: ["supplier", supplier.id] });
+      toast.success(`${kind === "logo" ? "Logo" : "Banner"} updated`);
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
+    } finally {
+      setUploading(null);
+    }
+  };
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supplier) return;
@@ -651,8 +685,67 @@ function ProfileView() {
     setSaving(false);
     if (error) toast.error(error.message); else { toast.success("Saved"); qc.invalidateQueries({ queryKey: ["my-supplier"] }); }
   };
+
   return (
-    <form onSubmit={save} className="px-4 py-4 space-y-4">
+    <form onSubmit={save} className="px-4 py-4 space-y-5">
+      {/* Banner */}
+      <div>
+        <p className="text-xs font-bold mb-2 text-muted-foreground uppercase tracking-wide">Banner</p>
+        <button
+          type="button"
+          onClick={() => bannerRef.current?.click()}
+          className="relative w-full aspect-[3/1] rounded-2xl overflow-hidden border-2 border-dashed border-border bg-muted hover:border-primary transition-colors group"
+        >
+          {form.banner ? (
+            <img src={form.banner} alt="Banner" className="absolute inset-0 w-full h-full object-cover" />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
+              <ImageIcon className="w-8 h-8 mb-1" />
+              <p className="text-xs font-medium">Tap to upload banner</p>
+            </div>
+          )}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+            {uploading === "banner" ? (
+              <Loader2 className="w-6 h-6 text-white animate-spin" />
+            ) : form.banner ? (
+              <span className="opacity-0 group-hover:opacity-100 px-3 py-1.5 rounded-full bg-white/90 text-foreground text-xs font-bold transition-opacity">Change banner</span>
+            ) : null}
+          </div>
+        </button>
+        <input ref={bannerRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0], "banner")} />
+      </div>
+
+      {/* Logo */}
+      <div>
+        <p className="text-xs font-bold mb-2 text-muted-foreground uppercase tracking-wide">Logo</p>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => logoRef.current?.click()}
+            className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-dashed border-border bg-muted hover:border-primary transition-colors flex items-center justify-center shrink-0"
+          >
+            {form.logo ? (
+              <img src={form.logo} alt="Logo" className="absolute inset-0 w-full h-full object-cover" />
+            ) : (
+              <ImageIcon className="w-6 h-6 text-muted-foreground" />
+            )}
+            {uploading === "logo" && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                <Loader2 className="w-5 h-5 text-white animate-spin" />
+              </div>
+            )}
+          </button>
+          <div className="flex-1">
+            <p className="text-sm font-semibold">Store logo</p>
+            <p className="text-[11px] text-muted-foreground">Square image, at least 200×200px</p>
+            <button type="button" onClick={() => logoRef.current?.click()} className="text-xs font-bold text-primary mt-1">
+              {form.logo ? "Replace" : "Upload"}
+            </button>
+          </div>
+        </div>
+        <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0], "logo")} />
+      </div>
+
       <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Store name" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
       <input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} placeholder="Country" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
       <textarea value={form.about} onChange={(e) => setForm({ ...form, about: e.target.value })} placeholder="About your store" rows={4} className="w-full rounded-xl border bg-background p-4 text-sm" />
