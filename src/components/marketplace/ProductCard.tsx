@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import { Heart, Star, Plus, Truck } from "lucide-react";
+import { Heart, Star, Plus, Truck, ShieldCheck, Award } from "lucide-react";
 import { toast } from "sonner";
-import { type Product, discountPct } from "@/data/products";
+import { type Product, discountPct, getSupplier } from "@/data/products";
 import { useShop } from "@/store/shop";
 
 const fmtPrice = (n: number) => `$${n.toFixed(2)}`;
