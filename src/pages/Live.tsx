@@ -527,9 +527,11 @@ function LiveRoom({ stream, onLeave }: { stream: EnrichedStream; onLeave: () => 
                           className="px-3 h-8 rounded-full bg-primary text-primary-foreground text-[10px] font-bold shadow-card"
                         >
                           Buy now
-                    </button>
-                  </div>
-                ))
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>
