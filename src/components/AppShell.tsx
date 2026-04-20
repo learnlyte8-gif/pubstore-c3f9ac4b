@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
-import { Home, Search, PlusSquare, Heart, User, Send, ShoppingCart } from "lucide-react";
+import { Home, Search, LayoutGrid, Heart, User, ShoppingCart, Bell } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useShop } from "@/store/shop";
@@ -10,7 +10,7 @@ export default function AppShell() {
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
   const [checked, setChecked] = useState(false);
-  const { cartCount } = useShop();
+  const { cartCount, wishlist } = useShop();
 
   useEffect(() => {
     const verifyProfile = async (s: Session) => {
@@ -42,28 +42,36 @@ export default function AppShell() {
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground flex flex-col">
-      {/* Top bar — IG style */}
+      {/* Top bar — marketplace style */}
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border safe-top">
-        <div className="max-w-2xl mx-auto h-12 px-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="max-w-2xl mx-auto h-14 px-4 flex items-center gap-3">
+          <Link to="/home" className="flex items-center gap-2 shrink-0">
             <img src={logo} alt="" width={28} height={28} className="w-7 h-7" />
-            <span className="font-brand text-2xl tracking-wide">PUBSTORE</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link to="/cart" aria-label="Cart" className="relative p-1">
-              <ShoppingCart className="w-6 h-6" strokeWidth={1.8} />
+            <span className="font-brand text-xl tracking-wide hidden sm:inline">PUBSTORE</span>
+          </Link>
+
+          {/* Search pill */}
+          <Link
+            to="/search"
+            className="flex-1 h-9 rounded-full bg-muted hover:bg-muted/80 transition flex items-center gap-2 px-4 text-sm text-muted-foreground"
+            aria-label="Search products"
+          >
+            <Search className="w-4 h-4" strokeWidth={2} />
+            <span className="truncate">Search products, suppliers...</span>
+          </Link>
+
+          <div className="flex items-center gap-1 shrink-0">
+            <button aria-label="Notifications" className="p-2 rounded-full hover:bg-muted transition">
+              <Bell className="w-5 h-5" strokeWidth={1.8} />
+            </button>
+            <Link to="/cart" aria-label="Cart" className="relative p-2 rounded-full hover:bg-muted transition">
+              <ShoppingCart className="w-5 h-5" strokeWidth={1.8} />
               {cartCount > 0 && (
-                <span className="absolute -top-0.5 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+                <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
                   {cartCount > 99 ? "99+" : cartCount}
                 </span>
               )}
             </Link>
-            <button aria-label="Activity" className="p-1">
-              <Heart className="w-6 h-6" strokeWidth={1.8} />
-            </button>
-            <button aria-label="Messages" className="p-1">
-              <Send className="w-6 h-6" strokeWidth={1.8} />
-            </button>
           </div>
         </div>
       </header>
@@ -73,14 +81,14 @@ export default function AppShell() {
         <Outlet />
       </main>
 
-      {/* Bottom tab bar — mobile only */}
+      {/* Bottom tab bar — e-commerce */}
       <nav className="fixed bottom-0 inset-x-0 z-40 bg-background border-t border-border safe-bottom lg:hidden">
-        <ul className="max-w-2xl mx-auto h-14 px-2 flex items-center justify-around">
+        <ul className="max-w-2xl mx-auto h-16 px-2 flex items-center justify-around">
           <TabItem to="/home" icon={Home} label="Home" />
-          <TabItem to="/search" icon={Search} label="Search" />
-          <TabItem to="/create" icon={PlusSquare} label="Create" />
-          <TabItem to="/activity" icon={Heart} label="Activity" />
-          <TabItem to="/profile" icon={User} label="Profile" />
+          <TabItem to="/categories" icon={LayoutGrid} label="Categories" />
+          <TabItem to="/cart" icon={ShoppingCart} label="Cart" badge={cartCount} />
+          <TabItem to="/wishlist" icon={Heart} label="Wishlist" badge={wishlist.length} />
+          <TabItem to="/profile" icon={User} label="Account" />
         </ul>
       </nav>
     </div>
@@ -91,21 +99,39 @@ function TabItem({
   to,
   icon: Icon,
   label,
+  badge,
 }: {
   to: string;
   icon: typeof Home;
   label: string;
+  badge?: number;
 }) {
   return (
     <li className="flex-1">
       <NavLink
         to={to}
         className={({ isActive }) =>
-          `flex items-center justify-center h-12 ${isActive ? "text-foreground" : "text-foreground/80"}`
+          `flex flex-col items-center justify-center gap-0.5 h-14 ${
+            isActive ? "text-primary" : "text-muted-foreground"
+          }`
         }
         aria-label={label}
       >
-        {({ isActive }) => <Icon className="w-7 h-7" strokeWidth={isActive ? 2.4 : 1.8} />}
+        {({ isActive }) => (
+          <>
+            <span className="relative">
+              <Icon className="w-5 h-5" strokeWidth={isActive ? 2.4 : 1.8} />
+              {badge !== undefined && badge > 0 && (
+                <span className="absolute -top-1.5 -right-2 min-w-[16px] h-[16px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">
+                  {badge > 99 ? "99+" : badge}
+                </span>
+              )}
+            </span>
+            <span className={`text-[10px] ${isActive ? "font-semibold" : "font-medium"}`}>
+              {label}
+            </span>
+          </>
+        )}
       </NavLink>
     </li>
   );
