@@ -1,16 +1,13 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Search, SlidersHorizontal, Mic, TrendingUp, Sparkles, LayoutGrid, type LucideIcon } from "lucide-react";
+import { TrendingUp, Sparkles, LayoutGrid, type LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import CategoryGrid from "@/components/marketplace/CategoryGrid";
 import PromoBanner from "@/components/marketplace/PromoBanner";
 import FlashDeals from "@/components/marketplace/FlashDeals";
 import ProductCard from "@/components/marketplace/ProductCard";
-import { TRENDING, PRODUCTS, getRecommended, type Product } from "@/data/products";
+import { TRENDING, PRODUCTS, getRecommended } from "@/data/products";
 
 const Home = () => {
-  const navigate = useNavigate();
-  const [query, setQuery] = useState("");
   const [interests, setInterests] = useState<string[]>([]);
   const [name, setName] = useState<string>("");
 
@@ -30,41 +27,49 @@ const Home = () => {
   }, []);
 
   const recommended = getRecommended(interests);
-  const filtered: Product[] = query
-    ? PRODUCTS.filter((p) => p.title.toLowerCase().includes(query.toLowerCase()))
-    : recommended;
-
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Search results inline; later route to /search
-  };
 
   return (
     <div className="pb-6">
-      {/* Search bar */}
-      <section className="sticky top-12 z-30 bg-background/95 backdrop-blur border-b border-border">
-        <form onSubmit={onSubmit} className="px-4 py-2.5 flex items-center gap-2">
-          <div className="flex-1 relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search products, brands & shops"
-              className="w-full h-10 bg-muted rounded-full pl-9 pr-10 text-sm outline-none focus:ring-2 focus:ring-primary/40"
-            />
-            <Mic className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          </div>
-          <button
-            type="button"
-            aria-label="Filters"
-            className="w-10 h-10 rounded-full bg-muted flex items-center justify-center"
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-          </button>
-        </form>
+      {name && (
+        <div className="px-4 pt-4">
+          <p className="text-xs text-muted-foreground">Welcome back</p>
+          <h1 className="text-lg font-semibold">{name}</h1>
+        </div>
+      )}
+
+      <PromoBanner />
+      <CategoryGrid />
+      <FlashDeals />
+
+      <section className="px-4 mt-6">
+        <SectionHeader icon={TrendingUp} title="Trending now" subtitle="Most loved this week" />
+        <div className="flex gap-3 overflow-x-auto scrollbar-none mt-3 -mx-1 px-1 pb-1">
+          {TRENDING.map((p) => (
+            <ProductCard key={p.id} product={p} variant="compact" />
+          ))}
+        </div>
       </section>
 
+      <section className="px-4 mt-6">
+        <SectionHeader icon={Sparkles} title="For you" subtitle="Picked from your interests" />
+        <div className="grid grid-cols-2 gap-3 mt-3">
+          {recommended.slice(0, 12).map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+      </section>
+
+      <section className="px-4 mt-6">
+        <SectionHeader icon={LayoutGrid} title="Explore more" />
+        <div className="grid grid-cols-2 gap-3 mt-3">
+          {PRODUCTS.map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+};
 
 function SectionHeader({
   title,
@@ -79,7 +84,7 @@ function SectionHeader({
     <div className="flex items-end justify-between">
       <div className="flex items-start gap-2">
         {Icon && (
-          <span className="w-7 h-7 rounded-md bg-muted flex items-center justify-center mt-0.5">
+          <span className="w-7 h-7 rounded-md bg-muted flex items-center justify-center mt-0.5 shadow-soft">
             <Icon className="w-4 h-4 text-foreground" strokeWidth={1.8} />
           </span>
         )}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
-import { Home, Search, LayoutGrid, Heart, User, ShoppingCart, Bell } from "lucide-react";
+import { Home, Search, LayoutGrid, Heart, User, ShoppingCart, Bell, MessageCircle } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useShop } from "@/store/shop";
@@ -42,18 +42,17 @@ export default function AppShell() {
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground flex flex-col">
-      {/* Top bar — marketplace style */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border safe-top">
+      {/* Top bar */}
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border safe-top shadow-soft">
         <div className="max-w-2xl mx-auto h-14 px-4 flex items-center gap-3">
           <Link to="/home" className="flex items-center gap-2 shrink-0">
             <img src={logo} alt="" width={28} height={28} className="w-7 h-7" />
             <span className="font-brand text-xl tracking-wide hidden sm:inline">PUBSTORE</span>
           </Link>
 
-          {/* Search pill */}
           <Link
             to="/search"
-            className="flex-1 h-9 rounded-full bg-muted hover:bg-muted/80 transition flex items-center gap-2 px-4 text-sm text-muted-foreground"
+            className="flex-1 h-9 rounded-full bg-muted hover:bg-muted/80 transition flex items-center gap-2 px-4 text-sm text-muted-foreground shadow-soft"
             aria-label="Search products"
           >
             <Search className="w-4 h-4" strokeWidth={2} />
@@ -67,7 +66,7 @@ export default function AppShell() {
             <Link to="/cart" aria-label="Cart" className="relative p-2 rounded-full hover:bg-muted transition">
               <ShoppingCart className="w-5 h-5" strokeWidth={1.8} />
               {cartCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+                <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center shadow-soft">
                   {cartCount > 99 ? "99+" : cartCount}
                 </span>
               )}
@@ -76,17 +75,16 @@ export default function AppShell() {
         </div>
       </header>
 
-      {/* Page content */}
       <main className="flex-1 max-w-2xl w-full mx-auto pb-20 lg:pb-4">
         <Outlet />
       </main>
 
-      {/* Bottom tab bar — e-commerce */}
-      <nav className="fixed bottom-0 inset-x-0 z-40 bg-background border-t border-border safe-bottom lg:hidden">
-        <ul className="max-w-2xl mx-auto h-16 px-2 flex items-center justify-around">
+      {/* Bottom tab bar */}
+      <nav className="fixed bottom-0 inset-x-0 z-40 bg-background border-t border-border safe-bottom lg:hidden shadow-elevated">
+        <ul className="max-w-2xl mx-auto h-16 px-1 flex items-center justify-around">
           <TabItem to="/home" icon={Home} label="Home" />
           <TabItem to="/categories" icon={LayoutGrid} label="Categories" />
-          <TabItem to="/cart" icon={ShoppingCart} label="Cart" badge={cartCount} />
+          <TabItem to="/messages" icon={MessageCircle} label="Chat" />
           <TabItem to="/wishlist" icon={Heart} label="Wishlist" badge={wishlist.length} />
           <TabItem to="/profile" icon={User} label="Account" />
         </ul>
@@ -122,7 +120,7 @@ function TabItem({
             <span className="relative">
               <Icon className="w-5 h-5" strokeWidth={isActive ? 2.4 : 1.8} />
               {badge !== undefined && badge > 0 && (
-                <span className="absolute -top-1.5 -right-2 min-w-[16px] h-[16px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">
+                <span className="absolute -top-1.5 -right-2 min-w-[16px] h-[16px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center shadow-soft">
                   {badge > 99 ? "99+" : badge}
                 </span>
               )}
