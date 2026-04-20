@@ -130,12 +130,27 @@ const Home = () => {
   );
 };
 
-function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+function SectionHeader({
+  title,
+  subtitle,
+  icon: Icon,
+}: {
+  title: string;
+  subtitle?: string;
+  icon?: LucideIcon;
+}) {
   return (
     <div className="flex items-end justify-between">
-      <div>
-        <h2 className="text-base font-bold">{title}</h2>
-        {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+      <div className="flex items-start gap-2">
+        {Icon && (
+          <span className="w-7 h-7 rounded-md bg-muted flex items-center justify-center mt-0.5">
+            <Icon className="w-4 h-4 text-foreground" strokeWidth={1.8} />
+          </span>
+        )}
+        <div>
+          <h2 className="text-base font-bold leading-tight">{title}</h2>
+          {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+        </div>
       </div>
       <button className="text-xs text-primary font-semibold">See all</button>
     </div>
