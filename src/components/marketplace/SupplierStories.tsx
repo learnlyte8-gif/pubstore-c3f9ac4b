@@ -158,16 +158,19 @@ function StoryViewer({
   stories,
   startIdx,
   onClose,
+  onAdvance,
 }: {
   stories: Story[];
   startIdx: number;
   onClose: () => void;
+  onAdvance?: (st: Story) => void;
 }) {
   const [idx, setIdx] = useState(startIdx);
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     setProgress(0);
+    onAdvance?.(stories[idx]);
     const t = setInterval(() => {
       setProgress((p) => {
         if (p >= 100) {
@@ -182,7 +185,7 @@ function StoryViewer({
       });
     }, 100);
     return () => clearInterval(t);
-  }, [idx, stories.length, onClose]);
+  }, [idx, stories, onClose, onAdvance]);
 
   const story = stories[idx];
   if (!story) return null;
