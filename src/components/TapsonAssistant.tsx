@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Sparkles, X, Send, Loader2, Eraser } from "lucide-react";
+import { Sparkles, X, Send, Loader2, Eraser, ShieldCheck, Award, Star, ShoppingBag, Radio, ArrowRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
-import { PRODUCTS, SUPPLIERS, CATEGORIES } from "@/data/products";
+import { PRODUCTS, SUPPLIERS, CATEGORIES, getProduct, getSupplier } from "@/data/products";
+import { useShop } from "@/store/shop";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -21,13 +22,13 @@ function buildContext(): string {
   const cats = CATEGORIES.map((c) => c.name).join(", ");
   const verified = SUPPLIERS.filter((s) => s.verified).length;
   const gold = SUPPLIERS.filter((s) => s.gold).length;
-  const sampleProducts = PRODUCTS.slice(0, 12)
+  const sampleProducts = PRODUCTS.slice(0, 24)
     .map(
       (p) =>
-        `- ${p.title} (id:${p.id}) — $${p.price} · MOQ ${p.moq} ${p.unit} · ${p.category} · supplier:${p.supplierId}`
+        `- ${p.title} (id:${p.id}) — $${p.price} · MOQ ${p.moq} ${p.unit} · ${p.category} · supplier:${p.supplierId} · rating:${p.rating}`
     )
     .join("\n");
-  const sampleSuppliers = SUPPLIERS.slice(0, 6)
+  const allSuppliers = SUPPLIERS
     .map(
       (s) =>
         `- ${s.name} (id:${s.id}) — ${s.country} · ${s.rating}★ · ${s.responseRate}% resp · ${
@@ -38,11 +39,11 @@ function buildContext(): string {
   return `Categories: ${cats}
 Total products: ${PRODUCTS.length} | Suppliers: ${SUPPLIERS.length} (${verified} verified, ${gold} gold)
 
-Sample products:
+Products (use these IDs in ::product[ID] tokens):
 ${sampleProducts}
 
-Top suppliers:
-${sampleSuppliers}`;
+Suppliers (use these IDs in ::supplier[ID] and ::live[ID] tokens):
+${allSuppliers}`;
 }
 
 export default function TapsonAssistant() {
@@ -291,48 +292,214 @@ export default function TapsonAssistant() {
 
 function MessageBubble({ msg }: { msg: Msg }) {
   const isUser = msg.role === "user";
-  return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
-      {!isUser && (
-        <span className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center mr-2 shrink-0 shadow-soft">
-          <Sparkles className="w-3.5 h-3.5" />
-        </span>
-      )}
-      <div
-        className={`max-w-[78%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed shadow-soft ${
-          isUser
-            ? "bg-primary text-primary-foreground rounded-br-sm"
-            : "bg-card border border-border rounded-bl-sm"
-        }`}
-      >
-        {isUser ? (
+  if (isUser) {
+    return (
+      <div className="flex justify-end">
+        <div className="max-w-[78%] rounded-2xl rounded-br-sm bg-primary text-primary-foreground px-3.5 py-2 text-sm leading-relaxed shadow-soft">
           <p className="whitespace-pre-wrap">{msg.content}</p>
-        ) : (
-          <div className="prose prose-sm max-w-none text-foreground prose-p:my-1.5 prose-ul:my-1.5 prose-ol:my-1.5 prose-li:my-0 prose-strong:text-foreground prose-headings:text-foreground prose-headings:text-sm prose-headings:font-bold">
-            <ReactMarkdown
-              components={{
-                a: ({ href, children }) => {
-                  if (href?.startsWith("/")) {
-                    return (
-                      <Link to={href} className="text-primary font-semibold underline">
-                        {children}
-                      </Link>
-                    );
-                  }
-                  return (
-                    <a href={href} className="text-primary font-semibold underline" target="_blank" rel="noopener noreferrer">
-                      {children}
-                    </a>
-                  );
-                },
-              }}
-            >
-              {linkifyRoutes(msg.content)}
-            </ReactMarkdown>
-          </div>
-        )}
+        </div>
+      </div>
+    );
+  }
+
+  // Split assistant content into text + rich card blocks
+  const blocks = parseBlocks(msg.content);
+
+  return (
+    <div className="flex gap-2 items-start">
+      <span className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center shrink-0 shadow-soft">
+        <Sparkles className="w-3.5 h-3.5" />
+      </span>
+      <div className="flex-1 min-w-0 space-y-2">
+        {blocks.map((b, i) => {
+          if (b.type === "text") {
+            if (!b.text.trim()) return null;
+            return (
+              <div
+                key={i}
+                className="rounded-2xl rounded-bl-sm bg-card border border-border shadow-soft px-3.5 py-2 text-sm leading-relaxed prose prose-sm max-w-none text-foreground prose-p:my-1.5 prose-ul:my-1.5 prose-ol:my-1.5 prose-li:my-0 prose-strong:text-foreground prose-headings:text-foreground prose-headings:text-sm prose-headings:font-bold"
+              >
+                <ReactMarkdown
+                  components={{
+                    a: ({ href, children }) => {
+                      if (href?.startsWith("/")) {
+                        return (
+                          <Link to={href} className="text-primary font-semibold underline">
+                            {children}
+                          </Link>
+                        );
+                      }
+                      return (
+                        <a href={href} className="text-primary font-semibold underline" target="_blank" rel="noopener noreferrer">
+                          {children}
+                        </a>
+                      );
+                    },
+                  }}
+                >
+                  {linkifyRoutes(b.text)}
+                </ReactMarkdown>
+              </div>
+            );
+          }
+          if (b.type === "product") return <TapsonProductCard key={i} id={b.id} />;
+          if (b.type === "supplier") return <TapsonSupplierCard key={i} id={b.id} />;
+          if (b.type === "live") return <TapsonLiveCard key={i} id={b.id} />;
+          if (b.type === "cta") return <TapsonCTA key={i} to={b.to} label={b.label} />;
+          return null;
+        })}
       </div>
     </div>
+  );
+}
+
+type Block =
+  | { type: "text"; text: string }
+  | { type: "product"; id: string }
+  | { type: "supplier"; id: string }
+  | { type: "live"; id: string }
+  | { type: "cta"; to: string; label: string };
+
+function parseBlocks(content: string): Block[] {
+  const re = /::(product|supplier|live)\[([a-z0-9_-]+)\]|::cta\[([^|\]]+)\|([^\]]+)\]/gi;
+  const blocks: Block[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(content)) !== null) {
+    if (m.index > last) blocks.push({ type: "text", text: content.slice(last, m.index) });
+    if (m[1]) {
+      const kind = m[1].toLowerCase() as "product" | "supplier" | "live";
+      blocks.push({ type: kind, id: m[2] });
+    } else if (m[3]) {
+      blocks.push({ type: "cta", to: m[3].trim(), label: m[4].trim() });
+    }
+    last = m.index + m[0].length;
+  }
+  if (last < content.length) blocks.push({ type: "text", text: content.slice(last) });
+  return blocks.length ? blocks : [{ type: "text", text: content }];
+}
+
+function TapsonProductCard({ id }: { id: string }) {
+  const p = getProduct(id);
+  const { addToCart } = useShop();
+  if (!p) return null;
+  const s = getSupplier(p.supplierId);
+  return (
+    <div className="rounded-2xl border border-border bg-card shadow-card overflow-hidden animate-fade-in">
+      <div className="flex">
+        <Link to={`/product/${p.id}`} className="shrink-0">
+          <img src={p.image} alt="" className="w-24 h-24 object-cover" />
+        </Link>
+        <div className="flex-1 min-w-0 p-2.5">
+          <Link to={`/product/${p.id}`} className="text-xs font-bold leading-snug line-clamp-2">
+            {p.title}
+          </Link>
+          <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground">
+            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+            {p.rating} · {p.sold.toLocaleString()} sold
+          </div>
+          <div className="flex items-center justify-between mt-1.5">
+            <div>
+              <p className="text-sm font-bold leading-none">${p.price}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                MOQ {p.moq} {p.unit}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                addToCart(p.id, p.moq);
+                toast.success("Added to cart");
+              }}
+              className="px-2.5 h-7 rounded-full bg-foreground text-background text-[10px] font-bold flex items-center gap-1 shadow-soft"
+            >
+              <ShoppingBag className="w-3 h-3" /> Add
+            </button>
+          </div>
+        </div>
+      </div>
+      {s && (
+        <Link
+          to={`/supplier/${s.id}`}
+          className="flex items-center gap-2 px-2.5 py-1.5 border-t border-border bg-muted/40 text-[10px]"
+        >
+          <img src={s.logo} alt="" className="w-4 h-4 rounded-full object-cover" />
+          <span className="font-semibold truncate">{s.name}</span>
+          {s.verified && <ShieldCheck className="w-3 h-3 text-primary" />}
+          {s.gold && <Award className="w-3 h-3 text-amber-600" />}
+          <span className="ml-auto text-muted-foreground">{s.country}</span>
+        </Link>
+      )}
+    </div>
+  );
+}
+
+function TapsonSupplierCard({ id }: { id: string }) {
+  const s = getSupplier(id);
+  if (!s) return null;
+  return (
+    <Link
+      to={`/supplier/${s.id}`}
+      className="block rounded-2xl border border-border bg-card shadow-card overflow-hidden animate-fade-in"
+    >
+      <div className="relative h-16">
+        <img src={s.banner} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-r from-foreground/60 to-transparent" />
+      </div>
+      <div className="px-3 pb-3 -mt-6 relative">
+        <img src={s.logo} alt="" className="w-12 h-12 rounded-xl object-cover ring-4 ring-card" />
+        <div className="mt-1.5 flex items-center gap-1">
+          <p className="text-sm font-bold truncate">{s.name}</p>
+          {s.verified && <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0" />}
+          {s.gold && <Award className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
+        </div>
+        <p className="text-[10px] text-muted-foreground">
+          {s.country} · {s.yearsActive}y · {s.responseRate}% response
+        </p>
+        <div className="flex items-center gap-3 mt-2 text-[10px]">
+          <span className="flex items-center gap-1 font-semibold">
+            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+            {s.rating.toFixed(1)}
+          </span>
+          <span className="text-muted-foreground">On-time {s.onTimeDelivery}%</span>
+          <span className="ml-auto text-primary font-bold inline-flex items-center gap-0.5">
+            View <ArrowRight className="w-3 h-3" />
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function TapsonLiveCard({ id }: { id: string }) {
+  const s = getSupplier(id);
+  if (!s) return null;
+  const thumb = PRODUCTS.find((p) => p.supplierId === id)?.image ?? s.banner;
+  return (
+    <Link
+      to={`/live/live-${s.id}`}
+      className="block relative rounded-2xl overflow-hidden shadow-card animate-fade-in aspect-[16/9]"
+    >
+      <img src={thumb} alt="" className="absolute inset-0 w-full h-full object-cover" />
+      <div className="absolute inset-0 bg-gradient-to-t from-foreground/85 via-transparent to-foreground/30" />
+      <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center gap-1 animate-pulse">
+        <Radio className="w-2.5 h-2.5" /> LIVE
+      </span>
+      <div className="absolute bottom-2 inset-x-2 text-background">
+        <p className="text-xs font-bold leading-tight">{s.name} is live</p>
+        <p className="text-[10px] opacity-90">Tap to join the stream →</p>
+      </div>
+    </Link>
+  );
+}
+
+function TapsonCTA({ to, label }: { to: string; label: string }) {
+  return (
+    <Link
+      to={to}
+      className="inline-flex items-center gap-1.5 px-3.5 h-9 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-card hover:shadow-elevated transition animate-fade-in"
+    >
+      {label} <ArrowRight className="w-3.5 h-3.5" />
+    </Link>
   );
 }
 
@@ -351,6 +518,7 @@ function linkifyRoutes(text: string): string {
         "/categories": "Categories",
         "/home": "Home",
         "/account": "Account",
+        "/live": "Watch live streams",
       }[path] ?? path;
     return `[${label}](${path})`;
   });
