@@ -12,6 +12,11 @@ import AppShell from "./components/AppShell.tsx";
 import Home from "./pages/Home.tsx";
 import Cart from "./pages/Cart.tsx";
 import ProductDetail from "./pages/ProductDetail.tsx";
+import Search from "./pages/Search.tsx";
+import Categories from "./pages/Categories.tsx";
+import Wishlist from "./pages/Wishlist.tsx";
+import Messages from "./pages/Messages.tsx";
+import Account from "./pages/Account.tsx";
 import Placeholder from "./pages/Placeholder.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
