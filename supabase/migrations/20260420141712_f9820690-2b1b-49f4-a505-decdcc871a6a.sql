@@ -1,0 +1,3 @@
+ALTER TABLE public.live_streams REPLICA IDENTITY FULL;
+ALTER TABLE public.live_messages REPLICA IDENTITY FULL;
+ALTER TABLE public.live_reactions REPLICA IDENTITY FULL;
