@@ -662,7 +662,8 @@ function ProfileView() {
       if (upErr) throw upErr;
       const { data } = supabase.storage.from("product-images").getPublicUrl(path);
       setForm((f) => ({ ...f, [kind]: data.publicUrl }));
-      const { error: updErr } = await supabase.from("suppliers").update({ [kind]: data.publicUrl }).eq("id", supplier.id);
+      const updatePayload = kind === "logo" ? { logo: data.publicUrl } : { banner: data.publicUrl };
+      const { error: updErr } = await supabase.from("suppliers").update(updatePayload).eq("id", supplier.id);
       if (updErr) throw updErr;
       qc.invalidateQueries({ queryKey: ["my-supplier"] });
       qc.invalidateQueries({ queryKey: ["supplier", supplier.id] });
