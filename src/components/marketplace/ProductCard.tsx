@@ -84,6 +84,12 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
           >
             <Heart className={`w-3.5 h-3.5 ${liked ? "fill-destructive text-destructive" : "text-foreground"}`} />
           </button>
+          {countdown && (
+            <span className={`absolute bottom-1.5 left-1.5 right-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center justify-center gap-0.5 tabular-nums ${countdown.urgent ? "bg-destructive text-destructive-foreground animate-pulse" : "bg-foreground/85 text-background"}`}>
+              <Timer className="w-3 h-3" />
+              {countdown.h > 0 ? `${countdown.h}h ` : ""}{pad(countdown.m)}:{pad(countdown.s)}
+            </span>
+          )}
         </div>
         <div className="mt-1.5">
           <p className="text-[11px] font-bold text-destructive">{fmtPrice(product.price)}</p>
