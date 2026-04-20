@@ -149,6 +149,13 @@
   .safe-top {
     padding-top: env(safe-area-inset-top);
   }
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @keyframes splash-pulse {
