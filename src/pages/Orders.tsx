@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Package, Truck, CheckCircle2, Clock, RotateCcw, MessageCircle,
-  ChevronRight, XCircle, FileText, MapPin,
+  ChevronRight, XCircle, FileText, MapPin, Star, X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShop } from "@/store/shop";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 type OrderStatus = "placed" | "processing" | "shipped" | "delivered" | "cancelled";
 
@@ -29,6 +30,8 @@ type Order = {
   eta: string | null;
   subtotal: number;
   shipping: number;
+  discount?: number;
+  coupon_code?: string | null;
   total: number;
   supplier_id: string;
   supplier?: { id: string; name: string; logo: string | null; country: string | null };
@@ -59,6 +62,7 @@ export default function Orders() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | OrderStatus>("all");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [reviewedProductIds, setReviewedProductIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     (async () => {
@@ -73,9 +77,10 @@ export default function Orders() {
       if (list.length) {
         const ids = list.map((o) => o.id);
         const supIds = Array.from(new Set(list.map((o) => o.supplier_id)));
-        const [{ data: items }, { data: sups }] = await Promise.all([
+        const [{ data: items }, { data: sups }, { data: revs }] = await Promise.all([
           supabase.from("order_items").select("*").in("order_id", ids),
           supabase.from("suppliers").select("id,name,logo,country").in("id", supIds),
+          supabase.from("reviews").select("product_id").eq("user_id", user.id),
         ]);
         const supMap = new Map((sups ?? []).map((s) => [s.id, s]));
         const itemsByOrder = new Map<string, Item[]>();
@@ -89,6 +94,7 @@ export default function Orders() {
           supplier: supMap.get(o.supplier_id) as Order["supplier"],
           items: itemsByOrder.get(o.id) ?? [],
         })));
+        setReviewedProductIds(new Set((revs ?? []).map((r) => r.product_id)));
       } else {
         setOrders([]);
       }
@@ -99,7 +105,15 @@ export default function Orders() {
   const visible = orders.filter((o) => filter === "all" || o.status === filter);
   const open = openId ? orders.find((o) => o.id === openId) : null;
 
-  if (open) return <OrderDetail order={open} onBack={() => setOpenId(null)} onUpdated={(o) => setOrders((xs) => xs.map((x) => x.id === o.id ? o : x))} />;
+  if (open) return (
+    <OrderDetail
+      order={open}
+      reviewedProductIds={reviewedProductIds}
+      onReviewed={(pid) => setReviewedProductIds((s) => new Set(s).add(pid))}
+      onBack={() => setOpenId(null)}
+      onUpdated={(o) => setOrders((xs) => xs.map((x) => x.id === o.id ? o : x))}
+    />
+  );
 
   return (
     <div className="pb-8">
@@ -187,10 +201,19 @@ function OrderCard({ order, onOpen }: { order: Order; onOpen: () => void }) {
   );
 }
 
-function OrderDetail({ order, onBack, onUpdated }: { order: Order; onBack: () => void; onUpdated: (o: Order) => void }) {
+function OrderDetail({
+  order, onBack, onUpdated, reviewedProductIds, onReviewed,
+}: {
+  order: Order;
+  onBack: () => void;
+  onUpdated: (o: Order) => void;
+  reviewedProductIds: Set<string>;
+  onReviewed: (pid: string) => void;
+}) {
   const meta = STATUS_META[order.status];
   const activeStep = order.status === "cancelled" ? -1 : STEPS.indexOf(order.status);
   const { addToCart } = useShop();
+  const [reviewItem, setReviewItem] = useState<Item | null>(null);
 
   const cancel = async () => {
     const { error } = await supabase.from("orders").update({ status: "cancelled" }).eq("id", order.id);
@@ -203,6 +226,8 @@ function OrderDetail({ order, onBack, onUpdated }: { order: Order; onBack: () =>
     for (const it of order.items) await addToCart(it.product_id, it.qty);
     toast.success("Items added back to cart");
   };
+
+  const isDelivered = order.status === "delivered";
 
   return (
     <div className="pb-8">
@@ -265,16 +290,35 @@ function OrderDetail({ order, onBack, onUpdated }: { order: Order; onBack: () =>
         <div className="rounded-2xl bg-card border border-border shadow-card p-4 mt-3">
           <p className="text-xs font-bold mb-2">Items ({order.items.length})</p>
           <div className="space-y-2.5">
-            {order.items.map((it) => (
-              <Link to={`/product/${it.product_id}`} key={it.id} className="flex items-center gap-2.5">
-                <img src={it.image ?? "/placeholder.svg"} alt="" className="w-14 h-14 rounded-lg object-cover bg-muted" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs leading-snug line-clamp-2">{it.title}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{it.qty} × ${Number(it.unit_price).toFixed(2)}</p>
+            {order.items.map((it) => {
+              const reviewed = reviewedProductIds.has(it.product_id);
+              return (
+                <div key={it.id} className="flex items-center gap-2.5">
+                  <Link to={`/product/${it.product_id}`} className="shrink-0">
+                    <img src={it.image ?? "/placeholder.svg"} alt="" className="w-14 h-14 rounded-lg object-cover bg-muted" />
+                  </Link>
+                  <div className="flex-1 min-w-0">
+                    <Link to={`/product/${it.product_id}`} className="text-xs leading-snug line-clamp-2 hover:text-primary">{it.title}</Link>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{it.qty} × ${Number(it.unit_price).toFixed(2)}</p>
+                    {isDelivered && (
+                      reviewed ? (
+                        <span className="inline-flex items-center gap-1 mt-1.5 text-[10px] text-emerald-600 font-bold">
+                          <CheckCircle2 className="w-3 h-3" /> Reviewed
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => setReviewItem(it)}
+                          className="inline-flex items-center gap-1 mt-1.5 px-2 h-6 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 text-[10px] font-bold"
+                        >
+                          <Star className="w-3 h-3" /> Write a review
+                        </button>
+                      )
+                    )}
+                  </div>
+                  <p className="text-sm font-bold">${(it.qty * Number(it.unit_price)).toFixed(2)}</p>
                 </div>
-                <p className="text-sm font-bold">${(it.qty * Number(it.unit_price)).toFixed(2)}</p>
-              </Link>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -287,6 +331,9 @@ function OrderDetail({ order, onBack, onUpdated }: { order: Order; onBack: () =>
 
         <div className="rounded-2xl bg-card border border-border shadow-card p-4 mt-3">
           <Row label="Subtotal" value={`$${Number(order.subtotal).toFixed(2)}`} />
+          {Number(order.discount || 0) > 0 && (
+            <Row label={`Discount${order.coupon_code ? ` (${order.coupon_code})` : ""}`} value={`-$${Number(order.discount).toFixed(2)}`} />
+          )}
           <Row label="Shipping" value={Number(order.shipping) === 0 ? "Free" : `$${Number(order.shipping).toFixed(2)}`} />
           <div className="border-t border-border my-2" />
           <Row label="Total" value={`$${Number(order.total).toFixed(2)}`} bold />
@@ -305,6 +352,79 @@ function OrderDetail({ order, onBack, onUpdated }: { order: Order; onBack: () =>
               <FileText className="w-4 h-4" /> Invoice
             </button>
           )}
+        </div>
+      </div>
+
+      {reviewItem && (
+        <ReviewModal
+          item={reviewItem}
+          onClose={() => setReviewItem(null)}
+          onDone={(pid) => { onReviewed(pid); setReviewItem(null); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function ReviewModal({ item, onClose, onDone }: { item: Item; onClose: () => void; onDone: (pid: string) => void }) {
+  const [rating, setRating] = useState(5);
+  const [text, setText] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const submit = async () => {
+    const trimmed = text.trim();
+    if (rating < 1 || rating > 5) { toast.error("Pick a rating"); return; }
+    if (trimmed.length > 1000) { toast.error("Review too long (max 1000 chars)"); return; }
+    setSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { toast.error("Sign in required"); setSaving(false); return; }
+    const { error } = await supabase.from("reviews").insert({
+      product_id: item.product_id,
+      user_id: user.id,
+      rating,
+      text: trimmed || null,
+    });
+    setSaving(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Review posted · thanks!");
+    onDone(item.product_id);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-foreground/60 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
+      <div className="w-full max-w-md bg-card rounded-3xl p-5 shadow-elevated" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-3 mb-3">
+          <img src={item.image ?? "/placeholder.svg"} alt="" className="w-12 h-12 rounded-xl object-cover bg-muted" />
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm">Write a review</p>
+            <p className="text-[11px] text-muted-foreground line-clamp-1">{item.title}</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-muted"><X className="w-4 h-4" /></button>
+        </div>
+        <div className="flex items-center justify-center gap-1 my-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <button key={i} type="button" onClick={() => setRating(i + 1)} aria-label={`${i + 1} stars`}>
+              <Star className={`w-8 h-8 ${i < rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
+            </button>
+          ))}
+        </div>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value.slice(0, 1000))}
+          placeholder="Tell other buyers what you think (optional)…"
+          rows={4}
+          className="w-full rounded-xl border bg-background p-3 text-sm"
+          maxLength={1000}
+        />
+        <p className="text-[10px] text-muted-foreground text-right mt-1">{text.length}/1000</p>
+        <div className="flex gap-2 mt-3">
+          <Button variant="outline" className="flex-1 h-11" onClick={onClose}>Cancel</Button>
+          <Button className="flex-1 h-11" onClick={submit} disabled={saving}>
+            {saving ? "Posting…" : "Post review"}
+          </Button>
         </div>
       </div>
     </div>
