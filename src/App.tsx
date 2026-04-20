@@ -11,6 +11,7 @@ import Onboarding from "./pages/Onboarding.tsx";
 import AppShell from "./components/AppShell.tsx";
 import Home from "./pages/Home.tsx";
 import Cart from "./pages/Cart.tsx";
+import ProductDetail from "./pages/ProductDetail.tsx";
 import Placeholder from "./pages/Placeholder.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -31,6 +32,7 @@ const App = () => (
               <Route element={<AppShell />}>
                 <Route path="/home" element={<Home />} />
                 <Route path="/cart" element={<Cart />} />
+                <Route path="/product/:id" element={<ProductDetail />} />
                 <Route path="/search" element={<Placeholder title="Search" hint="Discover products, creators, and trends." />} />
                 <Route path="/create" element={<Placeholder title="Create" hint="Post a product, photo, or story." />} />
                 <Route path="/activity" element={<Placeholder title="Activity" hint="Likes, comments, and follows will show here." />} />
