@@ -31,11 +31,19 @@ export default function Auth() {
   const [oauthLoading, setOauthLoading] = useState(false);
 
   useEffect(() => {
+    const routeForSession = async (uid: string) => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("profile_completed")
+        .eq("user_id", uid)
+        .maybeSingle();
+      navigate(data?.profile_completed ? "/home" : "/onboarding", { replace: true });
+    };
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (session) navigate("/home", { replace: true });
+      if (session) setTimeout(() => routeForSession(session.user.id), 0);
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate("/home", { replace: true });
+      if (session) routeForSession(session.user.id);
     });
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
