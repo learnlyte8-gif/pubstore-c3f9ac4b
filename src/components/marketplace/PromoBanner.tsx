@@ -33,7 +33,7 @@ export default function PromoBanner() {
   return (
     <section className="px-4 mt-3">
       <div
-        className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${s.bg} h-32 px-5 flex items-center transition-all duration-700`}
+        className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${s.bg} h-32 px-5 flex items-center transition-all duration-700 shadow-elevated`}
       >
         <div className="text-white max-w-[60%]">
           <p className="text-xs font-medium uppercase tracking-wider opacity-90">PUBSTORE</p>

@@ -12,6 +12,11 @@ import AppShell from "./components/AppShell.tsx";
 import Home from "./pages/Home.tsx";
 import Cart from "./pages/Cart.tsx";
 import ProductDetail from "./pages/ProductDetail.tsx";
+import Search from "./pages/Search.tsx";
+import Categories from "./pages/Categories.tsx";
+import Wishlist from "./pages/Wishlist.tsx";
+import Messages from "./pages/Messages.tsx";
+import Account from "./pages/Account.tsx";
 import Placeholder from "./pages/Placeholder.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -33,11 +38,12 @@ const App = () => (
                 <Route path="/home" element={<Home />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/product/:id" element={<ProductDetail />} />
-                <Route path="/search" element={<Placeholder title="Search" hint="Find products, suppliers, and brands." />} />
-                <Route path="/categories" element={<Placeholder title="Categories" hint="Browse all product categories." />} />
-                <Route path="/wishlist" element={<Placeholder title="Wishlist" hint="Items you've saved for later." />} />
+                <Route path="/search" element={<Search />} />
+                <Route path="/categories" element={<Categories />} />
+                <Route path="/wishlist" element={<Wishlist />} />
+                <Route path="/messages" element={<Messages />} />
                 <Route path="/orders" element={<Placeholder title="My Orders" hint="Track and manage your purchases." />} />
-                <Route path="/profile" element={<Placeholder title="Account" hint="Orders, addresses, payment, and settings." />} />
+                <Route path="/profile" element={<Account />} />
               </Route>
               <Route path="/index" element={<Navigate to="/home" replace />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
