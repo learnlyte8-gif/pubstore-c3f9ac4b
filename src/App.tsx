@@ -23,6 +23,14 @@ import RFQ from "./pages/RFQ.tsx";
 import Notifications from "./pages/Notifications.tsx";
 import Compare from "./pages/Compare.tsx";
 import Live from "./pages/Live.tsx";
+import MyStore from "./pages/MyStore.tsx";
+import StoreSection from "./pages/StoreSection.tsx";
+import Addresses from "./pages/Addresses.tsx";
+import PaymentMethods from "./pages/PaymentMethods.tsx";
+import BecomeSupplier from "./pages/BecomeSupplier.tsx";
+import HelpCenter from "./pages/HelpCenter.tsx";
+import Privacy from "./pages/Privacy.tsx";
+import Settings from "./pages/Settings.tsx";
 import Placeholder from "./pages/Placeholder.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -57,6 +65,15 @@ const App = () => (
                 <Route path="/supplier/:id" element={<Supplier />} />
                 <Route path="/profile" element={<Account />} />
                 <Route path="/account" element={<Account />} />
+                <Route path="/store" element={<MyStore />} />
+                <Route path="/store/:section" element={<StoreSection />} />
+                <Route path="/store/:section/:sub" element={<StoreSection />} />
+                <Route path="/addresses" element={<Addresses />} />
+                <Route path="/payment-methods" element={<PaymentMethods />} />
+                <Route path="/become-supplier" element={<BecomeSupplier />} />
+                <Route path="/help" element={<HelpCenter />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/settings" element={<Settings />} />
               </Route>
               <Route path="/index" element={<Navigate to="/home" replace />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

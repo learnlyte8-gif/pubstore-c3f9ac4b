@@ -88,15 +88,15 @@ export default function Account() {
         </Section>
 
         <Section title="Account">
-          <Row icon={MapPin} label="Addresses" hint={profile?.address || "Add address"} to="/profile" />
-          <Row icon={CreditCard} label="Payment methods" hint="Cards, wallets" to="/profile" />
-          <Row icon={Store} label={role === "supplier" ? "My store" : "Become a supplier"} hint="Sell on PUBSTORE" to="/profile" />
+          <Row icon={MapPin} label="Addresses" hint={profile?.address || "Add address"} to="/addresses" />
+          <Row icon={CreditCard} label="Payment methods" hint="Cards, wallets" to="/payment-methods" />
+          <Row icon={Store} label={role === "supplier" ? "My store" : "Become a supplier"} hint="Sell on PUBSTORE" to={role === "supplier" ? "/store" : "/become-supplier"} />
         </Section>
 
         <Section title="Support">
-          <Row icon={HelpCircle} label="Help center" hint="FAQs, contact us" to="/profile" />
-          <Row icon={Shield} label="Privacy & security" hint="Manage your data" to="/profile" />
-          <Row icon={Settings} label="Settings" hint="Notifications, language" to="/profile" />
+          <Row icon={HelpCircle} label="Help center" hint="FAQs, contact us" to="/help" />
+          <Row icon={Shield} label="Privacy & security" hint="Manage your data" to="/privacy" />
+          <Row icon={Settings} label="Settings" hint="Notifications, language" to="/settings" />
         </Section>
 
         <Button variant="outline" className="w-full h-12 shadow-card" onClick={signOut}>
