@@ -8,6 +8,7 @@ import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import logo from "@/assets/pubstore-logo.png";
+import ShoppingBackdrop from "@/components/ShoppingBackdrop";
 
 const signInSchema = z.object({
   email: z.string().trim().email({ message: "Enter a valid email" }).max(255),
@@ -92,8 +93,9 @@ export default function Auth() {
   };
 
   return (
-    <main className="min-h-[100dvh] bg-background flex flex-col items-center justify-between px-6 py-10 sm:py-14">
-      <div className="w-full max-w-sm flex-1 flex flex-col justify-center">
+    <main className="relative min-h-[100dvh] bg-background flex flex-col items-center justify-between px-6 py-10 sm:py-14 overflow-hidden">
+      <ShoppingBackdrop variant="dark" opacity={0.07} />
+      <div className="relative w-full max-w-sm flex-1 flex flex-col justify-center">
         {/* Logo + brand */}
         <div className="flex flex-col items-center mb-10 animate-fade-up">
           <img src={logo} alt="PUBSTORE" width={72} height={72} className="w-18 h-18 mb-4" />
@@ -182,7 +184,7 @@ export default function Auth() {
       </div>
 
       {/* Bottom switch card — Instagram style */}
-      <div className="w-full max-w-sm mt-8">
+      <div className="relative w-full max-w-sm mt-8">
         <div className="border border-border rounded-md py-4 text-center text-sm animate-fade-up" style={{ animationDelay: "200ms" }}>
           {mode === "signin" ? (
             <>
