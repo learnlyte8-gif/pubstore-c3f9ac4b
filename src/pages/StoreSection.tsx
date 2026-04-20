@@ -19,6 +19,7 @@ const titles: Record<string, { title: string; sub: string }> = {
   profile: { title: "Store profile", sub: "Banner, logo, about" },
   settings: { title: "Store settings", sub: "Payouts, taxes, hours" },
   "products/new": { title: "Add new product", sub: "List something new" },
+  "product-edit": { title: "Edit product", sub: "Update details, price, photos" },
   import: { title: "Import from the web", sub: "Alibaba, Amazon, Shopify URLs" },
 };
 
@@ -41,6 +42,7 @@ export default function StoreSection() {
 
       {key === "products" && <ProductsView />}
       {key === "products/new" && <NewProductView />}
+      {section === "product-edit" && sub && <EditProductView productId={sub} />}
       {key === "orders" && <OrdersView />}
       {key === "analytics" && <AnalyticsView />}
       {key === "promote" && <PromoteView />}
@@ -251,7 +253,6 @@ function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: M
         moq: preview.moq ?? 1,
         unit: preview.unit ?? "piece",
         ship_from: supplier.country ?? null,
-        badge: `Imported · ${preview.source}`,
         active: true,
       }).select().single();
       if (error) throw error;
@@ -414,7 +415,6 @@ function BulkImport({ markupMode, markupValue, qc }: { markupMode: MarkupMode; m
           moq: p.moq ?? 1,
           unit: p.unit ?? "piece",
           ship_from: supplier.country ?? null,
-          badge: `Imported · ${p.source}`,
           active: true,
         }).select("id").single();
         if (insErr) throw insErr;

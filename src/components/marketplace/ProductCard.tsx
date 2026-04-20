@@ -25,6 +25,9 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
   const liked = isWishlisted(product.id);
   const off = discountPct(product);
   const supplier = getSupplier(product.supplierId);
+  // Hide internal "Imported · …" badges from public product cards.
+  const displayBadge =
+    product.badge && !/^imported/i.test(product.badge) ? product.badge : null;
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -82,9 +85,9 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
           loading="lazy"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
-        {product.badge && (
-          <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded ${badgeStyle[product.badge]}`}>
-            {product.badge}
+        {displayBadge && badgeStyle[displayBadge as NonNullable<Product["badge"]>] && (
+          <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded ${badgeStyle[displayBadge as NonNullable<Product["badge"]>]}`}>
+            {displayBadge}
           </span>
         )}
         {off > 0 && (
