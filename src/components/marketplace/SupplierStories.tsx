@@ -68,47 +68,85 @@ async function fetchStories(): Promise<Story[]> {
     });
 }
 
+const SEEN_KEY = "pubstore.stories.seen";
+type SeenMap = Record<string, number>; // supplier_id -> last product created_at ms
+
+function loadSeen(): SeenMap {
+  try {
+    const raw = localStorage.getItem(SEEN_KEY);
+    if (!raw) return {};
+    const map = JSON.parse(raw) as SeenMap;
+    // Drop entries older than 24h
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    return Object.fromEntries(Object.entries(map).filter(([, ts]) => ts > cutoff));
+  } catch {
+    return {};
+  }
+}
+function saveSeen(map: SeenMap) {
+  try { localStorage.setItem(SEEN_KEY, JSON.stringify(map)); } catch { /* ignore */ }
+}
+
 export default function SupplierStories() {
   const { data: stories = [] } = useQuery({ queryKey: ["supplier-stories"], queryFn: fetchStories });
   const [openIdx, setOpenIdx] = useState<number | null>(null);
+  const [seen, setSeen] = useState<SeenMap>(() => loadSeen());
+
+  const isSeen = (st: Story) => {
+    const last = seen[st.supplier.id];
+    return last && last >= new Date(st.product.created_at).getTime();
+  };
+
+  const markSeen = (st: Story) => {
+    const next = { ...seen, [st.supplier.id]: new Date(st.product.created_at).getTime() };
+    setSeen(next);
+    saveSeen(next);
+  };
 
   if (stories.length === 0) return null;
+
+  // Sort: unseen first
+  const ordered = [...stories].sort((a, b) => Number(isSeen(a)) - Number(isSeen(b)));
 
   return (
     <>
       <div className="flex gap-3 overflow-x-auto scrollbar-none px-4 mt-3 pb-1">
-        {stories.map((st, i) => (
-          <button
-            key={st.supplier.id}
-            onClick={() => setOpenIdx(i)}
-            className="shrink-0 flex flex-col items-center gap-1 w-16"
-          >
-            <span className="ring-story p-[2px] rounded-full">
-              <span className="block bg-background p-[2px] rounded-full">
-                {st.supplier.logo ? (
-                  <img
-                    src={st.supplier.logo}
-                    alt={st.supplier.name}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-xs font-bold">
-                    {st.supplier.name.slice(0, 2).toUpperCase()}
-                  </span>
-                )}
+        {ordered.map((st, i) => {
+          const seenIt = isSeen(st);
+          return (
+            <button
+              key={st.supplier.id}
+              onClick={() => { markSeen(st); setOpenIdx(i); }}
+              className="shrink-0 flex flex-col items-center gap-1 w-16"
+            >
+              <span className={`p-[2px] rounded-full ${seenIt ? "bg-muted-foreground/30" : "ring-story"}`}>
+                <span className="block bg-background p-[2px] rounded-full">
+                  {st.supplier.logo ? (
+                    <img
+                      src={st.supplier.logo}
+                      alt={st.supplier.name}
+                      className={`w-12 h-12 rounded-full object-cover ${seenIt ? "opacity-70" : ""}`}
+                    />
+                  ) : (
+                    <span className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-xs font-bold">
+                      {st.supplier.name.slice(0, 2).toUpperCase()}
+                    </span>
+                  )}
+                </span>
               </span>
-            </span>
-            <span className="text-[10px] leading-tight text-center line-clamp-1 w-full">
-              {st.supplier.name.split(" ")[0]}
-            </span>
-          </button>
-        ))}
+              <span className={`text-[10px] leading-tight text-center line-clamp-1 w-full ${seenIt ? "text-muted-foreground" : ""}`}>
+                {st.supplier.name.split(" ")[0]}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {openIdx !== null && (
         <StoryViewer
-          stories={stories}
+          stories={ordered}
           startIdx={openIdx}
+          onAdvance={(st) => markSeen(st)}
           onClose={() => setOpenIdx(null)}
         />
       )}
