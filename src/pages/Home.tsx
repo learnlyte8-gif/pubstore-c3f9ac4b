@@ -44,7 +44,6 @@ const TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
 
 const Home = () => {
   const [interests, setInterests] = useState<string[]>([]);
-  const [name, setName] = useState<string>("");
   const [tab, setTab] = useState<Tab>("home");
 
   useEffect(() => {
@@ -52,13 +51,10 @@ const Home = () => {
       if (!session) return;
       const { data } = await supabase
         .from("profiles")
-        .select("interests, display_name, username")
+        .select("interests")
         .eq("user_id", session.user.id)
         .maybeSingle();
-      if (data) {
-        setInterests(data.interests ?? []);
-        setName(data.display_name || data.username || "");
-      }
+      if (data) setInterests(data.interests ?? []);
     });
   }, []);
 
@@ -70,15 +66,8 @@ const Home = () => {
 
   return (
     <div className="pb-6">
-      {name && (
-        <div className="px-4 pt-4">
-          <p className="text-xs text-muted-foreground">Hey 👋</p>
-          <h1 className="text-lg font-semibold">{name}</h1>
-        </div>
-      )}
-
       {/* Tab nav */}
-      <div className="px-4 mt-3 sticky top-14 z-10 bg-background/90 backdrop-blur pb-2">
+      <div className="px-4 mt-3 sticky top-14 z-10 bg-background/90 backdrop-blur pb-2 pt-1">
         <div className="flex bg-muted rounded-full p-1 shadow-soft">
           {TABS.map((t) => {
             const active = tab === t.id;
