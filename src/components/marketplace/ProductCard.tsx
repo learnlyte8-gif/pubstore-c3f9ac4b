@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Heart, Star, Plus, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { type Product, discountPct } from "@/data/products";
@@ -39,7 +40,7 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
 
   if (variant === "compact") {
     return (
-      <div className="shrink-0 w-36 group">
+      <Link to={`/product/${product.id}`} className="shrink-0 w-36 group block">
         <div className="relative aspect-square rounded-xl overflow-hidden bg-muted">
           <img
             src={product.image}
@@ -64,12 +65,15 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
           <p className="text-[11px] font-bold text-destructive">{fmtPrice(product.price)}</p>
           <p className="text-xs line-clamp-2 leading-snug mt-0.5">{product.title}</p>
         </div>
-      </div>
+      </Link>
     );
   }
 
   return (
-    <article className="group rounded-xl overflow-hidden bg-card border border-border hover:shadow-md transition">
+    <Link
+      to={`/product/${product.id}`}
+      className="group rounded-xl overflow-hidden bg-card border border-border hover:shadow-md transition block"
+    >
       <div className="relative aspect-square bg-muted overflow-hidden">
         <img
           src={product.image}
@@ -129,6 +133,6 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
           <Plus className="w-3.5 h-3.5" /> Add
         </button>
       </div>
-    </article>
+    </Link>
   );
 }
