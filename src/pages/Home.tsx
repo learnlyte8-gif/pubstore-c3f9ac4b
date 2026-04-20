@@ -26,6 +26,7 @@ import NewArrivals from "@/components/marketplace/NewArrivals";
 import RegionSourcing from "@/components/marketplace/RegionSourcing";
 import CategoryStrip from "@/components/marketplace/CategoryStrip";
 import SupplierStories from "@/components/marketplace/SupplierStories";
+import TapsonAssistant from "@/components/TapsonAssistant";
 import { TRENDING, PRODUCTS, getRecommended } from "@/data/products";
 
 const Home = () => {
@@ -150,6 +151,8 @@ const Home = () => {
           ))}
         </div>
       </section>
+
+      <TapsonAssistant />
     </div>
   );
 };
