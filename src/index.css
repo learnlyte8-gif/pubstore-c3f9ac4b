@@ -52,7 +52,10 @@
     --gradient-story: conic-gradient(from 180deg, hsl(38 97% 63%), hsl(340 75% 54%), hsl(285 50% 47%), hsl(38 97% 63%));
 
     --shadow-soft: 0 1px 2px hsl(0 0% 0% / 0.06);
-    --shadow-card: 0 2px 12px -4px hsl(0 0% 0% / 0.08);
+    --shadow-card: 0 4px 16px -4px hsl(0 0% 0% / 0.10), 0 2px 4px -2px hsl(0 0% 0% / 0.06);
+    --shadow-elevated: 0 10px 30px -8px hsl(0 0% 0% / 0.18), 0 4px 10px -4px hsl(0 0% 0% / 0.08);
+    --shadow-pop: 0 16px 40px -12px hsl(213 89% 52% / 0.25), 0 6px 16px -6px hsl(0 0% 0% / 0.10);
+    --shadow-inset: inset 0 1px 2px hsl(0 0% 0% / 0.06);
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 0 0% 0%;
