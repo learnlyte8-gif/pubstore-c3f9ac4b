@@ -11,6 +11,8 @@ import {
   Eye,
   ShieldCheck,
   Award,
+  Pin,
+  PinOff,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShop } from "@/store/shop";
