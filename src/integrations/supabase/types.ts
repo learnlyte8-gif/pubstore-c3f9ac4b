@@ -159,6 +159,94 @@ export type Database = {
           },
         ]
       }
+      coupon_redemptions: {
+        Row: {
+          amount: number
+          buyer_id: string
+          coupon_id: string
+          created_at: string
+          id: string
+          order_id: string
+        }
+        Insert: {
+          amount: number
+          buyer_id: string
+          coupon_id: string
+          created_at?: string
+          id?: string
+          order_id: string
+        }
+        Update: {
+          amount?: number
+          buyer_id?: string
+          coupon_id?: string
+          created_at?: string
+          id?: string
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_redemptions_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          discount_type: string
+          discount_value: number
+          expires_at: string | null
+          id: string
+          max_uses: number | null
+          min_subtotal: number
+          supplier_id: string
+          updated_at: string
+          uses_count: number
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          discount_type: string
+          discount_value: number
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          min_subtotal?: number
+          supplier_id: string
+          updated_at?: string
+          uses_count?: number
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          min_subtotal?: number
+          supplier_id?: string
+          updated_at?: string
+          uses_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupons_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       followers: {
         Row: {
           created_at: string
@@ -420,7 +508,9 @@ export type Database = {
         Row: {
           address_id: string | null
           buyer_id: string
+          coupon_code: string | null
           created_at: string
+          discount: number
           eta: string | null
           id: string
           ref_code: string | null
@@ -436,7 +526,9 @@ export type Database = {
         Insert: {
           address_id?: string | null
           buyer_id: string
+          coupon_code?: string | null
           created_at?: string
+          discount?: number
           eta?: string | null
           id?: string
           ref_code?: string | null
@@ -452,7 +544,9 @@ export type Database = {
         Update: {
           address_id?: string | null
           buyer_id?: string
+          coupon_code?: string | null
           created_at?: string
+          discount?: number
           eta?: string | null
           id?: string
           ref_code?: string | null
