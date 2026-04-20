@@ -33,10 +33,11 @@ const App = () => (
                 <Route path="/home" element={<Home />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/product/:id" element={<ProductDetail />} />
-                <Route path="/search" element={<Placeholder title="Search" hint="Discover products, creators, and trends." />} />
-                <Route path="/create" element={<Placeholder title="Create" hint="Post a product, photo, or story." />} />
-                <Route path="/activity" element={<Placeholder title="Activity" hint="Likes, comments, and follows will show here." />} />
-                <Route path="/profile" element={<Placeholder title="Your Profile" hint="Manage your shop, posts, and account." />} />
+                <Route path="/search" element={<Placeholder title="Search" hint="Find products, suppliers, and brands." />} />
+                <Route path="/categories" element={<Placeholder title="Categories" hint="Browse all product categories." />} />
+                <Route path="/wishlist" element={<Placeholder title="Wishlist" hint="Items you've saved for later." />} />
+                <Route path="/orders" element={<Placeholder title="My Orders" hint="Track and manage your purchases." />} />
+                <Route path="/profile" element={<Placeholder title="Account" hint="Orders, addresses, payment, and settings." />} />
               </Route>
               <Route path="/index" element={<Navigate to="/home" replace />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
