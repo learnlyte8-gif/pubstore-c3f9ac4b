@@ -1,14 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Store, Package, BarChart3, Megaphone, Truck, Star, Plus, ShoppingBag, Video, MessageCircle, Settings, ChevronRight, ImagePlus } from "lucide-react";
+import { Store, Package, BarChart3, Megaphone, Truck, Star, Plus, ShoppingBag, Video, MessageCircle, Settings, ChevronRight, ImagePlus, Radio, StopCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchMySupplier, fetchProducts } from "@/data/products";
 import EmptyState from "@/components/EmptyState";
+import { toast } from "sonner";
 
 export default function MyStore() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { data: supplier, isLoading } = useQuery({ queryKey: ["my-supplier"], queryFn: fetchMySupplier });
   const { data: myProducts = [] } = useQuery({
     queryKey: ["my-products", supplier?.id],
@@ -16,11 +18,83 @@ export default function MyStore() {
     enabled: !!supplier,
   });
 
+  const { data: stats } = useQuery({
+    queryKey: ["my-store-stats", supplier?.id],
+    queryFn: async () => {
+      if (!supplier) return { orderCount: 0, revenue: 0, pendingOrders: 0 };
+      const { data: orders } = await supabase
+        .from("orders")
+        .select("total,status")
+        .eq("supplier_id", supplier.id);
+      const list = orders ?? [];
+      return {
+        orderCount: list.length,
+        revenue: list.reduce((s, o) => s + Number(o.total || 0), 0),
+        pendingOrders: list.filter((o) => o.status === "placed" || o.status === "processing").length,
+      };
+    },
+    enabled: !!supplier,
+  });
+
+  const { data: liveStream } = useQuery({
+    queryKey: ["my-live-stream", supplier?.id],
+    queryFn: async () => {
+      if (!supplier) return null;
+      const { data } = await supabase
+        .from("live_streams")
+        .select("*")
+        .eq("supplier_id", supplier.id)
+        .eq("status", "live")
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!supplier,
+  });
+
+  const [showGoLive, setShowGoLive] = useState(false);
+  const [streamTitle, setStreamTitle] = useState("");
+  const [starting, setStarting] = useState(false);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) navigate("/auth");
     });
   }, [navigate]);
+
+  const startStream = async () => {
+    if (!supplier) return;
+    if (!streamTitle.trim()) { toast.error("Add a stream title"); return; }
+    setStarting(true);
+    const cover = myProducts[0]?.image || supplier.banner || null;
+    const { data, error } = await supabase
+      .from("live_streams")
+      .insert({
+        supplier_id: supplier.id,
+        title: streamTitle.trim(),
+        cover,
+        status: "live",
+        viewer_count: 0,
+      })
+      .select()
+      .single();
+    setStarting(false);
+    if (error) { toast.error(error.message); return; }
+    setShowGoLive(false);
+    setStreamTitle("");
+    qc.invalidateQueries({ queryKey: ["my-live-stream"] });
+    navigate(`/live/${data.id}`);
+  };
+
+  const endStream = async () => {
+    if (!liveStream) return;
+    const { error } = await supabase
+      .from("live_streams")
+      .update({ status: "ended", ended_at: new Date().toISOString() })
+      .eq("id", liveStream.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Stream ended");
+    qc.invalidateQueries({ queryKey: ["my-live-stream"] });
+  };
 
   if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
 
@@ -63,32 +137,62 @@ export default function MyStore() {
         </div>
       </div>
 
-      <div className="px-4 -mt-6 grid grid-cols-2 gap-3">
+      {/* Live banner */}
+      {liveStream ? (
+        <div className="mx-4 -mt-3 relative z-10 rounded-2xl bg-destructive text-destructive-foreground p-3 flex items-center gap-3 shadow-elevated">
+          <span className="w-9 h-9 rounded-full bg-background/20 flex items-center justify-center">
+            <Radio className="w-4 h-4 animate-pulse" />
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold uppercase tracking-wider">You're live</p>
+            <p className="text-sm font-bold truncate">{liveStream.title}</p>
+          </div>
+          <Link to={`/live/${liveStream.id}`} className="px-3 h-8 rounded-full bg-background/20 backdrop-blur text-xs font-bold flex items-center">Join</Link>
+          <button onClick={endStream} className="px-3 h-8 rounded-full bg-background text-destructive text-xs font-bold flex items-center gap-1">
+            <StopCircle className="w-3 h-3" /> End
+          </button>
+        </div>
+      ) : null}
+
+      <div className="px-4 mt-5 grid grid-cols-3 gap-2">
         <Stat label="Products" value={String(myProducts.length)} icon={Package} />
-        <Stat label="Rating" value={supplier.rating ? supplier.rating.toFixed(1) : "—"} icon={Star} />
+        <Stat label="Orders" value={String(stats?.orderCount ?? 0)} icon={ShoppingBag} />
+        <Stat label="Revenue" value={`$${(stats?.revenue ?? 0).toFixed(0)}`} icon={BarChart3} />
       </div>
 
       <div className="px-4 mt-5">
         <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2 px-1">Quick actions</p>
         <div className="grid grid-cols-4 gap-2">
-          {[
-            { icon: Plus, label: "Add product", to: "/store/products/new" },
-            { icon: Video, label: "Go live", to: "/live" },
-            { icon: Megaphone, label: "Promote", to: "/store/promote" },
-            { icon: BarChart3, label: "Analytics", to: "/store/analytics" },
-          ].map((q) => (
-            <Link key={q.label} to={q.to} className="bg-card border rounded-2xl p-3 flex flex-col items-center gap-1.5 shadow-card hover:shadow-elevated transition">
-              <span className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center"><q.icon className="w-4 h-4" /></span>
-              <span className="text-[10px] font-semibold text-center leading-tight">{q.label}</span>
+          <Link to="/store/products/new" className="bg-card border rounded-2xl p-3 flex flex-col items-center gap-1.5 shadow-card hover:shadow-elevated transition">
+            <span className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center"><Plus className="w-4 h-4" /></span>
+            <span className="text-[10px] font-semibold text-center leading-tight">Add product</span>
+          </Link>
+          {liveStream ? (
+            <Link to={`/live/${liveStream.id}`} className="bg-destructive text-destructive-foreground rounded-2xl p-3 flex flex-col items-center gap-1.5 shadow-card">
+              <span className="w-9 h-9 rounded-xl bg-background/20 flex items-center justify-center"><Radio className="w-4 h-4 animate-pulse" /></span>
+              <span className="text-[10px] font-semibold text-center leading-tight">Live now</span>
             </Link>
-          ))}
+          ) : (
+            <button onClick={() => setShowGoLive(true)} className="bg-card border rounded-2xl p-3 flex flex-col items-center gap-1.5 shadow-card hover:shadow-elevated transition">
+              <span className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center"><Video className="w-4 h-4" /></span>
+              <span className="text-[10px] font-semibold text-center leading-tight">Go live</span>
+            </button>
+          )}
+          <Link to="/store/promote" className="bg-card border rounded-2xl p-3 flex flex-col items-center gap-1.5 shadow-card hover:shadow-elevated transition">
+            <span className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center"><Megaphone className="w-4 h-4" /></span>
+            <span className="text-[10px] font-semibold text-center leading-tight">Promote</span>
+          </Link>
+          <Link to="/store/analytics" className="bg-card border rounded-2xl p-3 flex flex-col items-center gap-1.5 shadow-card hover:shadow-elevated transition">
+            <span className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center"><BarChart3 className="w-4 h-4" /></span>
+            <span className="text-[10px] font-semibold text-center leading-tight">Analytics</span>
+          </Link>
         </div>
       </div>
 
       <div className="px-4 mt-6 space-y-4">
         <Section title="Manage">
           <Row icon={Package} label="Products" hint={`${myProducts.length} listed`} to="/store/products" />
-          <Row icon={ShoppingBag} label="Orders" hint="View store orders" to="/store/orders" />
+          <Row icon={ShoppingBag} label="Orders" hint={stats?.pendingOrders ? `${stats.pendingOrders} pending` : "View store orders"} to="/store/orders" />
           <Row icon={Truck} label="Shipping & logistics" hint="Templates, carriers" to="/store/shipping" />
           <Row icon={MessageCircle} label="Customer messages" hint="Buyer chats" to="/messages" />
         </Section>
@@ -132,6 +236,37 @@ export default function MyStore() {
           <Link to="/store/products/new"><Plus className="w-4 h-4 mr-2" /> Add new product</Link>
         </Button>
       </div>
+
+      {/* Go live modal */}
+      {showGoLive && (
+        <div className="fixed inset-0 z-50 bg-foreground/60 flex items-end sm:items-center justify-center p-4" onClick={() => setShowGoLive(false)}>
+          <div className="w-full max-w-md bg-card rounded-3xl p-5 shadow-elevated" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-9 h-9 rounded-xl bg-destructive/15 text-destructive flex items-center justify-center">
+                <Radio className="w-4 h-4" />
+              </span>
+              <div>
+                <p className="font-bold">Go live</p>
+                <p className="text-[11px] text-muted-foreground">Start a live stream for your store</p>
+              </div>
+            </div>
+            <input
+              autoFocus
+              value={streamTitle}
+              onChange={(e) => setStreamTitle(e.target.value)}
+              placeholder="Stream title (e.g. Factory tour, Q&A)"
+              className="w-full h-12 rounded-xl border bg-background px-4 text-sm"
+              onKeyDown={(e) => e.key === "Enter" && startStream()}
+            />
+            <div className="flex gap-2 mt-4">
+              <Button variant="outline" className="flex-1 h-11" onClick={() => setShowGoLive(false)}>Cancel</Button>
+              <Button className="flex-1 h-11 bg-destructive hover:bg-destructive/90" onClick={startStream} disabled={starting}>
+                {starting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Starting…</> : <><Radio className="w-4 h-4 mr-2" /> Go live</>}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -140,10 +275,10 @@ function Stat({ label, value, icon: Icon }: { label: string; value: string; icon
   return (
     <div className="bg-card rounded-2xl border shadow-elevated p-3">
       <div className="flex items-center gap-2">
-        <span className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center"><Icon className="w-4 h-4" /></span>
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">{label}</p>
+        <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Icon className="w-3.5 h-3.5" /></span>
+        <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">{label}</p>
       </div>
-      <p className="text-xl font-bold mt-1.5">{value}</p>
+      <p className="text-lg font-bold mt-1.5 truncate">{value}</p>
     </div>
   );
 }

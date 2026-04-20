@@ -227,8 +227,18 @@ function NewProductView() {
   );
 }
 
-// ---------------- Orders (real) ----------------
+// ---------------- Orders (real with status updates) ----------------
+const ORDER_STATUSES = ["placed", "processing", "shipped", "delivered", "cancelled"] as const;
+const STATUS_TONE: Record<string, string> = {
+  placed: "bg-amber-500/15 text-amber-600",
+  processing: "bg-sky-500/15 text-sky-600",
+  shipped: "bg-violet-500/15 text-violet-600",
+  delivered: "bg-emerald-500/15 text-emerald-600",
+  cancelled: "bg-destructive/15 text-destructive",
+};
+
 function OrdersView() {
+  const qc = useQueryClient();
   const { data: supplier } = useQuery({ queryKey: ["my-supplier"], queryFn: fetchMySupplier });
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ["store-orders", supplier?.id],
@@ -241,30 +251,124 @@ function OrdersView() {
     enabled: !!supplier,
   });
 
+  const updateStatus = async (orderId: string, buyerId: string, status: string) => {
+    const { error } = await supabase
+      .from("orders")
+      .update({ status: status as any, updated_at: new Date().toISOString() })
+      .eq("id", orderId);
+    if (error) { toast.error(error.message); return; }
+    await supabase.from("notifications").insert({
+      user_id: buyerId,
+      title: "Order update",
+      body: `Your order is now ${status}`,
+      type: "order",
+      link: "/orders",
+    });
+    toast.success(`Order marked ${status}`);
+    qc.invalidateQueries({ queryKey: ["store-orders"] });
+  };
+
   if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
   if (!orders.length) {
-    return <EmptyState title="No orders yet" description="When buyers purchase your products they'll appear here." />;
+    return <EmptyState icon={<ShoppingBag className="w-7 h-7 text-muted-foreground" />} title="No orders yet" description="When buyers purchase your products they'll appear here." />;
   }
+
   return (
     <div className="px-4 py-4 space-y-3">
-      {orders.map((o: any) => (
-        <div key={o.id} className="bg-card border rounded-2xl shadow-card p-4">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-bold">{o.ref_code}</p>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600">{o.status}</span>
+      {orders.map((o: any) => {
+        const idx = ORDER_STATUSES.indexOf(o.status);
+        const next = idx >= 0 && idx < 3 ? ORDER_STATUSES[idx + 1] : null;
+        return (
+          <div key={o.id} className="bg-card border rounded-2xl shadow-card p-4">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-bold truncate">{o.ref_code}</p>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${STATUS_TONE[o.status] || "bg-muted"}`}>{o.status}</span>
+            </div>
+            <p className="text-sm font-semibold mt-2">{o.order_items?.length ?? 0} items · ${Number(o.total).toFixed(2)}</p>
+            <p className="text-[11px] text-muted-foreground">{new Date(o.created_at).toLocaleString()}</p>
+            {o.ship_to && <p className="text-[11px] text-muted-foreground mt-1">Ship to: {o.ship_to}</p>}
+            <div className="flex gap-2 mt-3">
+              {next && (
+                <Button size="sm" className="flex-1 h-9" onClick={() => updateStatus(o.id, o.buyer_id, next)}>
+                  Mark {next}
+                </Button>
+              )}
+              {o.status !== "cancelled" && o.status !== "delivered" && (
+                <Button size="sm" variant="outline" className="h-9" onClick={() => updateStatus(o.id, o.buyer_id, "cancelled")}>
+                  Cancel
+                </Button>
+              )}
+            </div>
           </div>
-          <p className="text-sm font-semibold mt-2">{o.order_items?.length ?? 0} items · ${Number(o.total).toFixed(2)}</p>
-          <p className="text-[11px] text-muted-foreground">{new Date(o.created_at).toLocaleString()}</p>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------------- Analytics (real) ----------------
+function AnalyticsView() {
+  const { data: supplier } = useQuery({ queryKey: ["my-supplier"], queryFn: fetchMySupplier });
+  const { data, isLoading } = useQuery({
+    queryKey: ["store-analytics", supplier?.id],
+    queryFn: async () => {
+      if (!supplier) return null;
+      const [{ data: orders }, { data: products }, { count: followerCount }] = await Promise.all([
+        supabase.from("orders").select("total,status,created_at").eq("supplier_id", supplier.id),
+        supabase.from("products").select("id,sold,rating,review_count").eq("supplier_id", supplier.id),
+        supabase.from("followers").select("id", { count: "exact", head: true }).eq("supplier_id", supplier.id),
+      ]);
+      const ordersList = orders ?? [];
+      const productsList = products ?? [];
+      const revenue = ordersList.reduce((s, o) => s + Number(o.total || 0), 0);
+      const completed = ordersList.filter((o) => o.status === "delivered").length;
+      const cancelled = ordersList.filter((o) => o.status === "cancelled").length;
+      const totalSold = productsList.reduce((s, p) => s + (p.sold || 0), 0);
+      // Last 7 days revenue
+      const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      const last7 = ordersList.filter((o) => new Date(o.created_at).getTime() >= cutoff)
+        .reduce((s, o) => s + Number(o.total || 0), 0);
+      return {
+        revenue, completed, cancelled, totalSold, last7,
+        orderCount: ordersList.length,
+        productCount: productsList.length,
+        followers: followerCount ?? 0,
+      };
+    },
+    enabled: !!supplier,
+  });
+
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+  if (!data) return <EmptyState title="Create a store first" description="Set up your supplier store to see analytics." />;
+
+  const cards = [
+    { label: "Total revenue", value: `$${data.revenue.toFixed(2)}`, icon: DollarSign },
+    { label: "Last 7 days", value: `$${data.last7.toFixed(2)}`, icon: TrendingUp },
+    { label: "Orders", value: String(data.orderCount), icon: ShoppingBag },
+    { label: "Delivered", value: String(data.completed), icon: Package },
+    { label: "Cancelled", value: String(data.cancelled), icon: X },
+    { label: "Units sold", value: String(data.totalSold), icon: TrendingUp },
+    { label: "Products", value: String(data.productCount), icon: Package },
+    { label: "Followers", value: String(data.followers), icon: Eye },
+  ];
+
+  return (
+    <div className="px-4 py-4 grid grid-cols-2 gap-3">
+      {cards.map((c) => (
+        <div key={c.label} className="bg-card border rounded-2xl shadow-card p-3">
+          <div className="flex items-center gap-2">
+            <span className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+              <c.icon className="w-4 h-4" />
+            </span>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">{c.label}</p>
+          </div>
+          <p className="text-xl font-bold mt-1.5 truncate">{c.value}</p>
         </div>
       ))}
     </div>
   );
 }
 
-// ---------------- Stub views (Phase 2-4) ----------------
-function AnalyticsView() {
-  return <EmptyState title="Analytics coming soon" description="Once you start receiving orders we'll show traffic, conversion and revenue trends here." />;
-}
 function PromoteView() {
   return (
     <div className="px-4 py-4 space-y-3">
@@ -284,8 +388,53 @@ function PromoteView() {
     </div>
   );
 }
+
+// ---------------- Reviews (real) ----------------
 function ReviewsView() {
-  return <EmptyState icon={<Star className="w-7 h-7 text-muted-foreground" />} title="No reviews yet" description="Buyer reviews will appear here once your products are purchased." />;
+  const { data: supplier } = useQuery({ queryKey: ["my-supplier"], queryFn: fetchMySupplier });
+  const { data: reviews = [], isLoading } = useQuery({
+    queryKey: ["store-reviews", supplier?.id],
+    queryFn: async () => {
+      if (!supplier) return [];
+      const { data: prods } = await supabase.from("products").select("id,title,image").eq("supplier_id", supplier.id);
+      const ids = (prods ?? []).map((p) => p.id);
+      if (!ids.length) return [];
+      const { data: rs } = await supabase
+        .from("reviews")
+        .select("*")
+        .in("product_id", ids)
+        .order("created_at", { ascending: false });
+      const prodMap = new Map((prods ?? []).map((p) => [p.id, p]));
+      return (rs ?? []).map((r: any) => ({ ...r, product: prodMap.get(r.product_id) }));
+    },
+    enabled: !!supplier,
+  });
+
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+  if (!reviews.length) {
+    return <EmptyState icon={<Star className="w-7 h-7 text-muted-foreground" />} title="No reviews yet" description="Buyer reviews will appear here once your products are reviewed." />;
+  }
+  return (
+    <div className="px-4 py-4 space-y-3">
+      {reviews.map((r: any) => (
+        <div key={r.id} className="bg-card border rounded-2xl shadow-card p-4">
+          <div className="flex items-center gap-2 mb-2">
+            {r.product?.image && <img src={r.product.image} alt="" className="w-10 h-10 rounded-lg object-cover bg-muted" />}
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold truncate">{r.product?.title}</p>
+              <div className="flex items-center gap-0.5 mt-0.5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star key={i} className={`w-3 h-3 ${i < r.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
+                ))}
+              </div>
+            </div>
+            <p className="text-[10px] text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</p>
+          </div>
+          {r.text && <p className="text-sm">{r.text}</p>}
+        </div>
+      ))}
+    </div>
+  );
 }
 function ShippingView() {
   return (

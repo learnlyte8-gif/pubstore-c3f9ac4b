@@ -3,93 +3,101 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   Radio,
-  Users,
   Heart,
   Send,
   ShoppingBag,
   Share2,
-  Sparkles,
-  Gift,
   X,
-  Pin,
   Eye,
   ShieldCheck,
   Award,
 } from "lucide-react";
-import { SUPPLIERS, PRODUCTS, type Supplier, type Product } from "@/data/products";
+import { supabase } from "@/integrations/supabase/client";
 import { useShop } from "@/store/shop";
 import { toast } from "sonner";
+import { fetchSupplier, fetchProducts, type Supplier, type Product } from "@/data/products";
+import EmptyState from "@/components/EmptyState";
 
-type LiveStream = {
+type DbStream = {
   id: string;
-  supplier: Supplier;
+  supplier_id: string;
   title: string;
-  viewers: number;
-  startedMin: number;
-  thumb: string;
-  pinnedProductIds: string[];
+  cover: string | null;
+  status: "scheduled" | "live" | "ended";
+  viewer_count: number;
+  started_at: string;
+  pinned_product_id: string | null;
 };
 
-const TITLES = [
-  "🔥 Factory tour + flash deals",
-  "New collection drop · live Q&A",
-  "Bulk pricing reveal — ask anything",
-  "Behind the scenes: production line",
-  "Live unboxing of the week's bestseller",
-  "Custom orders & samples — live",
-];
-
-const STREAMS: LiveStream[] = SUPPLIERS.slice(0, 6).map((s, i) => {
-  const pinned = PRODUCTS.filter((p) => p.supplierId === s.id).slice(0, 4);
-  return {
-    id: `live-${s.id}`,
-    supplier: s,
-    title: TITLES[i % TITLES.length],
-    viewers: 240 + ((s.rating * 1000 * (i + 1)) | 0) % 4800,
-    startedMin: 4 + (i * 7) % 55,
-    thumb: pinned[0]?.image ?? s.banner,
-    pinnedProductIds: pinned.map((p) => p.id),
-  };
-});
-
-const SAMPLE_USERS = [
-  "🇺🇸 Mark", "🇩🇪 Lukas", "🇰🇷 Jihun", "🇧🇷 Ana", "🇮🇳 Riya",
-  "🇫🇷 Léa", "🇯🇵 Sora", "🇪🇸 Diego", "🇳🇬 Tunde", "🇨🇦 Olivia",
-];
-const SAMPLE_MSGS = [
-  "What's the MOQ?",
-  "Do you ship to UAE?",
-  "🔥🔥🔥",
-  "Custom branding possible?",
-  "Price for 1000 units?",
-  "Lead time?",
-  "Can I get a sample?",
-  "Looks great 👏",
-  "Add me to wholesale list",
-  "Following!",
-];
+type EnrichedStream = DbStream & { supplier?: Supplier };
 
 export default function Live() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeId, setActiveId] = useState<string | null>(id ?? null);
+  const [streams, setStreams] = useState<EnrichedStream[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const active = useMemo(() => STREAMS.find((s) => s.id === activeId), [activeId]);
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const { data } = await supabase
+        .from("live_streams")
+        .select("*")
+        .eq("status", "live")
+        .order("started_at", { ascending: false });
+      const list = (data ?? []) as DbStream[];
+      const supplierIds = Array.from(new Set(list.map((s) => s.supplier_id)));
+      const suppliers = await Promise.all(supplierIds.map((sid) => fetchSupplier(sid)));
+      const map = new Map<string, Supplier>();
+      suppliers.forEach((s) => s && map.set(s.id, s));
+      if (!cancelled) {
+        setStreams(list.map((s) => ({ ...s, supplier: map.get(s.supplier_id) })));
+        setLoading(false);
+      }
+    };
+    load();
+    const ch = supabase
+      .channel("live-streams-list")
+      .on("postgres_changes", { event: "*", schema: "public", table: "live_streams" }, load)
+      .subscribe();
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(ch);
+    };
+  }, []);
 
-  if (!active) {
-    return <LiveBrowser onPick={(s) => setActiveId(s.id)} onBack={() => navigate(-1)} />;
+  const active = useMemo(() => streams.find((s) => s.id === activeId), [activeId, streams]);
+
+  if (activeId && !active && !loading) {
+    return (
+      <div className="pt-16">
+        <EmptyState title="Stream ended" description="This live stream is no longer available." />
+        <div className="px-4 mt-4">
+          <button onClick={() => setActiveId(null)} className="text-sm font-bold text-primary">← Back to live</button>
+        </div>
+      </div>
+    );
   }
-  return <LiveRoom stream={active} onLeave={() => setActiveId(null)} />;
+
+  if (active) {
+    return <LiveRoom stream={active} onLeave={() => { setActiveId(null); navigate("/live"); }} />;
+  }
+
+  return <LiveBrowser streams={streams} loading={loading} onPick={(s) => setActiveId(s.id)} onBack={() => navigate(-1)} />;
 }
 
 function LiveBrowser({
+  streams,
+  loading,
   onPick,
   onBack,
 }: {
-  onPick: (s: LiveStream) => void;
+  streams: EnrichedStream[];
+  loading: boolean;
+  onPick: (s: EnrichedStream) => void;
   onBack: () => void;
 }) {
-  const featured = STREAMS[0];
   return (
     <div className="pb-6">
       <div className="px-4 pt-4 flex items-center gap-3">
@@ -101,101 +109,194 @@ function LiveBrowser({
             <Radio className="w-5 h-5 text-destructive animate-pulse" /> Live now
           </h1>
           <p className="text-xs text-muted-foreground">
-            {STREAMS.length} suppliers streaming · join free
+            {loading ? "Loading…" : `${streams.length} suppliers streaming · join free`}
           </p>
         </div>
       </div>
 
-      {/* Featured */}
-      <button
-        onClick={() => onPick(featured)}
-        className="mt-4 mx-4 block relative aspect-video rounded-3xl overflow-hidden shadow-elevated text-left"
-      >
-        <img src={featured.thumb} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30" />
-        <span className="absolute top-3 left-3 px-2 py-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center gap-1 animate-pulse">
-          <Radio className="w-3 h-3" /> LIVE
-        </span>
-        <span className="absolute top-3 right-3 px-2 py-1 rounded-full bg-black/50 text-white text-[10px] font-bold flex items-center gap-1">
-          <Eye className="w-3 h-3" /> {featured.viewers.toLocaleString()}
-        </span>
-        <div className="absolute bottom-3 inset-x-3 text-white">
-          <p className="text-sm font-bold leading-tight">{featured.title}</p>
-          <p className="text-[11px] mt-0.5 opacity-90">
-            {featured.supplier.name} · {featured.supplier.country}
-          </p>
+      {loading ? (
+        <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>
+      ) : streams.length === 0 ? (
+        <div className="pt-6">
+          <EmptyState
+            icon={<Radio className="w-7 h-7 text-muted-foreground" />}
+            title="No live streams right now"
+            description="Suppliers will appear here when they go live. Check back soon."
+          />
         </div>
-      </button>
-
-      {/* Grid */}
-      <h2 className="px-4 mt-6 text-sm font-bold">More streams</h2>
-      <div className="grid grid-cols-2 gap-3 px-4 mt-2">
-        {STREAMS.slice(1).map((s) => (
+      ) : (
+        <>
           <button
-            key={s.id}
-            onClick={() => onPick(s)}
-            className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-card text-left"
+            onClick={() => onPick(streams[0])}
+            className="mt-4 mx-4 block relative aspect-video rounded-3xl overflow-hidden shadow-elevated text-left w-[calc(100%-2rem)]"
           >
-            <img src={s.thumb} alt="" className="absolute inset-0 w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
-            <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold animate-pulse">
-              LIVE
+            {streams[0].cover && (
+              <img src={streams[0].cover} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30" />
+            <span className="absolute top-3 left-3 px-2 py-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center gap-1 animate-pulse">
+              <Radio className="w-3 h-3" /> LIVE
             </span>
-            <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full bg-black/50 text-white text-[9px] font-bold flex items-center gap-0.5">
-              <Eye className="w-2.5 h-2.5" />
-              {s.viewers > 1000 ? (s.viewers / 1000).toFixed(1) + "K" : s.viewers}
+            <span className="absolute top-3 right-3 px-2 py-1 rounded-full bg-black/50 text-white text-[10px] font-bold flex items-center gap-1">
+              <Eye className="w-3 h-3" /> {streams[0].viewer_count.toLocaleString()}
             </span>
-            <div className="absolute bottom-2 inset-x-2 text-white">
-              <p className="text-[11px] font-bold leading-tight line-clamp-2">{s.title}</p>
-              <p className="text-[10px] opacity-80 mt-0.5 truncate">{s.supplier.name}</p>
+            <div className="absolute bottom-3 inset-x-3 text-white">
+              <p className="text-sm font-bold leading-tight">{streams[0].title}</p>
+              <p className="text-[11px] mt-0.5 opacity-90">
+                {streams[0].supplier?.name} · {streams[0].supplier?.country}
+              </p>
             </div>
           </button>
-        ))}
-      </div>
+
+          {streams.length > 1 && (
+            <>
+              <h2 className="px-4 mt-6 text-sm font-bold">More streams</h2>
+              <div className="grid grid-cols-2 gap-3 px-4 mt-2">
+                {streams.slice(1).map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => onPick(s)}
+                    className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-card text-left"
+                  >
+                    {s.cover && <img src={s.cover} alt="" className="absolute inset-0 w-full h-full object-cover" />}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
+                    <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold animate-pulse">
+                      LIVE
+                    </span>
+                    <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full bg-black/50 text-white text-[9px] font-bold flex items-center gap-0.5">
+                      <Eye className="w-2.5 h-2.5" />
+                      {s.viewer_count > 1000 ? (s.viewer_count / 1000).toFixed(1) + "K" : s.viewer_count}
+                    </span>
+                    <div className="absolute bottom-2 inset-x-2 text-white">
+                      <p className="text-[11px] font-bold leading-tight line-clamp-2">{s.title}</p>
+                      <p className="text-[10px] opacity-80 mt-0.5 truncate">{s.supplier?.name}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 }
 
-type ChatLine = { id: number; user: string; text: string; tone?: "join" | "msg" | "buy" | "gift" };
+type ChatLine = {
+  id: string;
+  user_id: string;
+  username: string;
+  body: string;
+  created_at: string;
+};
 
-function LiveRoom({ stream, onLeave }: { stream: LiveStream; onLeave: () => void }) {
+function LiveRoom({ stream, onLeave }: { stream: EnrichedStream; onLeave: () => void }) {
   const { addToCart } = useShop();
-  const [viewers, setViewers] = useState(stream.viewers);
+  const [viewers, setViewers] = useState(stream.viewer_count);
   const [likes, setLikes] = useState(0);
   const [hearts, setHearts] = useState<{ id: number; left: number }[]>([]);
-  const [chat, setChat] = useState<ChatLine[]>([
-    { id: 1, user: "PUBSTORE", text: "Welcome to the live! Be respectful 💬", tone: "join" },
-  ]);
+  const [chat, setChat] = useState<ChatLine[]>([]);
   const [input, setInput] = useState("");
   const [showProducts, setShowProducts] = useState(false);
+  const [pinned, setPinned] = useState<Product[]>([]);
+  const [me, setMe] = useState<{ id: string; name: string } | null>(null);
   const chatRef = useRef<HTMLDivElement>(null);
-  const idRef = useRef(2);
+  const sentViewerBumpRef = useRef(false);
 
-  const pinned = stream.pinnedProductIds
-    .map((id) => PRODUCTS.find((p) => p.id === id))
-    .filter(Boolean) as Product[];
-
-  // Simulate viewers + chat traffic
+  // Get user
   useEffect(() => {
-    const a = setInterval(() => setViewers((v) => v + (Math.random() > 0.3 ? 1 : -1)), 1500);
-    const b = setInterval(() => {
-      const user = SAMPLE_USERS[Math.floor(Math.random() * SAMPLE_USERS.length)];
-      const text = SAMPLE_MSGS[Math.floor(Math.random() * SAMPLE_MSGS.length)];
-      pushChat(user, text, "msg");
-    }, 2200);
-    const c = setInterval(() => {
-      const user = SAMPLE_USERS[Math.floor(Math.random() * SAMPLE_USERS.length)];
-      pushChat(user, "joined", "join");
-    }, 5000);
-    return () => {
-      clearInterval(a);
-      clearInterval(b);
-      clearInterval(c);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("display_name,username")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      setMe({
+        id: user.id,
+        name: prof?.display_name || prof?.username || (user.email?.split("@")[0] ?? "Guest"),
+      });
+    });
   }, []);
 
-  // Auto-scroll chat
+  // Load supplier products + initial chat
+  useEffect(() => {
+    fetchProducts({ supplierId: stream.supplier_id, limit: 8 }).then(setPinned);
+    supabase
+      .from("live_messages")
+      .select("*")
+      .eq("stream_id", stream.id)
+      .order("created_at", { ascending: true })
+      .limit(80)
+      .then(({ data }) => setChat((data ?? []) as ChatLine[]));
+    supabase
+      .from("live_reactions")
+      .select("id", { count: "exact", head: true })
+      .eq("stream_id", stream.id)
+      .then(({ count }) => setLikes(count ?? 0));
+  }, [stream.id, stream.supplier_id]);
+
+  // Bump viewer count once per join
+  useEffect(() => {
+    if (sentViewerBumpRef.current) return;
+    sentViewerBumpRef.current = true;
+    supabase
+      .from("live_streams")
+      .update({ viewer_count: stream.viewer_count + 1 })
+      .eq("id", stream.id)
+      .then(() => {});
+    return () => {
+      supabase
+        .from("live_streams")
+        .select("viewer_count")
+        .eq("id", stream.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data && data.viewer_count > 0) {
+            supabase.from("live_streams").update({ viewer_count: data.viewer_count - 1 }).eq("id", stream.id).then(() => {});
+          }
+        });
+    };
+  }, [stream.id, stream.viewer_count]);
+
+  // Realtime: messages, reactions, viewer count
+  useEffect(() => {
+    const ch = supabase
+      .channel(`live:${stream.id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "live_messages", filter: `stream_id=eq.${stream.id}` },
+        (payload) => {
+          setChat((prev) => [...prev.slice(-79), payload.new as ChatLine]);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "live_reactions", filter: `stream_id=eq.${stream.id}` },
+        () => {
+          setLikes((v) => v + 1);
+          setHearts((h) => [...h, { id: Date.now() + Math.random(), left: 60 + Math.random() * 30 }]);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "live_streams", filter: `id=eq.${stream.id}` },
+        (payload) => {
+          const next = payload.new as DbStream;
+          setViewers(next.viewer_count);
+          if (next.status === "ended") {
+            toast.info("This stream just ended");
+            onLeave();
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [stream.id, onLeave]);
+
+  // Auto-scroll
   useEffect(() => {
     chatRef.current?.scrollTo({ top: 9e9, behavior: "smooth" });
   }, [chat]);
@@ -207,57 +308,63 @@ function LiveRoom({ stream, onLeave }: { stream: LiveStream; onLeave: () => void
     return () => clearTimeout(t);
   }, [hearts]);
 
-  const pushChat = (user: string, text: string, tone: ChatLine["tone"] = "msg") => {
-    setChat((prev) => [...prev.slice(-80), { id: idRef.current++, user, text, tone }]);
+  const sendHeart = async () => {
+    if (!me) {
+      toast.error("Sign in to react");
+      return;
+    }
+    await supabase.from("live_reactions").insert({ stream_id: stream.id, user_id: me.id, kind: "heart" });
   };
 
-  const sendHeart = () => {
-    setLikes((v) => v + 1);
-    setHearts((h) => [...h, { id: Date.now() + Math.random(), left: 60 + Math.random() * 30 }]);
-  };
-
-  const send = () => {
+  const send = async () => {
     const t = input.trim();
     if (!t) return;
-    pushChat("You", t, "msg");
+    if (!me) {
+      toast.error("Sign in to chat");
+      return;
+    }
     setInput("");
+    const { error } = await supabase
+      .from("live_messages")
+      .insert({ stream_id: stream.id, user_id: me.id, username: me.name, body: t });
+    if (error) toast.error(error.message);
   };
 
   const quickBuy = (p: Product) => {
     addToCart(p.id, p.moq);
-    pushChat("You", `bought ${p.title.split(" ").slice(0, 3).join(" ")}…`, "buy");
     toast.success("Added to cart");
   };
 
+  const startedMin = Math.max(1, Math.floor((Date.now() - new Date(stream.started_at).getTime()) / 60000));
+
   return (
     <div className="fixed inset-0 z-50 bg-black text-white flex flex-col">
-      {/* Background */}
-      <img
-        src={stream.thumb}
-        alt=""
-        className="absolute inset-0 w-full h-full object-cover blur-sm scale-110 opacity-70"
-      />
+      {stream.cover && (
+        <img
+          src={stream.cover}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover blur-sm scale-110 opacity-70"
+        />
+      )}
       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/85" />
 
-      {/* Header */}
       <header className="relative z-10 safe-top px-3 pt-3 flex items-center gap-2">
-        <Link
-          to={`/supplier/${stream.supplier.id}`}
-          className="flex items-center gap-2 bg-black/40 backdrop-blur rounded-full pl-1 pr-3 py-1"
-        >
-          <img src={stream.supplier.logo} alt="" className="w-8 h-8 rounded-full object-cover" />
-          <div className="text-xs leading-tight">
-            <p className="font-bold flex items-center gap-1">
-              {stream.supplier.name.split(" ")[0]}
-              {stream.supplier.verified && <ShieldCheck className="w-3 h-3 text-sky-300" />}
-              {stream.supplier.gold && <Award className="w-3 h-3 text-amber-300" />}
-            </p>
-            <p className="opacity-70 text-[10px]">{stream.supplier.country}</p>
-          </div>
-          <button className="ml-2 px-2.5 h-6 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
-            Follow
-          </button>
-        </Link>
+        {stream.supplier && (
+          <Link
+            to={`/supplier/${stream.supplier.id}`}
+            className="flex items-center gap-2 bg-black/40 backdrop-blur rounded-full pl-1 pr-3 py-1"
+          >
+            {stream.supplier.logo && <img src={stream.supplier.logo} alt="" className="w-8 h-8 rounded-full object-cover" />}
+            <div className="text-xs leading-tight">
+              <p className="font-bold flex items-center gap-1">
+                {stream.supplier.name.split(" ")[0]}
+                {stream.supplier.verified && <ShieldCheck className="w-3 h-3 text-sky-300" />}
+                {stream.supplier.gold && <Award className="w-3 h-3 text-amber-300" />}
+              </p>
+              <p className="opacity-70 text-[10px]">{stream.supplier.country}</p>
+            </div>
+          </Link>
+        )}
         <span className="px-2 py-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center gap-1 animate-pulse">
           <Radio className="w-3 h-3" /> LIVE
         </span>
@@ -273,33 +380,13 @@ function LiveRoom({ stream, onLeave }: { stream: LiveStream; onLeave: () => void
         </button>
       </header>
 
-      {/* Title strip */}
       <div className="relative z-10 px-3 mt-2">
         <p className="text-sm font-bold drop-shadow">{stream.title}</p>
-        <p className="text-[10px] opacity-80">Started {stream.startedMin}m ago · {likes.toLocaleString()} likes</p>
+        <p className="text-[10px] opacity-80">Started {startedMin}m ago · {likes.toLocaleString()} likes</p>
       </div>
 
-      {/* Pinned product strip */}
-      <button
-        onClick={() => setShowProducts(true)}
-        className="relative z-10 mx-3 mt-3 flex items-center gap-2 rounded-2xl bg-white/10 backdrop-blur border border-white/20 p-2 text-left"
-      >
-        <span className="w-9 h-9 rounded-full bg-amber-400 text-black flex items-center justify-center shrink-0">
-          <Pin className="w-4 h-4" />
-        </span>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-bold">Featured product · {pinned.length} items</p>
-          <p className="text-[10px] opacity-80 truncate">{pinned[0]?.title}</p>
-        </div>
-        <span className="px-2 py-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
-          Shop
-        </span>
-      </button>
-
-      {/* Spacer to push chat down */}
       <div className="flex-1 relative z-10" />
 
-      {/* Chat overlay */}
       <div
         ref={chatRef}
         className="relative z-10 px-3 max-h-[42vh] overflow-y-auto scrollbar-none space-y-1.5 pb-2"
@@ -308,31 +395,19 @@ function LiveRoom({ stream, onLeave }: { stream: LiveStream; onLeave: () => void
           maskImage: "linear-gradient(to bottom, transparent, black 30%)",
         }}
       >
+        {chat.length === 0 && (
+          <p className="text-[12px] text-white/60 italic">Be the first to say hi 👋</p>
+        )}
         {chat.map((c) => (
           <div key={c.id} className="text-[12px] leading-snug">
-            {c.tone === "join" ? (
-              <p className="text-white/70">
-                <span className="font-bold text-white">{c.user}</span> {c.text} 👋
-              </p>
-            ) : c.tone === "buy" ? (
-              <p className="text-emerald-300">
-                <span className="font-bold">{c.user}</span> {c.text} 🛍️
-              </p>
-            ) : c.tone === "gift" ? (
-              <p className="text-amber-300">
-                🎁 <span className="font-bold">{c.user}</span> {c.text}
-              </p>
-            ) : (
-              <p>
-                <span className="font-bold mr-1">{c.user}</span>
-                <span className="text-white/95">{c.text}</span>
-              </p>
-            )}
+            <p>
+              <span className="font-bold mr-1">{c.username || "Guest"}</span>
+              <span className="text-white/95">{c.body}</span>
+            </p>
           </div>
         ))}
       </div>
 
-      {/* Floating hearts */}
       <div className="pointer-events-none absolute right-2 bottom-24 z-10 w-20 h-64">
         {hearts.map((h) => (
           <Heart
@@ -343,14 +418,13 @@ function LiveRoom({ stream, onLeave }: { stream: LiveStream; onLeave: () => void
         ))}
       </div>
 
-      {/* Composer */}
       <div className="relative z-10 px-3 pb-4 pt-2 safe-bottom flex items-center gap-2">
         <div className="flex-1 flex items-center gap-2 rounded-full bg-white/15 backdrop-blur border border-white/20 px-4 h-10">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && send()}
-            placeholder="Say something…"
+            placeholder={me ? "Say something…" : "Sign in to chat"}
             className="flex-1 bg-transparent outline-none text-sm placeholder:text-white/60 text-white"
           />
           <button onClick={send} aria-label="Send">
@@ -363,16 +437,6 @@ function LiveRoom({ stream, onLeave }: { stream: LiveStream; onLeave: () => void
           className="w-10 h-10 rounded-full bg-white/15 backdrop-blur border border-white/20 flex items-center justify-center"
         >
           <ShoppingBag className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => {
-            pushChat("You", "sent a gift", "gift");
-            toast.success("Gift sent 🎁");
-          }}
-          aria-label="Gift"
-          className="w-10 h-10 rounded-full bg-white/15 backdrop-blur border border-white/20 flex items-center justify-center"
-        >
-          <Gift className="w-4 h-4 text-amber-300" />
         </button>
         <button
           onClick={() => {
@@ -393,7 +457,6 @@ function LiveRoom({ stream, onLeave }: { stream: LiveStream; onLeave: () => void
         </button>
       </div>
 
-      {/* Products sheet */}
       {showProducts && (
         <div
           className="absolute inset-0 z-20 bg-black/60 flex items-end"
@@ -404,33 +467,37 @@ function LiveRoom({ stream, onLeave }: { stream: LiveStream; onLeave: () => void
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-4 py-3 flex items-center gap-2 border-b border-border">
-              <Sparkles className="w-4 h-4 text-primary" />
+              <ShoppingBag className="w-4 h-4 text-primary" />
               <p className="text-sm font-bold">Live picks · {pinned.length}</p>
               <button onClick={() => setShowProducts(false)} className="ml-auto p-1.5 rounded-full hover:bg-muted">
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="overflow-y-auto p-3 space-y-2">
-              {pinned.map((p) => (
-                <div key={p.id} className="flex items-center gap-3 rounded-2xl border border-border p-2 shadow-soft">
-                  <Link to={`/product/${p.id}`} onClick={() => setShowProducts(false)} className="shrink-0">
-                    <img src={p.image} alt="" className="w-16 h-16 rounded-xl object-cover" />
-                  </Link>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold line-clamp-2">{p.title}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      MOQ {p.moq} {p.unit} · {p.leadTime}
-                    </p>
-                    <p className="text-sm font-bold mt-0.5">${p.price}</p>
+              {pinned.length === 0 ? (
+                <p className="text-center text-sm text-muted-foreground py-6">No products listed yet</p>
+              ) : (
+                pinned.map((p) => (
+                  <div key={p.id} className="flex items-center gap-3 rounded-2xl border border-border p-2 shadow-soft">
+                    <Link to={`/product/${p.id}`} onClick={() => setShowProducts(false)} className="shrink-0">
+                      <img src={p.image} alt="" className="w-16 h-16 rounded-xl object-cover" />
+                    </Link>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold line-clamp-2">{p.title}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        MOQ {p.moq} {p.unit} · {p.leadTime}
+                      </p>
+                      <p className="text-sm font-bold mt-0.5">${p.price}</p>
+                    </div>
+                    <button
+                      onClick={() => quickBuy(p)}
+                      className="px-3 h-9 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-card"
+                    >
+                      Buy now
+                    </button>
                   </div>
-                  <button
-                    onClick={() => quickBuy(p)}
-                    className="px-3 h-9 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-card"
-                  >
-                    Buy now
-                  </button>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
