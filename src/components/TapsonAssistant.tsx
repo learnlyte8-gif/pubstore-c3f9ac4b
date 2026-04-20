@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Sparkles, X, Send, Loader2, Eraser } from "lucide-react";
+import { Sparkles, X, Send, Loader2, Eraser, ShieldCheck, Award, Star, ShoppingBag, Radio, ArrowRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
-import { PRODUCTS, SUPPLIERS, CATEGORIES } from "@/data/products";
+import { PRODUCTS, SUPPLIERS, CATEGORIES, getProduct, getSupplier } from "@/data/products";
+import { useShop } from "@/store/shop";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -21,13 +22,13 @@ function buildContext(): string {
   const cats = CATEGORIES.map((c) => c.name).join(", ");
   const verified = SUPPLIERS.filter((s) => s.verified).length;
   const gold = SUPPLIERS.filter((s) => s.gold).length;
-  const sampleProducts = PRODUCTS.slice(0, 12)
+  const sampleProducts = PRODUCTS.slice(0, 24)
     .map(
       (p) =>
-        `- ${p.title} (id:${p.id}) — $${p.price} · MOQ ${p.moq} ${p.unit} · ${p.category} · supplier:${p.supplierId}`
+        `- ${p.title} (id:${p.id}) — $${p.price} · MOQ ${p.moq} ${p.unit} · ${p.category} · supplier:${p.supplierId} · rating:${p.rating}`
     )
     .join("\n");
-  const sampleSuppliers = SUPPLIERS.slice(0, 6)
+  const allSuppliers = SUPPLIERS
     .map(
       (s) =>
         `- ${s.name} (id:${s.id}) — ${s.country} · ${s.rating}★ · ${s.responseRate}% resp · ${
@@ -38,11 +39,11 @@ function buildContext(): string {
   return `Categories: ${cats}
 Total products: ${PRODUCTS.length} | Suppliers: ${SUPPLIERS.length} (${verified} verified, ${gold} gold)
 
-Sample products:
+Products (use these IDs in ::product[ID] tokens):
 ${sampleProducts}
 
-Top suppliers:
-${sampleSuppliers}`;
+Suppliers (use these IDs in ::supplier[ID] and ::live[ID] tokens):
+${allSuppliers}`;
 }
 
 export default function TapsonAssistant() {
