@@ -7,6 +7,7 @@ import { useShop } from "@/store/shop";
 import RotatingHint from "@/components/RotatingHint";
 import LiveActivityToaster from "@/components/LiveActivityToaster";
 import InstallPrompt from "@/components/InstallPrompt";
+import BannerAd from "@/components/marketplace/BannerAd";
 import logo from "@/assets/pubstore-logo.png";
 
 export default function AppShell() {
@@ -118,6 +119,7 @@ export default function AppShell() {
       </nav>
 
       <LiveActivityToaster />
+      <BannerAd />
       <InstallPrompt />
     </div>
   );

@@ -33,6 +33,7 @@ export default function SearchPage() {
   const [hintIdx, setHintIdx] = useState(0);
   const aiCtrl = useRef<AbortController | null>(null);
 
+  const HINTS = useLiveHints();
   const { data: cats = [] } = useCategories();
   const { data: allProducts = [], isLoading } = useProducts({
     search: submitted || undefined,
