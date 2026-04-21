@@ -185,11 +185,7 @@ const Home = () => {
 
       {tab === "following" && (
         <div className="animate-fade-in">
-          <EmptyState
-            icon={<Users className="w-7 h-7 text-muted-foreground" />}
-            title="You're not following anyone yet"
-            description="Visit a supplier's store and tap follow to see their posts here."
-          />
+          <FollowingTab />
         </div>
       )}
 
