@@ -219,6 +219,40 @@ export default function LiveStatsBanner() {
     return () => clearInterval(t);
   }, []);
 
+  // Orders: monotonically increases, one bump every 10 minutes, persisted
+  useEffect(() => {
+    const advance = () => {
+      setOrdersState((prev) => {
+        if (prev.value >= ORDERS_MAX) return prev;
+        const step = ORDERS_STEP_MIN + Math.floor(Math.random() * (ORDERS_STEP_MAX - ORDERS_STEP_MIN + 1));
+        const next: OrdersState = {
+          value: Math.min(ORDERS_MAX, prev.value + step),
+          lastTick: Date.now(),
+        };
+        saveOrdersState(next);
+        setOrdersT((tr) => pushTrend(tr, next.value));
+        return next;
+      });
+    };
+
+    // Align next bump to (lastTick + 10min); if overdue, fire ~immediately
+    const dueIn = Math.max(2000, ordersState.lastTick + ORDERS_TICK_MS - Date.now());
+    const first = setTimeout(() => {
+      advance();
+      // After the first aligned bump, settle into a clean 10-min cadence
+      const interval = setInterval(advance, ORDERS_TICK_MS);
+      // Stash on the timeout so cleanup can clear both
+      (first as unknown as { _interval?: ReturnType<typeof setInterval> })._interval = interval;
+    }, dueIn);
+
+    return () => {
+      const carried = (first as unknown as { _interval?: ReturnType<typeof setInterval> })._interval;
+      clearTimeout(first);
+      if (carried) clearInterval(carried);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="px-4 mt-3" aria-label="Live marketplace stats">
       <div className="rounded-3xl border border-border/60 bg-gradient-to-br from-background via-muted/40 to-background p-3 shadow-card">
