@@ -45,12 +45,14 @@ export default function Settings() {
         </Section>
 
         <Section title="Notifications">
-          <Toggle icon={Bell} label="Push notifications" v={push} on={setPush} />
-          <Toggle icon={Smartphone} label="Email updates" v={email} on={setEmail} />
-          <Toggle icon={Volume2} label="Sound & vibration" v={sound} on={setSound} />
-          <Toggle icon={Bell} label="Order status alerts" v={orderAlerts} on={setOrderAlerts} />
-          <Toggle icon={DollarSign} label="Price drops on wishlist" v={priceDrops} on={setPriceDrops} />
-          <Toggle icon={Bell} label="Marketing emails" v={marketing} on={setMarketing} />
+          <Link to="/settings/notifications" className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted/40">
+            <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center"><Bell className="w-4.5 h-4.5" /></span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">Notification preferences</p>
+              <p className="text-[11px] text-muted-foreground">In-app, push, and email — choose what reaches you</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </Link>
         </Section>
 
         <Section title="Region">
