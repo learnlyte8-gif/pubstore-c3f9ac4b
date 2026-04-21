@@ -131,6 +131,13 @@ const Home = () => {
                 </section>
               )}
 
+              {suppliers.length > 0 && (
+                <section className="px-4 mt-6">
+                  <SectionHeader icon={Building2} title="Top suppliers" subtitle="Verified stores ready to ship" />
+                  <TopSuppliers suppliers={suppliers} />
+                </section>
+              )}
+
               <SuppliersNearMe />
 
               <section className="px-4 mt-6">
