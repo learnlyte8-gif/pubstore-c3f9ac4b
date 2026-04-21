@@ -14,7 +14,7 @@ import StatsBar from "@/components/marketplace/StatsBar";
 import TopSuppliers from "@/components/marketplace/TopSuppliers";
 import VerticalFeed from "@/components/marketplace/VerticalFeed";
 import SuppliersNearMe from "@/components/marketplace/SuppliersNearMe";
-import SupplierStories from "@/components/marketplace/SupplierStories";
+import LiveStatsBanner from "@/components/marketplace/LiveStatsBanner";
 import QuickActions from "@/components/marketplace/QuickActions";
 import BrandSpotlight from "@/components/marketplace/BrandSpotlight";
 import RegionSourcing from "@/components/marketplace/RegionSourcing";
@@ -95,7 +95,7 @@ const Home = () => {
       {tab === "home" && (
         <div className="animate-fade-in">
           <PromoBanner />
-          <SupplierStories />
+          <LiveStatsBanner />
           <div className="px-4"><QuickActions /></div>
           <div className="px-4"><StatsBar /></div>
           <CategoryGrid />
