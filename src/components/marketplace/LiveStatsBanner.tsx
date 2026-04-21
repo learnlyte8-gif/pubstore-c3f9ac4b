@@ -177,7 +177,8 @@ export default function LiveStatsBanner() {
       return out;
     };
     setTrafficT(seed(traffic, 4594, 6378, 80));
-    setOrdersT(seed(orders, 7897, 12000, 110));
+    // Orders sparkline = a flat-ish ascending trail leading up to current value
+    setOrdersT(Array.from({ length: SPARK_LEN }, (_, i) => orders - (SPARK_LEN - 1 - i) * 2));
     setSuccessT(seed(success, 99.2, 99.8, 0.04));
     setSuppliersT(seed(suppliers, 1180, 1340, 6));
     setDeliveriesT(seed(deliveries, 2800, 4200, 60));
@@ -193,11 +194,7 @@ export default function LiveStatsBanner() {
         setTrafficT((tr) => pushTrend(tr, n));
         return n;
       });
-      setOrders((v) => {
-        const n = clampedDrift(v, 7897, 12000, 110);
-        setOrdersT((tr) => pushTrend(tr, n));
-        return n;
-      });
+      // Orders are NOT touched here — they advance on the 10-minute ticker below
       setSuccess((v) => {
         const n = clampedDrift(v, 99.2, 99.8, 0.05);
         setSuccessT((tr) => pushTrend(tr, n));
