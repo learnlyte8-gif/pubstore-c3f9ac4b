@@ -3,7 +3,17 @@ import { Link } from "react-router-dom";
 import { Sparkles, X, Send, Loader2, Eraser, ShieldCheck, Award, Star, ShoppingBag, Radio, ArrowRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
-import { PRODUCTS, SUPPLIERS, CATEGORIES, getProduct, getSupplier } from "@/data/products";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchProducts,
+  fetchSuppliers,
+  fetchCategories,
+  fetchProduct,
+  fetchSupplier,
+  type Product,
+  type Supplier,
+} from "@/data/products";
 import { useShop } from "@/store/shop";
 
 type Msg = { role: "user" | "assistant"; content: string };
@@ -13,37 +23,51 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tapson-chat`
 
 const QUICK_PROMPTS = [
   "Find a verified supplier for 500 wireless earbuds",
-  "Compare top electronics suppliers",
+  "Compare top suppliers near me",
   "Help me write an RFQ for cotton t-shirts",
   "Show me today's best deals",
 ];
 
-function buildContext(): string {
-  const cats = CATEGORIES.map((c) => c.name).join(", ");
-  const verified = SUPPLIERS.filter((s) => s.verified).length;
-  const gold = SUPPLIERS.filter((s) => s.gold).length;
-  const sampleProducts = PRODUCTS.slice(0, 24)
+async function buildLiveContext(): Promise<string> {
+  const [cats, products, suppliers, liveStreamsRes] = await Promise.all([
+    fetchCategories(),
+    fetchProducts({ limit: 30, sortBy: "sold" }),
+    fetchSuppliers({ limit: 30 }),
+    supabase.from("live_streams").select("id,title,supplier_id,viewer_count").eq("status", "live").limit(8),
+  ]);
+
+  const verified = suppliers.filter((s) => s.verified).length;
+  const gold = suppliers.filter((s) => s.gold).length;
+
+  const productLines = products
     .map(
       (p) =>
-        `- ${p.title} (id:${p.id}) — $${p.price} · MOQ ${p.moq} ${p.unit} · ${p.category} · supplier:${p.supplierId} · rating:${p.rating}`
+        `- ${p.title} (id:${p.id}) — $${p.price} · MOQ ${p.moq} ${p.unit} · ${p.category || "general"} · supplier:${p.supplierId} · ${p.rating}★ · sold ${p.sold}${p.dealEndsAt ? " · DEAL ACTIVE" : ""}`
     )
     .join("\n");
-  const allSuppliers = SUPPLIERS
+
+  const supplierLines = suppliers
     .map(
       (s) =>
-        `- ${s.name} (id:${s.id}) — ${s.country} · ${s.rating}★ · ${s.responseRate}% resp · ${
-          s.verified ? "Verified" : ""
-        } ${s.gold ? "Gold" : ""}`
+        `- ${s.name} (id:${s.id}) — ${s.country || "—"} · ${s.rating}★ · ${s.responseRate}% resp · ${s.verified ? "Verified " : ""}${s.gold ? "Gold " : ""}${s.tradeAssurance ? "TradeAssured" : ""}`.trim()
     )
     .join("\n");
-  return `Categories: ${cats}
-Total products: ${PRODUCTS.length} | Suppliers: ${SUPPLIERS.length} (${verified} verified, ${gold} gold)
 
-Products (use these IDs in ::product[ID] tokens):
-${sampleProducts}
+  const liveLines = (liveStreamsRes.data ?? [])
+    .map((l: any) => `- ${l.title} (supplier:${l.supplier_id}) · ${l.viewer_count} viewers`)
+    .join("\n");
 
-Suppliers (use these IDs in ::supplier[ID] and ::live[ID] tokens):
-${allSuppliers}`;
+  return `Categories: ${cats.map((c) => c.name).join(", ")}
+Total live products: ${products.length} | Suppliers: ${suppliers.length} (${verified} verified, ${gold} gold)
+
+REAL Products (use these EXACT IDs in ::product[ID] tokens):
+${productLines || "(none yet)"}
+
+REAL Suppliers (use these EXACT IDs in ::supplier[ID] and ::live[ID] tokens):
+${supplierLines || "(none yet)"}
+
+Live streams right now:
+${liveLines || "(none)"}`;
 }
 
 export default function TapsonAssistant() {
@@ -99,13 +123,14 @@ export default function TapsonAssistant() {
     };
 
     try {
+      const context = await buildLiveContext().catch(() => "");
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: next, context: buildContext() }),
+        body: JSON.stringify({ messages: next, context }),
         signal: controller.signal,
       });
 
@@ -380,10 +405,14 @@ function parseBlocks(content: string): Block[] {
 }
 
 function TapsonProductCard({ id }: { id: string }) {
-  const p = getProduct(id);
+  const { data: p } = useQuery({ queryKey: ["tapson-product", id], queryFn: () => fetchProduct(id) });
+  const { data: s } = useQuery({
+    queryKey: ["tapson-product-supplier", p?.supplierId],
+    queryFn: () => fetchSupplier(p!.supplierId),
+    enabled: !!p?.supplierId,
+  });
   const { addToCart } = useShop();
   if (!p) return null;
-  const s = getSupplier(p.supplierId);
   return (
     <div className="rounded-2xl border border-border bg-card shadow-card overflow-hidden animate-fade-in">
       <div className="flex">
@@ -434,7 +463,7 @@ function TapsonProductCard({ id }: { id: string }) {
 }
 
 function TapsonSupplierCard({ id }: { id: string }) {
-  const s = getSupplier(id);
+  const { data: s } = useQuery({ queryKey: ["tapson-supplier", id], queryFn: () => fetchSupplier(id) });
   if (!s) return null;
   return (
     <Link
@@ -471,9 +500,13 @@ function TapsonSupplierCard({ id }: { id: string }) {
 }
 
 function TapsonLiveCard({ id }: { id: string }) {
-  const s = getSupplier(id);
+  const { data: s } = useQuery({ queryKey: ["tapson-live-supplier", id], queryFn: () => fetchSupplier(id) });
+  const { data: prods = [] } = useQuery({
+    queryKey: ["tapson-live-products", id],
+    queryFn: () => fetchProducts({ supplierId: id, limit: 1 }),
+  });
   if (!s) return null;
-  const thumb = PRODUCTS.find((p) => p.supplierId === id)?.image ?? s.banner;
+  const thumb = prods[0]?.image ?? s.banner;
   return (
     <Link
       to={`/live/live-${s.id}`}
