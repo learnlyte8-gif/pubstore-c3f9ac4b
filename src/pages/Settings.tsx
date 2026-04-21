@@ -6,12 +6,6 @@ import { useTheme } from "next-themes";
 
 export default function Settings() {
   const { theme, setTheme } = useTheme();
-  const [push, setPush] = useState(true);
-  const [email, setEmail] = useState(true);
-  const [sound, setSound] = useState(true);
-  const [orderAlerts, setOrderAlerts] = useState(true);
-  const [priceDrops, setPriceDrops] = useState(true);
-  const [marketing, setMarketing] = useState(false);
   const [currency, setCurrency] = useState("USD");
   const [language, setLanguage] = useState("English");
 
