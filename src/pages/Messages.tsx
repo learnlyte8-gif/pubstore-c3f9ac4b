@@ -30,6 +30,17 @@ const fmtTime = (iso: string | null) => {
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 };
 
+const fmtDayLabel = (iso: string) => {
+  const d = new Date(iso);
+  const today = new Date();
+  const yest = new Date(); yest.setDate(today.getDate() - 1);
+  if (d.toDateString() === today.toDateString()) return "Today";
+  if (d.toDateString() === yest.toDateString()) return "Yesterday";
+  return d.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
+};
+
+const dayKey = (iso: string) => new Date(iso).toDateString();
+
 export default function Messages() {
   const [params, setParams] = useSearchParams();
   const initialSupplierId = params.get("supplier");
