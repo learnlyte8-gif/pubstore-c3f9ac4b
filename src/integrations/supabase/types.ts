@@ -426,6 +426,87 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          email_new_product_followed: boolean
+          email_onboarding: boolean
+          email_orders: boolean
+          email_rfq: boolean
+          email_weekly_digest: boolean
+          email_welcome: boolean
+          id: string
+          inapp_followed_supplier_live: boolean
+          inapp_followed_supplier_new_product: boolean
+          inapp_messages: boolean
+          inapp_orders: boolean
+          inapp_rfq: boolean
+          inapp_wishlist_price_drop: boolean
+          inapp_wishlist_restock: boolean
+          push_followed_supplier_live: boolean
+          push_followed_supplier_new_product: boolean
+          push_messages: boolean
+          push_orders: boolean
+          push_rfq: boolean
+          push_wishlist_price_drop: boolean
+          push_wishlist_restock: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_new_product_followed?: boolean
+          email_onboarding?: boolean
+          email_orders?: boolean
+          email_rfq?: boolean
+          email_weekly_digest?: boolean
+          email_welcome?: boolean
+          id?: string
+          inapp_followed_supplier_live?: boolean
+          inapp_followed_supplier_new_product?: boolean
+          inapp_messages?: boolean
+          inapp_orders?: boolean
+          inapp_rfq?: boolean
+          inapp_wishlist_price_drop?: boolean
+          inapp_wishlist_restock?: boolean
+          push_followed_supplier_live?: boolean
+          push_followed_supplier_new_product?: boolean
+          push_messages?: boolean
+          push_orders?: boolean
+          push_rfq?: boolean
+          push_wishlist_price_drop?: boolean
+          push_wishlist_restock?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_new_product_followed?: boolean
+          email_onboarding?: boolean
+          email_orders?: boolean
+          email_rfq?: boolean
+          email_weekly_digest?: boolean
+          email_welcome?: boolean
+          id?: string
+          inapp_followed_supplier_live?: boolean
+          inapp_followed_supplier_new_product?: boolean
+          inapp_messages?: boolean
+          inapp_orders?: boolean
+          inapp_rfq?: boolean
+          inapp_wishlist_price_drop?: boolean
+          inapp_wishlist_restock?: boolean
+          push_followed_supplier_live?: boolean
+          push_followed_supplier_new_product?: boolean
+          push_messages?: boolean
+          push_orders?: boolean
+          push_rfq?: boolean
+          push_wishlist_price_drop?: boolean
+          push_wishlist_restock?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null
@@ -806,6 +887,39 @@ export type Database = {
         }
         Relationships: []
       }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          last_used_at: string
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          last_used_at?: string
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          last_used_at?: string
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       quotes: {
         Row: {
           created_at: string
@@ -1033,6 +1147,30 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      weekly_digest_log: {
+        Row: {
+          id: string
+          product_count: number
+          sent_at: string
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          id?: string
+          product_count?: number
+          sent_at?: string
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          id?: string
+          product_count?: number
+          sent_at?: string
+          user_id?: string
+          week_start?: string
         }
         Relationships: []
       }
