@@ -123,13 +123,14 @@ export default function TapsonAssistant() {
     };
 
     try {
+      const context = await buildLiveContext().catch(() => "");
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: next, context: buildContext() }),
+        body: JSON.stringify({ messages: next, context }),
         signal: controller.signal,
       });
 
@@ -404,10 +405,14 @@ function parseBlocks(content: string): Block[] {
 }
 
 function TapsonProductCard({ id }: { id: string }) {
-  const p = getProduct(id);
+  const { data: p } = useQuery({ queryKey: ["tapson-product", id], queryFn: () => fetchProduct(id) });
+  const { data: s } = useQuery({
+    queryKey: ["tapson-product-supplier", p?.supplierId],
+    queryFn: () => fetchSupplier(p!.supplierId),
+    enabled: !!p?.supplierId,
+  });
   const { addToCart } = useShop();
   if (!p) return null;
-  const s = getSupplier(p.supplierId);
   return (
     <div className="rounded-2xl border border-border bg-card shadow-card overflow-hidden animate-fade-in">
       <div className="flex">
@@ -458,7 +463,7 @@ function TapsonProductCard({ id }: { id: string }) {
 }
 
 function TapsonSupplierCard({ id }: { id: string }) {
-  const s = getSupplier(id);
+  const { data: s } = useQuery({ queryKey: ["tapson-supplier", id], queryFn: () => fetchSupplier(id) });
   if (!s) return null;
   return (
     <Link
@@ -495,9 +500,13 @@ function TapsonSupplierCard({ id }: { id: string }) {
 }
 
 function TapsonLiveCard({ id }: { id: string }) {
-  const s = getSupplier(id);
+  const { data: s } = useQuery({ queryKey: ["tapson-live-supplier", id], queryFn: () => fetchSupplier(id) });
+  const { data: prods = [] } = useQuery({
+    queryKey: ["tapson-live-products", id],
+    queryFn: () => fetchProducts({ supplierId: id, limit: 1 }),
+  });
   if (!s) return null;
-  const thumb = PRODUCTS.find((p) => p.supplierId === id)?.image ?? s.banner;
+  const thumb = prods[0]?.image ?? s.banner;
   return (
     <Link
       to={`/live/live-${s.id}`}
