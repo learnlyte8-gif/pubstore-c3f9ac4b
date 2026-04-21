@@ -31,6 +31,7 @@ import BecomeSupplier from "./pages/BecomeSupplier.tsx";
 import HelpCenter from "./pages/HelpCenter.tsx";
 import Privacy from "./pages/Privacy.tsx";
 import Settings from "./pages/Settings.tsx";
+import NotificationPreferences from "./pages/NotificationPreferences.tsx";
 import Placeholder from "./pages/Placeholder.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -74,6 +75,7 @@ const App = () => (
                 <Route path="/help" element={<HelpCenter />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/settings/notifications" element={<NotificationPreferences />} />
               </Route>
               <Route path="/index" element={<Navigate to="/home" replace />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
