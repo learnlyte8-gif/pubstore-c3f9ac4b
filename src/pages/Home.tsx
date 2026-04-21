@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   TrendingUp, Sparkles, LayoutGrid, Building2, Compass, Users, Home as HomeIcon, Store as StoreIcon,
-  Globe2, Award, Newspaper, Zap,
+  Globe2, Award, Newspaper, Zap, ShieldCheck, Truck, Flame,
   type LucideIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -20,6 +20,9 @@ import BrandSpotlight from "@/components/marketplace/BrandSpotlight";
 import RegionSourcing from "@/components/marketplace/RegionSourcing";
 import LiveFeed from "@/components/marketplace/LiveFeed";
 import LiveStreamsRail from "@/components/marketplace/LiveStreamsRail";
+import PromoTile from "@/components/marketplace/PromoTile";
+import CategoryCallout from "@/components/marketplace/CategoryCallout";
+import RecommendationStrip from "@/components/marketplace/RecommendationStrip";
 import TapsonAssistant from "@/components/TapsonAssistant";
 import EmptyState from "@/components/EmptyState";
 import { useProducts, useSuppliers } from "@/hooks/useCatalog";
@@ -138,6 +141,13 @@ const Home = () => {
               <SuppliersNearMe />
 
               <section className="px-4 mt-6">
+                <SectionHeader icon={Sparkles} title="For you" subtitle="Picked from your interests" />
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  {products.slice(0, 6).map((p) => (<ProductCard key={p.id} product={p} />))}
+                </div>
+              </section>
+
+              <section className="px-4 mt-6">
                 <SectionHeader icon={Award} title="Brand spotlight" subtitle="Featured collections" />
                 <BrandSpotlight />
               </section>
@@ -153,17 +163,8 @@ const Home = () => {
               </section>
 
               <section className="px-4 mt-6">
-                <SectionHeader icon={Sparkles} title="For you" subtitle="Picked from your interests" />
-                <div className="grid grid-cols-2 gap-3 mt-3">
-                  {products.slice(0, 6).map((p) => (<ProductCard key={p.id} product={p} />))}
-                </div>
-              </section>
-
-              <section className="px-4 mt-6">
-                <SectionHeader icon={LayoutGrid} title="Explore catalog" />
-                <div className="grid grid-cols-2 gap-3 mt-3">
-                  {products.slice(6).map((p) => (<ProductCard key={p.id} product={p} />))}
-                </div>
+                <SectionHeader icon={LayoutGrid} title="Explore catalog" subtitle="Mixed picks, ads & ideas" />
+                <MixedCatalogGrid products={products.slice(6)} hero={products[0]} />
               </section>
             </>
           )}
@@ -212,6 +213,80 @@ function SectionHeader({ title, subtitle, icon: Icon }: { title: string; subtitl
       </div>
     </div>
   );
+}
+
+/**
+ * MixedCatalogGrid — interleaves product cards with promotional tiles,
+ * category callouts, an ad slot and a recommendation strip so the
+ * "Explore catalog" surface feels like a curated feed instead of a wall.
+ */
+function MixedCatalogGrid({ products, hero }: { products: import("@/data/products").Product[]; hero?: import("@/data/products").Product }) {
+  if (products.length === 0) return null;
+
+  const dealSeed = products.find((p) => p.originalPrice && p.originalPrice > p.price) ?? products[0];
+  const newSeed = products.find((p) => p.badge === "New") ?? products[1] ?? products[0];
+  const editorSeed = hero ?? products[2] ?? products[0];
+
+  const inserts: { at: number; node: React.ReactNode }[] = [
+    { at: 2, node: <PromoTile key="promo-deal" product={dealSeed} variant="deal" /> },
+    {
+      at: 4,
+      node: (
+        <CategoryCallout
+          key="cat-fresh"
+          title="Verified factories ready to ship today"
+          subtitle="Trade Assurance"
+          href="/categories"
+          icon={ShieldCheck}
+          tone="primary"
+        />
+      ),
+    },
+    { at: 6, node: <RecommendationStrip key="rec-strip" /> },
+    { at: 8, node: <PromoTile key="promo-editor" product={editorSeed} variant="editor" /> },
+    {
+      at: 10,
+      node: (
+        <CategoryCallout
+          key="cat-warm"
+          title="Free shipping on orders over $50"
+          subtitle="Limited time"
+          href="/categories"
+          icon={Truck}
+          tone="warm"
+        />
+      ),
+    },
+    { at: 13, node: <PromoTile key="promo-new" product={newSeed} variant="new" /> },
+    {
+      at: 16,
+      node: (
+        <CategoryCallout
+          key="cat-flash"
+          title="Hottest categories this week"
+          subtitle="Trending now"
+          href="/categories"
+          icon={Flame}
+          tone="ink"
+        />
+      ),
+    },
+  ];
+
+  const cells: React.ReactNode[] = [];
+  let prodIndex = 0;
+  for (let i = 0; i < products.length + inserts.length; i++) {
+    const insert = inserts.find((x) => x.at === i);
+    if (insert) {
+      cells.push(insert.node);
+      continue;
+    }
+    const p = products[prodIndex++];
+    if (!p) break;
+    cells.push(<ProductCard key={p.id} product={p} />);
+  }
+
+  return <div className="grid grid-cols-2 gap-3 mt-3">{cells}</div>;
 }
 
 export default Home;
