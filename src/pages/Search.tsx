@@ -4,7 +4,7 @@ import {
 } from "lucide-react";
 import ProductCard from "@/components/marketplace/ProductCard";
 import { Button } from "@/components/ui/button";
-import { POPULAR_HINTS } from "@/components/RotatingHint";
+import { POPULAR_HINTS, useLiveHints } from "@/components/RotatingHint";
 import { Link } from "react-router-dom";
 import { useProducts, useCategories } from "@/hooks/useCatalog";
 import EmptyState from "@/components/EmptyState";
