@@ -144,7 +144,12 @@ function Tile({ icon: Icon, label, value, delta, trend, tone = "primary" }: Tile
 export default function LiveStatsBanner() {
   // Seed values somewhere in-band so first paint already looks plausible
   const [traffic, setTraffic] = useState(() => 4900 + Math.random() * 1000);
-  const [orders, setOrders] = useState(() => 8200 + Math.random() * 2500);
+  const [ordersState, setOrdersState] = useState<OrdersState>(() => {
+    const s = loadOrdersState();
+    saveOrdersState(s);
+    return s;
+  });
+  const orders = ordersState.value;
   const [success, setSuccess] = useState(() => 99.4 + Math.random() * 0.3);
   const [suppliers, setSuppliers] = useState(() => 1240 + Math.random() * 80);
   const [deliveries, setDeliveries] = useState(() => 3100 + Math.random() * 900);
