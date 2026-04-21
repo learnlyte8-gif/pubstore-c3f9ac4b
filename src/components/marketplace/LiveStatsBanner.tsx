@@ -19,6 +19,43 @@ type Trend = number[]; // last N samples used to draw the sparkline
 const SPARK_LEN = 18;
 const TICK_MS = 1600; // how often values nudge
 
+// --- Orders counter (monotonic, updates every 10 minutes) ---
+const ORDERS_MIN = 7897;
+const ORDERS_MAX = 12000;
+const ORDERS_TICK_MS = 10 * 60 * 1000; // 10 minutes
+const ORDERS_STEP_MIN = 7;   // smallest jump per 10-min tick
+const ORDERS_STEP_MAX = 32;  // largest jump per 10-min tick
+const ORDERS_KEY = "pubstore.stats.orders.v1";
+
+type OrdersState = { value: number; lastTick: number };
+
+function loadOrdersState(): OrdersState {
+  try {
+    const raw = localStorage.getItem(ORDERS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as OrdersState;
+      if (typeof parsed.value === "number" && typeof parsed.lastTick === "number") {
+        // Catch up missed 10-min ticks since last visit, but never exceed the max
+        const missed = Math.floor((Date.now() - parsed.lastTick) / ORDERS_TICK_MS);
+        if (missed > 0) {
+          let v = parsed.value;
+          for (let i = 0; i < missed; i++) {
+            v += ORDERS_STEP_MIN + Math.floor(Math.random() * (ORDERS_STEP_MAX - ORDERS_STEP_MIN + 1));
+            if (v >= ORDERS_MAX) { v = ORDERS_MAX; break; }
+          }
+          return { value: v, lastTick: parsed.lastTick + missed * ORDERS_TICK_MS };
+        }
+        return parsed;
+      }
+    }
+  } catch { /* ignore */ }
+  return { value: ORDERS_MIN, lastTick: Date.now() };
+}
+
+function saveOrdersState(s: OrdersState) {
+  try { localStorage.setItem(ORDERS_KEY, JSON.stringify(s)); } catch { /* ignore */ }
+}
+
 function clampedDrift(prev: number, min: number, max: number, maxStep: number) {
   const range = max - min;
   // stronger pull toward middle when near edges, so we don't pin the bounds
@@ -107,7 +144,12 @@ function Tile({ icon: Icon, label, value, delta, trend, tone = "primary" }: Tile
 export default function LiveStatsBanner() {
   // Seed values somewhere in-band so first paint already looks plausible
   const [traffic, setTraffic] = useState(() => 4900 + Math.random() * 1000);
-  const [orders, setOrders] = useState(() => 8200 + Math.random() * 2500);
+  const [ordersState, setOrdersState] = useState<OrdersState>(() => {
+    const s = loadOrdersState();
+    saveOrdersState(s);
+    return s;
+  });
+  const orders = ordersState.value;
   const [success, setSuccess] = useState(() => 99.4 + Math.random() * 0.3);
   const [suppliers, setSuppliers] = useState(() => 1240 + Math.random() * 80);
   const [deliveries, setDeliveries] = useState(() => 3100 + Math.random() * 900);
@@ -135,7 +177,8 @@ export default function LiveStatsBanner() {
       return out;
     };
     setTrafficT(seed(traffic, 4594, 6378, 80));
-    setOrdersT(seed(orders, 7897, 12000, 110));
+    // Orders sparkline = a flat-ish ascending trail leading up to current value
+    setOrdersT(Array.from({ length: SPARK_LEN }, (_, i) => orders - (SPARK_LEN - 1 - i) * 2));
     setSuccessT(seed(success, 99.2, 99.8, 0.04));
     setSuppliersT(seed(suppliers, 1180, 1340, 6));
     setDeliveriesT(seed(deliveries, 2800, 4200, 60));
@@ -151,11 +194,7 @@ export default function LiveStatsBanner() {
         setTrafficT((tr) => pushTrend(tr, n));
         return n;
       });
-      setOrders((v) => {
-        const n = clampedDrift(v, 7897, 12000, 110);
-        setOrdersT((tr) => pushTrend(tr, n));
-        return n;
-      });
+      // Orders are NOT touched here — they advance on the 10-minute ticker below
       setSuccess((v) => {
         const n = clampedDrift(v, 99.2, 99.8, 0.05);
         setSuccessT((tr) => pushTrend(tr, n));
@@ -178,6 +217,40 @@ export default function LiveStatsBanner() {
       });
     }, TICK_MS);
     return () => clearInterval(t);
+  }, []);
+
+  // Orders: monotonically increases, one bump every 10 minutes, persisted
+  useEffect(() => {
+    const advance = () => {
+      setOrdersState((prev) => {
+        if (prev.value >= ORDERS_MAX) return prev;
+        const step = ORDERS_STEP_MIN + Math.floor(Math.random() * (ORDERS_STEP_MAX - ORDERS_STEP_MIN + 1));
+        const next: OrdersState = {
+          value: Math.min(ORDERS_MAX, prev.value + step),
+          lastTick: Date.now(),
+        };
+        saveOrdersState(next);
+        setOrdersT((tr) => pushTrend(tr, next.value));
+        return next;
+      });
+    };
+
+    // Align next bump to (lastTick + 10min); if overdue, fire ~immediately
+    const dueIn = Math.max(2000, ordersState.lastTick + ORDERS_TICK_MS - Date.now());
+    const first = setTimeout(() => {
+      advance();
+      // After the first aligned bump, settle into a clean 10-min cadence
+      const interval = setInterval(advance, ORDERS_TICK_MS);
+      // Stash on the timeout so cleanup can clear both
+      (first as unknown as { _interval?: ReturnType<typeof setInterval> })._interval = interval;
+    }, dueIn);
+
+    return () => {
+      const carried = (first as unknown as { _interval?: ReturnType<typeof setInterval> })._interval;
+      clearTimeout(first);
+      if (carried) clearInterval(carried);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
