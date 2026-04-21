@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   TrendingUp, Sparkles, LayoutGrid, Building2, Compass, Users, Home as HomeIcon, Store as StoreIcon,
-  Globe2, Award, Newspaper, Zap,
+  Globe2, Award, Newspaper, Zap, ShieldCheck, Truck, Flame,
   type LucideIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -20,6 +20,9 @@ import BrandSpotlight from "@/components/marketplace/BrandSpotlight";
 import RegionSourcing from "@/components/marketplace/RegionSourcing";
 import LiveFeed from "@/components/marketplace/LiveFeed";
 import LiveStreamsRail from "@/components/marketplace/LiveStreamsRail";
+import PromoTile from "@/components/marketplace/PromoTile";
+import CategoryCallout from "@/components/marketplace/CategoryCallout";
+import RecommendationStrip from "@/components/marketplace/RecommendationStrip";
 import TapsonAssistant from "@/components/TapsonAssistant";
 import EmptyState from "@/components/EmptyState";
 import { useProducts, useSuppliers } from "@/hooks/useCatalog";
