@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, Send, ShieldCheck, ArrowLeft, MessageCircle, Smile, Paperclip, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import SupplierStories from "@/components/marketplace/SupplierStories";
 
 type Conversation = {
   id: string;
@@ -370,6 +371,11 @@ export default function Messages() {
             className="w-full h-10 pl-9 pr-3 rounded-full bg-muted text-sm outline-none focus:ring-2 focus:ring-primary/40"
           />
         </div>
+      </div>
+
+      {/* Supplier stories — moved here from Home */}
+      <div className="border-b border-border/60">
+        <SupplierStories />
       </div>
 
       {loading ? (
