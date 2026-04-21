@@ -4,7 +4,7 @@ import {
 } from "lucide-react";
 import ProductCard from "@/components/marketplace/ProductCard";
 import { Button } from "@/components/ui/button";
-import { POPULAR_HINTS } from "@/components/RotatingHint";
+import { POPULAR_HINTS, useLiveHints } from "@/components/RotatingHint";
 import { Link } from "react-router-dom";
 import { useProducts, useCategories } from "@/hooks/useCatalog";
 import EmptyState from "@/components/EmptyState";
@@ -33,6 +33,7 @@ export default function SearchPage() {
   const [hintIdx, setHintIdx] = useState(0);
   const aiCtrl = useRef<AbortController | null>(null);
 
+  const HINTS = useLiveHints();
   const { data: cats = [] } = useCategories();
   const { data: allProducts = [], isLoading } = useProducts({
     search: submitted || undefined,
@@ -41,9 +42,9 @@ export default function SearchPage() {
 
   useEffect(() => {
     if (query) return;
-    const t = setInterval(() => setHintIdx((v) => (v + 1) % POPULAR_HINTS.length), 2200);
+    const t = setInterval(() => setHintIdx((v) => (v + 1) % HINTS.length), 2200);
     return () => clearInterval(t);
-  }, [query]);
+  }, [query, HINTS.length]);
 
   const results = useMemo(() => {
     let list = allProducts.filter((p) => {
@@ -107,7 +108,7 @@ export default function SearchPage() {
         <div className="flex-1 relative">
           <SearchIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input autoFocus type="search" value={query} onChange={(e) => setQuery(e.target.value)}
-            placeholder={`Try ${POPULAR_HINTS[hintIdx]}`}
+            placeholder={`Try ${HINTS[hintIdx % HINTS.length] ?? "popular products"}`}
             className="w-full h-10 bg-muted rounded-full pl-9 pr-9 text-sm outline-none focus:ring-2 focus:ring-primary/40 shadow-soft" />
           {query && (
             <button type="button" onClick={() => { setQuery(""); setSubmitted(""); setAiInsight(""); }}
@@ -125,7 +126,7 @@ export default function SearchPage() {
       {!submitted && (
         <div className="border-b bg-card overflow-hidden">
           <div className="flex gap-2 py-2 whitespace-nowrap animate-[marquee_30s_linear_infinite] hover:[animation-play-state:paused]">
-            {[...POPULAR_HINTS, ...POPULAR_HINTS].map((h, i) => (
+            {[...HINTS, ...HINTS].map((h, i) => (
               <button key={i} onClick={() => useQ(h.replace(/^\W+\s/, ""))}
                 className="shrink-0 px-3 h-7 rounded-full bg-muted text-xs font-medium shadow-soft hover:bg-primary/10 hover:text-primary transition">
                 {h}
@@ -174,7 +175,7 @@ export default function SearchPage() {
         <div className="px-4 py-6">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Trending searches</p>
           <div className="flex flex-wrap gap-2">
-            {POPULAR_HINTS.slice(0, 10).map((q) => (
+            {HINTS.slice(0, 10).map((q) => (
               <button key={q} onClick={() => useQ(q.replace(/^\W+\s/, ""))}
                 className="px-4 py-2 bg-muted rounded-full text-sm font-medium shadow-soft hover:shadow-card transition">
                 <Star className="inline w-3 h-3 text-amber-500 fill-amber-500 mr-1" /> {q}

@@ -56,8 +56,8 @@ export default function SuppliersNearMe() {
   const [me, setMe] = useState<{ lat: number; lng: number } | null>(null);
   const [denied, setDenied] = useState(false);
   const [loadingLoc, setLoadingLoc] = useState(false);
-  const [radius, setRadius] = useState<Radius>(50);
-  const [verifiedOnly, setVerifiedOnly] = useState(true);
+  const [radius, setRadius] = useState<Radius>(250);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [allSuppliers, setAllSuppliers] = useState<NearbySupplier[] | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -66,7 +66,12 @@ export default function SuppliersNearMe() {
   const radiusCircleRef = useRef<L.Circle | null>(null);
   const supplierLayerRef = useRef<L.LayerGroup | null>(null);
 
-  // Initial geolocation prompt (silent — no auto-prompt; user taps button)
+  // Auto-request geolocation on mount
+  useEffect(() => {
+    requestLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const requestLocation = () => {
     if (!navigator.geolocation) {
       setDenied(true);
