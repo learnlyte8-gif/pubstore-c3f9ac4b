@@ -56,10 +56,18 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
     toast.success("Added to cart", { description: product.title });
   };
 
-  const handleLike = (e: React.MouseEvent) => {
+  const handleLike = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    toggleWishlist(product.id);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast.error("Sign in to save items", { description: "Create a free account to like products." });
+      return;
+    }
+    const wasLiked = liked;
+    await toggleWishlist(product.id);
+    if (wasLiked) toast("Removed from wishlist");
+    else toast.success("Saved to wishlist", { description: product.title });
   };
 
   if (variant === "compact") {
