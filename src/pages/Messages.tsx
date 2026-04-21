@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search, Send, ShieldCheck, ArrowLeft } from "lucide-react";
+import { Search, Send, ShieldCheck, ArrowLeft, MessageCircle, Smile, Paperclip, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type Conversation = {
@@ -29,6 +29,17 @@ const fmtTime = (iso: string | null) => {
   }
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 };
+
+const fmtDayLabel = (iso: string) => {
+  const d = new Date(iso);
+  const today = new Date();
+  const yest = new Date(); yest.setDate(today.getDate() - 1);
+  if (d.toDateString() === today.toDateString()) return "Today";
+  if (d.toDateString() === yest.toDateString()) return "Yesterday";
+  return d.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
+};
+
+const dayKey = (iso: string) => new Date(iso).toDateString();
 
 export default function Messages() {
   const [params, setParams] = useSearchParams();
@@ -197,44 +208,106 @@ export default function Messages() {
   const active = conversations.find((c) => c.id === activeId);
 
   if (active) {
+    const supplierOwnerId = active.supplier?.owner_id;
     return (
-      <div className="flex flex-col h-[calc(100dvh-3.5rem-4rem)] lg:h-[calc(100dvh-3.5rem)]">
-        <div className="px-3 py-2.5 border-b border-border bg-card shadow-soft flex items-center gap-2">
-          <button onClick={() => setActiveId(null)} aria-label="Back" className="p-2 rounded-full hover:bg-muted">
+      <div className="flex flex-col h-[calc(100dvh-3.5rem-4rem)] lg:h-[calc(100dvh-3.5rem)] bg-gradient-to-b from-background via-background to-muted/30">
+        {/* Header */}
+        <div className="px-3 py-2.5 border-b border-border/60 glass-strong shadow-soft flex items-center gap-2.5 z-10">
+          <button
+            onClick={() => setActiveId(null)}
+            aria-label="Back"
+            className="p-2 rounded-full hover:bg-muted active:scale-95 transition"
+          >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          {active.supplier?.logo && <img src={active.supplier.logo} alt="" className="w-9 h-9 rounded-full object-cover shadow-soft" />}
+          <div className="relative shrink-0">
+            <div className="ring-gradient w-11 h-11 rounded-full p-[2px]">
+              {active.supplier?.logo ? (
+                <img src={active.supplier.logo} alt="" className="w-full h-full rounded-full object-cover bg-card" />
+              ) : (
+                <div className="w-full h-full rounded-full bg-muted flex items-center justify-center text-xs font-bold">
+                  {active.supplier?.name?.[0] ?? "S"}
+                </div>
+              )}
+            </div>
+            <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-background animate-pulse-dot" />
+          </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm truncate flex items-center gap-1">
+            <p className="font-bold text-sm truncate flex items-center gap-1">
               {active.supplier?.name}
-              {active.supplier?.verified && <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0" />}
+              {active.supplier?.verified && <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0 fill-primary/20" />}
             </p>
-            <p className="text-[11px] text-muted-foreground">
-              {active.supplier?.response_time ? `Responds ${active.supplier.response_time}` : "Online"}
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              {active.supplier?.response_time ? `Responds ${active.supplier.response_time}` : "Active now"}
               {active.supplier?.response_rate ? ` · ${active.supplier.response_rate}%` : ""}
             </p>
           </div>
         </div>
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-2 bg-muted/20">
+        {/* Thread */}
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-1.5">
           {messages.length === 0 ? (
-            <p className="text-center text-xs text-muted-foreground py-12">Say hi — your messages are end-to-end encrypted.</p>
-          ) : (
-            messages.map((m) => {
-              const mine = m.sender_id === userId;
-              return (
-                <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                  <div
-                    className={`max-w-[78%] px-3.5 py-2 rounded-2xl text-sm shadow-card ${
-                      mine
-                        ? "bg-primary text-primary-foreground rounded-br-sm"
-                        : "bg-card text-foreground rounded-bl-sm"
-                    }`}
+            <div className="flex flex-col items-center justify-center py-16 px-6 text-center animate-fade-in">
+              <div className="relative w-20 h-20 mb-4">
+                <div className="absolute inset-0 rounded-full bg-ig-gradient opacity-20 blur-xl" />
+                <div className="relative w-full h-full rounded-full bg-ig-gradient flex items-center justify-center shadow-pop">
+                  <MessageCircle className="w-9 h-9 text-white" strokeWidth={2} />
+                </div>
+              </div>
+              <h3 className="text-base font-bold mb-1">Say hi 👋</h3>
+              <p className="text-xs text-muted-foreground max-w-[240px] mb-4">
+                Start the conversation. Suppliers usually respond within minutes.
+              </p>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {["Is this in stock?", "What's the MOQ?", "Can you ship to my country?"].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setDraft(s)}
+                    className="text-[11px] font-medium px-3 py-1.5 rounded-full bg-muted hover:bg-accent border border-border/60 transition"
                   >
-                    <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                    <p className={`text-[10px] mt-0.5 ${mine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                      {fmtTime(m.created_at)}
-                    </p>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            messages.map((m, i) => {
+              const mine = m.sender_id === userId;
+              const isHost = supplierOwnerId && m.sender_id === supplierOwnerId;
+              const prev = messages[i - 1];
+              const next = messages[i + 1];
+              const showDay = !prev || dayKey(prev.created_at) !== dayKey(m.created_at);
+              const sameAsPrev = prev && prev.sender_id === m.sender_id && !showDay;
+              const sameAsNext = next && next.sender_id === m.sender_id && dayKey(next.created_at) === dayKey(m.created_at);
+              const showTail = !sameAsNext;
+              return (
+                <div key={m.id}>
+                  {showDay && (
+                    <div className="flex items-center justify-center my-4">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground bg-muted/60 px-3 py-1 rounded-full">
+                        {fmtDayLabel(m.created_at)}
+                      </span>
+                    </div>
+                  )}
+                  <div className={`flex ${mine ? "justify-end" : "justify-start"} ${sameAsPrev ? "mt-0.5" : "mt-2"}`}>
+                    <div
+                      className={`relative max-w-[78%] px-3.5 py-2 text-sm animate-bubble-pop ${
+                        mine
+                          ? `bubble-mine rounded-2xl ${showTail ? "rounded-br-md bubble-tail-mine" : "rounded-br-2xl"}`
+                          : `bg-card text-foreground border border-border/50 shadow-soft rounded-2xl ${showTail ? "rounded-bl-md bubble-tail-theirs" : "rounded-bl-2xl"}`
+                      }`}
+                    >
+                      {!mine && isHost && showTail && (
+                        <span className="inline-flex items-center gap-1 mb-1 px-1.5 py-0.5 rounded-full bg-ig-gradient text-white text-[9px] font-bold uppercase tracking-wide">
+                          <Sparkles className="w-2.5 h-2.5" /> Host
+                        </span>
+                      )}
+                      <p className="whitespace-pre-wrap break-words leading-snug">{m.body}</p>
+                      <p className={`text-[10px] mt-1 ${mine ? "text-primary-foreground/75" : "text-muted-foreground"} text-right`}>
+                        {fmtTime(m.created_at)}
+                      </p>
+                    </div>
                   </div>
                 </div>
               );
@@ -242,18 +315,32 @@ export default function Messages() {
           )}
         </div>
 
-        <div className="px-3 py-2.5 border-t border-border bg-card shadow-elevated flex items-center gap-2 safe-bottom">
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && send()}
-            placeholder="Write a message..."
-            className="flex-1 h-10 px-4 rounded-full bg-muted text-sm outline-none focus:ring-2 focus:ring-primary/40 shadow-soft"
-          />
+        {/* Composer */}
+        <div className="px-3 py-2.5 border-t border-border/60 glass-strong shadow-elevated flex items-center gap-2 safe-bottom">
+          <button aria-label="Attach" className="w-9 h-9 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground transition active:scale-95">
+            <Paperclip className="w-4 h-4" />
+          </button>
+          <div className="flex-1 relative">
+            <input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && send()}
+              placeholder="Message..."
+              className="w-full h-10 pl-4 pr-10 rounded-full bg-muted text-sm outline-none focus:ring-2 focus:ring-primary/40 transition"
+            />
+            <button aria-label="Emoji" className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full hover:bg-background/80 flex items-center justify-center text-muted-foreground transition">
+              <Smile className="w-4 h-4" />
+            </button>
+          </div>
           <button
             onClick={send}
+            disabled={!draft.trim()}
             aria-label="Send"
-            className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-pop"
+            className={`w-10 h-10 rounded-full flex items-center justify-center shadow-pop transition-all duration-200 ${
+              draft.trim()
+                ? "bg-ig-gradient text-white scale-100 hover:scale-105 active:scale-95"
+                : "bg-muted text-muted-foreground scale-90"
+            }`}
           >
             <Send className="w-4 h-4" />
           </button>
@@ -264,44 +351,85 @@ export default function Messages() {
 
   return (
     <div className="pb-8">
-      <div className="px-4 pt-4 pb-3 border-b border-border bg-card shadow-soft">
-        <h1 className="text-xl font-bold mb-3">Messages</h1>
+      {/* Sticky glass header */}
+      <div className="px-4 pt-4 pb-3 border-b border-border/60 glass-strong sticky top-14 z-10">
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-2xl font-extrabold tracking-tight">
+            <span className="text-gradient-ig">Messages</span>
+          </h1>
+          <span className="text-[11px] font-semibold text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
+            {filtered.length} {filtered.length === 1 ? "chat" : "chats"}
+          </span>
+        </div>
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search conversations"
-            className="w-full h-10 pl-9 pr-3 rounded-full bg-muted text-sm outline-none focus:ring-2 focus:ring-primary/40 shadow-soft"
+            className="w-full h-10 pl-9 pr-3 rounded-full bg-muted text-sm outline-none focus:ring-2 focus:ring-primary/40"
           />
         </div>
       </div>
 
       {loading ? (
-        <p className="text-center text-sm text-muted-foreground py-16">Loading…</p>
+        <div className="px-4 pt-4 space-y-3">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center gap-3 animate-pulse">
+              <div className="w-12 h-12 rounded-full bg-muted" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3 w-1/3 rounded bg-muted" />
+                <div className="h-3 w-2/3 rounded bg-muted" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20 px-6">
-          <p className="text-sm font-bold">No conversations yet</p>
-          <p className="text-xs text-muted-foreground mt-1">Open a supplier and tap "Contact supplier" to start chatting.</p>
+        <div className="text-center py-24 px-6 animate-fade-in">
+          <div className="relative w-20 h-20 mx-auto mb-4">
+            <div className="absolute inset-0 rounded-full bg-ig-gradient opacity-20 blur-xl" />
+            <div className="relative w-full h-full rounded-full bg-ig-gradient flex items-center justify-center shadow-pop">
+              <MessageCircle className="w-9 h-9 text-white" strokeWidth={2} />
+            </div>
+          </div>
+          <p className="text-base font-bold">No conversations yet</p>
+          <p className="text-xs text-muted-foreground mt-1.5 max-w-[260px] mx-auto">
+            Open a supplier's store and tap <span className="font-semibold text-foreground">Contact supplier</span> to start chatting.
+          </p>
         </div>
       ) : (
-        <ul className="divide-y divide-border">
-          {filtered.map((c) => (
-            <li key={c.id}>
+        <ul className="px-2 pt-2">
+          {filtered.map((c, i) => (
+            <li key={c.id} style={{ animationDelay: `${i * 40}ms` }} className="animate-fade-in">
               <button
                 onClick={() => setActiveId(c.id)}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition text-left"
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-2xl hover:bg-muted/60 active:scale-[0.99] transition text-left"
               >
-                {c.supplier?.logo && <img src={c.supplier.logo} alt="" className="w-12 h-12 rounded-full object-cover shadow-soft shrink-0" />}
+                <div className="relative shrink-0">
+                  <div className="ring-gradient rounded-full p-[2px]" style={{ width: 52, height: 52 }}>
+                    {c.supplier?.logo ? (
+                      <img src={c.supplier.logo} alt="" className="w-full h-full rounded-full object-cover bg-card" />
+                    ) : (
+                      <div className="w-full h-full rounded-full bg-muted flex items-center justify-center text-sm font-bold">
+                        {(c.supplier?.name ?? "S")[0]}
+                      </div>
+                    )}
+                  </div>
+                  <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-background" />
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-semibold text-sm truncate flex items-center gap-1">
+                    <p className="font-bold text-sm truncate flex items-center gap-1">
                       {c.supplier?.name ?? "Supplier"}
-                      {c.supplier?.verified && <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0" />}
+                      {c.supplier?.verified && <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0 fill-primary/20" />}
                     </p>
-                    <span className="text-[10px] text-muted-foreground shrink-0">{fmtTime(c.last_message_at)}</span>
+                    <span className="text-[10px] shrink-0 text-muted-foreground">
+                      {fmtTime(c.last_message_at)}
+                    </span>
                   </div>
-                  <p className="text-xs text-muted-foreground truncate mt-0.5">{c.last_message ?? "No messages yet"}</p>
+                  <p className="text-xs truncate text-muted-foreground mt-0.5">
+                    {c.last_message ?? "No messages yet — say hi 👋"}
+                  </p>
                 </div>
               </button>
             </li>

@@ -64,17 +64,22 @@ const Home = () => {
 
   return (
     <div className="pb-6">
-      <div className="px-4 mt-3 sticky top-14 z-10 bg-background/90 backdrop-blur pb-2 pt-1">
-        <div className="flex bg-muted rounded-full p-1 shadow-soft">
+      <div className="px-4 mt-3 sticky top-14 z-10 glass-strong pb-2 pt-2">
+        <div className="relative flex bg-muted/70 rounded-full p-1 shadow-card">
           {TABS.map((t) => {
             const active = tab === t.id;
             const Icon = t.icon;
             return (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                className={`flex-1 flex items-center justify-center gap-1.5 h-9 rounded-full text-xs font-bold transition ${
-                  active ? "bg-background text-foreground shadow-card" : "text-muted-foreground"
-                }`}>
-                <Icon className="w-3.5 h-3.5" strokeWidth={active ? 2.4 : 2} />
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 h-9 rounded-full text-xs font-bold transition-all duration-300 ${
+                  active
+                    ? "bg-ig-gradient text-white shadow-pop scale-[1.02]"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" strokeWidth={active ? 2.6 : 2} />
                 {t.label}
               </button>
             );
@@ -193,15 +198,16 @@ const Home = () => {
 function SectionHeader({ title, subtitle, icon: Icon }: { title: string; subtitle?: string; icon?: LucideIcon }) {
   return (
     <div className="flex items-end justify-between">
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-2.5">
         {Icon && (
-          <span className="w-7 h-7 rounded-md bg-muted flex items-center justify-center mt-0.5 shadow-soft">
-            <Icon className="w-4 h-4 text-foreground" strokeWidth={1.8} />
+          <span className="relative w-8 h-8 rounded-xl bg-ig-gradient flex items-center justify-center shadow-pop">
+            <span className="absolute inset-0.5 rounded-[10px] bg-background/85" />
+            <Icon className="w-4 h-4 text-foreground relative z-10" strokeWidth={2} />
           </span>
         )}
         <div>
-          <h2 className="text-base font-bold leading-tight">{title}</h2>
-          {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+          <h2 className="text-base font-extrabold leading-tight tracking-tight">{title}</h2>
+          {subtitle && <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>}
         </div>
       </div>
     </div>
