@@ -66,7 +66,12 @@ export default function SuppliersNearMe() {
   const radiusCircleRef = useRef<L.Circle | null>(null);
   const supplierLayerRef = useRef<L.LayerGroup | null>(null);
 
-  // Initial geolocation prompt (silent — no auto-prompt; user taps button)
+  // Auto-request geolocation on mount
+  useEffect(() => {
+    requestLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const requestLocation = () => {
     if (!navigator.geolocation) {
       setDenied(true);
