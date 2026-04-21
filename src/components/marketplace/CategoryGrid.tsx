@@ -1,13 +1,18 @@
 import { Link } from "react-router-dom";
-import { CATEGORIES } from "@/data/products";
+import { useCategories } from "@/hooks/useCatalog";
 
 export default function CategoryGrid() {
+  const { data: cats = [] } = useCategories();
+  const list = cats.slice(0, 10);
+
+  if (list.length === 0) return null;
+
   return (
     <section className="px-4 mt-4">
       <div className="grid grid-cols-5 gap-2">
-        {CATEGORIES.slice(0, 10).map(({ id, name, icon: Icon }) => (
+        {list.map(({ id, name, icon: Icon }) => (
           <Link
-            to="/categories"
+            to={`/categories?cat=${encodeURIComponent(id)}`}
             key={id}
             className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-muted/60 transition group"
           >
