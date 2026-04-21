@@ -56,8 +56,8 @@ export default function SuppliersNearMe() {
   const [me, setMe] = useState<{ lat: number; lng: number } | null>(null);
   const [denied, setDenied] = useState(false);
   const [loadingLoc, setLoadingLoc] = useState(false);
-  const [radius, setRadius] = useState<Radius>(50);
-  const [verifiedOnly, setVerifiedOnly] = useState(true);
+  const [radius, setRadius] = useState<Radius>(250);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [allSuppliers, setAllSuppliers] = useState<NearbySupplier[] | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
