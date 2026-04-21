@@ -15,25 +15,33 @@ import {
   Minus,
   Search,
 } from "lucide-react";
-import { SUPPLIERS, getProductsBySupplier, type Supplier } from "@/data/products";
+import { type Supplier } from "@/data/products";
+import { useSuppliers } from "@/hooks/useCatalog";
 
 const MAX = 3;
 
 export default function Compare() {
   const navigate = useNavigate();
-  const [selected, setSelected] = useState<string[]>([SUPPLIERS[0].id, SUPPLIERS[1].id]);
+  const { data: ALL = [], isLoading } = useSuppliers({ limit: 100 });
+  const [selected, setSelected] = useState<string[]>([]);
   const [picker, setPicker] = useState(false);
   const [query, setQuery] = useState("");
 
+  // Seed with the first two suppliers once data arrives
+  if (selected.length === 0 && ALL.length >= 2 && !isLoading) {
+    // defer to next tick to avoid setState-in-render warning
+    queueMicrotask(() => setSelected([ALL[0].id, ALL[1].id]));
+  }
+
   const suppliers = useMemo(
-    () => selected.map((id) => SUPPLIERS.find((s) => s.id === id)).filter(Boolean) as Supplier[],
-    [selected]
+    () => selected.map((id) => ALL.find((s) => s.id === id)).filter(Boolean) as Supplier[],
+    [selected, ALL]
   );
 
-  const available = SUPPLIERS.filter(
+  const available = ALL.filter(
     (s) =>
       !selected.includes(s.id) &&
-      (!query || s.name.toLowerCase().includes(query.toLowerCase()) || s.country.toLowerCase().includes(query.toLowerCase()))
+      (!query || s.name.toLowerCase().includes(query.toLowerCase()) || (s.country ?? "").toLowerCase().includes(query.toLowerCase()))
   );
 
   const remove = (id: string) => setSelected((arr) => arr.filter((x) => x !== id));
