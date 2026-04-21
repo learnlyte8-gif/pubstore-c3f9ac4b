@@ -25,7 +25,9 @@ import CategoryCallout from "@/components/marketplace/CategoryCallout";
 import RecommendationStrip from "@/components/marketplace/RecommendationStrip";
 import TapsonAssistant from "@/components/TapsonAssistant";
 import EmptyState from "@/components/EmptyState";
+import SupplierCard from "@/components/marketplace/SupplierCard";
 import { useProducts, useSuppliers } from "@/hooks/useCatalog";
+import { useFollowingFeed, useFollowingSupplierIds, useAuthUserId } from "@/hooks/useFollowing";
 
 type Tab = "home" | "fyp" | "following";
 const TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
@@ -183,11 +185,7 @@ const Home = () => {
 
       {tab === "following" && (
         <div className="animate-fade-in">
-          <EmptyState
-            icon={<Users className="w-7 h-7 text-muted-foreground" />}
-            title="You're not following anyone yet"
-            description="Visit a supplier's store and tap follow to see their posts here."
-          />
+          <FollowingTab />
         </div>
       )}
 
@@ -287,6 +285,77 @@ function MixedCatalogGrid({ products, hero }: { products: import("@/data/product
   }
 
   return <div className="grid grid-cols-2 gap-3 mt-3">{cells}</div>;
+}
+
+function FollowingTab() {
+  const userId = useAuthUserId();
+  const { data: ids = [], isLoading: loadingIds } = useFollowingSupplierIds();
+  const { data, isLoading } = useFollowingFeed();
+
+  if (!userId) {
+    return (
+      <div className="px-4 mt-4">
+        <EmptyState
+          icon={<Users className="w-7 h-7 text-muted-foreground" />}
+          title="Sign in to see your following feed"
+          description="Follow suppliers and their newest products land here."
+          action={<Button asChild><Link to="/auth">Sign in</Link></Button>}
+        />
+      </div>
+    );
+  }
+
+  if (loadingIds || isLoading) {
+    return <p className="px-4 py-10 text-center text-sm text-muted-foreground">Loading your feed…</p>;
+  }
+
+  if (ids.length === 0) {
+    return (
+      <div className="px-4 mt-4">
+        <EmptyState
+          icon={<Users className="w-7 h-7 text-muted-foreground" />}
+          title="You're not following anyone yet"
+          description="Visit a supplier's store and tap follow to see their posts here."
+          action={<Button asChild><Link to="/categories">Discover suppliers</Link></Button>}
+        />
+      </div>
+    );
+  }
+
+  const products = data?.products ?? [];
+  const suppliers = data?.suppliers ?? [];
+
+  return (
+    <div className="pb-2">
+      {suppliers.length > 0 && (
+        <section className="px-4 mt-4">
+          <SectionHeader icon={Users} title="Suppliers you follow" subtitle={`${suppliers.length} store${suppliers.length === 1 ? "" : "s"}`} />
+          <div className="flex gap-3 overflow-x-auto scrollbar-none mt-3 -mx-1 px-1 pb-1">
+            {suppliers.map((s) => (
+              <div key={s.id} className="shrink-0 w-64">
+                <SupplierCard supplier={s} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="px-4 mt-6">
+        <SectionHeader icon={Sparkles} title="Latest from your follows" subtitle="Newest products from stores you follow" />
+        {products.length === 0 ? (
+          <p className="mt-4 text-sm text-muted-foreground text-center py-8">
+            No products yet from the suppliers you follow.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            {products.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
 }
 
 export default Home;
