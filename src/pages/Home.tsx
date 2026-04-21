@@ -131,14 +131,14 @@ const Home = () => {
                 </section>
               )}
 
-              {suppliers.length > 0 && (
-                <section className="px-4 mt-6">
-                  <SectionHeader icon={Building2} title="Top suppliers" subtitle="Verified stores ready to ship" />
-                  <TopSuppliers suppliers={suppliers} />
-                </section>
-              )}
-
               <SuppliersNearMe />
+
+              <section className="px-4 mt-6">
+                <SectionHeader icon={Sparkles} title="For you" subtitle="Picked from your interests" />
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  {products.slice(0, 6).map((p) => (<ProductCard key={p.id} product={p} />))}
+                </div>
+              </section>
 
               <section className="px-4 mt-6">
                 <SectionHeader icon={Award} title="Brand spotlight" subtitle="Featured collections" />
@@ -156,17 +156,8 @@ const Home = () => {
               </section>
 
               <section className="px-4 mt-6">
-                <SectionHeader icon={Sparkles} title="For you" subtitle="Picked from your interests" />
-                <div className="grid grid-cols-2 gap-3 mt-3">
-                  {products.slice(0, 6).map((p) => (<ProductCard key={p.id} product={p} />))}
-                </div>
-              </section>
-
-              <section className="px-4 mt-6">
-                <SectionHeader icon={LayoutGrid} title="Explore catalog" />
-                <div className="grid grid-cols-2 gap-3 mt-3">
-                  {products.slice(6).map((p) => (<ProductCard key={p.id} product={p} />))}
-                </div>
+                <SectionHeader icon={LayoutGrid} title="Explore catalog" subtitle="Mixed picks, ads & ideas" />
+                <MixedCatalogGrid products={products.slice(6)} hero={products[0]} />
               </section>
             </>
           )}
