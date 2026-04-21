@@ -25,7 +25,10 @@ import CategoryCallout from "@/components/marketplace/CategoryCallout";
 import RecommendationStrip from "@/components/marketplace/RecommendationStrip";
 import TapsonAssistant from "@/components/TapsonAssistant";
 import EmptyState from "@/components/EmptyState";
+import SupplierCard from "@/components/marketplace/SupplierCard";
 import { useProducts, useSuppliers } from "@/hooks/useCatalog";
+import { useFollowingFeed, useFollowingSupplierIds, useAuthUserId } from "@/hooks/useFollowing";
+import { Button } from "@/components/ui/button";
 
 type Tab = "home" | "fyp" | "following";
 const TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
