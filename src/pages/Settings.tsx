@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Bell, Globe, Moon, Sun, Monitor, DollarSign, Languages, Volume2, Smartphone, Palette, ChevronRight } from "lucide-react";
+import { ArrowLeft, Bell, Globe, Moon, Sun, Monitor, DollarSign, Languages, Smartphone, Palette, ChevronRight } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useTheme } from "next-themes";
 
