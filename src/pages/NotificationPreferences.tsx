@@ -95,9 +95,11 @@ export default function NotificationPreferences() {
     if (!userId || !prefs) return;
     setPrefs({ ...prefs, [key]: value });
     setSaving(key);
+    const patch: Record<string, boolean> = { [key as string]: value };
     const { error } = await supabase
       .from("notification_preferences")
-      .update({ [key]: value })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update(patch as any)
       .eq("user_id", userId);
     setSaving(null);
     if (error) toast.error("Couldn't save", { description: error.message });
