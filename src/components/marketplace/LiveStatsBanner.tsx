@@ -19,6 +19,43 @@ type Trend = number[]; // last N samples used to draw the sparkline
 const SPARK_LEN = 18;
 const TICK_MS = 1600; // how often values nudge
 
+// --- Orders counter (monotonic, updates every 10 minutes) ---
+const ORDERS_MIN = 7897;
+const ORDERS_MAX = 12000;
+const ORDERS_TICK_MS = 10 * 60 * 1000; // 10 minutes
+const ORDERS_STEP_MIN = 7;   // smallest jump per 10-min tick
+const ORDERS_STEP_MAX = 32;  // largest jump per 10-min tick
+const ORDERS_KEY = "pubstore.stats.orders.v1";
+
+type OrdersState = { value: number; lastTick: number };
+
+function loadOrdersState(): OrdersState {
+  try {
+    const raw = localStorage.getItem(ORDERS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as OrdersState;
+      if (typeof parsed.value === "number" && typeof parsed.lastTick === "number") {
+        // Catch up missed 10-min ticks since last visit, but never exceed the max
+        const missed = Math.floor((Date.now() - parsed.lastTick) / ORDERS_TICK_MS);
+        if (missed > 0) {
+          let v = parsed.value;
+          for (let i = 0; i < missed; i++) {
+            v += ORDERS_STEP_MIN + Math.floor(Math.random() * (ORDERS_STEP_MAX - ORDERS_STEP_MIN + 1));
+            if (v >= ORDERS_MAX) { v = ORDERS_MAX; break; }
+          }
+          return { value: v, lastTick: parsed.lastTick + missed * ORDERS_TICK_MS };
+        }
+        return parsed;
+      }
+    }
+  } catch { /* ignore */ }
+  return { value: ORDERS_MIN, lastTick: Date.now() };
+}
+
+function saveOrdersState(s: OrdersState) {
+  try { localStorage.setItem(ORDERS_KEY, JSON.stringify(s)); } catch { /* ignore */ }
+}
+
 function clampedDrift(prev: number, min: number, max: number, maxStep: number) {
   const range = max - min;
   // stronger pull toward middle when near edges, so we don't pin the bounds
