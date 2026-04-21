@@ -210,13 +210,17 @@ export default function Compare() {
               )}
             />
             <Row
-              label="Products"
-              icon={Star}
+              label="Verified"
+              icon={ShieldCheck}
               suppliers={suppliers}
               cols={selected.length < MAX}
               render={(s) => (
                 <RowValue>
-                  <span className="font-bold">{getProductsBySupplier(s.id).length}</span>
+                  {s.verified ? (
+                    <Check className="w-4 h-4 text-primary" />
+                  ) : (
+                    <Minus className="w-4 h-4 text-muted-foreground" />
+                  )}
                 </RowValue>
               )}
             />
