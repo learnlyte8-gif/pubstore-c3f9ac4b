@@ -235,20 +235,16 @@ export default function LiveStatsBanner() {
       });
     };
 
-    // Align next bump to (lastTick + 10min); if overdue, fire ~immediately
+    let interval: ReturnType<typeof setInterval> | undefined;
     const dueIn = Math.max(2000, ordersState.lastTick + ORDERS_TICK_MS - Date.now());
     const first = setTimeout(() => {
       advance();
-      // After the first aligned bump, settle into a clean 10-min cadence
-      const interval = setInterval(advance, ORDERS_TICK_MS);
-      // Stash on the timeout so cleanup can clear both
-      (first as unknown as { _interval?: ReturnType<typeof setInterval> })._interval = interval;
+      interval = setInterval(advance, ORDERS_TICK_MS);
     }, dueIn);
 
     return () => {
-      const carried = (first as unknown as { _interval?: ReturnType<typeof setInterval> })._interval;
       clearTimeout(first);
-      if (carried) clearInterval(carried);
+      if (interval) clearInterval(interval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
