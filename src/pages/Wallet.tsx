@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/useWallet";
 import { supabase } from "@/integrations/supabase/client";
+import { getEdgeFunctionErrorMessage } from "@/lib/edgeFunctionError";
 
 const fmt = (n: number) => `$${Number(n).toFixed(2)}`;
 const TOPUP_AMOUNTS = [10, 25, 50, 100, 250, 500];
@@ -133,7 +134,7 @@ export default function WalletPage() {
     } catch (e: any) {
       setRedirecting(false);
       setSelected(null);
-      toast.error(e?.message ?? "Could not start checkout");
+      toast.error(await getEdgeFunctionErrorMessage(e, "Could not start checkout"));
     }
   };
 

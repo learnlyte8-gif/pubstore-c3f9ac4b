@@ -7,6 +7,7 @@ import { useShop } from "@/store/shop";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useWallet } from "@/hooks/useWallet";
+import { getEdgeFunctionErrorMessage } from "@/lib/edgeFunctionError";
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
 
@@ -326,7 +327,7 @@ export default function Cart() {
       }
     } catch (e) {
       console.error(e);
-      toast.error("Could not start payment", { description: e instanceof Error ? e.message : "Try again." });
+      toast.error("Could not start payment", { description: await getEdgeFunctionErrorMessage(e, "Try again.") });
     } finally {
       setPlacing(false);
     }
