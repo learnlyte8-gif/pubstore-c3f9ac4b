@@ -74,6 +74,8 @@ export default function WalletPage() {
   const [selected, setSelected] = useState<number | null>(null);
   const [clientId, setClientId] = useState<string | null>(null);
   const [sdkReady, setSdkReady] = useState(false);
+  const [sdkError, setSdkError] = useState<string | null>(null);
+  const [sdkAttempt, setSdkAttempt] = useState(0);
   const [processing, setProcessing] = useState(false);
   const buttonsHostRef = useRef<HTMLDivElement | null>(null);
   const buttonsInstanceRef = useRef<any>(null);
@@ -89,11 +91,19 @@ export default function WalletPage() {
     });
   }, []);
 
-  // Load the SDK when we have the client id
+  // Load the SDK when we have the client id (or when the user retries)
   useEffect(() => {
     if (!clientId) return;
-    loadPayPalSdk(clientId).then(() => setSdkReady(true)).catch((e) => toast.error(e.message));
-  }, [clientId]);
+    setSdkError(null);
+    loadPayPalSdk(clientId)
+      .then(() => { setSdkReady(true); setSdkError(null); })
+      .catch((e) => {
+        setSdkReady(false);
+        setSdkError(e?.message ?? "Could not load PayPal");
+      });
+  }, [clientId, sdkAttempt]);
+
+  const retrySdk = () => setSdkAttempt((n) => n + 1);
 
   // Render PayPal buttons whenever an amount is selected
   useEffect(() => {
