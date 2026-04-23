@@ -21,6 +21,8 @@ export default function WalletPage() {
   const [selected, setSelected] = useState<number | null>(null);
   const [redirecting, setRedirecting] = useState(false);
   const [capturing, setCapturing] = useState(false);
+  const [provider, setProvider] = useState<Provider>("paypal");
+  const [phone, setPhone] = useState("");
   const captureRanRef = useRef(false);
 
   // After PayPal redirects back, capture the order and credit the wallet.
@@ -83,27 +85,54 @@ export default function WalletPage() {
     setRedirecting(true);
     try {
       const origin = window.location.origin;
-      const returnUrl = `${origin}/wallet`;
-      const cancelUrl = `${origin}/wallet?cancelled=1`;
-      const { data, error } = await supabase.functions.invoke("paypal-create-order", {
-        body: { amount, returnUrl, cancelUrl },
+
+      if (provider === "paypal") {
+        const { data, error } = await sb.functions.invoke("paypal-create-order", {
+          body: {
+            purpose: "wallet_topup",
+            amount,
+            returnUrl: `${origin}/wallet`,
+            cancelUrl: `${origin}/wallet?cancelled=1`,
+          },
+        });
+        if (error) throw error;
+        const payload = data as any;
+        if (payload?.error) throw new Error(payload.error);
+        if (!payload?.approveUrl) throw new Error("PayPal did not return an approval URL");
+        sessionStorage.setItem(PENDING_KEY, JSON.stringify({ orderID: payload.orderID, amount }));
+        window.location.href = payload.approveUrl;
+        return;
+      }
+
+      if (provider === "paynow") {
+        const { data, error } = await sb.functions.invoke("paynow-create-payment", {
+          body: { purpose: "wallet_topup", flow: "web", amount, returnUrl: `${origin}/wallet` },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        window.location.href = data.redirectUrl;
+        return;
+      }
+
+      // EcoCash / OneMoney express
+      if (phone.replace(/\D/g, "").length < 9) {
+        toast.error("Enter your mobile money number");
+        setRedirecting(false); setSelected(null);
+        return;
+      }
+      const { data, error } = await sb.functions.invoke("paynow-create-payment", {
+        body: { purpose: "wallet_topup", flow: "express", amount, phone, method: provider },
       });
       if (error) throw error;
-      const payload = data as any;
-      if (payload?.error) throw new Error(payload.error);
-      if (!payload?.approveUrl) throw new Error("PayPal did not return an approval URL");
-
-      // Save pending so we can show the right amount on return.
-      sessionStorage.setItem(
-        PENDING_KEY,
-        JSON.stringify({ orderID: payload.orderID, amount }),
-      );
-      // Off to PayPal's hosted checkout.
-      window.location.href = payload.approveUrl;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Check your phone", { description: data.instructions || "Approve the prompt to credit your wallet." });
+      setRedirecting(false);
+      setSelected(null);
+      // Wallet will update via webhook + realtime subscription
     } catch (e: any) {
       setRedirecting(false);
       setSelected(null);
-      toast.error(e?.message ?? "Could not start PayPal checkout");
+      toast.error(e?.message ?? "Could not start checkout");
     }
   };
 
