@@ -16,18 +16,56 @@ declare global {
 }
 
 let sdkPromise: Promise<void> | null = null;
+const SDK_SCRIPT_ID = "paypal-js-sdk";
+
 function loadPayPalSdk(clientId: string): Promise<void> {
   if (typeof window === "undefined") return Promise.resolve();
   if (window.paypal) return Promise.resolve();
   if (sdkPromise) return sdkPromise;
+
   sdkPromise = new Promise((resolve, reject) => {
+    // If a previous attempt left a broken tag behind, remove it so we get a clean retry.
+    const existing = document.getElementById(SDK_SCRIPT_ID) as HTMLScriptElement | null;
+    if (existing) existing.remove();
+
+    const params = new URLSearchParams({
+      "client-id": clientId,
+      currency: "USD",
+      intent: "capture",
+      components: "buttons",
+      "enable-funding": "venmo,paylater",
+    });
+
     const s = document.createElement("script");
-    s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=USD&intent=capture&disable-funding=credit,card`;
+    s.id = SDK_SCRIPT_ID;
+    s.src = `https://www.paypal.com/sdk/js?${params.toString()}`;
     s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error("PayPal SDK failed to load"));
+    s.crossOrigin = "anonymous";
+    s.dataset.namespace = "paypal";
+
+    const timeout = window.setTimeout(() => {
+      sdkPromise = null;
+      reject(new Error("PayPal SDK timed out. Check your connection or ad-blocker."));
+    }, 15000);
+
+    s.onload = () => {
+      window.clearTimeout(timeout);
+      if (window.paypal) {
+        resolve();
+      } else {
+        sdkPromise = null;
+        reject(new Error("PayPal SDK loaded but is unavailable."));
+      }
+    };
+    s.onerror = () => {
+      window.clearTimeout(timeout);
+      sdkPromise = null;
+      reject(new Error("Could not reach PayPal. An ad-blocker or network filter may be blocking paypal.com."));
+    };
+
     document.head.appendChild(s);
   });
+
   return sdkPromise;
 }
 
