@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, MapPin, Tag, X, CheckCircle2 } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, MapPin, Tag, X, CheckCircle2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { useShop } from "@/store/shop";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useWallet } from "@/hooks/useWallet";
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
 
@@ -27,12 +28,14 @@ type AppliedCoupon = {
 export default function Cart() {
   const { cartProducts, updateQty, removeFromCart, cartTotal, clearCart } = useShop();
   const navigate = useNavigate();
+  const { balance, payOrder } = useWallet();
   const [addresses, setAddresses] = useState<AddrRow[]>([]);
   const [addressId, setAddressId] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
   const [couponInput, setCouponInput] = useState("");
   const [validating, setValidating] = useState(false);
   const [coupons, setCoupons] = useState<AppliedCoupon[]>([]);
+  const [payWithWallet, setPayWithWallet] = useState(false);
 
   // Group cart by supplier for coupon math
   const supplierGroups = new Map<string, { subtotal: number; items: typeof cartProducts }>();
@@ -131,6 +134,13 @@ export default function Cart() {
     if (!addressId) {
       toast.error("Add a shipping address first");
       navigate("/addresses");
+      return;
+    }
+    if (payWithWallet && balance < total) {
+      toast.error("Insufficient PUBSTORE Pay balance", {
+        description: `Need ${fmt(total)} · You have ${fmt(balance)}`,
+        action: { label: "Top up", onClick: () => navigate("/wallet") },
+      });
       return;
     }
     setPlacing(true);
