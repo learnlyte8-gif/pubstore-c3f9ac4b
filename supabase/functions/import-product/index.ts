@@ -231,12 +231,15 @@ Deno.serve(async (req) => {
     }
 
     const source = detectSource(url);
+    const categorySlugs = await fetchCategorySlugs();
 
     // 1) Shopify shortcut
     if (source === "shopify") {
       const direct = await tryShopifyJson(url);
       if (direct && direct.title) {
-        return json({ product: direct });
+        // Best-effort category guess from title for Shopify too.
+        const guess = guessCategoryFromText(`${direct.title} ${direct.description}`, categorySlugs);
+        return json({ product: { ...direct, category_slug: guess } });
       }
     }
 
@@ -250,7 +253,12 @@ Deno.serve(async (req) => {
       markdown: scraped.markdown,
       html: scraped.html,
       metadata: scraped.metadata,
+      categorySlugs,
     });
+
+    const aiCat = typeof extracted.category_slug === "string" && categorySlugs.includes(extracted.category_slug)
+      ? extracted.category_slug
+      : guessCategoryFromText(`${extracted.title ?? ""} ${extracted.description ?? ""}`, categorySlugs);
 
     const product: Extracted = {
       title: String(extracted.title || scraped.metadata?.title || "Imported product").slice(0, 200),
@@ -263,6 +271,7 @@ Deno.serve(async (req) => {
       source_url: url,
       moq: extracted.moq ?? null,
       unit: extracted.unit ?? null,
+      category_slug: aiCat,
     };
 
     return json({ product });
