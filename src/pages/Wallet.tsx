@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, Loader2, ShieldCheck, Zap } from "lucide-react";
+import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, Loader2, ShieldCheck, Zap, Smartphone, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/useWallet";
@@ -9,8 +9,10 @@ import { supabase } from "@/integrations/supabase/client";
 const fmt = (n: number) => `$${Number(n).toFixed(2)}`;
 const TOPUP_AMOUNTS = [10, 25, 50, 100, 250, 500];
 const PENDING_KEY = "pubstore.paypal.pending";
+const sb = supabase as any;
 
 type Pending = { orderID: string; amount: number };
+type Provider = "paypal" | "paynow" | "ecocash" | "onemoney";
 
 export default function WalletPage() {
   const { balance, transactions, isLoading, userId, refresh } = useWallet();
@@ -19,6 +21,8 @@ export default function WalletPage() {
   const [selected, setSelected] = useState<number | null>(null);
   const [redirecting, setRedirecting] = useState(false);
   const [capturing, setCapturing] = useState(false);
+  const [provider, setProvider] = useState<Provider>("paypal");
+  const [phone, setPhone] = useState("");
   const captureRanRef = useRef(false);
 
   // After PayPal redirects back, capture the order and credit the wallet.
@@ -81,27 +85,54 @@ export default function WalletPage() {
     setRedirecting(true);
     try {
       const origin = window.location.origin;
-      const returnUrl = `${origin}/wallet`;
-      const cancelUrl = `${origin}/wallet?cancelled=1`;
-      const { data, error } = await supabase.functions.invoke("paypal-create-order", {
-        body: { amount, returnUrl, cancelUrl },
+
+      if (provider === "paypal") {
+        const { data, error } = await sb.functions.invoke("paypal-create-order", {
+          body: {
+            purpose: "wallet_topup",
+            amount,
+            returnUrl: `${origin}/wallet`,
+            cancelUrl: `${origin}/wallet?cancelled=1`,
+          },
+        });
+        if (error) throw error;
+        const payload = data as any;
+        if (payload?.error) throw new Error(payload.error);
+        if (!payload?.approveUrl) throw new Error("PayPal did not return an approval URL");
+        sessionStorage.setItem(PENDING_KEY, JSON.stringify({ orderID: payload.orderID, amount }));
+        window.location.href = payload.approveUrl;
+        return;
+      }
+
+      if (provider === "paynow") {
+        const { data, error } = await sb.functions.invoke("paynow-create-payment", {
+          body: { purpose: "wallet_topup", flow: "web", amount, returnUrl: `${origin}/wallet` },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        window.location.href = data.redirectUrl;
+        return;
+      }
+
+      // EcoCash / OneMoney express
+      if (phone.replace(/\D/g, "").length < 9) {
+        toast.error("Enter your mobile money number");
+        setRedirecting(false); setSelected(null);
+        return;
+      }
+      const { data, error } = await sb.functions.invoke("paynow-create-payment", {
+        body: { purpose: "wallet_topup", flow: "express", amount, phone, method: provider },
       });
       if (error) throw error;
-      const payload = data as any;
-      if (payload?.error) throw new Error(payload.error);
-      if (!payload?.approveUrl) throw new Error("PayPal did not return an approval URL");
-
-      // Save pending so we can show the right amount on return.
-      sessionStorage.setItem(
-        PENDING_KEY,
-        JSON.stringify({ orderID: payload.orderID, amount }),
-      );
-      // Off to PayPal's hosted checkout.
-      window.location.href = payload.approveUrl;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Check your phone", { description: data.instructions || "Approve the prompt to credit your wallet." });
+      setRedirecting(false);
+      setSelected(null);
+      // Wallet will update via webhook + realtime subscription
     } catch (e: any) {
       setRedirecting(false);
       setSelected(null);
-      toast.error(e?.message ?? "Could not start PayPal checkout");
+      toast.error(e?.message ?? "Could not start checkout");
     }
   };
 
@@ -147,6 +178,26 @@ export default function WalletPage() {
             <Plus className="w-4 h-4 text-primary" />
             <p className="text-sm font-black tracking-tight">Add money</p>
           </div>
+
+          {/* Provider picker */}
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <ProviderBtn active={provider === "paypal"} onClick={() => setProvider("paypal")} icon={CreditCard} label="PayPal" sub="Cards & PayPal" />
+            <ProviderBtn active={provider === "paynow"} onClick={() => setProvider("paynow")} icon={CreditCard} label="Paynow Web" sub="Visa / ZIPIT" />
+            <ProviderBtn active={provider === "ecocash"} onClick={() => setProvider("ecocash")} icon={Smartphone} label="EcoCash" sub="Mobile prompt" />
+            <ProviderBtn active={provider === "onemoney"} onClick={() => setProvider("onemoney")} icon={Smartphone} label="OneMoney" sub="Mobile prompt" />
+          </div>
+
+          {(provider === "ecocash" || provider === "onemoney") && (
+            <input
+              type="tel"
+              inputMode="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder={provider === "ecocash" ? "EcoCash number e.g. 0771234567" : "OneMoney number"}
+              className="mb-3 w-full h-11 rounded-xl border bg-background px-3 text-sm tabular-nums"
+            />
+          )}
+
           <div className="grid grid-cols-3 gap-2">
             {TOPUP_AMOUNTS.map((a) => (
               <button
@@ -164,11 +215,8 @@ export default function WalletPage() {
             ))}
           </div>
 
-          <p className="text-[11px] text-muted-foreground mt-3 leading-snug">
-            Pick an amount — you'll be sent to PayPal's secure checkout to pay, then bounced right back here.
-          </p>
-          <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
-            <ShieldCheck className="w-3 h-3" /> Secure payments by PayPal · instant balance update
+          <p className="text-[10px] text-muted-foreground mt-3 flex items-center gap-1">
+            <ShieldCheck className="w-3 h-3" /> Secure payments · instant balance update once cleared
           </p>
         </div>
       </div>
