@@ -33,6 +33,7 @@ import Privacy from "./pages/Privacy.tsx";
 import Settings from "./pages/Settings.tsx";
 import NotificationPreferences from "./pages/NotificationPreferences.tsx";
 import Placeholder from "./pages/Placeholder.tsx";
+import Wallet from "./pages/Wallet.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -76,6 +77,7 @@ const App = () => (
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/settings/notifications" element={<NotificationPreferences />} />
+                <Route path="/wallet" element={<Wallet />} />
               </Route>
               <Route path="/index" element={<Navigate to="/home" replace />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
