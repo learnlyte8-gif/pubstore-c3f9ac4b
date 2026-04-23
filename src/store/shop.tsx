@@ -1,6 +1,4 @@
 import { createContext, useCallback, useEffect, useMemo, useRef, useState, ReactNode } from "react";
-import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { mapProduct, type Product } from "@/data/products";
 import { guestCart, guestWishlist } from "@/lib/guest";
@@ -29,7 +27,6 @@ type ShopState = {
 const ShopContext = createContext<ShopState | null>(null);
 
 export function ShopProvider({ children }: { children: ReactNode }) {
-  const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [cartRows, setCartRows] = useState<CartRow[]>([]);
