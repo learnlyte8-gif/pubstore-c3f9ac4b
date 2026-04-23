@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, Send, ShieldCheck, ArrowLeft, MessageCircle, Smile, Paperclip, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveMasterSupplierId } from "@/data/products";
 import SupplierStories from "@/components/marketplace/SupplierStories";
 
 type Conversation = {
