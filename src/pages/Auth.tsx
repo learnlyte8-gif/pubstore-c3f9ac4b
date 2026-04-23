@@ -116,6 +116,14 @@ export default function Auth() {
           <h1 className="font-brand text-5xl text-foreground tracking-wide">PUBSTORE</h1>
         </div>
 
+        <button
+          type="button"
+          onClick={() => navigate("/home")}
+          className="mb-6 mx-auto block text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+        >
+          Continue browsing as guest
+        </button>
+
         <form onSubmit={handleEmailAuth} className="space-y-2 animate-fade-up" style={{ animationDelay: "60ms" }}>
           {mode === "signup" && (
             <Input
