@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
     }
     values.status = "Message";
 
-    const hash = paynowHash(values, key);
+    const hash = await paynowHash(values, key);
     const formBody = toFormBody({ ...values, hash });
 
     const endpoint = flow === "express" ? PAYNOW_REMOTE : PAYNOW_INITIATE;
