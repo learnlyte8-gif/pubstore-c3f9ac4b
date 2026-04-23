@@ -57,6 +57,37 @@ export default function Settings() {
           </div>
         </Section>
 
+        <Section title="Personalization">
+          <div className="px-4 py-3.5">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center"><Sparkles className="w-4.5 h-4.5" /></span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold">Your interests</p>
+                <p className="text-[11px] text-muted-foreground">Drives your home & categories feed · {interests.length}/8 selected</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {INTERESTS.map((item) => {
+                const active = interests.includes(item);
+                return (
+                  <button
+                    key={item}
+                    onClick={() => toggleInterest(item)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition flex items-center gap-1 ${
+                      active
+                        ? "bg-primary text-primary-foreground border-primary shadow-pop"
+                        : "bg-muted/40 border-border text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {active && <Check className="w-3 h-3" strokeWidth={3} />}
+                    {item}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </Section>
+
         <Section title="Notifications">
           <Link to="/settings/notifications" className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted/40">
             <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center"><Bell className="w-4.5 h-4.5" /></span>
