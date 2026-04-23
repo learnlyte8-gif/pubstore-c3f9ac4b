@@ -1,6 +1,9 @@
 import { createContext, useCallback, useEffect, useMemo, useRef, useState, ReactNode } from "react";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { mapProduct, type Product } from "@/data/products";
+import { guestCart, guestWishlist } from "@/lib/guest";
 
 type CartRow = { id: string; product_id: string; qty: number };
 
@@ -10,6 +13,7 @@ type ShopState = {
   cart: { productId: string; qty: number }[];
   wishlist: string[];
   loading: boolean;
+  isGuest: boolean;
   addToCart: (productId: string, qty?: number) => Promise<void>;
   removeFromCart: (productId: string) => Promise<void>;
   updateQty: (productId: string, qty: number) => Promise<void>;
@@ -25,19 +29,26 @@ type ShopState = {
 const ShopContext = createContext<ShopState | null>(null);
 
 export function ShopProvider({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   const [cartRows, setCartRows] = useState<CartRow[]>([]);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [products, setProducts] = useState<Map<string, Product>>(new Map());
   const [loading, setLoading] = useState(true);
   const productCache = useRef<Map<string, Product>>(new Map());
+  const mergedRef = useRef(false);
 
   // Track auth user id
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       setUserId(session?.user?.id ?? null);
+      setAuthReady(true);
     });
-    supabase.auth.getSession().then(({ data }) => setUserId(data.session?.user?.id ?? null));
+    supabase.auth.getSession().then(({ data }) => {
+      setUserId(data.session?.user?.id ?? null);
+      setAuthReady(true);
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
 
@@ -55,14 +66,66 @@ export function ShopProvider({ children }: { children: ReactNode }) {
     setProducts(new Map(productCache.current));
   }, []);
 
+  // Merge guest cart/wishlist into the user's account on first sign-in
+  const mergeGuestData = useCallback(
+    async (uid: string) => {
+      if (mergedRef.current) return;
+      mergedRef.current = true;
+      const localCart = guestCart.get();
+      const localWish = guestWishlist.get();
+      if (localCart.length === 0 && localWish.length === 0) return;
+
+      try {
+        if (localWish.length) {
+          const rows = localWish.map((product_id) => ({ user_id: uid, product_id }));
+          await supabase.from("wishlist_items").upsert(rows, { onConflict: "user_id,product_id", ignoreDuplicates: true });
+        }
+        if (localCart.length) {
+          const { data: existing } = await supabase
+            .from("cart_items")
+            .select("id,product_id,qty")
+            .eq("user_id", uid);
+          const existingMap = new Map((existing ?? []).map((r) => [r.product_id, r]));
+          for (const item of localCart) {
+            const ex = existingMap.get(item.product_id);
+            if (ex) {
+              await supabase.from("cart_items").update({ qty: ex.qty + item.qty }).eq("id", ex.id);
+            } else {
+              await supabase.from("cart_items").insert({ user_id: uid, product_id: item.product_id, qty: item.qty });
+            }
+          }
+        }
+        guestCart.clear();
+        guestWishlist.clear();
+      } catch (e) {
+        console.warn("guest merge failed", e);
+      }
+    },
+    [],
+  );
+
   const refresh = useCallback(async () => {
+    if (!authReady) return;
+
     if (!userId) {
-      setCartRows([]);
-      setWishlist([]);
+      // Guest mode — load from localStorage
+      const localCart = guestCart.get();
+      const localWish = guestWishlist.get();
+      const fakeRows: CartRow[] = localCart.map((c) => ({
+        id: `guest:${c.product_id}`,
+        product_id: c.product_id,
+        qty: c.qty,
+      }));
+      setCartRows(fakeRows);
+      setWishlist(localWish);
+      const ids = Array.from(new Set([...localCart.map((c) => c.product_id), ...localWish]));
+      if (ids.length) await hydrateProducts(ids);
       setLoading(false);
       return;
     }
+
     setLoading(true);
+    await mergeGuestData(userId);
     const [{ data: cart }, { data: wish }] = await Promise.all([
       supabase.from("cart_items").select("id,product_id,qty").eq("user_id", userId),
       supabase.from("wishlist_items").select("product_id").eq("user_id", userId),
@@ -74,13 +137,18 @@ export function ShopProvider({ children }: { children: ReactNode }) {
     const ids = Array.from(new Set([...cartList.map((c) => c.product_id), ...wishList]));
     if (ids.length) await hydrateProducts(ids);
     setLoading(false);
-  }, [userId, hydrateProducts]);
+  }, [userId, authReady, hydrateProducts, mergeGuestData]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
   const addToCart = useCallback(
     async (productId: string, qty = 1) => {
-      if (!userId) return;
+      if (!userId) {
+        const items = guestCart.add(productId, qty);
+        setCartRows(items.map((c) => ({ id: `guest:${c.product_id}`, product_id: c.product_id, qty: c.qty })));
+        await hydrateProducts([productId]);
+        return;
+      }
       const existing = cartRows.find((c) => c.product_id === productId);
       if (existing) {
         const newQty = existing.qty + qty;
@@ -101,34 +169,53 @@ export function ShopProvider({ children }: { children: ReactNode }) {
 
   const removeFromCart = useCallback(
     async (productId: string) => {
+      if (!userId) {
+        const items = guestCart.remove(productId);
+        setCartRows(items.map((c) => ({ id: `guest:${c.product_id}`, product_id: c.product_id, qty: c.qty })));
+        return;
+      }
       const row = cartRows.find((c) => c.product_id === productId);
       if (!row) return;
       setCartRows((prev) => prev.filter((c) => c.id !== row.id));
       await supabase.from("cart_items").delete().eq("id", row.id);
     },
-    [cartRows],
+    [userId, cartRows],
   );
 
   const updateQty = useCallback(
     async (productId: string, qty: number) => {
+      if (!userId) {
+        const items = guestCart.update(productId, qty);
+        setCartRows(items.map((c) => ({ id: `guest:${c.product_id}`, product_id: c.product_id, qty: c.qty })));
+        return;
+      }
       const row = cartRows.find((c) => c.product_id === productId);
       if (!row) return;
       if (qty <= 0) return removeFromCart(productId);
       setCartRows((prev) => prev.map((c) => (c.id === row.id ? { ...c, qty } : c)));
       await supabase.from("cart_items").update({ qty }).eq("id", row.id);
     },
-    [cartRows, removeFromCart],
+    [userId, cartRows, removeFromCart],
   );
 
   const clearCart = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) {
+      guestCart.clear();
+      setCartRows([]);
+      return;
+    }
     setCartRows([]);
     await supabase.from("cart_items").delete().eq("user_id", userId);
   }, [userId]);
 
   const toggleWishlist = useCallback(
     async (productId: string) => {
-      if (!userId) return;
+      if (!userId) {
+        const next = guestWishlist.toggle(productId);
+        setWishlist(next);
+        if (next.includes(productId)) await hydrateProducts([productId]);
+        return;
+      }
       const exists = wishlist.includes(productId);
       if (exists) {
         setWishlist((prev) => prev.filter((p) => p !== productId));
@@ -154,6 +241,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
       cart: cartRows.map((c) => ({ productId: c.product_id, qty: c.qty })),
       wishlist,
       loading,
+      isGuest: !userId,
       addToCart,
       removeFromCart,
       updateQty,
@@ -165,7 +253,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
       cartProducts,
       refresh,
     };
-  }, [cartRows, wishlist, products, loading, addToCart, removeFromCart, updateQty, clearCart, toggleWishlist, refresh]);
+  }, [cartRows, wishlist, products, loading, userId, addToCart, removeFromCart, updateQty, clearCart, toggleWishlist, refresh]);
 
   return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>;
 }
