@@ -42,6 +42,18 @@ async function fetchCategorySlugs(): Promise<string[]> {
   }
 }
 
+// Cheap keyword fallback when AI doesn't return a category.
+function guessCategoryFromText(text: string, slugs: string[]): string | null {
+  if (!slugs.length) return null;
+  const t = (text || "").toLowerCase();
+  // Direct slug or slug-words match
+  for (const s of slugs) {
+    const tokens = s.split(/[-_]+/).filter(Boolean);
+    if (tokens.every((tok) => t.includes(tok))) return s;
+  }
+  return null;
+}
+
 function detectSource(url: string): "shopify" | "amazon" | "alibaba" | "aliexpress" | "other" {
   const u = url.toLowerCase();
   if (u.includes("amazon.")) return "amazon";
