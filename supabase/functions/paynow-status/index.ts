@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
 
     const r = await fetch(pollUrl, { method: "POST" });
     const parsed = parsePaynowResponse(await r.text());
-    if (!verifyHash(parsed, key)) return json({ error: "bad hash" }, 400);
+    if (!(await verifyHash(parsed, key))) return json({ error: "bad hash" }, 400);
 
     const status = (parsed.status || "").toLowerCase();
     const amount = Number(parsed.amount || "0");
