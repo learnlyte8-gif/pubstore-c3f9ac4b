@@ -1,8 +1,19 @@
-/** Master list of selectable interests (used by Onboarding & Settings). */
+/** Master list of selectable interests — kept in sync with the live
+ *  `categories` table so picking an interest always maps to a real
+ *  category slug used by products. */
 export const INTERESTS = [
-  "Fashion", "Electronics", "Beauty", "Home", "Sports", "Books",
-  "Toys", "Groceries", "Art", "Handmade", "Jewelry", "Footwear",
-  "Health", "Pets", "Auto", "Garden",
+  "Electronics",
+  "Fashion",
+  "Home & Garden",
+  "Beauty",
+  "Sports",
+  "Toys",
+  "Automotive",
+  "Industrial",
+  "Agriculture",
+  "Packaging",
+  "Office",
+  "Health",
 ] as const;
 
 export type Interest = (typeof INTERESTS)[number];
