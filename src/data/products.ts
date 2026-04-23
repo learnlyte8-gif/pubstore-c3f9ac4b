@@ -72,6 +72,10 @@ export type Product = {
   badge?: "Hot" | "New" | "Deal" | "Top";
   freeShipping?: boolean;
   supplierId: string;
+  /** Lightweight supplier fields embedded for cards (verified badge, etc.) */
+  supplierVerified?: boolean;
+  supplierGold?: boolean;
+  supplierName?: string;
   moq: number;
   unit: string;
   leadTime: string;
