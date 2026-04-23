@@ -477,32 +477,81 @@ function BulkImport({ markupMode, markupValue, qc }: { markupMode: MarkupMode; m
           {items.map((it, idx) => {
             const expanded = editingIdx === idx;
             return (
-              <div key={idx} className={`rounded-2xl border bg-card p-3 shadow-card flex gap-3 ${it.status === "skipped" ? "opacity-50" : ""}`}>
-                <div className="w-16 h-16 rounded-xl bg-muted overflow-hidden flex-shrink-0">
-                  {it.image ? <img src={it.image} alt="" className="w-full h-full object-cover" /> : <ImageIcon className="w-5 h-5 text-muted-foreground m-auto mt-5" />}
+              <div key={idx} className={`rounded-2xl border bg-card p-3 shadow-card ${it.status === "skipped" ? "opacity-50" : ""}`}>
+                <div className="flex gap-3">
+                  <div className="w-16 h-16 rounded-xl bg-muted overflow-hidden flex-shrink-0">
+                    {it.image ? <img src={it.image} alt="" className="w-full h-full object-cover" /> : <ImageIcon className="w-5 h-5 text-muted-foreground m-auto mt-5" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{it.title}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {it.price != null ? (
+                        <>Base {it.price} · <span className="font-semibold text-foreground">sells at {applyMarkup(it.price, markupMode, markupValue)}</span></>
+                      ) : (
+                        "Price fetched on import"
+                      )}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">{it.url}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <BulkStatus status={it.status} />
+                    {!running && it.status !== "done" && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setEditingIdx(expanded ? null : idx)}
+                          className="w-7 h-7 rounded-lg hover:bg-muted flex items-center justify-center"
+                          aria-label="Edit"
+                        >
+                          {expanded ? <Check className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+                        </button>
+                        <button
+                          onClick={() => toggleSkip(idx)}
+                          className="w-7 h-7 rounded-lg hover:bg-muted flex items-center justify-center"
+                          aria-label="Skip"
+                        >
+                          {it.status === "skipped" ? <Plus className="w-3.5 h-3.5" /> : <Trash2 className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    )}
+                    {it.status === "done" && it.productId && (
+                      <Link to={`/product/${it.productId}`} className="text-[10px] font-bold text-primary">View</Link>
+                    )}
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  {expanded ? (
-                    <div className="space-y-2">
+
+                {expanded && (
+                  <div className="mt-3 pt-3 border-t space-y-2.5">
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1">Title</label>
                       <input
                         value={it.title}
                         onChange={(e) => updateItem(idx, { title: e.target.value })}
-                        className="w-full h-9 rounded-lg border bg-background px-2 text-sm"
+                        className="w-full h-10 rounded-lg border bg-background px-3 text-sm"
                       />
-                      <div className="flex items-center gap-2">
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1">Base price</label>
+                      <div className="flex items-center gap-2 flex-wrap">
                         <input
-                          type="number" step="0.01"
+                          type="number"
+                          step="0.01"
+                          inputMode="decimal"
                           value={it.price ?? ""}
                           onChange={(e) => updateItem(idx, { price: e.target.value === "" ? null : Number(e.target.value) })}
-                          className="h-9 rounded-lg border bg-background px-2 text-sm w-28"
-                          placeholder="Base"
+                          className="h-10 rounded-lg border bg-background px-3 text-sm w-32"
+                          placeholder="0.00"
                         />
-                        <span className="text-[10px] text-muted-foreground">→ sells at <span className="font-bold">{applyMarkup(it.price, markupMode, markupValue) ?? "—"}</span></span>
+                        <span className="text-[11px] text-muted-foreground">
+                          → sells at <span className="font-bold text-foreground">{applyMarkup(it.price, markupMode, markupValue) ?? "—"}</span>
+                        </span>
                       </div>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1">Category</label>
                       <select
                         value={it.category_slug ?? ""}
                         onChange={(e) => updateItem(idx, { category_slug: e.target.value || null })}
-                        className="w-full h-9 rounded-lg border bg-background px-2 text-xs"
+                        className="w-full h-10 rounded-lg border bg-background px-2 text-sm"
                       >
                         <option value="">Uncategorized (auto-detect on import)</option>
                         {categories.map((c) => (
@@ -510,44 +559,8 @@ function BulkImport({ markupMode, markupValue, qc }: { markupMode: MarkupMode; m
                         ))}
                       </select>
                     </div>
-                  ) : (
-                    <>
-                      <p className="text-sm font-semibold truncate">{it.title}</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {it.price != null ? (
-                          <>Base {it.price} · <span className="font-semibold text-foreground">sells at {applyMarkup(it.price, markupMode, markupValue)}</span></>
-                        ) : (
-                          "Price fetched on import"
-                        )}
-                      </p>
-                    </>
-                  )}
-                  <p className="text-[10px] text-muted-foreground truncate mt-0.5">{it.url}</p>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <BulkStatus status={it.status} />
-                  {!running && it.status !== "done" && (
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => setEditingIdx(expanded ? null : idx)}
-                        className="w-7 h-7 rounded-lg hover:bg-muted flex items-center justify-center"
-                        aria-label="Edit"
-                      >
-                        {expanded ? <Check className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
-                      </button>
-                      <button
-                        onClick={() => toggleSkip(idx)}
-                        className="w-7 h-7 rounded-lg hover:bg-muted flex items-center justify-center"
-                        aria-label="Skip"
-                      >
-                        {it.status === "skipped" ? <Plus className="w-3.5 h-3.5" /> : <Trash2 className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
-                  )}
-                  {it.status === "done" && it.productId && (
-                    <Link to={`/product/${it.productId}`} className="text-[10px] font-bold text-primary">View</Link>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             );
           })}
