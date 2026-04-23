@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, Loader2, ShieldCheck, Zap } from "lucide-react";
+import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, Loader2, ShieldCheck, Zap, Smartphone, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/useWallet";
@@ -9,8 +9,10 @@ import { supabase } from "@/integrations/supabase/client";
 const fmt = (n: number) => `$${Number(n).toFixed(2)}`;
 const TOPUP_AMOUNTS = [10, 25, 50, 100, 250, 500];
 const PENDING_KEY = "pubstore.paypal.pending";
+const sb = supabase as any;
 
 type Pending = { orderID: string; amount: number };
+type Provider = "paypal" | "paynow" | "ecocash" | "onemoney";
 
 export default function WalletPage() {
   const { balance, transactions, isLoading, userId, refresh } = useWallet();
