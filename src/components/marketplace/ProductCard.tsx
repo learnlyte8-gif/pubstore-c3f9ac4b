@@ -103,7 +103,7 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
         </div>
         <div className="mt-1.5">
           <p className="text-[11px] font-bold text-destructive">{fmtPrice(product.price)}</p>
-          <p className="text-xs line-clamp-2 leading-snug mt-0.5">{product.title}</p>
+          <p className="text-xs font-bold tracking-tight line-clamp-2 leading-snug mt-0.5">{product.title}</p>
         </div>
       </Link>
     );
@@ -147,7 +147,7 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
       </div>
 
       <div className="p-2.5">
-        <p className="text-xs leading-snug line-clamp-2 min-h-[2.4rem]">{product.title}</p>
+        <p className="text-xs font-bold tracking-tight leading-snug line-clamp-2 min-h-[2.4rem]">{product.title}</p>
 
         <div className="flex items-baseline gap-1.5 mt-1.5">
           <span className="text-base font-bold text-destructive">{fmtPrice(product.price)}</span>

@@ -114,8 +114,9 @@ interface TileProps {
   delta?: string;
   trend: number[];
   tone?: "primary" | "success" | "warm";
+  boldValue?: boolean;
 }
-function Tile({ icon: Icon, label, value, delta, trend, tone = "primary" }: TileProps) {
+function Tile({ icon: Icon, label, value, delta, trend, tone = "primary", boldValue }: TileProps) {
   const toneRing =
     tone === "success" ? "from-emerald-500/15 to-emerald-500/5" : tone === "warm" ? "from-amber-500/15 to-amber-500/5" : "from-primary/15 to-primary/5";
   const dot =
@@ -132,7 +133,7 @@ function Tile({ icon: Icon, label, value, delta, trend, tone = "primary" }: Tile
       </div>
       <div className="flex items-end justify-between mt-1.5 gap-2">
         <div className="min-w-0">
-          <p className="font-extrabold text-lg leading-none tracking-tight tabular-nums">{value}</p>
+          <p className={`font-black ${boldValue ? "text-xl" : "text-lg"} leading-none tracking-tighter tabular-nums`}>{value}</p>
           {delta && <p className="text-[10px] text-muted-foreground mt-1">{delta}</p>}
         </div>
         <Sparkline values={trend} tone={tone} />
@@ -268,7 +269,7 @@ export default function LiveStatsBanner() {
           <div className="snap-start"><Tile icon={ShieldCheck}   label="Success rate"   value={fmtPct(success)}   delta="orders fulfilled"   trend={successT}    tone="success" /></div>
           <div className="snap-start"><Tile icon={Truck}         label="Deliveries"     value={fmtInt(deliveries)} delta="completed today"   trend={deliveriesT} tone="warm"    /></div>
           <div className="snap-start"><Tile icon={Users2}        label="Active stores"  value={fmtInt(suppliers)} delta="suppliers shipping" trend={suppliersT}  tone="primary" /></div>
-          <div className="snap-start"><Tile icon={TrendingUp}    label="Avg response"   value={`${response.toFixed(1)}h`} delta="supplier reply" trend={responseT}   tone="primary" /></div>
+          <div className="snap-start"><Tile icon={TrendingUp}    label="Avg response"   value={`${response.toFixed(1)}h`} delta="supplier reply" trend={responseT}   tone="primary" boldValue /></div>
         </div>
       </div>
     </div>
