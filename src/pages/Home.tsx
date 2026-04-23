@@ -95,8 +95,7 @@ const Home = () => {
           <PromoBanner />
           <LiveStatsBanner />
           <div className="px-4"><QuickActions /></div>
-          <div className="px-4"><StatsBar /></div>
-          <CategoryGrid />
+
 
           <LiveStreamsRail />
 
