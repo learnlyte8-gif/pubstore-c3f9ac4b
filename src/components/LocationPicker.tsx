@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import CircleSpinner from "@/components/CircleSpinner";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapPin, Loader2, Crosshair } from "lucide-react";
@@ -130,7 +131,7 @@ export default function LocationPicker({ lat, lng, address, onChange }: Props) {
           onClick={useMyLocation}
           className="absolute top-2 right-2 z-[400] h-9 px-3 rounded-full bg-background/95 backdrop-blur shadow-card text-xs font-bold flex items-center gap-1.5 border border-border"
         >
-          {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Crosshair className="w-3.5 h-3.5" />}
+          {busy ? <CircleSpinner size={14} /> : <Crosshair className="w-3.5 h-3.5" />}
           Use my location
         </button>
       </div>

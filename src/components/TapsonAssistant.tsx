@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import CircleSpinner from "@/components/CircleSpinner";
 import { Link } from "react-router-dom";
 import { Sparkles, X, Send, Loader2, Eraser, ShieldCheck, Award, Star, ShoppingBag, Radio, ArrowRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -273,7 +274,7 @@ export default function TapsonAssistant() {
               )}
               {loading && messages[messages.length - 1]?.role === "user" && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <CircleSpinner size={14} />
                   Tapson is thinking…
                 </div>
               )}
@@ -301,7 +302,7 @@ export default function TapsonAssistant() {
                   aria-label="Send"
                   className="w-11 h-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-card disabled:opacity-40 disabled:shadow-none transition"
                 >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  {loading ? <CircleSpinner size={16} /> : <Send className="w-4 h-4" />}
                 </button>
               </div>
               <p className="text-[9.5px] text-muted-foreground text-center mt-1.5">

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Plus, TrendingUp, Eye, ShoppingBag, DollarSign, Star, Megaphone, Truck, Package, Settings, Image as ImageIcon, X, Loader2, Link2, Download, Sparkles, Percent, Check, Pencil, Trash2, CheckSquare, Square, Tag, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -275,7 +276,7 @@ function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: M
             />
           </div>
           <Button onClick={fetchProduct} disabled={loading} className="h-12 px-4">
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {loading ? <CircleSpinner size={16} /> : <Download className="w-4 h-4" />}
             <span className="ml-1.5 hidden sm:inline">Fetch</span>
           </Button>
         </div>
@@ -283,7 +284,7 @@ function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: M
 
       {loading && !preview && (
         <div className="rounded-2xl border bg-card p-8 flex flex-col items-center gap-2 text-muted-foreground">
-          <Loader2 className="w-6 h-6 animate-spin" />
+          <CircleSpinner size={24} />
           <p className="text-xs">Reading that page…</p>
         </div>
       )}
@@ -338,7 +339,7 @@ function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: M
               Source: <span className="font-semibold capitalize">{preview.source}</span> · {preview.source_url}
             </p>
             <Button onClick={save} disabled={saving} className="w-full h-12">
-              {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Importing…</> : <><Plus className="w-4 h-4 mr-2" /> Import to my store</>}
+              {saving ? <><CircleSpinner size={16} className="mr-2" /> Importing…</> : <><Plus className="w-4 h-4 mr-2" /> Import to my store</>}
             </Button>
           </div>
         </div>
@@ -436,7 +437,7 @@ function BulkImport({ markupMode, markupValue, qc }: { markupMode: MarkupMode; m
             />
           </div>
           <Button onClick={listAll} disabled={loading || running} className="h-12 px-4">
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {loading ? <CircleSpinner size={16} /> : <Download className="w-4 h-4" />}
             <span className="ml-1.5 hidden sm:inline">List</span>
           </Button>
         </div>
@@ -444,7 +445,7 @@ function BulkImport({ markupMode, markupValue, qc }: { markupMode: MarkupMode; m
 
       {loading && items.length === 0 && (
         <div className="rounded-2xl border bg-card p-8 flex flex-col items-center gap-2 text-muted-foreground">
-          <Loader2 className="w-6 h-6 animate-spin" />
+          <CircleSpinner size={24} />
           <p className="text-xs">Scanning catalog…</p>
         </div>
       )}
@@ -462,7 +463,7 @@ function BulkImport({ markupMode, markupValue, qc }: { markupMode: MarkupMode; m
                   : `${pendingCount} selected of ${items.length}`}
               </p>
               <Button size="sm" onClick={importAll} disabled={running || pendingCount === 0} className="h-8">
-                {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5 mr-1" />}
+                {running ? <CircleSpinner size={14} /> : <Plus className="w-3.5 h-3.5 mr-1" />}
                 {running ? "Running" : `Import ${pendingCount}`}
               </Button>
             </div>
@@ -564,6 +565,8 @@ function BulkImport({ markupMode, markupValue, qc }: { markupMode: MarkupMode; m
               </div>
             );
           })}
+          {/* Spacer so the floating import banner + bottom nav don't cover the last edit panel */}
+          <div className="h-32" aria-hidden />
         </>
       )}
     </>
@@ -773,7 +776,7 @@ function ProductsView() {
             <Eye className="w-4 h-4 mr-1.5" /> Show
           </Button>
           <Button variant="outline" className="h-11 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={bulkDelete} disabled={working}>
-            {working ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+            {working ? <CircleSpinner size={16} /> : <Trash2 className="w-4 h-4" />}
           </Button>
         </div>
       )}
@@ -999,10 +1002,10 @@ function EditProductView({ productId }: { productId: string }) {
 
       <div className="flex gap-2 pt-2">
         <Button type="submit" disabled={saving} className="flex-1 h-12">
-          {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving…</> : "Save changes"}
+          {saving ? <><CircleSpinner size={16} className="mr-2" /> Saving…</> : "Save changes"}
         </Button>
         <Button type="button" variant="outline" disabled={deleting} onClick={handleDelete} className="h-12 text-destructive border-destructive/30 hover:bg-destructive/10">
-          {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+          {deleting ? <CircleSpinner size={16} /> : <Trash2 className="w-4 h-4" />}
         </Button>
       </div>
     </form>
@@ -1138,7 +1141,7 @@ function NewProductView() {
         Free shipping
       </label>
       <Button type="submit" disabled={submitting} className="w-full h-12">
-        {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Publishing…</> : "Publish product"}
+        {submitting ? <><CircleSpinner size={16} className="mr-2" /> Publishing…</> : "Publish product"}
       </Button>
     </form>
   );
@@ -1645,7 +1648,7 @@ function ProfileView() {
           )}
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
             {uploading === "banner" ? (
-              <Loader2 className="w-6 h-6 text-white animate-spin" />
+              <CircleSpinner size={24} className="text-white" />
             ) : form.banner ? (
               <span className="opacity-0 group-hover:opacity-100 px-3 py-1.5 rounded-full bg-white/90 text-foreground text-xs font-bold transition-opacity">Change banner</span>
             ) : null}
@@ -1670,7 +1673,7 @@ function ProfileView() {
             )}
             {uploading === "logo" && (
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                <Loader2 className="w-5 h-5 text-white animate-spin" />
+                <CircleSpinner size={20} className="text-white" />
               </div>
             )}
           </button>

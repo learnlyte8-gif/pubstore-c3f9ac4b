@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useNavigate } from "react-router-dom";
 import { Store, Package, BarChart3, Megaphone, Truck, Star, Plus, ShoppingBag, Video, MessageCircle, Settings, ChevronRight, ImagePlus, Radio, StopCircle, Loader2, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -266,7 +267,7 @@ export default function MyStore() {
             <div className="flex gap-2 mt-4">
               <Button variant="outline" className="flex-1 h-11" onClick={() => setShowGoLive(false)}>Cancel</Button>
               <Button className="flex-1 h-11 bg-destructive hover:bg-destructive/90" onClick={startStream} disabled={starting}>
-                {starting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Starting…</> : <><Radio className="w-4 h-4 mr-2" /> Go live</>}
+                {starting ? <><CircleSpinner size={16} className="mr-2" /> Starting…</> : <><Radio className="w-4 h-4 mr-2" /> Go live</>}
               </Button>
             </div>
           </div>

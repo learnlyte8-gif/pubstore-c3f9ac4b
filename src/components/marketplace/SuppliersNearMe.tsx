@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import CircleSpinner from "@/components/CircleSpinner";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Link } from "react-router-dom";
@@ -210,7 +211,7 @@ export default function SuppliersNearMe() {
               disabled={loadingLoc}
               className="mt-4 w-full h-11 rounded-full bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 shadow-pop disabled:opacity-60"
             >
-              {loadingLoc ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+              {loadingLoc ? <CircleSpinner size={16} /> : <MapPin className="w-4 h-4" />}
               {loadingLoc ? "Locating…" : denied ? "Try again" : "Find suppliers near me"}
             </button>
             {denied && (
