@@ -8,6 +8,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProducts, fetchMySupplier, fetchCategories } from "@/data/products";
 import EmptyState from "@/components/EmptyState";
 import LocationPicker from "@/components/LocationPicker";
+import { useImportJob } from "@/store/importJob";
 
 const titles: Record<string, { title: string; sub: string }> = {
   products: { title: "My products", sub: "Manage your catalog" },
