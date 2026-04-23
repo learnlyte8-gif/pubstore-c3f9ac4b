@@ -305,7 +305,14 @@ export async function fetchSuppliers(opts: { limit?: number; verifiedOnly?: bool
 export async function fetchMySupplier(): Promise<Supplier | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
-  const { data } = await supabase.from("suppliers").select("*").eq("owner_id", user.id).maybeSingle();
+  // An owner can have many stores (the "master" + many mirrors). Always
+  // return the master store (mirror_of IS NULL) for management views.
+  const { data } = await supabase
+    .from("suppliers")
+    .select("*")
+    .eq("owner_id", user.id)
+    .is("mirror_of", null)
+    .maybeSingle();
   return data ? mapSupplier(data as DbSupplier) : null;
 }
 
