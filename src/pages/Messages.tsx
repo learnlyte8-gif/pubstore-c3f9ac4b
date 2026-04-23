@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { Search, Send, ShieldCheck, ArrowLeft, MessageCircle, Smile, Paperclip, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveMasterSupplierId } from "@/data/products";
@@ -89,16 +89,24 @@ export default function Messages() {
   }, []);
 
   // Auth + initial load
+  const navigate = useNavigate();
   useEffect(() => {
     let alive = true;
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!alive || !user) { setLoading(false); return; }
+      if (!alive) return;
+      if (!user) {
+        setLoading(false);
+        if (initialSupplierId) {
+          navigate(`/auth?redirect=${encodeURIComponent(`/messages?supplier=${initialSupplierId}`)}`, { replace: true });
+        }
+        return;
+      }
       setUserId(user.id);
       await loadConversations(user.id);
     })();
     return () => { alive = false; };
-  }, [loadConversations]);
+  }, [loadConversations, initialSupplierId, navigate]);
 
   // Auto-open or create conversation when ?supplier=ID is provided
   useEffect(() => {

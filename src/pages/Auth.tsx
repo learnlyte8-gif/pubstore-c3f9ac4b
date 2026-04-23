@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -22,6 +22,8 @@ type Mode = "signin" | "signup";
 
 export default function Auth() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const redirectTo = params.get("redirect") || "/home";
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,7 +39,11 @@ export default function Auth() {
         .select("profile_completed")
         .eq("user_id", uid)
         .maybeSingle();
-      navigate(data?.profile_completed ? "/home" : "/onboarding", { replace: true });
+      if (!data?.profile_completed) {
+        navigate("/onboarding", { replace: true });
+      } else {
+        navigate(redirectTo, { replace: true });
+      }
     };
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       if (session) setTimeout(() => routeForSession(session.user.id), 0);
@@ -46,7 +52,7 @@ export default function Auth() {
       if (session) routeForSession(session.user.id);
     });
     return () => sub.subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, redirectTo]);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,7 +96,7 @@ export default function Auth() {
     setOauthLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/home`,
+        redirect_uri: `${window.location.origin}${redirectTo}`,
       });
       if (result.error) toast.error(result.error.message ?? "Google sign-in failed");
     } catch (err) {
@@ -109,6 +115,14 @@ export default function Auth() {
           <img src={logo} alt="PUBSTORE" width={72} height={72} className="w-18 h-18 mb-4" />
           <h1 className="font-brand text-5xl text-foreground tracking-wide">PUBSTORE</h1>
         </div>
+
+        <button
+          type="button"
+          onClick={() => navigate("/home")}
+          className="mb-6 mx-auto block text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+        >
+          Continue browsing as guest
+        </button>
 
         <form onSubmit={handleEmailAuth} className="space-y-2 animate-fade-up" style={{ animationDelay: "60ms" }}>
           {mode === "signup" && (

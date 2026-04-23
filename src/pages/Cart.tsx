@@ -131,6 +131,14 @@ export default function Cart() {
 
   const placeOrder = async () => {
     if (cartProducts.length === 0) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.message("Sign in to checkout", {
+        description: "Your cart will be saved.",
+      });
+      navigate(`/auth?redirect=${encodeURIComponent("/cart")}`);
+      return;
+    }
     if (!addressId) {
       toast.error("Add a shipping address first");
       navigate("/addresses");
@@ -145,8 +153,6 @@ export default function Cart() {
     }
     setPlacing(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
 
       const addr = addresses.find((a) => a.id === addressId);
       const shipTo = addr ? `${addr.recipient}, ${addr.line1}, ${addr.city ?? ""}, ${addr.country ?? ""}` : "";

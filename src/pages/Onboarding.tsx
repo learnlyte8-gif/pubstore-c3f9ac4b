@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Loader2, Check, X, Store, ShoppingBag, ArrowRight, ArrowLeft } from "lucide-react";
+import { Loader2, Check, X, Store, ShoppingBag, ArrowRight, ArrowLeft, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import logo from "@/assets/pubstore-logo.png";
 import ShoppingBackdrop from "@/components/ShoppingBackdrop";
+import { guestInterests, guestOnboarded } from "@/lib/guest";
 
 type Role = "supplier" | "buyer";
 
@@ -41,13 +42,14 @@ const finalSchema = z.object({
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const [step, setStep] = useState(0);
+  const [authChecked, setAuthChecked] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
   const [role, setRole] = useState<Role | null>(null);
   const [username, setUsername] = useState("");
-  const [interests, setInterests] = useState<string[]>([]);
+  const [interests, setInterests] = useState<string[]>(() => guestInterests.get());
   const [address, setAddress] = useState("");
   const [contact, setContact] = useState("");
 
@@ -56,27 +58,31 @@ export default function Onboarding() {
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const debounceRef = useRef<number | null>(null);
 
-  // Auth gate + skip if already completed
+  // Auth detection (no gate). Skip if a signed-in user already completed onboarding.
   useEffect(() => {
     let mounted = true;
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return;
-      if (!session) return navigate("/auth", { replace: true });
-      setUserId(session.user.id);
-      const { data } = await supabase
-        .from("profiles")
-        .select("profile_completed")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
-      if (data?.profile_completed) navigate("/home", { replace: true });
+      setUserId(session?.user?.id ?? null);
+      setAuthChecked(true);
+      if (session) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("profile_completed,interests")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+        if (data?.profile_completed) navigate("/home", { replace: true });
+        if (data?.interests?.length) setInterests(data.interests);
+      }
     });
     return () => {
       mounted = false;
     };
   }, [navigate]);
 
-  // Live username availability
+  // Live username availability — only relevant for signed-in users
   useEffect(() => {
+    if (!userId) return;
     setAvailable(null);
     setUsernameError(null);
     if (!username) return;
@@ -97,7 +103,7 @@ export default function Onboarding() {
       if (error) return;
       setAvailable(!data);
     }, 400);
-  }, [username]);
+  }, [username, userId]);
 
   const toggleInterest = (item: string) => {
     setInterests((prev) =>
@@ -105,13 +111,25 @@ export default function Onboarding() {
     );
   };
 
+  // Guests: 1 step (interests). Authenticated: full 4-step flow.
+  const totalSteps = userId ? 4 : 1;
+  const guestStep = !userId;
+
   const canNext = useMemo(() => {
+    if (guestStep) return interests.length > 0;
     if (step === 0) return role !== null;
     if (step === 1) return available === true && !checking && !usernameError;
     if (step === 2) return interests.length > 0;
     if (step === 3) return address.trim().length >= 5 && /^[+0-9 ()\-]+$/.test(contact) && contact.trim().length >= 7;
     return false;
-  }, [step, role, available, checking, usernameError, interests, address, contact]);
+  }, [guestStep, step, role, available, checking, usernameError, interests, address, contact]);
+
+  const finishGuest = () => {
+    guestInterests.set(interests);
+    guestOnboarded.set(true);
+    toast.success("All set 🎉", { description: "Your feed is personalized." });
+    navigate("/home", { replace: true });
+  };
 
   const handleSubmit = async () => {
     if (!userId || !role) return;
@@ -120,7 +138,6 @@ export default function Onboarding() {
 
     setSubmitting(true);
     try {
-      // Update profile
       const { error: profErr } = await supabase
         .from("profiles")
         .update({
@@ -136,7 +153,6 @@ export default function Onboarding() {
         throw profErr;
       }
 
-      // Upsert role (replace any prior)
       await supabase.from("user_roles").delete().eq("user_id", userId);
       const { error: roleErr } = await supabase
         .from("user_roles")
@@ -152,8 +168,24 @@ export default function Onboarding() {
     }
   };
 
-  const next = () => (step < 3 ? setStep(step + 1) : handleSubmit());
-  const back = () => (step > 0 ? setStep(step - 1) : navigate("/auth"));
+  const next = () => {
+    if (guestStep) return finishGuest();
+    if (step < 3) setStep(step + 1);
+    else handleSubmit();
+  };
+  const back = () => {
+    if (guestStep) return navigate("/home");
+    if (step > 0) setStep(step - 1);
+    else navigate("/home");
+  };
+
+  if (!authChecked) {
+    return (
+      <main className="min-h-[100dvh] flex items-center justify-center bg-background">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </main>
+    );
+  }
 
   return (
     <main className="relative min-h-[100dvh] bg-background flex flex-col px-6 py-8 overflow-hidden">
@@ -168,19 +200,71 @@ export default function Onboarding() {
           <img src={logo} alt="" width={24} height={24} className="w-6 h-6" />
           <span className="font-brand text-lg tracking-wide">PUBSTORE</span>
         </div>
-        <span className="text-xs text-muted-foreground tabular-nums">{step + 1}/4</span>
+        <span className="text-xs text-muted-foreground tabular-nums">
+          {guestStep ? "1/1" : `${step + 1}/4`}
+        </span>
       </div>
 
       {/* Progress */}
       <div className="relative h-1 bg-muted rounded-full overflow-hidden mb-8">
         <div
           className="h-full bg-foreground transition-all duration-500"
-          style={{ width: `${((step + 1) / 4) * 100}%` }}
+          style={{ width: `${(((guestStep ? 0 : step) + 1) / totalSteps) * 100}%` }}
         />
       </div>
 
       <div className="relative flex-1 max-w-md w-full mx-auto flex flex-col">
-        {step === 0 && (
+        {/* GUEST: only interests */}
+        {guestStep && (
+          <section className="animate-fade-up">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                <Sparkles className="w-5 h-5" />
+              </span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                Welcome
+              </span>
+            </div>
+            <h1 className="text-2xl font-bold mb-1">What are you into?</h1>
+            <p className="text-sm text-muted-foreground mb-6">
+              Pick a few — we'll personalize your feed instantly. No account needed.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {INTERESTS.map((item) => {
+                const active = interests.includes(item);
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => toggleInterest(item)}
+                    className={`px-4 py-2 rounded-full text-sm border transition ${
+                      active
+                        ? "bg-foreground text-background border-foreground"
+                        : "bg-transparent text-foreground border-border hover:border-foreground/40"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-4 text-xs text-muted-foreground">{interests.length}/8 selected</p>
+
+            <button
+              type="button"
+              onClick={() => {
+                guestOnboarded.set(true);
+                navigate("/home", { replace: true });
+              }}
+              className="mt-6 text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+            >
+              Skip for now
+            </button>
+          </section>
+        )}
+
+        {/* AUTHED FLOW (legacy) */}
+        {!guestStep && step === 0 && (
           <section className="animate-fade-up">
             <h1 className="text-2xl font-bold mb-1">Welcome 👋</h1>
             <p className="text-sm text-muted-foreground mb-6">How will you use PUBSTORE?</p>
@@ -203,7 +287,7 @@ export default function Onboarding() {
           </section>
         )}
 
-        {step === 1 && (
+        {!guestStep && step === 1 && (
           <section className="animate-fade-up">
             <h1 className="text-2xl font-bold mb-1">Pick a username</h1>
             <p className="text-sm text-muted-foreground mb-6">This is how people will find you.</p>
@@ -239,7 +323,7 @@ export default function Onboarding() {
           </section>
         )}
 
-        {step === 2 && (
+        {!guestStep && step === 2 && (
           <section className="animate-fade-up">
             <h1 className="text-2xl font-bold mb-1">Your interests</h1>
             <p className="text-sm text-muted-foreground mb-6">
@@ -268,7 +352,7 @@ export default function Onboarding() {
           </section>
         )}
 
-        {step === 3 && (
+        {!guestStep && step === 3 && (
           <section className="animate-fade-up space-y-5">
             <div>
               <h1 className="text-2xl font-bold mb-1">Almost done</h1>
@@ -309,6 +393,8 @@ export default function Onboarding() {
           >
             {submitting ? (
               <Loader2 className="w-5 h-5 animate-spin" />
+            ) : guestStep ? (
+              <span className="inline-flex items-center gap-2">Start exploring <ArrowRight className="w-4 h-4" /></span>
             ) : step === 3 ? (
               "Finish"
             ) : (

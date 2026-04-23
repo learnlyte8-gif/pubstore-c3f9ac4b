@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { guestOnboarded } from "@/lib/guest";
 import logo from "@/assets/pubstore-logo.png";
 import ShoppingBackdrop from "@/components/ShoppingBackdrop";
 
@@ -12,7 +13,7 @@ export default function Splash() {
     const timer = setTimeout(async () => {
       setExiting(true);
       const { data } = await supabase.auth.getSession();
-      let dest = "/auth";
+      let dest = "/home";
       if (data.session) {
         const { data: prof } = await supabase
           .from("profiles")
@@ -20,6 +21,9 @@ export default function Splash() {
           .eq("user_id", data.session.user.id)
           .maybeSingle();
         dest = prof?.profile_completed ? "/home" : "/onboarding";
+      } else {
+        // Guest — show interest picker once, then send to home
+        dest = guestOnboarded.get() ? "/home" : "/onboarding";
       }
       setTimeout(() => navigate(dest, { replace: true }), 300);
     }, 2200);

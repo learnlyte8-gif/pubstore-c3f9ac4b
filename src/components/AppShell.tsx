@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
+import { NavLink, Outlet, Link } from "react-router-dom";
 import { Home, Search, LayoutGrid, Heart, User, ShoppingCart, Bell, MessageCircle } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,14 +12,15 @@ import ImportProgressBanner from "@/components/ImportProgressBanner";
 import logo from "@/assets/pubstore-logo.png";
 
 export default function AppShell() {
-  const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
-  const [checked, setChecked] = useState(false);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
   const { cartCount, wishlist } = useShop();
 
   useEffect(() => {
-    if (!session?.user?.id) return;
+    if (!session?.user?.id) {
+      setUnreadNotifs(0);
+      return;
+    }
     const uid = session.user.id;
     const load = async () => {
       const { count } = await supabase
@@ -36,32 +37,14 @@ export default function AppShell() {
   }, [session?.user?.id]);
 
   useEffect(() => {
-    const verifyProfile = async (s: Session) => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("profile_completed")
-        .eq("user_id", s.user.id)
-        .maybeSingle();
-      if (!data?.profile_completed) {
-        navigate("/onboarding", { replace: true });
-      }
-    };
-
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
-      if (!s) navigate("/auth", { replace: true });
-      else setTimeout(() => verifyProfile(s), 0);
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setChecked(true);
-      if (!session) navigate("/auth", { replace: true });
-      else verifyProfile(session);
     });
     return () => sub.subscription.unsubscribe();
-  }, [navigate]);
-
-  if (!checked || !session) return null;
+  }, []);
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground flex flex-col">

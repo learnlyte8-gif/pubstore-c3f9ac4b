@@ -44,7 +44,12 @@ export default function Supplier() {
   }, [id]);
 
   const toggleFollow = async () => {
-    if (!userId || !id) { toast.error("Sign in to follow"); return; }
+    if (!id) return;
+    if (!userId) {
+      toast.message("Sign in to follow", { description: "Create a free account to follow stores." });
+      navigate(`/auth?redirect=${encodeURIComponent(`/supplier/${id}`)}`);
+      return;
+    }
     if (following) {
       setFollowing(false);
       setFollowerCount((n) => Math.max(0, n - 1));
