@@ -165,14 +165,14 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
           <span>{fmtSold(product.sold)}</span>
         </div>
 
-        {(product.freeShipping || supplier?.verified || supplier?.gold) && (
+        {(product.freeShipping || supplierVerified || supplierGold) && (
           <div className="flex items-center gap-1.5 mt-1 text-[10px] flex-wrap">
-            {supplier?.verified && (
+            {supplierVerified && (
               <span className="inline-flex items-center gap-0.5 text-primary font-semibold">
                 <ShieldCheck className="w-3 h-3" /> Verified
               </span>
             )}
-            {supplier?.gold && (
+            {supplierGold && (
               <span className="inline-flex items-center gap-0.5 text-amber-600 dark:text-amber-400 font-semibold">
                 <Award className="w-3 h-3" /> Gold
               </span>
