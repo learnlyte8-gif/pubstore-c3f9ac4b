@@ -1,5 +1,6 @@
-// Creates a PayPal Live order for a wallet top-up.
-// Returns { orderID, amount } so the frontend SDK can render PayPal buttons.
+// Creates a PayPal Live order for either a wallet top-up or paying real
+// PUBSTORE order(s). Returns { orderID, approveUrl } so the frontend can
+// redirect the buyer to PayPal's hosted checkout.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -28,17 +29,10 @@ async function getAccessToken(): Promise<string> {
   });
   const j = await r.json();
   if (!r.ok) {
-    // Safe diagnostics — never log the secret itself.
-    console.error("paypal token error", {
-      env: PAYPAL_ENV,
-      base: PAYPAL_BASE,
-      clientIdPrefix: id.slice(0, 6),
-      clientIdLength: id.length,
-      paypal: j,
-    });
+    console.error("paypal token error", { env: PAYPAL_ENV, paypal: j });
     throw new Error(
       j?.error === "invalid_client"
-        ? `PayPal rejected the credentials for ${PAYPAL_ENV} mode. Check PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET match the ${PAYPAL_ENV} app in the PayPal Developer Dashboard.`
+        ? `PayPal rejected the credentials for ${PAYPAL_ENV} mode.`
         : "Could not authenticate with PayPal",
     );
   }
@@ -49,7 +43,6 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Auth: require a logged-in user
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace(/^Bearer\s+/i, "");
     if (!token) return json({ error: "Unauthorized" }, 401);
@@ -61,18 +54,46 @@ Deno.serve(async (req) => {
     );
     const { data: userRes, error: uErr } = await sb.auth.getUser();
     if (uErr || !userRes?.user) return json({ error: "Unauthorized" }, 401);
+    const userId = userRes.user.id;
 
     const body = await req.json().catch(() => ({}));
-    const amount = Number(body?.amount);
-    const returnUrl: string | undefined = typeof body?.returnUrl === "string" ? body.returnUrl : undefined;
-    const cancelUrl: string | undefined = typeof body?.cancelUrl === "string" ? body.cancelUrl : undefined;
-    if (!Number.isFinite(amount) || amount < 1 || amount > 5000) {
-      return json({ error: "Amount must be between $1 and $5000" }, 400);
+    const purpose: "wallet_topup" | "order" = body?.purpose ?? "wallet_topup";
+    const returnUrl: string | undefined = body?.returnUrl;
+    const cancelUrl: string | undefined = body?.cancelUrl;
+    const orderIds: string[] = Array.isArray(body?.orderIds) ? body.orderIds : [];
+    let amount = Number(body?.amount);
+
+    if (!returnUrl || !cancelUrl) return json({ error: "returnUrl and cancelUrl are required" }, 400);
+
+    // Validate amount against the actual orders to prevent client-side tampering
+    if (purpose === "order") {
+      if (!orderIds.length) return json({ error: "orderIds required" }, 400);
+      const admin = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      );
+      const { data: orders } = await admin
+        .from("orders")
+        .select("id, total, buyer_id, payment_status")
+        .in("id", orderIds);
+      if (!orders) return json({ error: "Could not load orders" }, 500);
+      if (orders.some((o) => o.buyer_id !== userId)) return json({ error: "Forbidden" }, 403);
+      if (orders.some((o) => o.payment_status === "paid")) {
+        return json({ error: "One or more orders are already paid" }, 400);
+      }
+      amount = orders.reduce((s, o) => s + Number(o.total), 0);
     }
-    if (!returnUrl || !cancelUrl) {
-      return json({ error: "returnUrl and cancelUrl are required" }, 400);
+    if (!Number.isFinite(amount) || amount < 1 || amount > 10000) {
+      return json({ error: "Amount must be between $1 and $10000" }, 400);
     }
     const value = amount.toFixed(2);
+    const reference = purpose === "order"
+      ? `pubstore_order_${orderIds.join(",")}_${userId.slice(0, 8)}`
+      : `wallet_topup_${userId}`;
+    const description = purpose === "order"
+      ? `PUBSTORE order${orderIds.length > 1 ? "s" : ""}`
+      : "PUBSTORE Pay top-up";
+    const noShipping = purpose === "wallet_topup";
 
     const accessToken = await getAccessToken();
     const orderRes = await fetch(`${PAYPAL_BASE}/v2/checkout/orders`, {
@@ -85,14 +106,15 @@ Deno.serve(async (req) => {
         intent: "CAPTURE",
         purchase_units: [
           {
-            reference_id: `wallet_topup_${userRes.user.id}`,
-            description: "PUBSTORE Pay top-up",
+            reference_id: reference,
+            description,
+            custom_id: orderIds.join(",") || undefined,
             amount: { currency_code: "USD", value },
           },
         ],
         application_context: {
           brand_name: "PUBSTORE",
-          shipping_preference: "NO_SHIPPING",
+          shipping_preference: noShipping ? "NO_SHIPPING" : "GET_FROM_FILE",
           user_action: "PAY_NOW",
           return_url: returnUrl,
           cancel_url: cancelUrl,
@@ -105,11 +127,25 @@ Deno.serve(async (req) => {
       return json({ error: orderJson?.message || "Could not create PayPal order" }, 502);
     }
 
-    const approveLink = (orderJson?.links ?? []).find((l: any) => l?.rel === "approve" || l?.rel === "payer-action");
-    if (!approveLink?.href) {
-      console.error("no approve link", orderJson);
-      return json({ error: "PayPal did not return an approval link" }, 502);
+    // Persist pending payment for orders
+    if (purpose === "order") {
+      const admin = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      );
+      await admin
+        .from("orders")
+        .update({
+          payment_method: "paypal",
+          payment_status: "pending",
+          payment_reference: `paypal:${orderJson.id}`,
+          status: "awaiting_payment",
+        })
+        .in("id", orderIds);
     }
+
+    const approveLink = (orderJson?.links ?? []).find((l: any) => l?.rel === "approve" || l?.rel === "payer-action");
+    if (!approveLink?.href) return json({ error: "PayPal did not return an approval link" }, 502);
 
     return json({ orderID: orderJson.id, amount: value, approveUrl: approveLink.href });
   } catch (e) {

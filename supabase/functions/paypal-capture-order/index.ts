@@ -1,5 +1,6 @@
-// Captures a PayPal order and credits the wallet via apply_wallet_transaction.
-// Idempotent: refuses to credit twice for the same PayPal capture id.
+// Captures a PayPal order and either credits the wallet or marks PUBSTORE
+// orders as paid. Idempotent: refuses to credit/mark twice for the same
+// PayPal capture id.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -28,7 +29,7 @@ async function getAccessToken(): Promise<string> {
   });
   const j = await r.json();
   if (!r.ok) {
-    console.error("paypal token error", { env: PAYPAL_ENV, base: PAYPAL_BASE, paypal: j });
+    console.error("paypal token error", { env: PAYPAL_ENV, paypal: j });
     throw new Error(
       j?.error === "invalid_client"
         ? `PayPal rejected the credentials for ${PAYPAL_ENV} mode.`
@@ -63,13 +64,7 @@ Deno.serve(async (req) => {
     const accessToken = await getAccessToken();
     const capRes = await fetch(
       `${PAYPAL_BASE}/v2/checkout/orders/${encodeURIComponent(orderID)}/capture`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      },
+      { method: "POST", headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" } },
     );
     const capJson = await capRes.json();
     if (!capRes.ok) {
@@ -78,41 +73,71 @@ Deno.serve(async (req) => {
     }
 
     const status = capJson?.status;
-    const capture = capJson?.purchase_units?.[0]?.payments?.captures?.[0];
+    const unit = capJson?.purchase_units?.[0];
+    const capture = unit?.payments?.captures?.[0];
     if (status !== "COMPLETED" || !capture || capture.status !== "COMPLETED") {
       return json({ error: "Payment was not completed" }, 402);
     }
 
     const captureId: string = capture.id;
     const amount = Number(capture.amount?.value);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      return json({ error: "Invalid capture amount" }, 502);
-    }
+    const referenceId: string = unit?.reference_id || "";
+    const customId: string = unit?.payments?.captures?.[0]?.custom_id || unit?.custom_id || "";
 
-    // 2) Idempotency: have we already credited this capture?
+    if (!Number.isFinite(amount) || amount <= 0) return json({ error: "Invalid capture amount" }, 502);
+
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
-    const reference = `paypal:${captureId}`;
-    const { data: existing } = await admin
-      .from("wallet_transactions")
-      .select("id, amount, balance_after")
-      .eq("user_id", userId)
-      .eq("reference", reference)
-      .maybeSingle();
+    const internalRef = `paypal:${captureId}`;
 
-    if (existing) {
-      return json({ ok: true, alreadyCredited: true, amount });
+    // 2) Order payment branch
+    const isOrder = referenceId.startsWith("pubstore_order_") || !!customId;
+    if (isOrder) {
+      const orderIds = (customId || referenceId.replace("pubstore_order_", "").split("_")[0] || "")
+        .split(",")
+        .filter(Boolean);
+      if (!orderIds.length) return json({ error: "Could not resolve orders" }, 400);
+
+      // Confirm ownership
+      const { data: orders } = await admin
+        .from("orders")
+        .select("id, buyer_id, payment_status")
+        .in("id", orderIds);
+      if (!orders || orders.some((o) => o.buyer_id !== userId)) {
+        return json({ error: "Forbidden" }, 403);
+      }
+      if (orders.every((o) => o.payment_status === "paid")) {
+        return json({ ok: true, alreadyPaid: true, amount });
+      }
+      await admin
+        .from("orders")
+        .update({
+          payment_method: "paypal",
+          payment_status: "paid",
+          payment_reference: internalRef,
+          status: "placed",
+        })
+        .in("id", orderIds);
+      return json({ ok: true, amount, orderIds });
     }
 
-    // 3) Credit via the secure RPC
+    // 3) Wallet top-up branch — idempotent on capture id
+    const { data: existing } = await admin
+      .from("wallet_transactions")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("reference", internalRef)
+      .maybeSingle();
+    if (existing) return json({ ok: true, alreadyCredited: true, amount });
+
     const { data: tx, error: rpcErr } = await admin.rpc("apply_wallet_transaction", {
       _user_id: userId,
       _kind: "topup",
       _amount: amount,
       _description: `PayPal top-up $${amount.toFixed(2)}`,
-      _reference: reference,
+      _reference: internalRef,
     });
     if (rpcErr) {
       console.error("rpc error", rpcErr);
