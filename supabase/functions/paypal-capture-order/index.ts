@@ -9,7 +9,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const PAYPAL_BASE = "https://api-m.paypal.com"; // LIVE
+const PAYPAL_ENV = (Deno.env.get("PAYPAL_ENV") || "live").toLowerCase();
+const PAYPAL_BASE =
+  PAYPAL_ENV === "sandbox" ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
 
 async function getAccessToken(): Promise<string> {
   const id = Deno.env.get("PAYPAL_CLIENT_ID");
@@ -25,7 +27,14 @@ async function getAccessToken(): Promise<string> {
     body: "grant_type=client_credentials",
   });
   const j = await r.json();
-  if (!r.ok) throw new Error("PayPal auth failed");
+  if (!r.ok) {
+    console.error("paypal token error", { env: PAYPAL_ENV, base: PAYPAL_BASE, paypal: j });
+    throw new Error(
+      j?.error === "invalid_client"
+        ? `PayPal rejected the credentials for ${PAYPAL_ENV} mode.`
+        : "PayPal auth failed",
+    );
+  }
   return j.access_token as string;
 }
 
