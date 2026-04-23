@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import CircleSpinner from "@/components/CircleSpinner";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -182,7 +183,7 @@ export default function Onboarding() {
   if (!authChecked) {
     return (
       <main className="min-h-[100dvh] flex items-center justify-center bg-background">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        <CircleSpinner size={24} className="text-muted-foreground" />
       </main>
     );
   }
@@ -304,7 +305,7 @@ export default function Onboarding() {
                 maxLength={20}
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2">
-                {checking && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                {checking && <CircleSpinner size={16} className="text-muted-foreground" />}
                 {!checking && available === true && <Check className="w-4 h-4 text-primary" />}
                 {!checking && available === false && <X className="w-4 h-4 text-destructive" />}
               </span>
@@ -392,7 +393,7 @@ export default function Onboarding() {
             className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-lg disabled:opacity-50"
           >
             {submitting ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <CircleSpinner size={20} />
             ) : guestStep ? (
               <span className="inline-flex items-center gap-2">Start exploring <ArrowRight className="w-4 h-4" /></span>
             ) : step === 3 ? (

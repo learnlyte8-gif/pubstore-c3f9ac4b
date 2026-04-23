@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
@@ -167,7 +168,7 @@ export default function Auth() {
             disabled={loading || oauthLoading}
             className="w-full h-12 mt-3 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-lg disabled:opacity-60"
           >
-            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : mode === "signin" ? "Log in" : "Sign up"}
+            {loading ? <CircleSpinner size={20} /> : mode === "signin" ? "Log in" : "Sign up"}
           </Button>
 
           {mode === "signin" && (
@@ -195,7 +196,7 @@ export default function Auth() {
           style={{ animationDelay: "160ms" }}
         >
           {oauthLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <CircleSpinner size={20} />
           ) : (
             <>
               <GoogleIcon />

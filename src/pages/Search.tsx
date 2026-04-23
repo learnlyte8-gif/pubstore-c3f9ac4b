@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Search as SearchIcon, SlidersHorizontal, X, Star, Truck, Sparkles, Loader2, ArrowRight, History, TrendingUp,
-} from "lucide-react";
+import CircleSpinner from "@/components/CircleSpinner";
+import { Search as SearchIcon, SlidersHorizontal, X, Star, Truck, Sparkles, Loader2, ArrowRight, History, TrendingUp } from "lucide-react";
 import ProductCard from "@/components/marketplace/ProductCard";
 import { Button } from "@/components/ui/button";
 import { useLiveHints } from "@/components/RotatingHint";
@@ -305,7 +304,7 @@ export default function SearchPage() {
               <div className="flex items-center gap-2 mb-1.5">
                 <span className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-soft"><Sparkles className="w-3.5 h-3.5" /></span>
                 <p className="text-xs font-bold">Tapson's take</p>
-                {aiLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+                {aiLoading && <CircleSpinner size={12} className="text-muted-foreground" />}
               </div>
               <p className="text-xs leading-relaxed text-foreground/90 whitespace-pre-wrap">{aiInsight || "Reading the market…"}</p>
             </div>

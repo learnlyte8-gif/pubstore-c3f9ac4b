@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, MapPin, Tag, X, CheckCircle2, Wallet, Smartphone, CreditCard, Banknote, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -523,7 +524,7 @@ export default function Cart() {
             disabled={placing}
             className="h-11 px-5 rounded-full bg-primary text-primary-foreground font-semibold"
           >
-            {placing ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Placing…</> : <>Pay {fmt(total)} <ArrowRight className="w-4 h-4 ml-1" /></>}
+            {placing ? <><CircleSpinner size={16} className="mr-1" /> Placing…</> : <>Pay {fmt(total)} <ArrowRight className="w-4 h-4 ml-1" /></>}
           </Button>
         </div>
       </div>

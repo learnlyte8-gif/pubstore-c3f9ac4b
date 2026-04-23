@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, Loader2, ShieldCheck, Zap, Smartphone, CreditCard } from "lucide-react";
 import { toast } from "sonner";
@@ -165,7 +166,7 @@ export default function WalletPage() {
       {capturing && (
         <div className="px-4 -mt-6 relative z-10">
           <div className="rounded-2xl border border-primary/30 bg-primary/5 p-3 flex items-center gap-2 shadow-elevated">
-            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            <CircleSpinner size={16} className="text-primary" />
             <p className="text-xs font-bold">Confirming your PayPal payment…</p>
           </div>
         </div>
@@ -210,7 +211,7 @@ export default function WalletPage() {
                     : "border-border bg-muted/40 hover:bg-primary/10 hover:border-primary/40"
                 }`}
               >
-                {redirecting && selected === a ? <Loader2 className="w-4 h-4 animate-spin" /> : fmt(a)}
+                {redirecting && selected === a ? <CircleSpinner size={16} /> : fmt(a)}
               </button>
             ))}
           </div>
