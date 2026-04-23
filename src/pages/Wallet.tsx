@@ -268,6 +268,43 @@ export default function WalletPage() {
   );
 }
 
+function ProviderBtn({
+  active,
+  onClick,
+  icon: Icon,
+  label,
+  sub,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: typeof CreditCard;
+  label: string;
+  sub: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`h-14 rounded-xl border px-3 flex items-center gap-2 text-left transition ${
+        active
+          ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+          : "border-border bg-muted/40 hover:bg-primary/5 hover:border-primary/40"
+      }`}
+    >
+      <span
+        className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+          active ? "bg-primary/20 text-primary" : "bg-background text-foreground"
+        }`}
+      >
+        <Icon className="w-4 h-4" />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-xs font-black tracking-tight truncate">{label}</span>
+        <span className="block text-[10px] text-muted-foreground truncate">{sub}</span>
+      </span>
+    </button>
+  );
+}
+
 function Perk({ icon: Icon, title, desc }: { icon: typeof Zap; title: string; desc: string }) {
   return (
     <div className="rounded-2xl border border-border bg-card p-3 shadow-soft">
