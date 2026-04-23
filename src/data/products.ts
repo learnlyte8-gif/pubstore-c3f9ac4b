@@ -44,6 +44,8 @@ export type Supplier = {
   latitude: number | null;
   longitude: number | null;
   locationAddress: string | null;
+  /** When set, this supplier is a "mirror" of another store and shares its products. */
+  mirrorOf: string | null;
 };
 
 export type Review = {
