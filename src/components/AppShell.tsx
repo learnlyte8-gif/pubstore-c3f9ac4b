@@ -8,6 +8,7 @@ import RotatingHint from "@/components/RotatingHint";
 import LiveActivityToaster from "@/components/LiveActivityToaster";
 import InstallPrompt from "@/components/InstallPrompt";
 import BannerAd from "@/components/marketplace/BannerAd";
+import ImportProgressBanner from "@/components/ImportProgressBanner";
 import logo from "@/assets/pubstore-logo.png";
 
 export default function AppShell() {
@@ -120,6 +121,7 @@ export default function AppShell() {
 
       <LiveActivityToaster />
       <BannerAd />
+      <ImportProgressBanner />
       <InstallPrompt />
     </div>
   );
