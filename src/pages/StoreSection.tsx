@@ -565,6 +565,8 @@ function BulkImport({ markupMode, markupValue, qc }: { markupMode: MarkupMode; m
               </div>
             );
           })}
+          {/* Spacer so the floating import banner + bottom nav don't cover the last edit panel */}
+          <div className="h-32" aria-hidden />
         </>
       )}
     </>
