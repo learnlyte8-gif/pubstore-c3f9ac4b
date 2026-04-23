@@ -562,6 +562,16 @@ function BulkImport({ markupMode, markupValue, qc }: { markupMode: MarkupMode; m
                         />
                         <span className="text-[10px] text-muted-foreground">→ sells at <span className="font-bold">{applyMarkup(it.price, markupMode, markupValue) ?? "—"}</span></span>
                       </div>
+                      <select
+                        value={it.category_slug ?? ""}
+                        onChange={(e) => updateItem(idx, { category_slug: e.target.value || null })}
+                        className="w-full h-9 rounded-lg border bg-background px-2 text-xs"
+                      >
+                        <option value="">Uncategorized (auto-detect on import)</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.slug}>{c.name}</option>
+                        ))}
+                      </select>
                     </div>
                   ) : (
                     <>
