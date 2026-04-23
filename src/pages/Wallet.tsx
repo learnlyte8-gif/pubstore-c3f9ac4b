@@ -134,7 +134,7 @@ export default function WalletPage() {
     } catch (e: any) {
       setRedirecting(false);
       setSelected(null);
-      toast.error(e?.message ?? "Could not start checkout");
+      toast.error(await getEdgeFunctionErrorMessage(e, "Could not start checkout"));
     }
   };
 

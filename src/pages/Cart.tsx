@@ -327,7 +327,7 @@ export default function Cart() {
       }
     } catch (e) {
       console.error(e);
-      toast.error("Could not start payment", { description: e instanceof Error ? e.message : "Try again." });
+      toast.error("Could not start payment", { description: await getEdgeFunctionErrorMessage(e, "Try again.") });
     } finally {
       setPlacing(false);
     }
