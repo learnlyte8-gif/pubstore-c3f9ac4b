@@ -380,6 +380,13 @@ function BulkImport({ markupMode, markupValue, qc }: { markupMode: MarkupMode; m
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [runState, setRunState] = useState<"idle" | "running" | "done">("idle");
   const [progress, setProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
+  const { data: categories = [] } = useQuery({
+    queryKey: ["import-categories"],
+    queryFn: async () => {
+      const { data } = await supabase.from("categories").select("id,name,slug").order("sort_order", { ascending: true });
+      return (data ?? []) as { id: string; name: string; slug: string }[];
+    },
+  });
 
   const listAll = async () => {
     if (!url.trim()) { toast.error("Paste a collection / seller URL"); return; }
@@ -442,6 +449,7 @@ function BulkImport({ markupMode, markupValue, qc }: { markupMode: MarkupMode; m
           original_price: p.price ?? null,
           moq: p.moq ?? 1,
           unit: p.unit ?? "piece",
+          category_slug: it.category_slug ?? p.category_slug ?? null,
           ship_from: supplier.country ?? null,
           active: true,
         }).select("id").single();
