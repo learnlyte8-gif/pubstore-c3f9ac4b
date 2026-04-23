@@ -256,6 +256,7 @@ function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: M
         original_price: preview.original_price ?? null,
         moq: preview.moq ?? 1,
         unit: preview.unit ?? "piece",
+        category_slug: preview.category_slug ?? null,
         ship_from: supplier.country ?? null,
         active: true,
       }).select().single();
@@ -325,6 +326,24 @@ function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: M
             <div className="grid grid-cols-2 gap-2">
               <LabeledInput label="MOQ" type="number" value={preview.moq ?? 1} onChange={(v) => updatePreview({ moq: Number(v) || 1 })} />
               <LabeledInput label="Unit" value={preview.unit ?? "piece"} onChange={(v) => updatePreview({ unit: v })} />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                Category
+                {preview.category_slug && (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary normal-case tracking-normal">AI suggested</span>
+                )}
+              </label>
+              <select
+                value={preview.category_slug ?? ""}
+                onChange={(e) => updatePreview({ category_slug: e.target.value || null })}
+                className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1"
+              >
+                <option value="">Uncategorized</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.slug}>{c.name}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Description</label>
