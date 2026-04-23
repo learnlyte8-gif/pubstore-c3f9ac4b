@@ -147,7 +147,12 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
       </div>
 
       <div className="p-2.5">
-        <p className="text-xs font-bold tracking-tight leading-snug line-clamp-2 min-h-[2.4rem]">{product.title}</p>
+        <p className="text-xs font-bold tracking-tight leading-snug line-clamp-2">{product.title}</p>
+        {product.description && product.title.length < 45 && (
+          <p className="text-[11px] text-muted-foreground leading-snug line-clamp-1 mt-0.5">
+            {product.description}
+          </p>
+        )}
 
         <div className="flex items-baseline gap-1.5 mt-1.5">
           <span className="text-base font-bold text-destructive">{fmtPrice(product.price)}</span>
