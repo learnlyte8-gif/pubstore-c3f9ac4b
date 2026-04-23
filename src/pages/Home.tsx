@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   TrendingUp, Sparkles, LayoutGrid, Building2, Compass, Users, Home as HomeIcon, Store as StoreIcon,
   Globe2, Award, Newspaper, Zap, ShieldCheck, Truck, Flame,
   type LucideIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import PromoBanner from "@/components/marketplace/PromoBanner";
 import ProductCard from "@/components/marketplace/ProductCard";
