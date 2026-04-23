@@ -594,6 +594,9 @@ export type Database = {
           discount: number
           eta: string | null
           id: string
+          payment_method: string | null
+          payment_reference: string | null
+          payment_status: string
           ref_code: string | null
           ship_to: string | null
           shipping: number
@@ -612,6 +615,9 @@ export type Database = {
           discount?: number
           eta?: string | null
           id?: string
+          payment_method?: string | null
+          payment_reference?: string | null
+          payment_status?: string
           ref_code?: string | null
           ship_to?: string | null
           shipping?: number
@@ -630,6 +636,9 @@ export type Database = {
           discount?: number
           eta?: string | null
           id?: string
+          payment_method?: string | null
+          payment_reference?: string | null
+          payment_status?: string
           ref_code?: string | null
           ship_to?: string | null
           shipping?: number
@@ -1336,6 +1345,7 @@ export type Database = {
       app_role: "supplier" | "buyer"
       live_status: "scheduled" | "live" | "ended"
       order_status:
+        | "awaiting_payment"
         | "placed"
         | "processing"
         | "shipped"
@@ -1472,6 +1482,7 @@ export const Constants = {
       app_role: ["supplier", "buyer"],
       live_status: ["scheduled", "live", "ended"],
       order_status: [
+        "awaiting_payment",
         "placed",
         "processing",
         "shipped",
