@@ -7,10 +7,8 @@ import {
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import CategoryGrid from "@/components/marketplace/CategoryGrid";
 import PromoBanner from "@/components/marketplace/PromoBanner";
 import ProductCard from "@/components/marketplace/ProductCard";
-import StatsBar from "@/components/marketplace/StatsBar";
 import TopSuppliers from "@/components/marketplace/TopSuppliers";
 import VerticalFeed from "@/components/marketplace/VerticalFeed";
 import SuppliersNearMe from "@/components/marketplace/SuppliersNearMe";
