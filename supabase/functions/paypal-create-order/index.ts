@@ -51,8 +51,13 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const amount = Number(body?.amount);
+    const returnUrl: string | undefined = typeof body?.returnUrl === "string" ? body.returnUrl : undefined;
+    const cancelUrl: string | undefined = typeof body?.cancelUrl === "string" ? body.cancelUrl : undefined;
     if (!Number.isFinite(amount) || amount < 1 || amount > 5000) {
       return json({ error: "Amount must be between $1 and $5000" }, 400);
+    }
+    if (!returnUrl || !cancelUrl) {
+      return json({ error: "returnUrl and cancelUrl are required" }, 400);
     }
     const value = amount.toFixed(2);
 
@@ -76,6 +81,8 @@ Deno.serve(async (req) => {
           brand_name: "PUBSTORE",
           shipping_preference: "NO_SHIPPING",
           user_action: "PAY_NOW",
+          return_url: returnUrl,
+          cancel_url: cancelUrl,
         },
       }),
     });
@@ -85,7 +92,13 @@ Deno.serve(async (req) => {
       return json({ error: orderJson?.message || "Could not create PayPal order" }, 502);
     }
 
-    return json({ orderID: orderJson.id, amount: value });
+    const approveLink = (orderJson?.links ?? []).find((l: any) => l?.rel === "approve" || l?.rel === "payer-action");
+    if (!approveLink?.href) {
+      console.error("no approve link", orderJson);
+      return json({ error: "PayPal did not return an approval link" }, 502);
+    }
+
+    return json({ orderID: orderJson.id, amount: value, approveUrl: approveLink.href });
   } catch (e) {
     console.error(e);
     return json({ error: e instanceof Error ? e.message : "Unexpected error" }, 500);
