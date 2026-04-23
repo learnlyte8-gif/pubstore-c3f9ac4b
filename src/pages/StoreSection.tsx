@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Plus, TrendingUp, Eye, ShoppingBag, DollarSign, Star, Megaphone, Truck, Package, Settings, Image as ImageIcon, X, Loader2, Link2, Download, Sparkles, Percent, Check, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, TrendingUp, Eye, ShoppingBag, DollarSign, Star, Megaphone, Truck, Package, Settings, Image as ImageIcon, X, Loader2, Link2, Download, Sparkles, Percent, Check, Pencil, Trash2, CheckSquare, Square, Tag, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -650,20 +650,99 @@ function LabeledInput({ label, value, onChange, type = "text" }: { label: string
 
 // ---------------- Products list ----------------
 function ProductsView() {
+  const qc = useQueryClient();
   const { data: supplier } = useQuery({ queryKey: ["my-supplier"], queryFn: fetchMySupplier });
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["my-products", supplier?.id],
     queryFn: () => (supplier ? fetchProducts({ supplierId: supplier.id }) : Promise.resolve([])),
     enabled: !!supplier,
   });
+  const { data: cats = [] } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
+
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [showCatPicker, setShowCatPicker] = useState(false);
+  const [working, setWorking] = useState(false);
+
+  const toggle = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+  const allSelected = products.length > 0 && selected.size === products.length;
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(products.map((p) => p.id)));
+  const exitSelect = () => { setSelectMode(false); setSelected(new Set()); };
+
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["my-products"] });
+    qc.invalidateQueries({ queryKey: ["products"] });
+  };
+
+  const bulkAssignCategory = async (slug: string) => {
+    if (selected.size === 0) return;
+    setWorking(true);
+    const ids = Array.from(selected);
+    const { error } = await supabase.from("products").update({ category_slug: slug }).in("id", ids);
+    setWorking(false);
+    setShowCatPicker(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Updated ${ids.length} product${ids.length > 1 ? "s" : ""}`);
+    refresh();
+    exitSelect();
+  };
+
+  const bulkToggleActive = async (active: boolean) => {
+    if (selected.size === 0) return;
+    setWorking(true);
+    const ids = Array.from(selected);
+    const { error } = await supabase.from("products").update({ active }).in("id", ids);
+    setWorking(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${active ? "Activated" : "Hidden"} ${ids.length} product${ids.length > 1 ? "s" : ""}`);
+    refresh();
+    exitSelect();
+  };
+
+  const bulkDelete = async () => {
+    if (selected.size === 0) return;
+    if (!confirm(`Delete ${selected.size} product${selected.size > 1 ? "s" : ""}? This can't be undone.`)) return;
+    setWorking(true);
+    const ids = Array.from(selected);
+    const { error } = await supabase.from("products").delete().in("id", ids);
+    setWorking(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Deleted ${ids.length} product${ids.length > 1 ? "s" : ""}`);
+    refresh();
+    exitSelect();
+  };
 
   if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
 
   return (
-    <div className="px-4 py-4 space-y-3">
-      <Button asChild className="w-full h-11">
-        <Link to="/store/products/new"><Plus className="w-4 h-4 mr-2" /> Add product</Link>
-      </Button>
+    <div className="px-4 py-4 space-y-3 pb-32">
+      {!selectMode ? (
+        <div className="flex gap-2">
+          <Button asChild className="flex-1 h-11">
+            <Link to="/store/products/new"><Plus className="w-4 h-4 mr-2" /> Add product</Link>
+          </Button>
+          {products.length > 0 && (
+            <Button variant="outline" className="h-11" onClick={() => setSelectMode(true)}>
+              <CheckSquare className="w-4 h-4 mr-1.5" /> Select
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-center justify-between bg-primary/5 border border-primary/30 rounded-xl px-3 h-11">
+          <button onClick={toggleAll} className="flex items-center gap-2 text-sm font-bold text-primary">
+            {allSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+            {selected.size > 0 ? `${selected.size} selected` : "Select all"}
+          </button>
+          <button onClick={exitSelect} className="text-xs font-bold text-muted-foreground">Cancel</button>
+        </div>
+      )}
+
       {products.length === 0 ? (
         <EmptyState
           icon={<Package className="w-7 h-7 text-muted-foreground" />}
@@ -672,28 +751,111 @@ function ProductsView() {
           action={<Button asChild><Link to="/store/products/new"><Plus className="w-4 h-4 mr-1.5" /> Add product</Link></Button>}
         />
       ) : (
-        products.map((p) => (
-          <div key={p.id} className="bg-card border rounded-2xl shadow-card p-3 flex gap-3">
-            <Link to={`/product/${p.id}`} className="shrink-0">
-              <img src={p.image} alt={p.title} className="w-20 h-20 rounded-xl object-cover bg-muted" />
-            </Link>
-            <div className="flex-1 min-w-0">
-              <Link to={`/product/${p.id}`} className="block">
-                <p className="text-sm font-bold line-clamp-2">{p.title}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">${p.price} · MOQ {p.moq}</p>
-                <div className="flex items-center gap-3 mt-1.5 text-[11px] text-muted-foreground">
-                  <span className="flex items-center gap-1"><ShoppingBag className="w-3 h-3" /> {p.sold}</span>
-                  <span className="flex items-center gap-1"><Star className="w-3 h-3" /> {p.rating.toFixed(1)}</span>
+        products.map((p) => {
+          const isSel = selected.has(p.id);
+          return (
+            <div
+              key={p.id}
+              className={`bg-card border rounded-2xl shadow-card p-3 flex gap-3 transition ${isSel ? "ring-2 ring-primary border-primary" : ""}`}
+              onClick={selectMode ? () => toggle(p.id) : undefined}
+              role={selectMode ? "button" : undefined}
+            >
+              {selectMode && (
+                <div className="self-center">
+                  {isSel ? (
+                    <span className="w-6 h-6 rounded-md bg-primary text-primary-foreground flex items-center justify-center">
+                      <Check className="w-4 h-4" />
+                    </span>
+                  ) : (
+                    <span className="w-6 h-6 rounded-md border-2 border-muted-foreground/40" />
+                  )}
                 </div>
-              </Link>
-              <div className="flex gap-2 mt-2">
-                <Button asChild size="sm" variant="outline" className="h-8 text-xs">
-                  <Link to={`/store/product-edit/${p.id}`}><Pencil className="w-3 h-3 mr-1" /> Edit</Link>
-                </Button>
+              )}
+              {selectMode ? (
+                <img src={p.image} alt={p.title} className="w-20 h-20 rounded-xl object-cover bg-muted shrink-0" />
+              ) : (
+                <Link to={`/product/${p.id}`} className="shrink-0">
+                  <img src={p.image} alt={p.title} className="w-20 h-20 rounded-xl object-cover bg-muted" />
+                </Link>
+              )}
+              <div className="flex-1 min-w-0">
+                {selectMode ? (
+                  <div>
+                    <p className="text-sm font-bold line-clamp-2">{p.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">${p.price} · MOQ {p.moq}</p>
+                    {p.category_slug && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5 truncate">in {p.category_slug}</p>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <Link to={`/product/${p.id}`} className="block">
+                      <p className="text-sm font-bold line-clamp-2">{p.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">${p.price} · MOQ {p.moq}</p>
+                      <div className="flex items-center gap-3 mt-1.5 text-[11px] text-muted-foreground">
+                        <span className="flex items-center gap-1"><ShoppingBag className="w-3 h-3" /> {p.sold}</span>
+                        <span className="flex items-center gap-1"><Star className="w-3 h-3" /> {p.rating.toFixed(1)}</span>
+                      </div>
+                    </Link>
+                    <div className="flex gap-2 mt-2">
+                      <Button asChild size="sm" variant="outline" className="h-8 text-xs">
+                        <Link to={`/store/product-edit/${p.id}`}><Pencil className="w-3 h-3 mr-1" /> Edit</Link>
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
+          );
+        })
+      )}
+
+      {/* Bulk action bar */}
+      {selectMode && selected.size > 0 && (
+        <div className="fixed bottom-4 left-4 right-4 z-30 bg-card border shadow-elevated rounded-2xl p-2 flex gap-2 max-w-md mx-auto">
+          <Button variant="outline" className="flex-1 h-11" onClick={() => setShowCatPicker(true)} disabled={working}>
+            <Tag className="w-4 h-4 mr-1.5" /> Category
+          </Button>
+          <Button variant="outline" className="flex-1 h-11" onClick={() => bulkToggleActive(false)} disabled={working}>
+            <EyeOff className="w-4 h-4 mr-1.5" /> Hide
+          </Button>
+          <Button variant="outline" className="flex-1 h-11" onClick={() => bulkToggleActive(true)} disabled={working}>
+            <Eye className="w-4 h-4 mr-1.5" /> Show
+          </Button>
+          <Button variant="outline" className="h-11 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={bulkDelete} disabled={working}>
+            {working ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+          </Button>
+        </div>
+      )}
+
+      {/* Category picker sheet */}
+      {showCatPicker && (
+        <div className="fixed inset-0 z-50 bg-foreground/60 flex items-end sm:items-center justify-center p-4" onClick={() => setShowCatPicker(false)}>
+          <div className="w-full max-w-md bg-card rounded-3xl p-5 shadow-elevated max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center">
+                <Tag className="w-4 h-4" />
+              </span>
+              <div>
+                <p className="font-bold">Assign category</p>
+                <p className="text-[11px] text-muted-foreground">{selected.size} product{selected.size > 1 ? "s" : ""} selected</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {cats.map((c: any) => (
+                <button
+                  key={c.slug}
+                  onClick={() => bulkAssignCategory(c.slug)}
+                  disabled={working}
+                  className="h-12 rounded-xl border bg-background hover:bg-primary/10 hover:border-primary text-sm font-bold transition disabled:opacity-50 truncate px-3"
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+            <Button variant="outline" className="w-full h-11 mt-4" onClick={() => setShowCatPicker(false)}>Cancel</Button>
           </div>
-        ))
+        </div>
       )}
     </div>
   );
