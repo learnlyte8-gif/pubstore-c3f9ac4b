@@ -48,6 +48,7 @@ const FILTERS: { id: "all" | OrderStatus; label: string }[] = [
 ];
 
 const STATUS_META: Record<OrderStatus, { icon: typeof Package; label: string; tone: string }> = {
+  awaiting_payment: { icon: Clock, label: "Awaiting payment", tone: "bg-orange-500/15 text-orange-600 dark:text-orange-400" },
   placed: { icon: Clock, label: "Placed", tone: "bg-sky-500/15 text-sky-600 dark:text-sky-400" },
   processing: { icon: Package, label: "Processing", tone: "bg-amber-500/15 text-amber-600 dark:text-amber-400" },
   shipped: { icon: Truck, label: "Shipped", tone: "bg-violet-500/15 text-violet-600 dark:text-violet-400" },
