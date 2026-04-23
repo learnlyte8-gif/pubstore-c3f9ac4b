@@ -44,6 +44,8 @@ export type Supplier = {
   latitude: number | null;
   longitude: number | null;
   locationAddress: string | null;
+  /** When set, this supplier is a "mirror" of another store and shares its products. */
+  mirrorOf: string | null;
 };
 
 export type Review = {
@@ -70,6 +72,10 @@ export type Product = {
   badge?: "Hot" | "New" | "Deal" | "Top";
   freeShipping?: boolean;
   supplierId: string;
+  /** Lightweight supplier fields embedded for cards (verified badge, etc.) */
+  supplierVerified?: boolean;
+  supplierGold?: boolean;
+  supplierName?: string;
   moq: number;
   unit: string;
   leadTime: string;
@@ -134,6 +140,7 @@ type DbSupplier = {
   latitude?: number | string | null;
   longitude?: number | string | null;
   location_address?: string | null;
+  mirror_of?: string | null;
 };
 
 type DbProduct = {
@@ -180,32 +187,64 @@ export const mapSupplier = (s: DbSupplier): Supplier => ({
   latitude: s.latitude != null ? Number(s.latitude) : null,
   longitude: s.longitude != null ? Number(s.longitude) : null,
   locationAddress: s.location_address ?? null,
+  mirrorOf: s.mirror_of ?? null,
 });
 
-export const mapProduct = (p: DbProduct): Product => ({
-  id: p.id,
-  title: p.title,
-  image: p.image ?? PLACEHOLDER_IMG,
-  gallery: p.gallery?.length ? p.gallery : [p.image ?? PLACEHOLDER_IMG],
-  price: Number(p.price),
-  originalPrice: p.original_price != null ? Number(p.original_price) : undefined,
-  rating: Number(p.rating ?? 0),
-  reviews: p.review_count ?? 0,
-  sold: p.sold ?? 0,
-  category: p.category_slug ?? "",
-  badge: (p.badge as Product["badge"]) ?? undefined,
-  freeShipping: !!p.free_shipping,
-  supplierId: p.supplier_id,
-  moq: p.moq ?? 1,
-  unit: p.unit ?? "piece",
-  leadTime: p.lead_time ?? "—",
-  shipFrom: p.ship_from ?? "—",
-  specs: Array.isArray(p.specs) ? (p.specs as { label: string; value: string }[]) : [],
-  description: p.description ?? "",
-  dealEndsAt: p.deal_ends_at ?? null,
-});
+type DbProductWithSupplier = DbProduct & {
+  suppliers?: { name: string | null; verified: boolean | null; gold: boolean | null } | null;
+};
 
-// ---------- Fetchers ----------
+export const mapProduct = (p: DbProduct | DbProductWithSupplier): Product => {
+  const sup = (p as DbProductWithSupplier).suppliers ?? null;
+  return {
+    id: p.id,
+    title: p.title,
+    image: p.image ?? PLACEHOLDER_IMG,
+    gallery: p.gallery?.length ? p.gallery : [p.image ?? PLACEHOLDER_IMG],
+    price: Number(p.price),
+    originalPrice: p.original_price != null ? Number(p.original_price) : undefined,
+    rating: Number(p.rating ?? 0),
+    reviews: p.review_count ?? 0,
+    sold: p.sold ?? 0,
+    category: p.category_slug ?? "",
+    badge: (p.badge as Product["badge"]) ?? undefined,
+    freeShipping: !!p.free_shipping,
+    supplierId: p.supplier_id,
+    supplierVerified: sup ? !!sup.verified : undefined,
+    supplierGold: sup ? !!sup.gold : undefined,
+    supplierName: sup?.name ?? undefined,
+    moq: p.moq ?? 1,
+    unit: p.unit ?? "piece",
+    leadTime: p.lead_time ?? "—",
+    shipFrom: p.ship_from ?? "—",
+    specs: Array.isArray(p.specs) ? (p.specs as { label: string; value: string }[]) : [],
+    description: p.description ?? "",
+    dealEndsAt: p.deal_ends_at ?? null,
+  };
+};
+
+// ---------- Mirror helpers ----------
+const masterCache = new Map<string, string>();
+
+/**
+ * Resolve a (possibly mirrored) supplier id to the master supplier id that
+ * actually owns the products / receives orders / messages / quotes.
+ * Mirror suppliers are virtual storefronts that share their master's catalog.
+ */
+export async function resolveMasterSupplierId(supplierId: string): Promise<string> {
+  if (!supplierId) return supplierId;
+  const cached = masterCache.get(supplierId);
+  if (cached) return cached;
+  const { data } = await supabase
+    .from("suppliers")
+    .select("id, mirror_of")
+    .eq("id", supplierId)
+    .maybeSingle();
+  const master = (data?.mirror_of as string | null) ?? data?.id ?? supplierId;
+  masterCache.set(supplierId, master);
+  return master;
+}
+
 export async function fetchProducts(opts: {
   category?: string;
   supplierId?: string;
@@ -213,9 +252,16 @@ export async function fetchProducts(opts: {
   limit?: number;
   sortBy?: "newest" | "sold" | "price_asc" | "price_desc" | "rating";
 } = {}): Promise<Product[]> {
-  let q = supabase.from("products").select("*").eq("active", true);
+  // If filtering by a mirror store, swap to master so we show its catalog.
+  let supplierId = opts.supplierId;
+  if (supplierId) supplierId = await resolveMasterSupplierId(supplierId);
+
+  let q = supabase
+    .from("products")
+    .select("*, suppliers!inner(name, verified, gold)")
+    .eq("active", true);
   if (opts.category) q = q.eq("category_slug", opts.category);
-  if (opts.supplierId) q = q.eq("supplier_id", opts.supplierId);
+  if (supplierId) q = q.eq("supplier_id", supplierId);
   if (opts.search) q = q.ilike("title", `%${opts.search}%`);
   switch (opts.sortBy) {
     case "sold": q = q.order("sold", { ascending: false }); break;
@@ -227,12 +273,16 @@ export async function fetchProducts(opts: {
   if (opts.limit) q = q.limit(opts.limit);
   const { data, error } = await q;
   if (error || !data) return [];
-  return (data as DbProduct[]).map(mapProduct);
+  return (data as DbProductWithSupplier[]).map(mapProduct);
 }
 
 export async function fetchProduct(id: string): Promise<Product | null> {
-  const { data } = await supabase.from("products").select("*").eq("id", id).maybeSingle();
-  return data ? mapProduct(data as DbProduct) : null;
+  const { data } = await supabase
+    .from("products")
+    .select("*, suppliers!inner(name, verified, gold)")
+    .eq("id", id)
+    .maybeSingle();
+  return data ? mapProduct(data as DbProductWithSupplier) : null;
 }
 
 export async function fetchSupplier(id: string): Promise<Supplier | null> {
@@ -240,9 +290,13 @@ export async function fetchSupplier(id: string): Promise<Supplier | null> {
   return data ? mapSupplier(data as DbSupplier) : null;
 }
 
-export async function fetchSuppliers(opts: { limit?: number; verifiedOnly?: boolean } = {}): Promise<Supplier[]> {
+export async function fetchSuppliers(opts: { limit?: number; verifiedOnly?: boolean; includeMirrors?: boolean } = {}): Promise<Supplier[]> {
   let q = supabase.from("suppliers").select("*").order("rating", { ascending: false });
   if (opts.verifiedOnly) q = q.eq("verified", true);
+  // By default exclude mirrors from "top suppliers" / global lists so the
+  // master store keeps its identity. Pages that explicitly want mirrors
+  // (e.g. directory) can opt in.
+  if (!opts.includeMirrors) q = q.is("mirror_of", null);
   if (opts.limit) q = q.limit(opts.limit);
   const { data } = await q;
   return ((data ?? []) as DbSupplier[]).map(mapSupplier);
@@ -251,7 +305,14 @@ export async function fetchSuppliers(opts: { limit?: number; verifiedOnly?: bool
 export async function fetchMySupplier(): Promise<Supplier | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
-  const { data } = await supabase.from("suppliers").select("*").eq("owner_id", user.id).maybeSingle();
+  // An owner can have many stores (the "master" + many mirrors). Always
+  // return the master store (mirror_of IS NULL) for management views.
+  const { data } = await supabase
+    .from("suppliers")
+    .select("*")
+    .eq("owner_id", user.id)
+    .is("mirror_of", null)
+    .maybeSingle();
   return data ? mapSupplier(data as DbSupplier) : null;
 }
 

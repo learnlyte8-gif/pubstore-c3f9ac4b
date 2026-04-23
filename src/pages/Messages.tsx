@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, Send, ShieldCheck, ArrowLeft, MessageCircle, Smile, Paperclip, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveMasterSupplierId } from "@/data/products";
 import SupplierStories from "@/components/marketplace/SupplierStories";
 
 type Conversation = {
@@ -103,14 +104,16 @@ export default function Messages() {
   useEffect(() => {
     if (!userId || !initialSupplierId) return;
     (async () => {
-      const existing = conversations.find((c) => c.supplier_id === initialSupplierId && c.buyer_id === userId);
+      // Mirror stores share their master's owner — route conversation to master.
+      const targetSupplierId = await resolveMasterSupplierId(initialSupplierId);
+      const existing = conversations.find((c) => c.supplier_id === targetSupplierId && c.buyer_id === userId);
       if (existing) {
         setActiveId(existing.id);
         return;
       }
       const { data, error } = await supabase
         .from("conversations")
-        .insert({ buyer_id: userId, supplier_id: initialSupplierId })
+        .insert({ buyer_id: userId, supplier_id: targetSupplierId })
         .select("*")
         .single();
       if (error || !data) return;

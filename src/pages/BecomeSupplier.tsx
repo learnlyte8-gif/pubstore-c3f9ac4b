@@ -16,7 +16,7 @@ export default function BecomeSupplier() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate("/auth"); return; }
       const { data } = await supabase
-        .from("suppliers").select("id").eq("owner_id", user.id).maybeSingle();
+        .from("suppliers").select("id").eq("owner_id", user.id).is("mirror_of", null).maybeSingle();
       if (data) navigate("/store", { replace: true });
     })();
   }, [navigate]);

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Heart, Star, Plus, Truck, ShieldCheck, Award, Timer } from "lucide-react";
 import { toast } from "sonner";
-import { type Product, discountPct, getSupplier } from "@/data/products";
+import { type Product, discountPct } from "@/data/products";
 import { useShop } from "@/store/shop";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -44,11 +44,12 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
   const { addToCart, toggleWishlist, isWishlisted } = useShop();
   const liked = isWishlisted(product.id);
   const off = discountPct(product);
-  const supplier = getSupplier(product.supplierId);
   const countdown = useDealCountdown(product.dealEndsAt);
   // Hide internal "Imported · …" badges from public product cards.
   const displayBadge =
     product.badge && !/^imported/i.test(product.badge) ? product.badge : null;
+  const supplierVerified = product.supplierVerified === true;
+  const supplierGold = product.supplierGold === true;
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -164,14 +165,14 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
           <span>{fmtSold(product.sold)}</span>
         </div>
 
-        {(product.freeShipping || supplier?.verified || supplier?.gold) && (
+        {(product.freeShipping || supplierVerified || supplierGold) && (
           <div className="flex items-center gap-1.5 mt-1 text-[10px] flex-wrap">
-            {supplier?.verified && (
+            {supplierVerified && (
               <span className="inline-flex items-center gap-0.5 text-primary font-semibold">
                 <ShieldCheck className="w-3 h-3" /> Verified
               </span>
             )}
-            {supplier?.gold && (
+            {supplierGold && (
               <span className="inline-flex items-center gap-0.5 text-amber-600 dark:text-amber-400 font-semibold">
                 <Award className="w-3 h-3" /> Gold
               </span>
