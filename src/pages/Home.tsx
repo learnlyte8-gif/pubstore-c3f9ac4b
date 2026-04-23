@@ -214,6 +214,9 @@ function SectionHeader({ title, subtitle, icon: Icon }: { title: string; subtitl
  * MixedCatalogGrid — interleaves product cards with promotional tiles,
  * category callouts, an ad slot and a recommendation strip so the
  * "Explore catalog" surface feels like a curated feed instead of a wall.
+ *
+ * Full-width inserts (col-span-2) are aligned to row starts so we never
+ * leave a blank cell next to them.
  */
 function MixedCatalogGrid({ products, hero }: { products: import("@/data/products").Product[]; hero?: import("@/data/products").Product }) {
   if (products.length === 0) return null;
@@ -222,11 +225,12 @@ function MixedCatalogGrid({ products, hero }: { products: import("@/data/product
   const newSeed = products.find((p) => p.badge === "New") ?? products[1] ?? products[0];
   const editorSeed = hero ?? products[2] ?? products[0];
 
-  const inserts: { at: number; node: React.ReactNode }[] = [
-    { at: 2, node: <PromoTile key="promo-deal" product={dealSeed} variant="deal" /> },
+  type Insert = { after: number; span: 1 | 2; node: React.ReactNode };
+  // `after` = how many product cards must appear before this insert
+  const inserts: Insert[] = [
+    { after: 2, span: 1, node: <PromoTile key="promo-deal" product={dealSeed} variant="deal" /> },
     {
-      at: 4,
-      node: (
+      after: 4, span: 2, node: (
         <CategoryCallout
           key="cat-fresh"
           title="Verified factories ready to ship today"
@@ -237,11 +241,10 @@ function MixedCatalogGrid({ products, hero }: { products: import("@/data/product
         />
       ),
     },
-    { at: 6, node: <RecommendationStrip key="rec-strip" /> },
-    { at: 8, node: <PromoTile key="promo-editor" product={editorSeed} variant="editor" /> },
+    { after: 6, span: 2, node: <RecommendationStrip key="rec-strip" /> },
+    { after: 8, span: 1, node: <PromoTile key="promo-editor" product={editorSeed} variant="editor" /> },
     {
-      at: 10,
-      node: (
+      after: 10, span: 2, node: (
         <CategoryCallout
           key="cat-warm"
           title="Free shipping on orders over $50"
@@ -252,10 +255,9 @@ function MixedCatalogGrid({ products, hero }: { products: import("@/data/product
         />
       ),
     },
-    { at: 13, node: <PromoTile key="promo-new" product={newSeed} variant="new" /> },
+    { after: 13, span: 1, node: <PromoTile key="promo-new" product={newSeed} variant="new" /> },
     {
-      at: 16,
-      node: (
+      after: 16, span: 2, node: (
         <CategoryCallout
           key="cat-flash"
           title="Hottest categories this week"
@@ -269,16 +271,41 @@ function MixedCatalogGrid({ products, hero }: { products: import("@/data/product
   ];
 
   const cells: React.ReactNode[] = [];
+  let col = 0; // current column position (0 or 1) within the 2-col grid
+  let placed = 0; // products placed so far
   let prodIndex = 0;
-  for (let i = 0; i < products.length + inserts.length; i++) {
-    const insert = inserts.find((x) => x.at === i);
-    if (insert) {
-      cells.push(insert.node);
+
+  const placeProduct = () => {
+    const p = products[prodIndex++];
+    if (!p) return false;
+    cells.push(<ProductCard key={p.id} product={p} />);
+    col = (col + 1) % 2;
+    placed++;
+    return true;
+  };
+
+  const placeInsert = (ins: Insert) => {
+    // If a full-width insert lands mid-row, fill the empty cell with a product first
+    if (ins.span === 2 && col === 1) {
+      if (!placeProduct()) {
+        // No product left to fill — skip the insert to avoid a blank gap
+        return;
+      }
+    }
+    cells.push(ins.node);
+    col = ins.span === 2 ? 0 : (col + 1) % 2;
+  };
+
+  // Walk products and insert callouts at the requested counts
+  while (prodIndex < products.length) {
+    const due = inserts.find((x) => x.after === placed);
+    if (due) {
+      // remove so we don't re-insert
+      inserts.splice(inserts.indexOf(due), 1);
+      placeInsert(due);
       continue;
     }
-    const p = products[prodIndex++];
-    if (!p) break;
-    cells.push(<ProductCard key={p.id} product={p} />);
+    if (!placeProduct()) break;
   }
 
   return <div className="grid grid-cols-2 gap-3 mt-3">{cells}</div>;
