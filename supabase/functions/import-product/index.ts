@@ -24,7 +24,23 @@ type Extracted = {
   source_url: string;
   moq?: number | null;
   unit?: string | null;
+  category_slug?: string | null;
 };
+
+async function fetchCategorySlugs(): Promise<string[]> {
+  try {
+    const url = Deno.env.get("SUPABASE_URL")!;
+    const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const r = await fetch(`${url}/rest/v1/categories?select=slug&order=sort_order.asc`, {
+      headers: { apikey: anon, Authorization: `Bearer ${anon}` },
+    });
+    if (!r.ok) return [];
+    const rows = await r.json();
+    return Array.isArray(rows) ? rows.map((x: any) => x.slug).filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
 
 function detectSource(url: string): "shopify" | "amazon" | "alibaba" | "aliexpress" | "other" {
   const u = url.toLowerCase();
@@ -107,13 +123,17 @@ async function extractWithAI(params: {
   markdown: string;
   html: string;
   metadata: any;
+  categorySlugs: string[];
 }): Promise<Partial<Extracted>> {
   const lovableKey = Deno.env.get("LOVABLE_API_KEY");
   if (!lovableKey) throw new Error("LOVABLE_API_KEY is not configured");
 
   const trimmed = params.markdown.slice(0, 18000);
+  const catList = params.categorySlugs.length
+    ? `\nAllowed category slugs (pick the single best fit, or null if none clearly fit): ${params.categorySlugs.join(", ")}`
+    : "";
   const system = `You extract structured product information from scraped e-commerce pages.
-Return ONLY valid JSON matching the schema. Price must be a number in the listing's currency (strip symbols). If a field is unknown, use null.`;
+Return ONLY valid JSON matching the schema. Price must be a number in the listing's currency (strip symbols). If a field is unknown, use null.${catList}`;
 
   const user = `Source: ${params.source}
 URL: ${params.url}
