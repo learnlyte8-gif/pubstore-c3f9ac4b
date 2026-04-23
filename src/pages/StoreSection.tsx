@@ -8,6 +8,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProducts, fetchMySupplier, fetchCategories } from "@/data/products";
 import EmptyState from "@/components/EmptyState";
 import LocationPicker from "@/components/LocationPicker";
+import { useImportJob, type BulkCandidate, type ImportedProduct, type MarkupMode } from "@/store/importJob";
 
 const titles: Record<string, { title: string; sub: string }> = {
   products: { title: "My products", sub: "Manage your catalog" },
@@ -58,33 +59,7 @@ export default function StoreSection() {
 // ---------------- Import from URL (private beta) ----------------
 const ALLOWED_IMPORT_EMAILS = ["kukistacks8@gmail.com"];
 
-type ImportedProduct = {
-  title: string;
-  price: number | null;
-  original_price: number | null;
-  currency: string | null;
-  description: string;
-  images: string[];
-  source: string;
-  source_url: string;
-  moq?: number | null;
-  unit?: string | null;
-  category_slug?: string | null;
-};
-
-type BulkCandidate = {
-  url: string;
-  title: string;
-  image: string | null;
-  price: number | null;
-  source: string;
-  status: "pending" | "importing" | "done" | "skipped" | "error";
-  error?: string;
-  productId?: string;
-  category_slug?: string | null;
-};
-
-type MarkupMode = "percent" | "flat" | "none";
+// Types ImportedProduct, BulkCandidate, MarkupMode are imported from "@/store/importJob".
 
 function applyMarkup(price: number | null, mode: MarkupMode, value: number): number | null {
   if (price == null || isNaN(price)) return price;
@@ -374,12 +349,10 @@ function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: M
 
 // ---------------- Bulk import ----------------
 function BulkImport({ markupMode, markupValue, qc }: { markupMode: MarkupMode; markupValue: number; qc: ReturnType<typeof useQueryClient> }) {
+  const job = useImportJob();
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
-  const [items, setItems] = useState<BulkCandidate[]>([]);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
-  const [runState, setRunState] = useState<"idle" | "running" | "done">("idle");
-  const [progress, setProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
   const { data: categories = [] } = useQuery({
     queryKey: ["import-categories"],
     queryFn: async () => {
@@ -388,91 +361,55 @@ function BulkImport({ markupMode, markupValue, qc }: { markupMode: MarkupMode; m
     },
   });
 
+  const items = job.state.items;
+  const running = job.state.running;
+  const progress = { done: job.state.done, total: job.state.total };
+  const runState: "idle" | "running" | "done" = running
+    ? "running"
+    : job.state.finishedAt
+    ? "done"
+    : "idle";
+
   const listAll = async () => {
     if (!url.trim()) { toast.error("Paste a collection / seller URL"); return; }
+    if (running) { toast.error("Wait for the current import to finish"); return; }
     setLoading(true);
-    setItems([]);
+    job.setItems([]);
     try {
       const { data, error } = await supabase.functions.invoke("import-list", { body: { url: url.trim(), limit: 40 } });
       if (error) throw error;
       if ((data as any)?.error && !((data as any)?.items?.length)) throw new Error((data as any).error);
       const raw = ((data as any)?.items || []) as Array<Omit<BulkCandidate, "status">>;
-      setItems(raw.map((r) => ({ ...r, status: "pending" })));
+      job.setItems(raw.map((r) => ({ ...r, status: "pending" as const })));
       if (raw.length === 0) toast.error("No products found on that page");
     } catch (err: any) {
       toast.error(err?.message ?? "Could not list products");
     } finally { setLoading(false); }
   };
 
-  const updateItem = (idx: number, patch: Partial<BulkCandidate>) =>
-    setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
+  const updateItem = (idx: number, patch: Partial<BulkCandidate>) => job.updateItem(idx, patch);
 
   const toggleSkip = (idx: number) =>
     updateItem(idx, { status: items[idx].status === "skipped" ? "pending" : "skipped" });
 
   const importAll = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const supplier = await fetchMySupplier();
-    if (!supplier) { toast.error("Create your store first"); return; }
-
-    const queue = items.map((it, i) => ({ it, i })).filter(({ it }) => it.status === "pending");
-    setRunState("running");
-    setProgress({ done: 0, total: queue.length });
-    let done = 0;
-
-    for (const { it, i } of queue) {
-      updateItem(i, { status: "importing" });
-      try {
-        // 1) Fetch detailed info
-        const { data, error } = await supabase.functions.invoke("import-product", { body: { url: it.url } });
-        if (error) throw error;
-        if ((data as any)?.error) throw new Error((data as any).error);
-        const p = (data as any)?.product as ImportedProduct | undefined;
-        if (!p) throw new Error("Empty response");
-
-        // 2) Apply markup
-        const finalPrice = applyMarkup(p.price, markupMode, markupValue);
-        if (finalPrice == null) throw new Error("No price found");
-
-        // 3) Mirror images
-        const stored = await mirrorImages(user.id, p.images, `bulk-${i}`);
-
-        // 4) Insert
-        const { data: product, error: insErr } = await supabase.from("products").insert({
-          supplier_id: supplier.id,
-          title: (it.title?.trim() || p.title || "Imported product").slice(0, 200),
-          description: p.description || null,
-          image: stored[0] ?? null,
-          gallery: stored,
-          price: finalPrice,
-          original_price: p.price ?? null,
-          moq: p.moq ?? 1,
-          unit: p.unit ?? "piece",
-          category_slug: it.category_slug ?? p.category_slug ?? null,
-          ship_from: supplier.country ?? null,
-          active: true,
-        }).select("id").single();
-        if (insErr) throw insErr;
-
-        updateItem(i, { status: "done", productId: product.id });
-      } catch (err: any) {
-        updateItem(i, { status: "error", error: err?.message ?? "Failed" });
-      }
-      done++;
-      setProgress({ done, total: queue.length });
-    }
-
-    setRunState("done");
-    qc.invalidateQueries({ queryKey: ["my-products"] });
-    qc.invalidateQueries({ queryKey: ["products"] });
-    toast.success(`Bulk import finished · ${done}/${queue.length} processed`);
+    let label = "Bulk import";
+    try { label = new URL(url).hostname; } catch {}
+    await job.start({
+      items,
+      markupMode,
+      markupValue,
+      sourceLabel: label,
+      onProductSaved: () => {
+        qc.invalidateQueries({ queryKey: ["my-products"] });
+        qc.invalidateQueries({ queryKey: ["products"] });
+      },
+    });
   };
 
   const pendingCount = items.filter((i) => i.status === "pending").length;
   const doneCount = items.filter((i) => i.status === "done").length;
   const errorCount = items.filter((i) => i.status === "error").length;
-  const running = runState === "running";
 
   return (
     <>

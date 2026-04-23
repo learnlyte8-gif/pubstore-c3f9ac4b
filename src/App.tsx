@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ShopProvider } from "@/store/shop";
+import { ImportJobProvider } from "@/store/importJob";
 import Splash from "./pages/Splash.tsx";
 import Auth from "./pages/Auth.tsx";
 import Onboarding from "./pages/Onboarding.tsx";
@@ -42,6 +43,7 @@ const App = () => (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
     <QueryClientProvider client={queryClient}>
       <ShopProvider>
+        <ImportJobProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -85,6 +87,7 @@ const App = () => (
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
+        </ImportJobProvider>
       </ShopProvider>
     </QueryClientProvider>
   </ThemeProvider>
