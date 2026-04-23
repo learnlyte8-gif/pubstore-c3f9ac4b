@@ -119,7 +119,7 @@ export function useUnreadChats() {
   useEffect(() => {
     if (!userId) return;
     const ch = supabase
-      .channel(`unread-chats:${userId}`)
+      .channel(`unread-chats:${userId}:${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, () => recompute(userId))
       .on("postgres_changes", { event: "*", schema: "public", table: "conversations" }, () => recompute(userId))
       .subscribe();
