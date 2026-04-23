@@ -45,13 +45,21 @@ export function interestsToSlugs(interests: string[] | null | undefined): string
   );
 }
 
-/** Live profile interests for the signed-in user. */
+/** Live profile interests for the signed-in user, falling back to guest local storage. */
 export function useMyInterests() {
   const [userId, setUserId] = useState<string | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [guestData, setGuestData] = useState<string[]>(() => guestInterests.get());
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setUserId(data.session?.user?.id ?? null));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setUserId(s?.user?.id ?? null));
+    supabase.auth.getSession().then(({ data }) => {
+      setUserId(data.session?.user?.id ?? null);
+      setAuthReady(true);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      setUserId(s?.user?.id ?? null);
+      setAuthReady(true);
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
 
@@ -70,14 +78,21 @@ export function useMyInterests() {
 
   const save = useCallback(
     async (next: string[]) => {
-      if (!userId) return;
+      if (!userId) {
+        guestInterests.set(next);
+        setGuestData(next);
+        return;
+      }
       await supabase.from("profiles").update({ interests: next }).eq("user_id", userId);
       query.refetch();
     },
     [userId, query],
   );
 
-  return { interests: query.data ?? [], isLoading: query.isLoading, save, userId };
+  const interests = userId ? (query.data ?? []) : guestData;
+  const isLoading = userId ? query.isLoading : !authReady;
+
+  return { interests, isLoading, save, userId };
 }
 
 /**
