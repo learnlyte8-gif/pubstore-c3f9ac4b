@@ -269,46 +269,11 @@ export default function SuppliersNearMe() {
         <div ref={containerRef} className="w-full h-72 z-0" />
       </div>
 
-      {/* List of nearby */}
-      {nearby.length === 0 ? (
+      {nearby.length === 0 && (
         <div className="mt-3 p-5 rounded-2xl bg-muted/40 border border-border text-center">
           <p className="text-sm font-semibold">No suppliers within {radius} km</p>
           <p className="text-xs text-muted-foreground mt-1">Try widening the radius or turning off the verified filter.</p>
         </div>
-      ) : (
-        <ul className="mt-3 space-y-2">
-          {nearby.slice(0, 5).map((s) => (
-            <li key={s.id}>
-              <Link
-                to={`/supplier/${s.id}`}
-                className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border shadow-card hover:shadow-elevated transition-shadow"
-              >
-                <img
-                  src={s.logo || "/placeholder.svg"}
-                  alt=""
-                  className="w-12 h-12 rounded-xl object-cover bg-muted shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-sm font-bold truncate">{s.name}</p>
-                    {s.verified && <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0" />}
-                  </div>
-                  <p className="text-[11px] text-muted-foreground truncate flex items-center gap-2">
-                    <span className="inline-flex items-center gap-0.5">
-                      <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                      {s.rating.toFixed(1)}
-                    </span>
-                    <span>·</span>
-                    <span className="truncate">{s.location_address || s.country}</span>
-                  </p>
-                </div>
-                <span className="text-[11px] font-bold text-primary whitespace-nowrap">
-                  {s.distance_km < 1 ? `${Math.round(s.distance_km * 1000)} m` : `${s.distance_km.toFixed(1)} km`}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
       )}
     </section>
   );
