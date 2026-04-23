@@ -1,13 +1,32 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Bell, Globe, Moon, Sun, Monitor, DollarSign, Languages, Smartphone, Palette, ChevronRight } from "lucide-react";
+import { ArrowLeft, Bell, Globe, Moon, Sun, Monitor, DollarSign, Languages, Smartphone, Palette, ChevronRight, Sparkles, Check } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useTheme } from "next-themes";
+import { toast } from "sonner";
+import { INTERESTS } from "@/data/interests";
+import { useMyInterests } from "@/hooks/useInterests";
 
 export default function Settings() {
   const { theme, setTheme } = useTheme();
   const [currency, setCurrency] = useState("USD");
   const [language, setLanguage] = useState("English");
+  const { interests, save: saveInterests, userId } = useMyInterests();
+
+  const toggleInterest = async (item: string) => {
+    if (!userId) {
+      toast.error("Sign in to update your interests");
+      return;
+    }
+    const has = interests.includes(item);
+    if (!has && interests.length >= 8) {
+      toast.error("Maximum 8 interests");
+      return;
+    }
+    const next = has ? interests.filter((x) => x !== item) : [...interests, item];
+    await saveInterests(next);
+    toast.success(has ? "Removed from interests" : "Added to interests");
+  };
 
   return (
     <div className="pb-24">
@@ -34,6 +53,37 @@ export default function Settings() {
                   <span className="text-[11px] font-semibold">{o.label}</span>
                 </button>
               ))}
+            </div>
+          </div>
+        </Section>
+
+        <Section title="Personalization">
+          <div className="px-4 py-3.5">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center"><Sparkles className="w-4.5 h-4.5" /></span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold">Your interests</p>
+                <p className="text-[11px] text-muted-foreground">Drives your home & categories feed · {interests.length}/8 selected</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {INTERESTS.map((item) => {
+                const active = interests.includes(item);
+                return (
+                  <button
+                    key={item}
+                    onClick={() => toggleInterest(item)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition flex items-center gap-1 ${
+                      active
+                        ? "bg-primary text-primary-foreground border-primary shadow-pop"
+                        : "bg-muted/40 border-border text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {active && <Check className="w-3 h-3" strokeWidth={3} />}
+                    {item}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </Section>

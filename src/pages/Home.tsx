@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   TrendingUp, Sparkles, LayoutGrid, Building2, Compass, Users, Home as HomeIcon, Store as StoreIcon,
   Globe2, Award, Newspaper, Zap, ShieldCheck, Truck, Flame,
   type LucideIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import PromoBanner from "@/components/marketplace/PromoBanner";
 import ProductCard from "@/components/marketplace/ProductCard";
@@ -26,6 +25,7 @@ import EmptyState from "@/components/EmptyState";
 import SupplierCard from "@/components/marketplace/SupplierCard";
 import { useProducts, useSuppliers } from "@/hooks/useCatalog";
 import { useFollowingFeed, useFollowingSupplierIds, useAuthUserId } from "@/hooks/useFollowing";
+import { useMyInterests, useWishlistInterestSlugs, interestsToSlugs, prioritizeByCategories } from "@/hooks/useInterests";
 
 type Tab = "home" | "fyp" | "following";
 const TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
@@ -35,12 +35,19 @@ const TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
 ];
 
 const Home = () => {
-  const [interests, setInterests] = useState<string[]>([]);
   const [tab, setTab] = useState<Tab>("home");
-  const { data: products = [], isLoading } = useProducts({ limit: 50 });
+  const { interests } = useMyInterests();
+  const wishlistSlugs = useWishlistInterestSlugs();
+  const prioritySlugs = [...interestsToSlugs(interests), ...wishlistSlugs];
+
+  const { data: rawProducts = [], isLoading } = useProducts({ limit: 80 });
   const { data: trending = [] } = useProducts({ sortBy: "sold", limit: 6 });
   const { data: dealPool = [] } = useProducts({ sortBy: "newest", limit: 50 });
   const { data: suppliers = [] } = useSuppliers({ limit: 6 });
+
+  // Personalized ordering: products matching the user's interests (and wishlist
+  // categories) bubble to the top, the rest follow in original order.
+  const products = prioritizeByCategories(rawProducts, prioritySlugs);
 
   // Real flash deals: products with an active deal_ends_at OR ≥30% off
   const now = Date.now();
@@ -56,14 +63,6 @@ const Home = () => {
       return a.dealEndsAt ? -1 : 1;
     })
     .slice(0, 8);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) return;
-      const { data } = await supabase.from("profiles").select("interests").eq("user_id", session.user.id).maybeSingle();
-      if (data) setInterests(data.interests ?? []);
-    });
-  }, []);
 
   return (
     <div className="pb-6">
