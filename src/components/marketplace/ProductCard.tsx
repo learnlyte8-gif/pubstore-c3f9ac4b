@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Heart, Star, Plus, Truck, ShieldCheck, Award, Timer } from "lucide-react";
 import { toast } from "sonner";
-import { type Product, discountPct, getSupplier } from "@/data/products";
+import { type Product, discountPct } from "@/data/products";
 import { useShop } from "@/store/shop";
 import { supabase } from "@/integrations/supabase/client";
 
