@@ -170,12 +170,20 @@ Deno.serve(async (req) => {
     const formBody = toFormBody({ ...values, hash });
 
     const endpoint = flow === "express" ? PAYNOW_REMOTE : PAYNOW_INITIATE;
-    const r = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formBody,
-    });
-    const text = await r.text();
+    let text: string;
+    try {
+      text = await postToPaynow(endpoint, formBody);
+    } catch (error) {
+      return json(
+        {
+          error: flow === "express"
+            ? "Mobile money service is temporarily unavailable. Please try again in a moment or use Paynow Web / PayPal instead."
+            : "Paynow is temporarily unavailable. Please try again in a moment.",
+        },
+        502,
+      );
+    }
+
     const parsed = parsePaynowResponse(text);
     if ((parsed.status || "").toLowerCase() !== "ok") {
       console.error("paynow init failed", parsed);
