@@ -7,7 +7,6 @@
 // Docs: https://developers.paynow.co.zw/docs/integration_types.html
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { createHash } from "https://deno.land/std@0.190.0/node/crypto.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,10 +16,14 @@ const corsHeaders = {
 const PAYNOW_INITIATE = "https://www.paynow.co.zw/interface/initiatetransaction";
 const PAYNOW_REMOTE = "https://www.paynow.co.zw/interface/remotetransaction";
 
-function paynowHash(values: Record<string, string>, integrationKey: string): string {
+async function paynowHash(values: Record<string, string>, integrationKey: string): Promise<string> {
   // Concatenate all values in order they were appended, then append integration key, then SHA-512 uppercase.
   const concat = Object.values(values).join("") + integrationKey;
-  return createHash("sha512").update(concat).digest("hex").toUpperCase();
+  const buf = await crypto.subtle.digest("SHA-512", new TextEncoder().encode(concat));
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .toUpperCase();
 }
 
 function toFormBody(values: Record<string, string>): string {
@@ -126,7 +129,7 @@ Deno.serve(async (req) => {
     }
     values.status = "Message";
 
-    const hash = paynowHash(values, key);
+    const hash = await paynowHash(values, key);
     const formBody = toFormBody({ ...values, hash });
 
     const endpoint = flow === "express" ? PAYNOW_REMOTE : PAYNOW_INITIATE;
