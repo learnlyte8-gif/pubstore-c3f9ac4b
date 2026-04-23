@@ -238,7 +238,17 @@ export default function WalletPage() {
                   Change
                 </button>
               </div>
-              {!sdkReady ? (
+              {sdkError ? (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-2">
+                  <p className="text-[11px] font-semibold text-destructive leading-snug">{sdkError}</p>
+                  <p className="text-[10px] text-muted-foreground leading-snug">
+                    If you have an ad-blocker or privacy extension, allow <span className="font-mono">paypal.com</span> and try again.
+                  </p>
+                  <Button size="sm" variant="outline" onClick={retrySdk} className="h-8 text-xs w-full">
+                    Retry PayPal
+                  </Button>
+                </div>
+              ) : !sdkReady ? (
                 <div className="h-12 flex items-center justify-center text-xs text-muted-foreground">
                   <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading PayPal…
                 </div>
