@@ -4,6 +4,7 @@ import { Search, Send, ShieldCheck, ArrowLeft, MessageCircle, Smile, Paperclip, 
 import { supabase } from "@/integrations/supabase/client";
 import { resolveMasterSupplierId } from "@/data/products";
 import SupplierStories from "@/components/marketplace/SupplierStories";
+import { useUnreadChats, markConversationRead } from "@/hooks/useUnreadChats";
 
 type Conversation = {
   id: string;
