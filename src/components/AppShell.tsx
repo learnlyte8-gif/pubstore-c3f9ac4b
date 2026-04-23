@@ -98,7 +98,7 @@ export default function AppShell() {
         <ul className="max-w-2xl mx-auto h-16 px-1 flex items-center justify-around">
           <TabItem to="/home" icon={Home} label="Home" />
           <TabItem to="/categories" icon={LayoutGrid} label="Categories" />
-          <TabItem to="/messages" icon={MessageCircle} label="Chat" />
+          <TabItem to="/messages" icon={MessageCircle} label="Chat" badge={chatsWithUnread} />
           <TabItem to="/wishlist" icon={Heart} label="Wishlist" badge={wishlist.length} />
           <TabItem to="/profile" icon={User} label="Account" />
         </ul>
