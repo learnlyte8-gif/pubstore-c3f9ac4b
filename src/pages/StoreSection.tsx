@@ -69,6 +69,7 @@ type ImportedProduct = {
   source_url: string;
   moq?: number | null;
   unit?: string | null;
+  category_slug?: string | null;
 };
 
 type BulkCandidate = {
@@ -80,6 +81,7 @@ type BulkCandidate = {
   status: "pending" | "importing" | "done" | "skipped" | "error";
   error?: string;
   productId?: string;
+  category_slug?: string | null;
 };
 
 type MarkupMode = "percent" | "flat" | "none";
