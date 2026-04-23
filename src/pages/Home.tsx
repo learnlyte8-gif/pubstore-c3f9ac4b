@@ -26,6 +26,8 @@ import SupplierCard from "@/components/marketplace/SupplierCard";
 import { useProducts, useSuppliers } from "@/hooks/useCatalog";
 import { useFollowingFeed, useFollowingSupplierIds, useAuthUserId } from "@/hooks/useFollowing";
 import { useMyInterests, useWishlistInterestSlugs, interestsToSlugs, prioritizeByCategories } from "@/hooks/useInterests";
+import { useWallet } from "@/hooks/useWallet";
+import { Wallet as WalletIcon, Plus } from "lucide-react";
 
 type Tab = "home" | "fyp" | "following";
 const TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
@@ -39,6 +41,7 @@ const Home = () => {
   const { interests } = useMyInterests();
   const wishlistSlugs = useWishlistInterestSlugs();
   const prioritySlugs = [...interestsToSlugs(interests), ...wishlistSlugs];
+  const { balance, userId: walletUserId } = useWallet();
 
   const { data: rawProducts = [], isLoading } = useProducts({ limit: 80 });
   const { data: trending = [] } = useProducts({ sortBy: "sold", limit: 6 });
@@ -92,6 +95,21 @@ const Home = () => {
       {tab === "home" && (
         <div className="animate-fade-in">
           <PromoBanner />
+          {walletUserId && (
+            <Link to="/wallet" className="mx-4 mt-3 flex items-center gap-3 rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/70 text-primary-foreground p-3.5 shadow-elevated relative overflow-hidden">
+              <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-primary-foreground/10 blur-2xl" />
+              <span className="relative w-10 h-10 rounded-xl bg-primary-foreground/20 backdrop-blur flex items-center justify-center">
+                <WalletIcon className="w-5 h-5" />
+              </span>
+              <div className="relative flex-1 min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wider opacity-85">PUBSTORE Pay</p>
+                <p className="text-xl font-black tracking-tighter tabular-nums leading-none">${balance.toFixed(2)}</p>
+              </div>
+              <span className="relative h-8 px-3 rounded-full bg-primary-foreground text-primary text-xs font-black flex items-center gap-1 shadow-card">
+                <Plus className="w-3 h-3" strokeWidth={3} /> Top up
+              </span>
+            </Link>
+          )}
           <LiveStatsBanner />
           <div className="px-4"><QuickActions /></div>
 
