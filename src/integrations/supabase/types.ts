@@ -1067,6 +1067,7 @@ export type Database = {
           location_address: string | null
           logo: string | null
           longitude: number | null
+          mirror_of: string | null
           name: string
           on_time_delivery: number | null
           owner_id: string
@@ -1091,6 +1092,7 @@ export type Database = {
           location_address?: string | null
           logo?: string | null
           longitude?: number | null
+          mirror_of?: string | null
           name: string
           on_time_delivery?: number | null
           owner_id: string
@@ -1115,6 +1117,7 @@ export type Database = {
           location_address?: string | null
           logo?: string | null
           longitude?: number | null
+          mirror_of?: string | null
           name?: string
           on_time_delivery?: number | null
           owner_id?: string
@@ -1127,7 +1130,15 @@ export type Database = {
           verified?: boolean | null
           years_active?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "suppliers_mirror_of_fkey"
+            columns: ["mirror_of"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -1214,6 +1225,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      resolve_master_supplier: {
+        Args: { _supplier_id: string }
+        Returns: string
       }
     }
     Enums: {
