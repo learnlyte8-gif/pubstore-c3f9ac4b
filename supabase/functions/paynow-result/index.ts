@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     const fields: Record<string, string> = {};
     for (const [k, v] of params) fields[k] = v;
 
-    if (!verifyHash(fields, key)) {
+    if (!(await verifyHash(fields, key))) {
       console.error("paynow webhook: bad hash", { reference: fields.reference });
       return new Response("bad hash", { status: 400 });
     }
