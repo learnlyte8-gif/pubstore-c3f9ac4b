@@ -153,8 +153,6 @@ export default function Cart() {
     }
     setPlacing(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
 
       const addr = addresses.find((a) => a.id === addressId);
       const shipTo = addr ? `${addr.recipient}, ${addr.line1}, ${addr.city ?? ""}, ${addr.country ?? ""}` : "";
