@@ -1170,6 +1170,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_verifications: {
+        Row: {
+          created_at: string
+          id: string
+          id_card_url: string
+          notes: string | null
+          proof_residency_url: string
+          reviewed_at: string | null
+          reviewer_id: string | null
+          status: Database["public"]["Enums"]["verification_status"]
+          submitted_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          id_card_url: string
+          notes?: string | null
+          proof_residency_url: string
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: Database["public"]["Enums"]["verification_status"]
+          submitted_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          id_card_url?: string
+          notes?: string | null
+          proof_residency_url?: string
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: Database["public"]["Enums"]["verification_status"]
+          submitted_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wallet_transactions: {
         Row: {
           amount: number
@@ -1317,6 +1359,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_cod_verified: { Args: { _user_id: string }; Returns: boolean }
       pay_order_with_wallet: {
         Args: { _order_id: string }
         Returns: {
@@ -1352,6 +1395,7 @@ export type Database = {
         | "delivered"
         | "cancelled"
       rfq_status: "open" | "closed"
+      verification_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1490,6 +1534,7 @@ export const Constants = {
         "cancelled",
       ],
       rfq_status: ["open", "closed"],
+      verification_status: ["pending", "approved", "rejected"],
     },
   },
 } as const
