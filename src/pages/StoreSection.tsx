@@ -214,7 +214,13 @@ function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: M
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState<ImportedProduct | null>(null);
-  const { data: categories = [] } = useCategories();
+  const { data: categories = [] } = useQuery({
+    queryKey: ["import-categories"],
+    queryFn: async () => {
+      const { data } = await supabase.from("categories").select("id,name,slug").order("sort_order", { ascending: true });
+      return (data ?? []) as { id: string; name: string; slug: string }[];
+    },
+  });
 
   const fetchProduct = async () => {
     if (!url.trim()) { toast.error("Paste a product URL"); return; }
