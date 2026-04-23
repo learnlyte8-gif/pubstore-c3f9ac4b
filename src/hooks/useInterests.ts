@@ -14,14 +14,23 @@ const INTEREST_TO_SLUG: Record<string, string> = {
   beauty: "beauty",
   home: "home",
   "home & garden": "home",
+  garden: "home",
   sports: "sports",
   toys: "toys",
   automotive: "automotive",
+  auto: "automotive",
   industrial: "industrial",
   agriculture: "agriculture",
   packaging: "packaging",
   office: "office",
   health: "health",
+  pets: "health",
+  jewelry: "fashion",
+  footwear: "fashion",
+  handmade: "fashion",
+  art: "fashion",
+  books: "office",
+  groceries: "agriculture",
 };
 
 export function interestToSlug(label: string): string | null {
