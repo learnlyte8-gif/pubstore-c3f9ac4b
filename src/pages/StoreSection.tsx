@@ -214,6 +214,7 @@ function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: M
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState<ImportedProduct | null>(null);
+  const { data: categories = [] } = useCategories();
 
   const fetchProduct = async () => {
     if (!url.trim()) { toast.error("Paste a product URL"); return; }
