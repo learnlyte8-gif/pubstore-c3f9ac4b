@@ -4,6 +4,7 @@ import { Search, Send, ShieldCheck, ArrowLeft, MessageCircle, Smile, Paperclip, 
 import { supabase } from "@/integrations/supabase/client";
 import { resolveMasterSupplierId } from "@/data/products";
 import SupplierStories from "@/components/marketplace/SupplierStories";
+import { useUnreadChats, markConversationRead } from "@/hooks/useUnreadChats";
 
 type Conversation = {
   id: string;
@@ -54,6 +55,7 @@ export default function Messages() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { perConversation } = useUnreadChats();
 
   const loadConversations = useCallback(async (uid: string) => {
     const { data: convs } = await supabase
@@ -143,6 +145,7 @@ export default function Messages() {
         .eq("conversation_id", activeId)
         .order("created_at", { ascending: true });
       if (alive) setMessages((data ?? []) as Message[]);
+      markConversationRead(activeId);
     })();
 
     const channel = supabase
@@ -156,6 +159,8 @@ export default function Messages() {
               ? prev
               : [...prev, payload.new as Message],
           );
+          // Auto-mark read while viewing the conversation
+          markConversationRead(activeId, (payload.new as Message).created_at);
         },
       )
       .subscribe();
@@ -416,11 +421,15 @@ export default function Messages() {
         </div>
       ) : (
         <ul className="px-2 pt-2">
-          {filtered.map((c, i) => (
+          {filtered.map((c, i) => {
+            const unread = perConversation[c.id] ?? 0;
+            return (
             <li key={c.id} style={{ animationDelay: `${i * 40}ms` }} className="animate-fade-in">
               <button
                 onClick={() => setActiveId(c.id)}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-2xl hover:bg-muted/60 active:scale-[0.99] transition text-left"
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl active:scale-[0.99] transition text-left ${
+                  unread > 0 ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-muted/60"
+                }`}
               >
                 <div className="relative shrink-0">
                   <div className="ring-gradient rounded-full p-[2px]" style={{ width: 52, height: 52 }}>
@@ -436,21 +445,28 @@ export default function Messages() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-bold text-sm truncate flex items-center gap-1">
+                    <p className={`text-sm truncate flex items-center gap-1 ${unread > 0 ? "font-extrabold" : "font-bold"}`}>
                       {c.supplier?.name ?? "Supplier"}
                       {c.supplier?.verified && <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0 fill-primary/20" />}
                     </p>
-                    <span className="text-[10px] shrink-0 text-muted-foreground">
+                    <span className={`text-[10px] shrink-0 ${unread > 0 ? "text-primary font-bold" : "text-muted-foreground"}`}>
                       {fmtTime(c.last_message_at)}
                     </span>
                   </div>
-                  <p className="text-xs truncate text-muted-foreground mt-0.5">
-                    {c.last_message ?? "No messages yet — say hi 👋"}
-                  </p>
+                  <div className="flex items-center justify-between gap-2 mt-0.5">
+                    <p className={`text-xs truncate ${unread > 0 ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
+                      {c.last_message ?? "No messages yet — say hi 👋"}
+                    </p>
+                    {unread > 0 && (
+                      <span className="shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center shadow-soft">
+                        {unread > 99 ? "99+" : unread}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </button>
             </li>
-          ))}
+          );})}
         </ul>
       )}
     </div>

@@ -9,12 +9,14 @@ import LiveActivityToaster from "@/components/LiveActivityToaster";
 import InstallPrompt from "@/components/InstallPrompt";
 import BannerAd from "@/components/marketplace/BannerAd";
 import ImportProgressBanner from "@/components/ImportProgressBanner";
+import { useUnreadChats } from "@/hooks/useUnreadChats";
 import logo from "@/assets/pubstore-logo.png";
 
 export default function AppShell() {
   const [session, setSession] = useState<Session | null>(null);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
   const { cartCount, wishlist } = useShop();
+  const { chatsWithUnread } = useUnreadChats();
 
   useEffect(() => {
     if (!session?.user?.id) {
@@ -96,7 +98,7 @@ export default function AppShell() {
         <ul className="max-w-2xl mx-auto h-16 px-1 flex items-center justify-around">
           <TabItem to="/home" icon={Home} label="Home" />
           <TabItem to="/categories" icon={LayoutGrid} label="Categories" />
-          <TabItem to="/messages" icon={MessageCircle} label="Chat" />
+          <TabItem to="/messages" icon={MessageCircle} label="Chat" badge={chatsWithUnread} />
           <TabItem to="/wishlist" icon={Heart} label="Wishlist" badge={wishlist.length} />
           <TabItem to="/profile" icon={User} label="Account" />
         </ul>
