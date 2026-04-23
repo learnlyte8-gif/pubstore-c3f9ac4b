@@ -3,19 +3,26 @@
 // or mark the matching orders as paid — idempotently.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { createHash } from "https://deno.land/std@0.190.0/node/crypto.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-function verifyHash(fields: Record<string, string>, key: string): boolean {
+async function sha512Upper(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-512", new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .toUpperCase();
+}
+
+async function verifyHash(fields: Record<string, string>, key: string): Promise<boolean> {
   const sent = (fields.hash || "").toUpperCase();
   if (!sent) return false;
   const { hash: _omit, ...rest } = fields;
   const concat = Object.values(rest).join("") + key;
-  const expected = createHash("sha512").update(concat).digest("hex").toUpperCase();
+  const expected = await sha512Upper(concat);
   return expected === sent;
 }
 
