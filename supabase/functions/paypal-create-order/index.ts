@@ -9,7 +9,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const PAYPAL_BASE = "https://api-m.paypal.com"; // LIVE
+const PAYPAL_ENV = (Deno.env.get("PAYPAL_ENV") || "live").toLowerCase();
+const PAYPAL_BASE =
+  PAYPAL_ENV === "sandbox" ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
 
 async function getAccessToken(): Promise<string> {
   const id = Deno.env.get("PAYPAL_CLIENT_ID");
@@ -26,8 +28,19 @@ async function getAccessToken(): Promise<string> {
   });
   const j = await r.json();
   if (!r.ok) {
-    console.error("paypal token error", j);
-    throw new Error("Could not authenticate with PayPal");
+    // Safe diagnostics — never log the secret itself.
+    console.error("paypal token error", {
+      env: PAYPAL_ENV,
+      base: PAYPAL_BASE,
+      clientIdPrefix: id.slice(0, 6),
+      clientIdLength: id.length,
+      paypal: j,
+    });
+    throw new Error(
+      j?.error === "invalid_client"
+        ? `PayPal rejected the credentials for ${PAYPAL_ENV} mode. Check PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET match the ${PAYPAL_ENV} app in the PayPal Developer Dashboard.`
+        : "Could not authenticate with PayPal",
+    );
   }
   return j.access_token as string;
 }
