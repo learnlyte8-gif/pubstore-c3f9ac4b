@@ -36,7 +36,22 @@ async function listShopifyCollection(url: string, limit = 50): Promise<Candidate
   const results: Candidate[] = [];
 
   async function fetchPage(endpoint: string) {
-    const r = await fetch(endpoint, { headers: { accept: "application/json" } });
+    let r: Response | null = null;
+    let lastErr: unknown = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        r = await fetch(endpoint, { headers: { accept: "application/json" } });
+        break;
+      } catch (e) {
+        lastErr = e;
+        // Likely transient DNS/network error inside the edge runtime — back off and retry.
+        await new Promise((res) => setTimeout(res, 400 * (attempt + 1)));
+      }
+    }
+    if (!r) {
+      const msg = lastErr instanceof Error ? lastErr.message : String(lastErr);
+      throw new Error(`Could not reach ${new URL(endpoint).host}. Check the store URL is correct and publicly reachable. (${msg})`);
+    }
     if (!r.ok) return [];
     const j = await r.json();
     const items = (j?.products || []) as any[];
