@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useWallet } from "@/hooks/useWallet";
 import { getEdgeFunctionErrorMessage } from "@/lib/edgeFunctionError";
+import { useVerification } from "@/hooks/useVerification";
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
 
