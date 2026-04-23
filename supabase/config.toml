@@ -1,1 +1,4 @@
 project_id = "ccprnnqxpnrkdrfsudjc"
+
+[functions.paypal-public-config]
+verify_jwt = false

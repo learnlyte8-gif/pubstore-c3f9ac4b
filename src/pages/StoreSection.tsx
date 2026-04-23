@@ -69,6 +69,7 @@ type ImportedProduct = {
   source_url: string;
   moq?: number | null;
   unit?: string | null;
+  category_slug?: string | null;
 };
 
 type BulkCandidate = {
@@ -80,6 +81,7 @@ type BulkCandidate = {
   status: "pending" | "importing" | "done" | "skipped" | "error";
   error?: string;
   productId?: string;
+  category_slug?: string | null;
 };
 
 type MarkupMode = "percent" | "flat" | "none";
@@ -211,6 +213,13 @@ function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: M
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState<ImportedProduct | null>(null);
+  const { data: categories = [] } = useQuery({
+    queryKey: ["import-categories"],
+    queryFn: async () => {
+      const { data } = await supabase.from("categories").select("id,name,slug").order("sort_order", { ascending: true });
+      return (data ?? []) as { id: string; name: string; slug: string }[];
+    },
+  });
 
   const fetchProduct = async () => {
     if (!url.trim()) { toast.error("Paste a product URL"); return; }
@@ -252,6 +261,7 @@ function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: M
         original_price: preview.original_price ?? null,
         moq: preview.moq ?? 1,
         unit: preview.unit ?? "piece",
+        category_slug: preview.category_slug ?? null,
         ship_from: supplier.country ?? null,
         active: true,
       }).select().single();
@@ -323,6 +333,24 @@ function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: M
               <LabeledInput label="Unit" value={preview.unit ?? "piece"} onChange={(v) => updatePreview({ unit: v })} />
             </div>
             <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                Category
+                {preview.category_slug && (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary normal-case tracking-normal">AI suggested</span>
+                )}
+              </label>
+              <select
+                value={preview.category_slug ?? ""}
+                onChange={(e) => updatePreview({ category_slug: e.target.value || null })}
+                className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1"
+              >
+                <option value="">Uncategorized</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.slug}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Description</label>
               <textarea
                 value={preview.description}
@@ -352,6 +380,13 @@ function BulkImport({ markupMode, markupValue, qc }: { markupMode: MarkupMode; m
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [runState, setRunState] = useState<"idle" | "running" | "done">("idle");
   const [progress, setProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
+  const { data: categories = [] } = useQuery({
+    queryKey: ["import-categories"],
+    queryFn: async () => {
+      const { data } = await supabase.from("categories").select("id,name,slug").order("sort_order", { ascending: true });
+      return (data ?? []) as { id: string; name: string; slug: string }[];
+    },
+  });
 
   const listAll = async () => {
     if (!url.trim()) { toast.error("Paste a collection / seller URL"); return; }
@@ -414,6 +449,7 @@ function BulkImport({ markupMode, markupValue, qc }: { markupMode: MarkupMode; m
           original_price: p.price ?? null,
           moq: p.moq ?? 1,
           unit: p.unit ?? "piece",
+          category_slug: it.category_slug ?? p.category_slug ?? null,
           ship_from: supplier.country ?? null,
           active: true,
         }).select("id").single();
@@ -526,6 +562,16 @@ function BulkImport({ markupMode, markupValue, qc }: { markupMode: MarkupMode; m
                         />
                         <span className="text-[10px] text-muted-foreground">→ sells at <span className="font-bold">{applyMarkup(it.price, markupMode, markupValue) ?? "—"}</span></span>
                       </div>
+                      <select
+                        value={it.category_slug ?? ""}
+                        onChange={(e) => updateItem(idx, { category_slug: e.target.value || null })}
+                        className="w-full h-9 rounded-lg border bg-background px-2 text-xs"
+                      >
+                        <option value="">Uncategorized (auto-detect on import)</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.slug}>{c.name}</option>
+                        ))}
+                      </select>
                     </div>
                   ) : (
                     <>

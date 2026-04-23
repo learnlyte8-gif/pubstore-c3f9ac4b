@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, Loader2, ShieldCheck, Zap } from "lucide-react";
 import { toast } from "sonner";
@@ -9,33 +9,121 @@ import { supabase } from "@/integrations/supabase/client";
 const fmt = (n: number) => `$${Number(n).toFixed(2)}`;
 const TOPUP_AMOUNTS = [10, 25, 50, 100, 250, 500];
 
-const sb = supabase as any;
+declare global {
+  interface Window {
+    paypal?: any;
+  }
+}
+
+let sdkPromise: Promise<void> | null = null;
+function loadPayPalSdk(clientId: string): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
+  if (window.paypal) return Promise.resolve();
+  if (sdkPromise) return sdkPromise;
+  sdkPromise = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=USD&intent=capture&disable-funding=credit,card`;
+    s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error("PayPal SDK failed to load"));
+    document.head.appendChild(s);
+  });
+  return sdkPromise;
+}
 
 export default function WalletPage() {
   const { balance, transactions, isLoading, userId, refresh } = useWallet();
-  const [pending, setPending] = useState<number | null>(null);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [clientId, setClientId] = useState<string | null>(null);
+  const [sdkReady, setSdkReady] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const buttonsHostRef = useRef<HTMLDivElement | null>(null);
+  const buttonsInstanceRef = useRef<any>(null);
 
-  // For now we simulate a deposit by inserting via the secure RPC.
-  // Once Stripe is enabled this will trigger a Checkout session instead.
-  const topUp = async (amount: number) => {
-    if (!userId) { toast.error("Sign in first"); return; }
-    setPending(amount);
-    try {
-      const { error } = await sb.rpc("apply_wallet_transaction", {
-        _user_id: userId,
-        _kind: "topup",
-        _amount: amount,
-        _description: `Top up ${fmt(amount)}`,
-        _reference: null,
-      });
-      if (error) throw error;
-      toast.success(`Added ${fmt(amount)} to PUBSTORE Pay`);
-      refresh();
-    } catch (e: any) {
-      toast.error(e.message ?? "Could not top up");
-    } finally {
-      setPending(null);
+  // Fetch the PayPal client id once
+  useEffect(() => {
+    supabase.functions.invoke("paypal-public-config").then(({ data, error }) => {
+      if (error || !(data as any)?.clientId) {
+        toast.error("Payments are temporarily unavailable");
+        return;
+      }
+      setClientId((data as any).clientId);
+    });
+  }, []);
+
+  // Load the SDK when we have the client id
+  useEffect(() => {
+    if (!clientId) return;
+    loadPayPalSdk(clientId).then(() => setSdkReady(true)).catch((e) => toast.error(e.message));
+  }, [clientId]);
+
+  // Render PayPal buttons whenever an amount is selected
+  useEffect(() => {
+    if (!sdkReady || !selected || !buttonsHostRef.current || !window.paypal) return;
+    const host = buttonsHostRef.current;
+    host.innerHTML = "";
+
+    const buttons = window.paypal.Buttons({
+      style: { layout: "vertical", color: "gold", shape: "pill", label: "paypal", height: 45 },
+      createOrder: async () => {
+        try {
+          const { data, error } = await supabase.functions.invoke("paypal-create-order", {
+            body: { amount: selected },
+          });
+          if (error) throw error;
+          if ((data as any)?.error) throw new Error((data as any).error);
+          return (data as any).orderID as string;
+        } catch (e: any) {
+          toast.error(e.message ?? "Could not start PayPal checkout");
+          throw e;
+        }
+      },
+      onApprove: async (data: { orderID: string }) => {
+        setProcessing(true);
+        try {
+          const { data: res, error } = await supabase.functions.invoke("paypal-capture-order", {
+            body: { orderID: data.orderID },
+          });
+          if (error) throw error;
+          if ((res as any)?.error) throw new Error((res as any).error);
+          const amount = (res as any)?.amount ?? selected;
+          if ((res as any)?.alreadyCredited) {
+            toast.info(`Already credited ${fmt(Number(amount))}`);
+          } else {
+            toast.success(`Added ${fmt(Number(amount))} to PUBSTORE Pay 🎉`);
+          }
+          refresh();
+          setSelected(null);
+        } catch (e: any) {
+          toast.error(e.message ?? "Could not complete payment");
+        } finally {
+          setProcessing(false);
+        }
+      },
+      onError: (err: any) => {
+        console.error("paypal error", err);
+        toast.error("PayPal had a problem. Please try again.");
+      },
+      onCancel: () => {
+        toast.info("Payment cancelled");
+      },
+    });
+
+    buttonsInstanceRef.current = buttons;
+    if (buttons.isEligible()) {
+      buttons.render(host).catch((err: any) => console.error(err));
+    } else {
+      host.innerHTML = '<p class="text-xs text-muted-foreground text-center py-3">PayPal is not available for this account.</p>';
     }
+
+    return () => {
+      try { buttons.close(); } catch { /* ignore */ }
+    };
+  }, [sdkReady, selected, refresh]);
+
+  const choose = (a: number) => {
+    if (!userId) { toast.error("Sign in first"); return; }
+    setSelected(a);
   };
 
   return (
@@ -74,16 +162,51 @@ export default function WalletPage() {
             {TOPUP_AMOUNTS.map((a) => (
               <button
                 key={a}
-                onClick={() => topUp(a)}
-                disabled={pending !== null}
-                className="h-14 rounded-xl border border-border bg-muted/40 hover:bg-primary/10 hover:border-primary/40 transition flex items-center justify-center font-black text-base tabular-nums tracking-tight disabled:opacity-50"
+                onClick={() => choose(a)}
+                disabled={processing}
+                className={`h-14 rounded-xl border transition flex items-center justify-center font-black text-base tabular-nums tracking-tight disabled:opacity-50 ${
+                  selected === a
+                    ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/30"
+                    : "border-border bg-muted/40 hover:bg-primary/10 hover:border-primary/40"
+                }`}
               >
-                {pending === a ? <Loader2 className="w-4 h-4 animate-spin" /> : fmt(a)}
+                {fmt(a)}
               </button>
             ))}
           </div>
+
+          {/* PayPal buttons appear once an amount is chosen */}
+          {selected && (
+            <div className="mt-4 rounded-xl bg-muted/30 border border-border p-3">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-bold">
+                  Pay <span className="text-primary tabular-nums">{fmt(selected)}</span> with PayPal
+                </p>
+                <button
+                  onClick={() => setSelected(null)}
+                  className="text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+                  disabled={processing}
+                >
+                  Change
+                </button>
+              </div>
+              {!sdkReady ? (
+                <div className="h-12 flex items-center justify-center text-xs text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading PayPal…
+                </div>
+              ) : (
+                <div ref={buttonsHostRef} />
+              )}
+              {processing && (
+                <p className="text-[11px] text-muted-foreground mt-2 flex items-center gap-1">
+                  <Loader2 className="w-3 h-3 animate-spin" /> Crediting your wallet…
+                </p>
+              )}
+            </div>
+          )}
+
           <p className="text-[10px] text-muted-foreground mt-3 flex items-center gap-1">
-            <ShieldCheck className="w-3 h-3" /> Secure deposits · instant balance update
+            <ShieldCheck className="w-3 h-3" /> Secure payments by PayPal · instant balance update
           </p>
         </div>
       </div>

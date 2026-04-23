@@ -24,7 +24,35 @@ type Extracted = {
   source_url: string;
   moq?: number | null;
   unit?: string | null;
+  category_slug?: string | null;
 };
+
+async function fetchCategorySlugs(): Promise<string[]> {
+  try {
+    const url = Deno.env.get("SUPABASE_URL")!;
+    const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const r = await fetch(`${url}/rest/v1/categories?select=slug&order=sort_order.asc`, {
+      headers: { apikey: anon, Authorization: `Bearer ${anon}` },
+    });
+    if (!r.ok) return [];
+    const rows = await r.json();
+    return Array.isArray(rows) ? rows.map((x: any) => x.slug).filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
+
+// Cheap keyword fallback when AI doesn't return a category.
+function guessCategoryFromText(text: string, slugs: string[]): string | null {
+  if (!slugs.length) return null;
+  const t = (text || "").toLowerCase();
+  // Direct slug or slug-words match
+  for (const s of slugs) {
+    const tokens = s.split(/[-_]+/).filter(Boolean);
+    if (tokens.every((tok) => t.includes(tok))) return s;
+  }
+  return null;
+}
 
 function detectSource(url: string): "shopify" | "amazon" | "alibaba" | "aliexpress" | "other" {
   const u = url.toLowerCase();
@@ -107,13 +135,17 @@ async function extractWithAI(params: {
   markdown: string;
   html: string;
   metadata: any;
+  categorySlugs: string[];
 }): Promise<Partial<Extracted>> {
   const lovableKey = Deno.env.get("LOVABLE_API_KEY");
   if (!lovableKey) throw new Error("LOVABLE_API_KEY is not configured");
 
   const trimmed = params.markdown.slice(0, 18000);
+  const catList = params.categorySlugs.length
+    ? `\nAllowed category slugs (pick the single best fit, or null if none clearly fit): ${params.categorySlugs.join(", ")}`
+    : "";
   const system = `You extract structured product information from scraped e-commerce pages.
-Return ONLY valid JSON matching the schema. Price must be a number in the listing's currency (strip symbols). If a field is unknown, use null.`;
+Return ONLY valid JSON matching the schema. Price must be a number in the listing's currency (strip symbols). If a field is unknown, use null.${catList}`;
 
   const user = `Source: ${params.source}
 URL: ${params.url}
@@ -143,6 +175,7 @@ Extract the product.`;
           images: { type: "array", items: { type: "string" }, maxItems: 8 },
           moq: { type: ["number", "null"] },
           unit: { type: ["string", "null"] },
+          category_slug: { type: ["string", "null"], description: "One of the allowed slugs from the system prompt, or null." },
         },
         required: ["title", "description", "images"],
       },
@@ -210,12 +243,15 @@ Deno.serve(async (req) => {
     }
 
     const source = detectSource(url);
+    const categorySlugs = await fetchCategorySlugs();
 
     // 1) Shopify shortcut
     if (source === "shopify") {
       const direct = await tryShopifyJson(url);
       if (direct && direct.title) {
-        return json({ product: direct });
+        // Best-effort category guess from title for Shopify too.
+        const guess = guessCategoryFromText(`${direct.title} ${direct.description}`, categorySlugs);
+        return json({ product: { ...direct, category_slug: guess } });
       }
     }
 
@@ -229,7 +265,12 @@ Deno.serve(async (req) => {
       markdown: scraped.markdown,
       html: scraped.html,
       metadata: scraped.metadata,
+      categorySlugs,
     });
+
+    const aiCat = typeof extracted.category_slug === "string" && categorySlugs.includes(extracted.category_slug)
+      ? extracted.category_slug
+      : guessCategoryFromText(`${extracted.title ?? ""} ${extracted.description ?? ""}`, categorySlugs);
 
     const product: Extracted = {
       title: String(extracted.title || scraped.metadata?.title || "Imported product").slice(0, 200),
@@ -242,6 +283,7 @@ Deno.serve(async (req) => {
       source_url: url,
       moq: extracted.moq ?? null,
       unit: extracted.unit ?? null,
+      category_slug: aiCat,
     };
 
     return json({ product });
