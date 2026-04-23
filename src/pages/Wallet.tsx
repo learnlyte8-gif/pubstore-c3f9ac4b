@@ -16,18 +16,56 @@ declare global {
 }
 
 let sdkPromise: Promise<void> | null = null;
+const SDK_SCRIPT_ID = "paypal-js-sdk";
+
 function loadPayPalSdk(clientId: string): Promise<void> {
   if (typeof window === "undefined") return Promise.resolve();
   if (window.paypal) return Promise.resolve();
   if (sdkPromise) return sdkPromise;
+
   sdkPromise = new Promise((resolve, reject) => {
+    // If a previous attempt left a broken tag behind, remove it so we get a clean retry.
+    const existing = document.getElementById(SDK_SCRIPT_ID) as HTMLScriptElement | null;
+    if (existing) existing.remove();
+
+    const params = new URLSearchParams({
+      "client-id": clientId,
+      currency: "USD",
+      intent: "capture",
+      components: "buttons",
+      "enable-funding": "venmo,paylater",
+    });
+
     const s = document.createElement("script");
-    s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=USD&intent=capture&disable-funding=credit,card`;
+    s.id = SDK_SCRIPT_ID;
+    s.src = `https://www.paypal.com/sdk/js?${params.toString()}`;
     s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error("PayPal SDK failed to load"));
+    s.crossOrigin = "anonymous";
+    s.dataset.namespace = "paypal";
+
+    const timeout = window.setTimeout(() => {
+      sdkPromise = null;
+      reject(new Error("PayPal SDK timed out. Check your connection or ad-blocker."));
+    }, 15000);
+
+    s.onload = () => {
+      window.clearTimeout(timeout);
+      if (window.paypal) {
+        resolve();
+      } else {
+        sdkPromise = null;
+        reject(new Error("PayPal SDK loaded but is unavailable."));
+      }
+    };
+    s.onerror = () => {
+      window.clearTimeout(timeout);
+      sdkPromise = null;
+      reject(new Error("Could not reach PayPal. An ad-blocker or network filter may be blocking paypal.com."));
+    };
+
     document.head.appendChild(s);
   });
+
   return sdkPromise;
 }
 
@@ -36,6 +74,8 @@ export default function WalletPage() {
   const [selected, setSelected] = useState<number | null>(null);
   const [clientId, setClientId] = useState<string | null>(null);
   const [sdkReady, setSdkReady] = useState(false);
+  const [sdkError, setSdkError] = useState<string | null>(null);
+  const [sdkAttempt, setSdkAttempt] = useState(0);
   const [processing, setProcessing] = useState(false);
   const buttonsHostRef = useRef<HTMLDivElement | null>(null);
   const buttonsInstanceRef = useRef<any>(null);
@@ -51,11 +91,19 @@ export default function WalletPage() {
     });
   }, []);
 
-  // Load the SDK when we have the client id
+  // Load the SDK when we have the client id (or when the user retries)
   useEffect(() => {
     if (!clientId) return;
-    loadPayPalSdk(clientId).then(() => setSdkReady(true)).catch((e) => toast.error(e.message));
-  }, [clientId]);
+    setSdkError(null);
+    loadPayPalSdk(clientId)
+      .then(() => { setSdkReady(true); setSdkError(null); })
+      .catch((e) => {
+        setSdkReady(false);
+        setSdkError(e?.message ?? "Could not load PayPal");
+      });
+  }, [clientId, sdkAttempt]);
+
+  const retrySdk = () => setSdkAttempt((n) => n + 1);
 
   // Render PayPal buttons whenever an amount is selected
   useEffect(() => {
@@ -190,7 +238,17 @@ export default function WalletPage() {
                   Change
                 </button>
               </div>
-              {!sdkReady ? (
+              {sdkError ? (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-2">
+                  <p className="text-[11px] font-semibold text-destructive leading-snug">{sdkError}</p>
+                  <p className="text-[10px] text-muted-foreground leading-snug">
+                    If you have an ad-blocker or privacy extension, allow <span className="font-mono">paypal.com</span> and try again.
+                  </p>
+                  <Button size="sm" variant="outline" onClick={retrySdk} className="h-8 text-xs w-full">
+                    Retry PayPal
+                  </Button>
+                </div>
+              ) : !sdkReady ? (
                 <div className="h-12 flex items-center justify-center text-xs text-muted-foreground">
                   <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading PayPal…
                 </div>
