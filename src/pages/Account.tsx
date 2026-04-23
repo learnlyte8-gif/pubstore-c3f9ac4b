@@ -24,13 +24,18 @@ export default function Account() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [email, setEmail] = useState<string>("");
   const [role, setRole] = useState<string>("buyer");
+  const [isGuest, setIsGuest] = useState(false);
   const { wishlist, cartCount } = useShop();
   const { balance, transactions } = useWallet();
 
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) {
+        setIsGuest(true);
+        return;
+      }
+      setIsGuest(false);
       setEmail(session.user.email ?? "");
 
       const [{ data: p }, { data: r }] = await Promise.all([
@@ -51,6 +56,54 @@ export default function Account() {
     .split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase();
 
   const lastTx = transactions[0];
+
+  // ============== GUEST VIEW ==============
+  if (isGuest) {
+    return (
+      <div className="px-4 pt-8 pb-12 max-w-md mx-auto">
+        <div className="bg-card rounded-2xl border border-border shadow-card p-6 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
+            <Sparkles className="w-7 h-7" />
+          </div>
+          <h1 className="text-xl font-bold mb-1">You're browsing as a guest</h1>
+          <p className="text-sm text-muted-foreground mb-5">
+            Sign in to save your wishlist across devices, place orders, message suppliers and earn rewards.
+          </p>
+          <Button
+            className="w-full h-11"
+            onClick={() => navigate(`/auth?redirect=${encodeURIComponent("/account")}`)}
+          >
+            Sign in or create account
+          </Button>
+        </div>
+
+        <div className="mt-6 grid grid-cols-2 gap-3 text-center">
+          <Link to="/wishlist" className="bg-card rounded-2xl border border-border shadow-card p-4">
+            <p className="text-xl font-black tabular-nums">{wishlist.length}</p>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Wishlist</p>
+          </Link>
+          <Link to="/cart" className="bg-card rounded-2xl border border-border shadow-card p-4">
+            <p className="text-xl font-black tabular-nums">{cartCount}</p>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Cart</p>
+          </Link>
+        </div>
+
+        <div className="mt-6 space-y-1">
+          <Link to="/help" className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-muted/40 transition">
+            <HelpCircle className="w-5 h-5 text-muted-foreground" />
+            <span className="text-sm font-semibold flex-1">Help center</span>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </Link>
+          <Link to="/settings" className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-muted/40 transition">
+            <Settings className="w-5 h-5 text-muted-foreground" />
+            <span className="text-sm font-semibold flex-1">Settings</span>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="pb-8">
