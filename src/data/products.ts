@@ -190,28 +190,38 @@ export const mapSupplier = (s: DbSupplier): Supplier => ({
   mirrorOf: s.mirror_of ?? null,
 });
 
-export const mapProduct = (p: DbProduct): Product => ({
-  id: p.id,
-  title: p.title,
-  image: p.image ?? PLACEHOLDER_IMG,
-  gallery: p.gallery?.length ? p.gallery : [p.image ?? PLACEHOLDER_IMG],
-  price: Number(p.price),
-  originalPrice: p.original_price != null ? Number(p.original_price) : undefined,
-  rating: Number(p.rating ?? 0),
-  reviews: p.review_count ?? 0,
-  sold: p.sold ?? 0,
-  category: p.category_slug ?? "",
-  badge: (p.badge as Product["badge"]) ?? undefined,
-  freeShipping: !!p.free_shipping,
-  supplierId: p.supplier_id,
-  moq: p.moq ?? 1,
-  unit: p.unit ?? "piece",
-  leadTime: p.lead_time ?? "—",
-  shipFrom: p.ship_from ?? "—",
-  specs: Array.isArray(p.specs) ? (p.specs as { label: string; value: string }[]) : [],
-  description: p.description ?? "",
-  dealEndsAt: p.deal_ends_at ?? null,
-});
+type DbProductWithSupplier = DbProduct & {
+  suppliers?: { name: string | null; verified: boolean | null; gold: boolean | null } | null;
+};
+
+export const mapProduct = (p: DbProduct | DbProductWithSupplier): Product => {
+  const sup = (p as DbProductWithSupplier).suppliers ?? null;
+  return {
+    id: p.id,
+    title: p.title,
+    image: p.image ?? PLACEHOLDER_IMG,
+    gallery: p.gallery?.length ? p.gallery : [p.image ?? PLACEHOLDER_IMG],
+    price: Number(p.price),
+    originalPrice: p.original_price != null ? Number(p.original_price) : undefined,
+    rating: Number(p.rating ?? 0),
+    reviews: p.review_count ?? 0,
+    sold: p.sold ?? 0,
+    category: p.category_slug ?? "",
+    badge: (p.badge as Product["badge"]) ?? undefined,
+    freeShipping: !!p.free_shipping,
+    supplierId: p.supplier_id,
+    supplierVerified: sup ? !!sup.verified : undefined,
+    supplierGold: sup ? !!sup.gold : undefined,
+    supplierName: sup?.name ?? undefined,
+    moq: p.moq ?? 1,
+    unit: p.unit ?? "piece",
+    leadTime: p.lead_time ?? "—",
+    shipFrom: p.ship_from ?? "—",
+    specs: Array.isArray(p.specs) ? (p.specs as { label: string; value: string }[]) : [],
+    description: p.description ?? "",
+    dealEndsAt: p.deal_ends_at ?? null,
+  };
+};
 
 // ---------- Fetchers ----------
 export async function fetchProducts(opts: {
