@@ -187,6 +187,7 @@ export const mapSupplier = (s: DbSupplier): Supplier => ({
   latitude: s.latitude != null ? Number(s.latitude) : null,
   longitude: s.longitude != null ? Number(s.longitude) : null,
   locationAddress: s.location_address ?? null,
+  mirrorOf: s.mirror_of ?? null,
 });
 
 export const mapProduct = (p: DbProduct): Product => ({
