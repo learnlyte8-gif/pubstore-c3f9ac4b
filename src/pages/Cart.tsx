@@ -131,6 +131,14 @@ export default function Cart() {
 
   const placeOrder = async () => {
     if (cartProducts.length === 0) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.message("Sign in to checkout", {
+        description: "Your cart will be saved.",
+      });
+      navigate(`/auth?redirect=${encodeURIComponent("/cart")}`);
+      return;
+    }
     if (!addressId) {
       toast.error("Add a shipping address first");
       navigate("/addresses");
