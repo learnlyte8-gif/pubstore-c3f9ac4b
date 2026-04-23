@@ -15,9 +15,10 @@ const corsHeaders = {
 
 const PAYNOW_INITIATE = "https://www.paynow.co.zw/interface/initiatetransaction";
 const PAYNOW_REMOTE = "https://www.paynow.co.zw/interface/remotetransaction";
+const PAYNOW_FETCH_RETRIES = 3;
+const PAYNOW_FETCH_TIMEOUT_MS = 12000;
 
 async function paynowHash(values: Record<string, string>, integrationKey: string): Promise<string> {
-  // Concatenate all values in order they were appended, then append integration key, then SHA-512 uppercase.
   const concat = Object.values(values).join("") + integrationKey;
   const buf = await crypto.subtle.digest("SHA-512", new TextEncoder().encode(concat));
   return Array.from(new Uint8Array(buf))
@@ -42,6 +43,42 @@ function parsePaynowResponse(text: string): Record<string, string> {
     if (k) out[k] = v;
   }
   return out;
+}
+
+function isRetryablePaynowError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return /connection reset by peer|client error \(connect\)|timed out|unexpected eof|broken pipe/i.test(message);
+}
+
+async function postToPaynow(endpoint: string, formBody: string) {
+  let lastError: unknown = null;
+
+  for (let attempt = 1; attempt <= PAYNOW_FETCH_RETRIES; attempt += 1) {
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Connection": "close",
+        },
+        body: formBody,
+        signal: AbortSignal.timeout(PAYNOW_FETCH_TIMEOUT_MS),
+      });
+
+      return await response.text();
+    } catch (error) {
+      lastError = error;
+      console.error(`paynow request attempt ${attempt} failed`, error);
+
+      if (attempt === PAYNOW_FETCH_RETRIES || !isRetryablePaynowError(error)) {
+        throw error;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, attempt * 600));
+    }
+  }
+
+  throw lastError ?? new Error("Paynow request failed");
 }
 
 Deno.serve(async (req) => {

@@ -7,6 +7,7 @@ import { useShop } from "@/store/shop";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useWallet } from "@/hooks/useWallet";
+import { getEdgeFunctionErrorMessage } from "@/lib/edgeFunctionError";
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
 
