@@ -140,6 +140,7 @@ type DbSupplier = {
   latitude?: number | string | null;
   longitude?: number | string | null;
   location_address?: string | null;
+  mirror_of?: string | null;
 };
 
 type DbProduct = {
