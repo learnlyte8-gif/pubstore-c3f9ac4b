@@ -1,13 +1,32 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Bell, Globe, Moon, Sun, Monitor, DollarSign, Languages, Smartphone, Palette, ChevronRight } from "lucide-react";
+import { ArrowLeft, Bell, Globe, Moon, Sun, Monitor, DollarSign, Languages, Smartphone, Palette, ChevronRight, Sparkles, Check } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useTheme } from "next-themes";
+import { toast } from "sonner";
+import { INTERESTS } from "@/data/interests";
+import { useMyInterests } from "@/hooks/useInterests";
 
 export default function Settings() {
   const { theme, setTheme } = useTheme();
   const [currency, setCurrency] = useState("USD");
   const [language, setLanguage] = useState("English");
+  const { interests, save: saveInterests, userId } = useMyInterests();
+
+  const toggleInterest = async (item: string) => {
+    if (!userId) {
+      toast.error("Sign in to update your interests");
+      return;
+    }
+    const has = interests.includes(item);
+    if (!has && interests.length >= 8) {
+      toast.error("Maximum 8 interests");
+      return;
+    }
+    const next = has ? interests.filter((x) => x !== item) : [...interests, item];
+    await saveInterests(next);
+    toast.success(has ? "Removed from interests" : "Added to interests");
+  };
 
   return (
     <div className="pb-24">
