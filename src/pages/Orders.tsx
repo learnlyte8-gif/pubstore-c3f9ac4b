@@ -9,7 +9,7 @@ import { useShop } from "@/store/shop";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
-type OrderStatus = "placed" | "processing" | "shipped" | "delivered" | "cancelled";
+type OrderStatus = "awaiting_payment" | "placed" | "processing" | "shipped" | "delivered" | "cancelled";
 
 type Item = {
   id: string;
