@@ -9,12 +9,14 @@ import LiveActivityToaster from "@/components/LiveActivityToaster";
 import InstallPrompt from "@/components/InstallPrompt";
 import BannerAd from "@/components/marketplace/BannerAd";
 import ImportProgressBanner from "@/components/ImportProgressBanner";
+import { useUnreadChats } from "@/hooks/useUnreadChats";
 import logo from "@/assets/pubstore-logo.png";
 
 export default function AppShell() {
   const [session, setSession] = useState<Session | null>(null);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
   const { cartCount, wishlist } = useShop();
+  const { chatsWithUnread } = useUnreadChats();
 
   useEffect(() => {
     if (!session?.user?.id) {
