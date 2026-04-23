@@ -178,6 +178,26 @@ export default function WalletPage() {
             <Plus className="w-4 h-4 text-primary" />
             <p className="text-sm font-black tracking-tight">Add money</p>
           </div>
+
+          {/* Provider picker */}
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <ProviderBtn active={provider === "paypal"} onClick={() => setProvider("paypal")} icon={CreditCard} label="PayPal" sub="Cards & PayPal" />
+            <ProviderBtn active={provider === "paynow"} onClick={() => setProvider("paynow")} icon={CreditCard} label="Paynow Web" sub="Visa / ZIPIT" />
+            <ProviderBtn active={provider === "ecocash"} onClick={() => setProvider("ecocash")} icon={Smartphone} label="EcoCash" sub="Mobile prompt" />
+            <ProviderBtn active={provider === "onemoney"} onClick={() => setProvider("onemoney")} icon={Smartphone} label="OneMoney" sub="Mobile prompt" />
+          </div>
+
+          {(provider === "ecocash" || provider === "onemoney") && (
+            <input
+              type="tel"
+              inputMode="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder={provider === "ecocash" ? "EcoCash number e.g. 0771234567" : "OneMoney number"}
+              className="mb-3 w-full h-11 rounded-xl border bg-background px-3 text-sm tabular-nums"
+            />
+          )}
+
           <div className="grid grid-cols-3 gap-2">
             {TOPUP_AMOUNTS.map((a) => (
               <button
@@ -195,11 +215,8 @@ export default function WalletPage() {
             ))}
           </div>
 
-          <p className="text-[11px] text-muted-foreground mt-3 leading-snug">
-            Pick an amount — you'll be sent to PayPal's secure checkout to pay, then bounced right back here.
-          </p>
-          <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
-            <ShieldCheck className="w-3 h-3" /> Secure payments by PayPal · instant balance update
+          <p className="text-[10px] text-muted-foreground mt-3 flex items-center gap-1">
+            <ShieldCheck className="w-3 h-3" /> Secure payments · instant balance update once cleared
           </p>
         </div>
       </div>
