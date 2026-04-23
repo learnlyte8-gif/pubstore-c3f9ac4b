@@ -8,7 +8,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProducts, fetchMySupplier, fetchCategories } from "@/data/products";
 import EmptyState from "@/components/EmptyState";
 import LocationPicker from "@/components/LocationPicker";
-import { useImportJob } from "@/store/importJob";
+import { useImportJob, type BulkCandidate, type ImportedProduct, type MarkupMode } from "@/store/importJob";
 
 const titles: Record<string, { title: string; sub: string }> = {
   products: { title: "My products", sub: "Manage your catalog" },
@@ -59,33 +59,7 @@ export default function StoreSection() {
 // ---------------- Import from URL (private beta) ----------------
 const ALLOWED_IMPORT_EMAILS = ["kukistacks8@gmail.com"];
 
-type ImportedProduct = {
-  title: string;
-  price: number | null;
-  original_price: number | null;
-  currency: string | null;
-  description: string;
-  images: string[];
-  source: string;
-  source_url: string;
-  moq?: number | null;
-  unit?: string | null;
-  category_slug?: string | null;
-};
-
-type BulkCandidate = {
-  url: string;
-  title: string;
-  image: string | null;
-  price: number | null;
-  source: string;
-  status: "pending" | "importing" | "done" | "skipped" | "error";
-  error?: string;
-  productId?: string;
-  category_slug?: string | null;
-};
-
-type MarkupMode = "percent" | "flat" | "none";
+// Types ImportedProduct, BulkCandidate, MarkupMode are imported from "@/store/importJob".
 
 function applyMarkup(price: number | null, mode: MarkupMode, value: number): number | null {
   if (price == null || isNaN(price)) return price;
