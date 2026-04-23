@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, MapPin, Tag, X, CheckCircle2, Wallet, Smartphone, CreditCard, Banknote, Loader2 } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, MapPin, Tag, X, CheckCircle2, Wallet, Smartphone, CreditCard, Banknote, ShieldCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useShop } from "@/store/shop";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useWallet } from "@/hooks/useWallet";
 import { getEdgeFunctionErrorMessage } from "@/lib/edgeFunctionError";
+import { useVerification } from "@/hooks/useVerification";
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
 
@@ -36,6 +37,7 @@ export default function Cart() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { balance, payOrder } = useWallet();
+  const { isApproved: isVerified, status: verificationStatus, loading: verificationLoading } = useVerification();
   const [addresses, setAddresses] = useState<AddrRow[]>([]);
   const [addressId, setAddressId] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
@@ -242,6 +244,13 @@ export default function Cart() {
     }
     if ((payMethod === "ecocash" || payMethod === "onemoney") && phone.replace(/\D/g, "").length < 9) {
       toast.error("Enter your mobile money number");
+      return;
+    }
+    if (payMethod === "cod" && !isVerified) {
+      toast.error("Verification required for Cash on delivery", {
+        description: "Upload your ID and proof of residency to unlock COD.",
+        action: { label: "Verify now", onClick: () => navigate("/verification") },
+      });
       return;
     }
 
@@ -489,9 +498,35 @@ export default function Cart() {
             onClick={() => setPayMethod("cod")}
             icon={Banknote}
             label="Cash on delivery"
-            sub="Pay supplier on receipt"
+            sub={
+              verificationLoading ? "Checking eligibility…" :
+              isVerified ? "Pay supplier on receipt" :
+              verificationStatus === "pending" ? "Verification pending" :
+              verificationStatus === "rejected" ? "Verification rejected" :
+              "Verify ID to unlock"
+            }
+            insufficient={!verificationLoading && !isVerified}
           />
         </div>
+
+        {payMethod === "cod" && !verificationLoading && !isVerified && (
+          <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 flex items-start gap-2">
+            <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-bold">Verification required</p>
+              <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                Upload your government ID and proof of residency. A supplier will review and approve before you can pay on delivery.
+              </p>
+              <button
+                type="button"
+                onClick={() => navigate("/verification")}
+                className="mt-2 text-[11px] font-bold text-primary underline underline-offset-2"
+              >
+                {verificationStatus === "pending" ? "View status" : verificationStatus === "rejected" ? "Re-submit documents" : "Verify now →"}
+              </button>
+            </div>
+          </div>
+        )}
 
         {(payMethod === "ecocash" || payMethod === "onemoney") && (
           <div className="mt-3">

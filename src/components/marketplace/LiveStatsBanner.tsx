@@ -265,7 +265,6 @@ export default function LiveStatsBanner() {
         </div>
         <div className="flex gap-2.5 overflow-x-auto scrollbar-none -mx-1 px-1 pb-1 snap-x snap-mandatory">
           <div className="snap-start"><Tile icon={Activity}      label="Live traffic"   value={fmtInt(traffic)}   delta="buyers online now"  trend={trafficT}    tone="primary" /></div>
-          <div className="snap-start"><Tile icon={PackageCheck}  label="Orders today"   value={fmtInt(orders)}    delta="placed in 24h"      trend={ordersT}     tone="success" /></div>
           <div className="snap-start"><Tile icon={ShieldCheck}   label="Success rate"   value={fmtPct(success)}   delta="orders fulfilled"   trend={successT}    tone="success" /></div>
           <div className="snap-start"><Tile icon={Truck}         label="Deliveries"     value={fmtInt(deliveries)} delta="completed today"   trend={deliveriesT} tone="warm"    /></div>
           <div className="snap-start"><Tile icon={Users2}        label="Active stores"  value={fmtInt(suppliers)} delta="suppliers shipping" trend={suppliersT}  tone="primary" /></div>
