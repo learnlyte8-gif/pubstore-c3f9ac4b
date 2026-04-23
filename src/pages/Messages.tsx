@@ -145,6 +145,7 @@ export default function Messages() {
         .eq("conversation_id", activeId)
         .order("created_at", { ascending: true });
       if (alive) setMessages((data ?? []) as Message[]);
+      markConversationRead(activeId);
     })();
 
     const channel = supabase
@@ -158,6 +159,8 @@ export default function Messages() {
               ? prev
               : [...prev, payload.new as Message],
           );
+          // Auto-mark read while viewing the conversation
+          markConversationRead(activeId, (payload.new as Message).created_at);
         },
       )
       .subscribe();
