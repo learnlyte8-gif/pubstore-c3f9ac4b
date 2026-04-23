@@ -223,7 +223,28 @@ export const mapProduct = (p: DbProduct | DbProductWithSupplier): Product => {
   };
 };
 
-// ---------- Fetchers ----------
+// ---------- Mirror helpers ----------
+const masterCache = new Map<string, string>();
+
+/**
+ * Resolve a (possibly mirrored) supplier id to the master supplier id that
+ * actually owns the products / receives orders / messages / quotes.
+ * Mirror suppliers are virtual storefronts that share their master's catalog.
+ */
+export async function resolveMasterSupplierId(supplierId: string): Promise<string> {
+  if (!supplierId) return supplierId;
+  const cached = masterCache.get(supplierId);
+  if (cached) return cached;
+  const { data } = await supabase
+    .from("suppliers")
+    .select("id, mirror_of")
+    .eq("id", supplierId)
+    .maybeSingle();
+  const master = (data?.mirror_of as string | null) ?? data?.id ?? supplierId;
+  masterCache.set(supplierId, master);
+  return master;
+}
+
 export async function fetchProducts(opts: {
   category?: string;
   supplierId?: string;
@@ -231,9 +252,16 @@ export async function fetchProducts(opts: {
   limit?: number;
   sortBy?: "newest" | "sold" | "price_asc" | "price_desc" | "rating";
 } = {}): Promise<Product[]> {
-  let q = supabase.from("products").select("*").eq("active", true);
+  // If filtering by a mirror store, swap to master so we show its catalog.
+  let supplierId = opts.supplierId;
+  if (supplierId) supplierId = await resolveMasterSupplierId(supplierId);
+
+  let q = supabase
+    .from("products")
+    .select("*, suppliers!inner(name, verified, gold)")
+    .eq("active", true);
   if (opts.category) q = q.eq("category_slug", opts.category);
-  if (opts.supplierId) q = q.eq("supplier_id", opts.supplierId);
+  if (supplierId) q = q.eq("supplier_id", supplierId);
   if (opts.search) q = q.ilike("title", `%${opts.search}%`);
   switch (opts.sortBy) {
     case "sold": q = q.order("sold", { ascending: false }); break;
@@ -245,12 +273,16 @@ export async function fetchProducts(opts: {
   if (opts.limit) q = q.limit(opts.limit);
   const { data, error } = await q;
   if (error || !data) return [];
-  return (data as DbProduct[]).map(mapProduct);
+  return (data as DbProductWithSupplier[]).map(mapProduct);
 }
 
 export async function fetchProduct(id: string): Promise<Product | null> {
-  const { data } = await supabase.from("products").select("*").eq("id", id).maybeSingle();
-  return data ? mapProduct(data as DbProduct) : null;
+  const { data } = await supabase
+    .from("products")
+    .select("*, suppliers!inner(name, verified, gold)")
+    .eq("id", id)
+    .maybeSingle();
+  return data ? mapProduct(data as DbProductWithSupplier) : null;
 }
 
 export async function fetchSupplier(id: string): Promise<Supplier | null> {
@@ -258,9 +290,13 @@ export async function fetchSupplier(id: string): Promise<Supplier | null> {
   return data ? mapSupplier(data as DbSupplier) : null;
 }
 
-export async function fetchSuppliers(opts: { limit?: number; verifiedOnly?: boolean } = {}): Promise<Supplier[]> {
+export async function fetchSuppliers(opts: { limit?: number; verifiedOnly?: boolean; includeMirrors?: boolean } = {}): Promise<Supplier[]> {
   let q = supabase.from("suppliers").select("*").order("rating", { ascending: false });
   if (opts.verifiedOnly) q = q.eq("verified", true);
+  // By default exclude mirrors from "top suppliers" / global lists so the
+  // master store keeps its identity. Pages that explicitly want mirrors
+  // (e.g. directory) can opt in.
+  if (!opts.includeMirrors) q = q.is("mirror_of", null);
   if (opts.limit) q = q.limit(opts.limit);
   const { data } = await q;
   return ((data ?? []) as DbSupplier[]).map(mapSupplier);
