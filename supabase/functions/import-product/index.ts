@@ -163,6 +163,7 @@ Extract the product.`;
           images: { type: "array", items: { type: "string" }, maxItems: 8 },
           moq: { type: ["number", "null"] },
           unit: { type: ["string", "null"] },
+          category_slug: { type: ["string", "null"], description: "One of the allowed slugs from the system prompt, or null." },
         },
         required: ["title", "description", "images"],
       },
