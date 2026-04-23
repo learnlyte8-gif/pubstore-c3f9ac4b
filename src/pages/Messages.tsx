@@ -55,6 +55,7 @@ export default function Messages() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { perConversation } = useUnreadChats();
 
   const loadConversations = useCallback(async (uid: string) => {
     const { data: convs } = await supabase
