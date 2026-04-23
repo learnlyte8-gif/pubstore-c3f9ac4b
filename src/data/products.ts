@@ -262,7 +262,18 @@ export async function fetchProducts(opts: {
     .eq("active", true);
   if (opts.category) q = q.eq("category_slug", opts.category);
   if (supplierId) q = q.eq("supplier_id", supplierId);
-  if (opts.search) q = q.ilike("title", `%${opts.search}%`);
+  if (opts.search) {
+    // Broad pre-filter — the real ranking happens client-side via lib/search.ts.
+    // We `or` across title, description, category and badge so the candidate
+    // set is wide enough for fuzzy ranking without sending the whole catalog.
+    const term = opts.search.replace(/[%,]/g, " ").trim();
+    if (term) {
+      const like = `%${term}%`;
+      q = q.or(
+        `title.ilike.${like},description.ilike.${like},category_slug.ilike.${like},badge.ilike.${like}`,
+      );
+    }
+  }
   switch (opts.sortBy) {
     case "sold": q = q.order("sold", { ascending: false }); break;
     case "price_asc": q = q.order("price", { ascending: true }); break;

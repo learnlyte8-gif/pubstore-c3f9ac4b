@@ -12,6 +12,9 @@ export type WalletTx = {
   created_at: string;
 };
 
+// The wallet tables were just added; cast through `any` until Supabase types regenerate.
+const sb = supabase as any;
+
 export function useWallet() {
   const qc = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
@@ -26,7 +29,7 @@ export function useWallet() {
     queryKey: ["wallet", userId],
     enabled: !!userId,
     queryFn: async (): Promise<number> => {
-      const { data } = await supabase
+      const { data } = await sb
         .from("wallets")
         .select("balance")
         .eq("user_id", userId!)
@@ -39,7 +42,7 @@ export function useWallet() {
     queryKey: ["wallet-tx", userId],
     enabled: !!userId,
     queryFn: async (): Promise<WalletTx[]> => {
-      const { data } = await supabase
+      const { data } = await sb
         .from("wallet_transactions")
         .select("*")
         .eq("user_id", userId!)
@@ -54,7 +57,7 @@ export function useWallet() {
     qc.invalidateQueries({ queryKey: ["wallet-tx", userId] });
   }, [qc, userId]);
 
-  // Live updates when a tx is inserted.
+  // Live updates when a tx is inserted (top-up, purchase, refund).
   useEffect(() => {
     if (!userId) return;
     const ch = supabase
@@ -68,11 +71,20 @@ export function useWallet() {
     return () => { supabase.removeChannel(ch); };
   }, [userId, refresh]);
 
+  /** Pay an existing order from the wallet. Throws on insufficient balance. */
+  const payOrder = useCallback(async (orderId: string) => {
+    const { data, error } = await sb.rpc("pay_order_with_wallet", { _order_id: orderId });
+    if (error) throw error;
+    refresh();
+    return data as WalletTx;
+  }, [refresh]);
+
   return {
     userId,
     balance: balanceQuery.data ?? 0,
     isLoading: balanceQuery.isLoading,
     transactions: txQuery.data ?? [],
     refresh,
+    payOrder,
   };
 }
