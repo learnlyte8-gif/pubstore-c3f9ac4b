@@ -37,6 +37,7 @@ export default function Cart() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { balance, payOrder } = useWallet();
+  const { isApproved: isVerified, status: verificationStatus, loading: verificationLoading } = useVerification();
   const [addresses, setAddresses] = useState<AddrRow[]>([]);
   const [addressId, setAddressId] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
@@ -243,6 +244,13 @@ export default function Cart() {
     }
     if ((payMethod === "ecocash" || payMethod === "onemoney") && phone.replace(/\D/g, "").length < 9) {
       toast.error("Enter your mobile money number");
+      return;
+    }
+    if (payMethod === "cod" && !isVerified) {
+      toast.error("Verification required for Cash on delivery", {
+        description: "Upload your ID and proof of residency to unlock COD.",
+        action: { label: "Verify now", onClick: () => navigate("/verification") },
+      });
       return;
     }
 
