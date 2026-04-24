@@ -123,8 +123,7 @@ export const SceneWall: React.FC = () => {
           style={{
             opacity: headerIn * headerOut,
             transform: `scale(${0.94 + headerIn * 0.06})`,
-            background: "rgba(10,10,10,0.78)",
-            backdropFilter: "blur(8px)",
+            background: "rgba(10,10,10,0.88)",
             padding: "28px 56px",
             border: "1px solid rgba(255,255,255,0.12)",
             borderRadius: 999,
