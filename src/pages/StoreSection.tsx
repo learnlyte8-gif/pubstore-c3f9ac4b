@@ -1731,3 +1731,572 @@ function SettingsView() {
     </div>
   );
 }
+
+// =================================================================
+// Service / vertical management views
+// =================================================================
+
+function ServiceShell({
+  title, items, isLoading, emptyHint, onAdd, renderItem,
+}: {
+  title: string;
+  items: any[];
+  isLoading: boolean;
+  emptyHint: string;
+  onAdd: () => void;
+  renderItem: (it: any) => React.ReactNode;
+}) {
+  return (
+    <div className="px-4 py-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{title}</p>
+        <Button size="sm" onClick={onAdd} className="h-9 rounded-full px-4">
+          <Plus className="w-4 h-4 mr-1" /> Add new
+        </Button>
+      </div>
+      {isLoading ? (
+        <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>
+      ) : items.length === 0 ? (
+        <EmptyState
+          icon={<Sparkles className="w-7 h-7 text-muted-foreground" />}
+          title="Nothing here yet"
+          description={emptyHint}
+          action={<Button onClick={onAdd}><Plus className="w-4 h-4 mr-1.5" /> Add your first listing</Button>}
+        />
+      ) : (
+        <div className="grid grid-cols-1 gap-2">{items.map(renderItem)}</div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- Stays ---------------- */
+function StaysServiceView() {
+  const qc = useQueryClient();
+  const { data: supplier } = useQuery({ queryKey: ["my-supplier"], queryFn: fetchMySupplier });
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ["my-stays", supplier?.id],
+    enabled: !!supplier,
+    queryFn: async () => {
+      const { data } = await supabase.from("stays").select("*").eq("supplier_id", supplier!.id).order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+
+  const remove = async (id: string) => {
+    if (!confirm("Delete this stay?")) return;
+    const { error } = await supabase.from("stays").delete().eq("id", id);
+    if (error) toast.error(error.message); else { toast.success("Removed"); qc.invalidateQueries({ queryKey: ["my-stays"] }); }
+  };
+
+  if (!supplier) {
+    return (
+      <div className="p-6">
+        <EmptyState title="Create your store first" action={<Button asChild><Link to="/become-supplier">Open store</Link></Button>} />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <ServiceShell
+        title={`${items.length} stays listed`}
+        items={items}
+        isLoading={isLoading}
+        emptyHint="List a B&B, hotel room, factory tour or retreat for buyers visiting your country."
+        onAdd={() => { setEditing(null); setOpen(true); }}
+        renderItem={(s) => (
+          <div key={s.id} className="bg-card border rounded-2xl shadow-card flex gap-3 p-3">
+            <div className="w-20 h-20 rounded-xl bg-muted overflow-hidden flex-shrink-0">
+              {s.cover && <img src={s.cover} alt="" className="w-full h-full object-cover" />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm truncate">{s.title}</p>
+              <p className="text-[11px] text-muted-foreground truncate">{s.kind} · {s.city ?? "—"}{s.country ? `, ${s.country}` : ""}</p>
+              <p className="text-xs font-bold mt-1">${Number(s.price_per_night).toFixed(0)}<span className="text-[10px] font-normal text-muted-foreground"> / night</span></p>
+            </div>
+            <div className="flex flex-col gap-1">
+              <button onClick={() => { setEditing(s); setOpen(true); }} className="w-8 h-8 rounded-full hover:bg-muted flex items-center justify-center"><Pencil className="w-3.5 h-3.5" /></button>
+              <button onClick={() => remove(s.id)} className="w-8 h-8 rounded-full hover:bg-destructive/10 text-destructive flex items-center justify-center"><Trash2 className="w-3.5 h-3.5" /></button>
+            </div>
+          </div>
+        )}
+      />
+      {open && (
+        <StayFormDialog
+          supplierId={supplier.id}
+          initial={editing}
+          onClose={() => setOpen(false)}
+          onSaved={() => { setOpen(false); qc.invalidateQueries({ queryKey: ["my-stays"] }); qc.invalidateQueries({ queryKey: ["stays"] }); qc.invalidateQueries({ queryKey: ["home-stays"] }); }}
+        />
+      )}
+    </>
+  );
+}
+
+function StayFormDialog({ supplierId, initial, onClose, onSaved }: { supplierId: string; initial: any | null; onClose: () => void; onSaved: () => void }) {
+  const [form, setForm] = useState({
+    title: initial?.title ?? "",
+    kind: initial?.kind ?? "b&b",
+    city: initial?.city ?? "",
+    country: initial?.country ?? "",
+    cover: initial?.cover ?? "",
+    description: initial?.description ?? "",
+    price_per_night: initial?.price_per_night ?? 80,
+    bedrooms: initial?.bedrooms ?? 1,
+    beds: initial?.beds ?? 1,
+    baths: initial?.baths ?? 1,
+    guests: initial?.guests ?? 2,
+    superhost: initial?.superhost ?? false,
+  });
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    if (!form.title.trim()) { toast.error("Title required"); return; }
+    setBusy(true);
+    const payload = { ...form, supplier_id: supplierId, price_per_night: Number(form.price_per_night) };
+    const { error } = initial
+      ? await supabase.from("stays").update(payload).eq("id", initial.id)
+      : await supabase.from("stays").insert(payload);
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(initial ? "Updated" : "Listed 🎉");
+    onSaved();
+  };
+  return (
+    <FormSheet onClose={onClose} title={initial ? "Edit stay" : "List a new stay"}>
+      <LabeledInput label="Title" value={form.title} onChange={(v) => setForm({ ...form, title: v })} />
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Kind</label>
+          <select value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value })} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1">
+            {["b&b", "hotel", "apartment", "factory_tour", "retreat"].map((k) => <option key={k} value={k}>{k}</option>)}
+          </select>
+        </div>
+        <LabeledInput label="Price / night ($)" type="number" value={form.price_per_night} onChange={(v) => setForm({ ...form, price_per_night: Number(v) || 0 })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="City" value={form.city} onChange={(v) => setForm({ ...form, city: v })} />
+        <LabeledInput label="Country" value={form.country} onChange={(v) => setForm({ ...form, country: v })} />
+      </div>
+      <LabeledInput label="Cover image URL" value={form.cover} onChange={(v) => setForm({ ...form, cover: v })} />
+      <div className="grid grid-cols-4 gap-2">
+        <LabeledInput label="Bedrooms" type="number" value={form.bedrooms} onChange={(v) => setForm({ ...form, bedrooms: Number(v) || 1 })} />
+        <LabeledInput label="Beds" type="number" value={form.beds} onChange={(v) => setForm({ ...form, beds: Number(v) || 1 })} />
+        <LabeledInput label="Baths" type="number" value={form.baths} onChange={(v) => setForm({ ...form, baths: Number(v) || 1 })} />
+        <LabeledInput label="Guests" type="number" value={form.guests} onChange={(v) => setForm({ ...form, guests: Number(v) || 1 })} />
+      </div>
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Description</label>
+        <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4} className="w-full rounded-xl border bg-background p-3 text-sm mt-1" />
+      </div>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={form.superhost} onChange={(e) => setForm({ ...form, superhost: e.target.checked })} className="w-4 h-4" />
+        Superhost badge
+      </label>
+      <Button onClick={save} disabled={busy} className="w-full h-12">{busy ? "Saving…" : initial ? "Save changes" : "Publish stay"}</Button>
+    </FormSheet>
+  );
+}
+
+/* ---------------- Vehicles ---------------- */
+function VehiclesServiceView() {
+  const qc = useQueryClient();
+  const { data: supplier } = useQuery({ queryKey: ["my-supplier"], queryFn: fetchMySupplier });
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ["my-vehicles", supplier?.id],
+    enabled: !!supplier,
+    queryFn: async () => {
+      const { data } = await supabase.from("vehicles").select("*").eq("supplier_id", supplier!.id).order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+  const remove = async (id: string) => {
+    if (!confirm("Delete this vehicle?")) return;
+    const { error } = await supabase.from("vehicles").delete().eq("id", id);
+    if (error) toast.error(error.message); else { toast.success("Removed"); qc.invalidateQueries({ queryKey: ["my-vehicles"] }); }
+  };
+  if (!supplier) return <div className="p-6"><EmptyState title="Create your store first" action={<Button asChild><Link to="/become-supplier">Open store</Link></Button>} /></div>;
+
+  return (
+    <>
+      <ServiceShell
+        title={`${items.length} vehicles listed`}
+        items={items}
+        isLoading={isLoading}
+        emptyHint="Sell or showcase vehicles, EVs, fleet trucks, motorbikes or parts."
+        onAdd={() => { setEditing(null); setOpen(true); }}
+        renderItem={(v) => (
+          <div key={v.id} className="bg-card border rounded-2xl shadow-card flex gap-3 p-3">
+            <div className="w-20 h-20 rounded-xl bg-muted overflow-hidden flex-shrink-0">{v.cover && <img src={v.cover} alt="" className="w-full h-full object-cover" />}</div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm truncate">{v.title}</p>
+              <p className="text-[11px] text-muted-foreground truncate">{v.kind} · {v.year ?? ""} {v.make ?? ""} {v.model ?? ""}</p>
+              <p className="text-xs font-bold mt-1">${Number(v.price).toLocaleString()}</p>
+            </div>
+            <div className="flex flex-col gap-1">
+              <button onClick={() => { setEditing(v); setOpen(true); }} className="w-8 h-8 rounded-full hover:bg-muted flex items-center justify-center"><Pencil className="w-3.5 h-3.5" /></button>
+              <button onClick={() => remove(v.id)} className="w-8 h-8 rounded-full hover:bg-destructive/10 text-destructive flex items-center justify-center"><Trash2 className="w-3.5 h-3.5" /></button>
+            </div>
+          </div>
+        )}
+      />
+      {open && (
+        <VehicleFormDialog
+          supplierId={supplier.id} initial={editing} onClose={() => setOpen(false)}
+          onSaved={() => { setOpen(false); qc.invalidateQueries({ queryKey: ["my-vehicles"] }); qc.invalidateQueries({ queryKey: ["vehicles"] }); }}
+        />
+      )}
+    </>
+  );
+}
+
+function VehicleFormDialog({ supplierId, initial, onClose, onSaved }: { supplierId: string; initial: any | null; onClose: () => void; onSaved: () => void }) {
+  const [form, setForm] = useState({
+    title: initial?.title ?? "",
+    kind: initial?.kind ?? "car",
+    condition: initial?.condition ?? "used",
+    make: initial?.make ?? "",
+    model: initial?.model ?? "",
+    year: initial?.year ?? new Date().getFullYear(),
+    fuel: initial?.fuel ?? "petrol",
+    transmission: initial?.transmission ?? "automatic",
+    mileage_km: initial?.mileage_km ?? 0,
+    price: initial?.price ?? 0,
+    cover: initial?.cover ?? "",
+    city: initial?.city ?? "",
+    country: initial?.country ?? "",
+    description: initial?.description ?? "",
+  });
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    if (!form.title.trim()) { toast.error("Title required"); return; }
+    setBusy(true);
+    const payload: any = { ...form, supplier_id: supplierId, price: Number(form.price), year: Number(form.year), mileage_km: Number(form.mileage_km) };
+    const { error } = initial
+      ? await supabase.from("vehicles").update(payload).eq("id", initial.id)
+      : await supabase.from("vehicles").insert(payload);
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(initial ? "Updated" : "Listed 🎉");
+    onSaved();
+  };
+  return (
+    <FormSheet onClose={onClose} title={initial ? "Edit vehicle" : "List a vehicle"}>
+      <LabeledInput label="Title" value={form.title} onChange={(v) => setForm({ ...form, title: v })} />
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Kind</label>
+          <select value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value })} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1">
+            {["car","ev","truck","bike","parts"].map((k) => <option key={k} value={k}>{k}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Condition</label>
+          <select value={form.condition} onChange={(e) => setForm({ ...form, condition: e.target.value })} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1">
+            {["new","used","certified"].map((k) => <option key={k} value={k}>{k}</option>)}
+          </select>
+        </div>
+        <LabeledInput label="Year" type="number" value={form.year} onChange={(v) => setForm({ ...form, year: Number(v) || 0 })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Make" value={form.make} onChange={(v) => setForm({ ...form, make: v })} />
+        <LabeledInput label="Model" value={form.model} onChange={(v) => setForm({ ...form, model: v })} />
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Fuel</label>
+          <select value={form.fuel} onChange={(e) => setForm({ ...form, fuel: e.target.value })} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1">
+            {["petrol","diesel","hybrid","electric","lpg"].map((k) => <option key={k} value={k}>{k}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Trans.</label>
+          <select value={form.transmission} onChange={(e) => setForm({ ...form, transmission: e.target.value })} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1">
+            {["automatic","manual","cvt","dct"].map((k) => <option key={k} value={k}>{k}</option>)}
+          </select>
+        </div>
+        <LabeledInput label="Mileage km" type="number" value={form.mileage_km} onChange={(v) => setForm({ ...form, mileage_km: Number(v) || 0 })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Price ($)" type="number" value={form.price} onChange={(v) => setForm({ ...form, price: Number(v) || 0 })} />
+        <LabeledInput label="Cover URL" value={form.cover} onChange={(v) => setForm({ ...form, cover: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="City" value={form.city} onChange={(v) => setForm({ ...form, city: v })} />
+        <LabeledInput label="Country" value={form.country} onChange={(v) => setForm({ ...form, country: v })} />
+      </div>
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Description</label>
+        <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4} className="w-full rounded-xl border bg-background p-3 text-sm mt-1" />
+      </div>
+      <Button onClick={save} disabled={busy} className="w-full h-12">{busy ? "Saving…" : initial ? "Save changes" : "Publish vehicle"}</Button>
+    </FormSheet>
+  );
+}
+
+/* ---------------- Industrial ---------------- */
+function IndustrialServiceView() {
+  const qc = useQueryClient();
+  const { data: supplier } = useQuery({ queryKey: ["my-supplier"], queryFn: fetchMySupplier });
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ["my-industrial", supplier?.id],
+    enabled: !!supplier,
+    queryFn: async () => {
+      const { data } = await supabase.from("industrial_listings").select("*").eq("supplier_id", supplier!.id).order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+  const remove = async (id: string) => {
+    if (!confirm("Delete this listing?")) return;
+    const { error } = await supabase.from("industrial_listings").delete().eq("id", id);
+    if (error) toast.error(error.message); else { toast.success("Removed"); qc.invalidateQueries({ queryKey: ["my-industrial"] }); }
+  };
+  if (!supplier) return <div className="p-6"><EmptyState title="Create your store first" action={<Button asChild><Link to="/become-supplier">Open store</Link></Button>} /></div>;
+  return (
+    <>
+      <ServiceShell
+        title={`${items.length} industrial listings`}
+        items={items}
+        isLoading={isLoading}
+        emptyHint="Showcase machinery, raw materials, OEM capacity or industrial services."
+        onAdd={() => { setEditing(null); setOpen(true); }}
+        renderItem={(it) => (
+          <div key={it.id} className="bg-card border rounded-2xl shadow-card flex gap-3 p-3">
+            <div className="w-20 h-20 rounded-xl bg-muted overflow-hidden flex-shrink-0">{it.cover && <img src={it.cover} alt="" className="w-full h-full object-cover" />}</div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm truncate">{it.title}</p>
+              <p className="text-[11px] text-muted-foreground truncate">{it.category}{it.subcategory ? ` · ${it.subcategory}` : ""}</p>
+              <p className="text-xs font-bold mt-1">{it.price ? `$${Number(it.price).toLocaleString()}` : "Quote on request"}{it.unit ? ` / ${it.unit}` : ""}</p>
+            </div>
+            <div className="flex flex-col gap-1">
+              <button onClick={() => { setEditing(it); setOpen(true); }} className="w-8 h-8 rounded-full hover:bg-muted flex items-center justify-center"><Pencil className="w-3.5 h-3.5" /></button>
+              <button onClick={() => remove(it.id)} className="w-8 h-8 rounded-full hover:bg-destructive/10 text-destructive flex items-center justify-center"><Trash2 className="w-3.5 h-3.5" /></button>
+            </div>
+          </div>
+        )}
+      />
+      {open && (
+        <IndustrialFormDialog
+          supplierId={supplier.id} initial={editing} onClose={() => setOpen(false)}
+          onSaved={() => { setOpen(false); qc.invalidateQueries({ queryKey: ["my-industrial"] }); qc.invalidateQueries({ queryKey: ["industrial"] }); }}
+        />
+      )}
+    </>
+  );
+}
+
+function IndustrialFormDialog({ supplierId, initial, onClose, onSaved }: { supplierId: string; initial: any | null; onClose: () => void; onSaved: () => void }) {
+  const [form, setForm] = useState({
+    title: initial?.title ?? "",
+    category: initial?.category ?? "machinery",
+    subcategory: initial?.subcategory ?? "",
+    cover: initial?.cover ?? "",
+    description: initial?.description ?? "",
+    moq: initial?.moq ?? 1,
+    unit: initial?.unit ?? "piece",
+    price: initial?.price ?? 0,
+    lead_time: initial?.lead_time ?? "",
+    capacity: initial?.capacity ?? "",
+    ship_from: initial?.ship_from ?? "",
+    country: initial?.country ?? "",
+  });
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    if (!form.title.trim()) { toast.error("Title required"); return; }
+    setBusy(true);
+    const payload: any = { ...form, supplier_id: supplierId, price: Number(form.price) || null, moq: Number(form.moq) || null };
+    const { error } = initial
+      ? await supabase.from("industrial_listings").update(payload).eq("id", initial.id)
+      : await supabase.from("industrial_listings").insert(payload);
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(initial ? "Updated" : "Listed 🎉");
+    onSaved();
+  };
+  return (
+    <FormSheet onClose={onClose} title={initial ? "Edit listing" : "New industrial listing"}>
+      <LabeledInput label="Title" value={form.title} onChange={(v) => setForm({ ...form, title: v })} />
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Category</label>
+          <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1">
+            {["machinery","materials","oem","services","components"].map((k) => <option key={k} value={k}>{k}</option>)}
+          </select>
+        </div>
+        <LabeledInput label="Subcategory" value={form.subcategory} onChange={(v) => setForm({ ...form, subcategory: v })} />
+      </div>
+      <LabeledInput label="Cover URL" value={form.cover} onChange={(v) => setForm({ ...form, cover: v })} />
+      <div className="grid grid-cols-3 gap-2">
+        <LabeledInput label="MOQ" type="number" value={form.moq} onChange={(v) => setForm({ ...form, moq: Number(v) || 1 })} />
+        <LabeledInput label="Unit" value={form.unit} onChange={(v) => setForm({ ...form, unit: v })} />
+        <LabeledInput label="Price ($)" type="number" value={form.price} onChange={(v) => setForm({ ...form, price: Number(v) || 0 })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Lead time" value={form.lead_time} onChange={(v) => setForm({ ...form, lead_time: v })} />
+        <LabeledInput label="Capacity" value={form.capacity} onChange={(v) => setForm({ ...form, capacity: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Ship from" value={form.ship_from} onChange={(v) => setForm({ ...form, ship_from: v })} />
+        <LabeledInput label="Country" value={form.country} onChange={(v) => setForm({ ...form, country: v })} />
+      </div>
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Description</label>
+        <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4} className="w-full rounded-xl border bg-background p-3 text-sm mt-1" />
+      </div>
+      <Button onClick={save} disabled={busy} className="w-full h-12">{busy ? "Saving…" : initial ? "Save changes" : "Publish listing"}</Button>
+    </FormSheet>
+  );
+}
+
+/* ---------------- News (admin only) ---------------- */
+function NewsServiceView() {
+  const qc = useQueryClient();
+  const navigate = useNavigate();
+  const [allowed, setAllowed] = useState<boolean | null>(null);
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { navigate("/auth"); return; }
+      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
+      setAllowed(!!data || (user.email || "").toLowerCase() === "kukistacks8@gmail.com");
+    })();
+  }, [navigate]);
+
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ["my-news"],
+    enabled: allowed === true,
+    queryFn: async () => {
+      const { data } = await supabase.from("news_articles").select("*").order("published_at", { ascending: false }).limit(50);
+      return data ?? [];
+    },
+  });
+
+  const remove = async (id: string) => {
+    if (!confirm("Delete this article?")) return;
+    const { error } = await supabase.from("news_articles").delete().eq("id", id);
+    if (error) toast.error(error.message); else { toast.success("Removed"); qc.invalidateQueries({ queryKey: ["my-news"] }); }
+  };
+
+  if (allowed === null) return <div className="p-8 text-center text-sm text-muted-foreground">Loading…</div>;
+  if (!allowed) {
+    return (
+      <div className="px-4 py-8">
+        <EmptyState
+          icon={<Sparkles className="w-7 h-7 text-muted-foreground" />}
+          title="Editorial access required"
+          description="Publishing news is reserved for the PUBSTORE editorial team. Reach out to be added as a contributor."
+          action={<Button variant="outline" asChild><Link to="/store">Back to store</Link></Button>}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <ServiceShell
+        title={`${items.length} articles`}
+        items={items}
+        isLoading={isLoading}
+        emptyHint="Publish announcements, supplier features, market reports and editorial pieces."
+        onAdd={() => { setEditing(null); setOpen(true); }}
+        renderItem={(a) => (
+          <div key={a.id} className="bg-card border rounded-2xl shadow-card flex gap-3 p-3">
+            <div className="w-20 h-20 rounded-xl bg-muted overflow-hidden flex-shrink-0">{a.cover && <img src={a.cover} alt="" className="w-full h-full object-cover" />}</div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm truncate">{a.title}</p>
+              <p className="text-[11px] text-muted-foreground truncate">{a.category} · {new Date(a.published_at).toLocaleDateString()}</p>
+              {a.featured && <span className="inline-block mt-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/10 text-primary">Featured</span>}
+            </div>
+            <div className="flex flex-col gap-1">
+              <button onClick={() => { setEditing(a); setOpen(true); }} className="w-8 h-8 rounded-full hover:bg-muted flex items-center justify-center"><Pencil className="w-3.5 h-3.5" /></button>
+              <button onClick={() => remove(a.id)} className="w-8 h-8 rounded-full hover:bg-destructive/10 text-destructive flex items-center justify-center"><Trash2 className="w-3.5 h-3.5" /></button>
+            </div>
+          </div>
+        )}
+      />
+      {open && (
+        <NewsFormDialog initial={editing} onClose={() => setOpen(false)}
+          onSaved={() => { setOpen(false); qc.invalidateQueries({ queryKey: ["my-news"] }); qc.invalidateQueries({ queryKey: ["news"] }); }} />
+      )}
+    </>
+  );
+}
+
+function NewsFormDialog({ initial, onClose, onSaved }: { initial: any | null; onClose: () => void; onSaved: () => void }) {
+  const [form, setForm] = useState({
+    title: initial?.title ?? "",
+    slug: initial?.slug ?? "",
+    dek: initial?.dek ?? "",
+    body: initial?.body ?? "",
+    cover: initial?.cover ?? "",
+    category: initial?.category ?? "marketplace",
+    author: initial?.author ?? "PUBSTORE Editorial",
+    read_minutes: initial?.read_minutes ?? 3,
+    featured: initial?.featured ?? false,
+  });
+  const [busy, setBusy] = useState(false);
+  const slugify = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").slice(0, 80);
+  const save = async () => {
+    if (!form.title.trim()) { toast.error("Title required"); return; }
+    setBusy(true);
+    const payload: any = { ...form, slug: form.slug.trim() || slugify(form.title), read_minutes: Number(form.read_minutes) || 3 };
+    const { error } = initial
+      ? await supabase.from("news_articles").update(payload).eq("id", initial.id)
+      : await supabase.from("news_articles").insert(payload);
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(initial ? "Updated" : "Published 📰");
+    onSaved();
+  };
+  return (
+    <FormSheet onClose={onClose} title={initial ? "Edit article" : "Publish a news article"}>
+      <LabeledInput label="Title" value={form.title} onChange={(v) => setForm({ ...form, title: v, slug: form.slug || slugify(v) })} />
+      <LabeledInput label="Slug" value={form.slug} onChange={(v) => setForm({ ...form, slug: v })} />
+      <LabeledInput label="Dek (subtitle)" value={form.dek} onChange={(v) => setForm({ ...form, dek: v })} />
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Category</label>
+          <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1">
+            {["marketplace","supplier","trade","industry","trends","editorial"].map((k) => <option key={k} value={k}>{k}</option>)}
+          </select>
+        </div>
+        <LabeledInput label="Author" value={form.author} onChange={(v) => setForm({ ...form, author: v })} />
+        <LabeledInput label="Read min" type="number" value={form.read_minutes} onChange={(v) => setForm({ ...form, read_minutes: Number(v) || 3 })} />
+      </div>
+      <LabeledInput label="Cover URL" value={form.cover} onChange={(v) => setForm({ ...form, cover: v })} />
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Body (markdown)</label>
+        <textarea value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} rows={10} className="w-full rounded-xl border bg-background p-3 text-sm mt-1 font-mono" />
+      </div>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} className="w-4 h-4" />
+        Feature this article on the homepage
+      </label>
+      <Button onClick={save} disabled={busy} className="w-full h-12">{busy ? "Publishing…" : initial ? "Save changes" : "Publish article"}</Button>
+    </FormSheet>
+  );
+}
+
+/* ---------------- Shared sheet ---------------- */
+function FormSheet({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 bg-foreground/60 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
+      <div className="w-full max-w-md bg-card sm:rounded-3xl rounded-t-3xl shadow-elevated max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="sticky top-0 bg-card/95 backdrop-blur border-b px-4 py-3 flex items-center justify-between">
+          <p className="font-bold text-base">{title}</p>
+          <button onClick={onClose} className="w-9 h-9 rounded-full hover:bg-muted flex items-center justify-center"><X className="w-4 h-4" /></button>
+        </div>
+        <div className="p-4 space-y-3">{children}</div>
+      </div>
+    </div>
+  );
+}
