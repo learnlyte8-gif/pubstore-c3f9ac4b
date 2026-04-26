@@ -414,13 +414,16 @@ function LiveRoom({ stream, hostUserId, onLeave }: { stream: EnrichedStream; hos
 
   return (
     <div className="fixed inset-0 z-50 bg-black text-white flex flex-col">
-      {stream.cover && (
+      {bgImages.map((src, i) => (
         <img
-          src={stream.cover}
+          key={src + i}
+          src={src}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover blur-sm scale-110 opacity-70"
+          className={`absolute inset-0 w-full h-full object-cover blur-md scale-110 transition-opacity duration-[1500ms] ease-in-out ${
+            i === bgIdx ? "opacity-70" : "opacity-0"
+          }`}
         />
-      )}
+      ))}
       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/85" />
 
       <header className="relative z-10 safe-top px-3 pt-3 flex items-center gap-2">
