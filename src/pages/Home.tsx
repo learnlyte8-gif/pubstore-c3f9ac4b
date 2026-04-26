@@ -20,6 +20,11 @@ import LiveStreamsRail from "@/components/marketplace/LiveStreamsRail";
 import PromoTile from "@/components/marketplace/PromoTile";
 import CategoryCallout from "@/components/marketplace/CategoryCallout";
 import RecommendationStrip from "@/components/marketplace/RecommendationStrip";
+import DepartmentsBar from "@/components/marketplace/DepartmentsBar";
+import NewsRail from "@/components/marketplace/NewsRail";
+import StaysRail from "@/components/marketplace/StaysRail";
+import AutoRail from "@/components/marketplace/AutoRail";
+import IndustrialRail from "@/components/marketplace/IndustrialRail";
 import TapsonAssistant from "@/components/TapsonAssistant";
 import EmptyState from "@/components/EmptyState";
 import SupplierCard from "@/components/marketplace/SupplierCard";
@@ -94,6 +99,7 @@ const Home = () => {
 
       {tab === "home" && (
         <div className="animate-fade-in">
+          <DepartmentsBar />
           <PromoBanner />
           {walletUserId && (
             <Link to="/wallet" className="mx-4 mt-3 flex items-center gap-3 rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/70 text-primary-foreground p-3.5 shadow-elevated relative overflow-hidden">
