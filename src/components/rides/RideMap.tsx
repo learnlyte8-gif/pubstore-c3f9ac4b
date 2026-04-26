@@ -114,7 +114,19 @@ export default function RideMap({ me, pickup, dropoff, drivers = [], driverPosit
       L.marker([dropoff.lat, dropoff.lng], { icon: dropoffIcon }).bindTooltip("Drop-off", { direction: "top", offset: [0, -8] }).addTo(layer);
       bounds.push([dropoff.lat, dropoff.lng]);
     }
-    if (pickup && dropoff) {
+    if (routes && routes.length > 0) {
+      routes.forEach((r) => {
+        L.polyline(r.coords, {
+          color: r.color ?? "hsl(var(--primary))",
+          weight: r.weight ?? 5,
+          opacity: r.opacity ?? 0.85,
+          dashArray: r.dash,
+          lineCap: "round",
+          lineJoin: "round",
+        }).addTo(layer);
+        r.coords.forEach((c) => bounds.push(c as L.LatLngExpression));
+      });
+    } else if (pickup && dropoff) {
       L.polyline([[pickup.lat, pickup.lng], [dropoff.lat, dropoff.lng]], {
         color: "hsl(var(--primary))",
         weight: 4,
