@@ -10,6 +10,7 @@ import { fetchProducts, fetchMySupplier, fetchCategories } from "@/data/products
 import EmptyState from "@/components/EmptyState";
 import LocationPicker from "@/components/LocationPicker";
 import { useImportJob, type BulkCandidate, type ImportedProduct, type MarkupMode } from "@/store/importJob";
+import ImageUpload from "@/components/ImageUpload";
 
 const titles: Record<string, { title: string; sub: string }> = {
   products: { title: "My products", sub: "Manage your catalog" },
@@ -1880,7 +1881,14 @@ function StayFormDialog({ supplierId, initial, onClose, onSaved }: { supplierId:
         <LabeledInput label="City" value={form.city} onChange={(v) => setForm({ ...form, city: v })} />
         <LabeledInput label="Country" value={form.country} onChange={(v) => setForm({ ...form, country: v })} />
       </div>
-      <LabeledInput label="Cover image URL" value={form.cover} onChange={(v) => setForm({ ...form, cover: v })} />
+      <ImageUpload
+        label="Cover photo"
+        value={form.cover}
+        onChange={(v) => setForm({ ...form, cover: v })}
+        folder="stays"
+        aspect="aspect-video"
+        hint="Show the room, view, or building"
+      />
       <div className="grid grid-cols-4 gap-2">
         <LabeledInput label="Bedrooms" type="number" value={form.bedrooms} onChange={(v) => setForm({ ...form, bedrooms: Number(v) || 1 })} />
         <LabeledInput label="Beds" type="number" value={form.beds} onChange={(v) => setForm({ ...form, beds: Number(v) || 1 })} />
@@ -2021,10 +2029,15 @@ function VehicleFormDialog({ supplierId, initial, onClose, onSaved }: { supplier
         </div>
         <LabeledInput label="Mileage km" type="number" value={form.mileage_km} onChange={(v) => setForm({ ...form, mileage_km: Number(v) || 0 })} />
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        <LabeledInput label="Price ($)" type="number" value={form.price} onChange={(v) => setForm({ ...form, price: Number(v) || 0 })} />
-        <LabeledInput label="Cover URL" value={form.cover} onChange={(v) => setForm({ ...form, cover: v })} />
-      </div>
+      <LabeledInput label="Price ($)" type="number" value={form.price} onChange={(v) => setForm({ ...form, price: Number(v) || 0 })} />
+      <ImageUpload
+        label="Cover photo"
+        value={form.cover}
+        onChange={(v) => setForm({ ...form, cover: v })}
+        folder="vehicles"
+        aspect="aspect-video"
+        hint="Hero shot of the vehicle"
+      />
       <div className="grid grid-cols-2 gap-2">
         <LabeledInput label="City" value={form.city} onChange={(v) => setForm({ ...form, city: v })} />
         <LabeledInput label="Country" value={form.country} onChange={(v) => setForm({ ...form, country: v })} />
@@ -2131,7 +2144,14 @@ function IndustrialFormDialog({ supplierId, initial, onClose, onSaved }: { suppl
         </div>
         <LabeledInput label="Subcategory" value={form.subcategory} onChange={(v) => setForm({ ...form, subcategory: v })} />
       </div>
-      <LabeledInput label="Cover URL" value={form.cover} onChange={(v) => setForm({ ...form, cover: v })} />
+      <ImageUpload
+        label="Cover photo"
+        value={form.cover}
+        onChange={(v) => setForm({ ...form, cover: v })}
+        folder="industrial"
+        aspect="aspect-video"
+        hint="Machine, material, or facility shot"
+      />
       <div className="grid grid-cols-3 gap-2">
         <LabeledInput label="MOQ" type="number" value={form.moq} onChange={(v) => setForm({ ...form, moq: Number(v) || 1 })} />
         <LabeledInput label="Unit" value={form.unit} onChange={(v) => setForm({ ...form, unit: v })} />
@@ -2272,7 +2292,14 @@ function NewsFormDialog({ initial, onClose, onSaved }: { initial: any | null; on
         <LabeledInput label="Author" value={form.author} onChange={(v) => setForm({ ...form, author: v })} />
         <LabeledInput label="Read min" type="number" value={form.read_minutes} onChange={(v) => setForm({ ...form, read_minutes: Number(v) || 3 })} />
       </div>
-      <LabeledInput label="Cover URL" value={form.cover} onChange={(v) => setForm({ ...form, cover: v })} />
+      <ImageUpload
+        label="Cover photo"
+        value={form.cover}
+        onChange={(v) => setForm({ ...form, cover: v })}
+        folder="news"
+        aspect="aspect-video"
+        hint="Hero image for the article"
+      />
       <div>
         <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Body (markdown)</label>
         <textarea value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} rows={10} className="w-full rounded-xl border bg-background p-3 text-sm mt-1 font-mono" />
