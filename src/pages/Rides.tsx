@@ -247,7 +247,12 @@ export default function Rides() {
         <div className="px-3 mt-5 pb-8">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-bold tracking-wide">Live radar</h3>
-            <span className="text-[11px] text-muted-foreground">{drivers.length} online · within 10km</span>
+            <div className="flex items-center gap-2">
+              <Link to="/driver" className="text-[11px] font-bold text-primary inline-flex items-center gap-1">
+                <Car className="w-3 h-3" /> Switch to driver
+              </Link>
+              <span className="text-[11px] text-muted-foreground">{drivers.length} online · within 10km</span>
+            </div>
           </div>
           <div className="rounded-2xl bg-card border border-border shadow-card divide-y divide-border">
             {drivers.slice(0, 5).map((d) => {
