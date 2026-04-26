@@ -364,6 +364,28 @@ function LiveRoom({ stream, hostUserId, onLeave }: { stream: EnrichedStream; hos
 
   const pinnedProduct = pinned.find((p) => p.id === pinnedId);
 
+  // Background carousel: pinned product first, then other live products
+  const bgImages = useMemo(() => {
+    const ordered = pinnedProduct
+      ? [pinnedProduct, ...pinned.filter((p) => p.id !== pinnedProduct.id)]
+      : pinned;
+    const imgs = ordered.map((p) => p.image).filter((s): s is string => !!s && s !== "/placeholder.svg");
+    if (imgs.length === 0 && stream.cover) return [stream.cover];
+    return imgs;
+  }, [pinned, pinnedProduct, stream.cover]);
+
+  const [bgIdx, setBgIdx] = useState(0);
+  useEffect(() => {
+    if (bgImages.length <= 1) return;
+    const t = setInterval(() => setBgIdx((i) => (i + 1) % bgImages.length), 4000);
+    return () => clearInterval(t);
+  }, [bgImages.length]);
+
+  // Reset / clamp index when image set changes
+  useEffect(() => {
+    setBgIdx((i) => (bgImages.length ? i % bgImages.length : 0));
+  }, [bgImages.length]);
+
   const startedMin = Math.max(1, Math.floor((Date.now() - new Date(stream.started_at).getTime()) / 60000));
 
   const FloatingPinned = pinnedProduct ? (
@@ -392,13 +414,16 @@ function LiveRoom({ stream, hostUserId, onLeave }: { stream: EnrichedStream; hos
 
   return (
     <div className="fixed inset-0 z-50 bg-black text-white flex flex-col">
-      {stream.cover && (
+      {bgImages.map((src, i) => (
         <img
-          src={stream.cover}
+          key={src + i}
+          src={src}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover blur-sm scale-110 opacity-70"
+          className={`absolute inset-0 w-full h-full object-cover blur-md scale-110 transition-opacity duration-[1500ms] ease-in-out ${
+            i === bgIdx ? "opacity-70" : "opacity-0"
+          }`}
         />
-      )}
+      ))}
       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/85" />
 
       <header className="relative z-10 safe-top px-3 pt-3 flex items-center gap-2">
