@@ -247,6 +247,45 @@ export type Database = {
           },
         ]
       }
+      driver_locations: {
+        Row: {
+          display_name: string | null
+          heading: number
+          lat: number
+          lng: number
+          online: boolean
+          rating: number
+          updated_at: string
+          user_id: string
+          vehicle_class: string
+          vehicle_label: string | null
+        }
+        Insert: {
+          display_name?: string | null
+          heading?: number
+          lat: number
+          lng: number
+          online?: boolean
+          rating?: number
+          updated_at?: string
+          user_id: string
+          vehicle_class?: string
+          vehicle_label?: string | null
+        }
+        Update: {
+          display_name?: string | null
+          heading?: number
+          lat?: number
+          lng?: number
+          online?: boolean
+          rating?: number
+          updated_at?: string
+          user_id?: string
+          vehicle_class?: string
+          vehicle_label?: string | null
+        }
+        Relationships: []
+      }
       followers: {
         Row: {
           created_at: string
@@ -1203,6 +1242,158 @@ export type Database = {
           title?: string
           unit?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      ride_offers: {
+        Row: {
+          created_at: string
+          driver_avatar: string | null
+          driver_id: string
+          driver_lat: number | null
+          driver_lng: number | null
+          driver_name: string | null
+          driver_rating: number
+          driver_trips: number
+          eta_minutes: number
+          fare: number
+          id: string
+          ride_id: string
+          status: string
+          vehicle_label: string | null
+          vehicle_plate: string | null
+        }
+        Insert: {
+          created_at?: string
+          driver_avatar?: string | null
+          driver_id: string
+          driver_lat?: number | null
+          driver_lng?: number | null
+          driver_name?: string | null
+          driver_rating?: number
+          driver_trips?: number
+          eta_minutes?: number
+          fare: number
+          id?: string
+          ride_id: string
+          status?: string
+          vehicle_label?: string | null
+          vehicle_plate?: string | null
+        }
+        Update: {
+          created_at?: string
+          driver_avatar?: string | null
+          driver_id?: string
+          driver_lat?: number | null
+          driver_lng?: number | null
+          driver_name?: string | null
+          driver_rating?: number
+          driver_trips?: number
+          eta_minutes?: number
+          fare?: number
+          id?: string
+          ride_id?: string
+          status?: string
+          vehicle_label?: string | null
+          vehicle_plate?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_offers_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rides: {
+        Row: {
+          accepted_at: string | null
+          completed_at: string | null
+          created_at: string
+          currency: string
+          distance_km: number
+          driver_id: string | null
+          driver_lat: number | null
+          driver_lng: number | null
+          driver_rating: number | null
+          dropoff_address: string
+          dropoff_lat: number
+          dropoff_lng: number
+          final_fare: number | null
+          id: string
+          notes: string | null
+          pickup_address: string
+          pickup_lat: number
+          pickup_lng: number
+          rider_id: string
+          rider_lat: number | null
+          rider_lng: number | null
+          rider_offer: number
+          rider_rating: number | null
+          started_at: string | null
+          status: string
+          updated_at: string
+          vehicle_class: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          distance_km?: number
+          driver_id?: string | null
+          driver_lat?: number | null
+          driver_lng?: number | null
+          driver_rating?: number | null
+          dropoff_address: string
+          dropoff_lat: number
+          dropoff_lng: number
+          final_fare?: number | null
+          id?: string
+          notes?: string | null
+          pickup_address: string
+          pickup_lat: number
+          pickup_lng: number
+          rider_id: string
+          rider_lat?: number | null
+          rider_lng?: number | null
+          rider_offer: number
+          rider_rating?: number | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_class?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          distance_km?: number
+          driver_id?: string | null
+          driver_lat?: number | null
+          driver_lng?: number | null
+          driver_rating?: number | null
+          dropoff_address?: string
+          dropoff_lat?: number
+          dropoff_lng?: number
+          final_fare?: number | null
+          id?: string
+          notes?: string | null
+          pickup_address?: string
+          pickup_lat?: number
+          pickup_lng?: number
+          rider_id?: string
+          rider_lat?: number | null
+          rider_lng?: number | null
+          rider_offer?: number
+          rider_rating?: number | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_class?: string
         }
         Relationships: []
       }
