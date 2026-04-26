@@ -2315,6 +2315,203 @@ function NewsFormDialog({ initial, onClose, onSaved }: { initial: any | null; on
   );
 }
 
+/* ---------------- Driver registration ---------------- */
+function DriverServiceView() {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) { navigate("/auth"); return; }
+      setUserId(session.user.id);
+    });
+  }, [navigate]);
+
+  const { data: profile, isLoading } = useQuery({
+    queryKey: ["my-driver-profile", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await supabase.from("driver_profiles").select("*").eq("user_id", userId!).maybeSingle();
+      return data;
+    },
+  });
+
+  const [form, setForm] = useState({
+    display_name: "",
+    phone: "",
+    whatsapp: "",
+    email: "",
+    vehicle_class: "economy",
+    vehicle_make: "",
+    vehicle_model: "",
+    vehicle_color: "",
+    vehicle_year: new Date().getFullYear(),
+    vehicle_plate: "",
+    vehicle_photo: "",
+    plate_photo: "",
+    selfie_photo: "",
+    license_photo: "",
+    bio: "",
+    city: "",
+    country: "",
+    active: true,
+  });
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    if (profile && !hydrated) {
+      setForm({
+        display_name: profile.display_name ?? "",
+        phone: profile.phone ?? "",
+        whatsapp: profile.whatsapp ?? "",
+        email: profile.email ?? "",
+        vehicle_class: profile.vehicle_class ?? "economy",
+        vehicle_make: profile.vehicle_make ?? "",
+        vehicle_model: profile.vehicle_model ?? "",
+        vehicle_color: profile.vehicle_color ?? "",
+        vehicle_year: profile.vehicle_year ?? new Date().getFullYear(),
+        vehicle_plate: profile.vehicle_plate ?? "",
+        vehicle_photo: profile.vehicle_photo ?? "",
+        plate_photo: profile.plate_photo ?? "",
+        selfie_photo: profile.selfie_photo ?? "",
+        license_photo: profile.license_photo ?? "",
+        bio: profile.bio ?? "",
+        city: profile.city ?? "",
+        country: profile.country ?? "",
+        active: profile.active ?? true,
+      });
+      setHydrated(true);
+    }
+  }, [profile, hydrated]);
+
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    if (!userId) return;
+    if (!form.vehicle_plate.trim()) { toast.error("Number plate is required"); return; }
+    if (!form.phone.trim()) { toast.error("Phone is required"); return; }
+    if (!form.vehicle_photo) { toast.error("Add a photo of your vehicle"); return; }
+    if (!form.plate_photo) { toast.error("Add a photo of the number plate"); return; }
+    setBusy(true);
+    const payload = { ...form, user_id: userId, vehicle_year: Number(form.vehicle_year) || null };
+    const { error } = profile
+      ? await supabase.from("driver_profiles").update(payload).eq("user_id", userId)
+      : await supabase.from("driver_profiles").insert(payload);
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(profile ? "Driver profile updated" : "You're registered as a PUBSTORE driver 🚗");
+    qc.invalidateQueries({ queryKey: ["my-driver-profile"] });
+  };
+
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+
+  return (
+    <div className="px-4 py-4 space-y-4">
+      <div className="rounded-2xl bg-gradient-to-br from-emerald-500/15 via-teal-500/10 to-transparent border border-emerald-500/20 p-4">
+        <div className="flex items-center gap-3">
+          <span className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-400 text-white flex items-center justify-center shadow-soft">
+            <Truck className="w-5 h-5" />
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm">{profile ? "Your driver profile" : "Become a PUBSTORE driver"}</p>
+            <p className="text-[11px] text-muted-foreground">
+              {profile
+                ? `Active · ${profile.trips ?? 0} trips · ★ ${Number(profile.rating ?? 5).toFixed(1)}`
+                : "Earn by accepting fair-fare ride requests in your city"}
+            </p>
+          </div>
+          {profile && (
+            <Link to="/driver" className="h-9 px-3 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center gap-1 shadow-card">
+              Open driver mode
+            </Link>
+          )}
+        </div>
+      </div>
+
+      <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Contact</p>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Display name" value={form.display_name} onChange={(v) => setForm({ ...form, display_name: v })} />
+        <LabeledInput label="Phone" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="WhatsApp" value={form.whatsapp} onChange={(v) => setForm({ ...form, whatsapp: v })} />
+        <LabeledInput label="Email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="City" value={form.city} onChange={(v) => setForm({ ...form, city: v })} />
+        <LabeledInput label="Country" value={form.country} onChange={(v) => setForm({ ...form, country: v })} />
+      </div>
+
+      <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground pt-2">Vehicle</p>
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Class</label>
+          <select value={form.vehicle_class} onChange={(e) => setForm({ ...form, vehicle_class: e.target.value })} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1">
+            {["moto","economy","comfort","xl"].map((k) => <option key={k} value={k}>{k}</option>)}
+          </select>
+        </div>
+        <LabeledInput label="Year" type="number" value={form.vehicle_year} onChange={(v) => setForm({ ...form, vehicle_year: Number(v) || 0 })} />
+        <LabeledInput label="Color" value={form.vehicle_color} onChange={(v) => setForm({ ...form, vehicle_color: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Make" value={form.vehicle_make} onChange={(v) => setForm({ ...form, vehicle_make: v })} />
+        <LabeledInput label="Model" value={form.vehicle_model} onChange={(v) => setForm({ ...form, vehicle_model: v })} />
+      </div>
+      <LabeledInput label="Number plate (required)" value={form.vehicle_plate} onChange={(v) => setForm({ ...form, vehicle_plate: v.toUpperCase() })} />
+
+      <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground pt-2">Photos · required</p>
+      <div className="grid grid-cols-2 gap-3">
+        <ImageUpload
+          label="Vehicle photo"
+          value={form.vehicle_photo}
+          onChange={(v) => setForm({ ...form, vehicle_photo: v })}
+          folder="driver"
+          aspect="aspect-square"
+          hint="Side profile of the car"
+        />
+        <ImageUpload
+          label="Number plate"
+          value={form.plate_photo}
+          onChange={(v) => setForm({ ...form, plate_photo: v })}
+          folder="driver"
+          aspect="aspect-square"
+          hint="Clear, readable plate"
+        />
+        <ImageUpload
+          label="Your selfie"
+          value={form.selfie_photo}
+          onChange={(v) => setForm({ ...form, selfie_photo: v })}
+          folder="driver"
+          aspect="aspect-square"
+          hint="So riders recognize you"
+        />
+        <ImageUpload
+          label="Driver license"
+          value={form.license_photo}
+          onChange={(v) => setForm({ ...form, license_photo: v })}
+          folder="driver"
+          aspect="aspect-square"
+          hint="For verification only"
+        />
+      </div>
+
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Short bio</label>
+        <textarea value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} rows={3} className="w-full rounded-xl border bg-background p-3 text-sm mt-1" placeholder="A friendly note for riders" />
+      </div>
+
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="w-4 h-4" />
+        Active — show me to riders looking for a driver
+      </label>
+
+      <Button onClick={save} disabled={busy} className="w-full h-12">
+        {busy ? "Saving…" : profile ? "Save driver profile" : "Register as a driver"}
+      </Button>
+    </div>
+  );
+}
+
 /* ---------------- Shared sheet ---------------- */
 function FormSheet({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
   return (
