@@ -156,7 +156,7 @@ export default function RideMap({ me, pickup, dropoff, drivers = [], driverPosit
     } else if (bounds.length === 1) {
       map.setView(bounds[0] as L.LatLngExpression, 14);
     }
-  }, [me, pickup, dropoff, drivers, driverPosition]);
+  }, [me, pickup, dropoff, drivers, driverPosition, routes]);
 
   return <div ref={containerRef} className={className ?? "w-full h-full"} />;
 }
