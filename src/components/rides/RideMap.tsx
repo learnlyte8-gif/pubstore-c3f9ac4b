@@ -15,12 +15,21 @@ type Driver = {
   heading?: number;
 };
 
+type RouteOption = {
+  coords: [number, number][];
+  color?: string;
+  weight?: number;
+  dash?: string;
+  opacity?: number;
+};
+
 type Props = {
   me: LatLng | null;
   pickup?: LatLng | null;
   dropoff?: LatLng | null;
   drivers?: Driver[];
   driverPosition?: LatLng | null;
+  routes?: RouteOption[];
   className?: string;
 };
 
