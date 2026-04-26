@@ -23,6 +23,10 @@ const titles: Record<string, { title: string; sub: string }> = {
   "products/new": { title: "Add new product", sub: "List something new" },
   "product-edit": { title: "Edit product", sub: "Update details, price, photos" },
   import: { title: "Import from the web", sub: "Alibaba, Amazon, Shopify URLs" },
+  "services/stays": { title: "My stays", sub: "Rooms, hotels, factory tours" },
+  "services/vehicles": { title: "My vehicles", sub: "Cars, EVs, trucks, bikes" },
+  "services/industrial": { title: "My industrial listings", sub: "Machinery, materials, capacity" },
+  "services/news": { title: "News & editorial", sub: "Publish articles" },
 };
 
 export default function StoreSection() {
@@ -53,6 +57,10 @@ export default function StoreSection() {
       {key === "profile" && <ProfileView />}
       {key === "settings" && <SettingsView />}
       {key === "import" && <ImportView />}
+      {key === "services/stays" && <StaysServiceView />}
+      {key === "services/vehicles" && <VehiclesServiceView />}
+      {key === "services/industrial" && <IndustrialServiceView />}
+      {key === "services/news" && <NewsServiceView />}
     </div>
   );
 }
