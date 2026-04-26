@@ -10,6 +10,7 @@ import { fetchProducts, fetchMySupplier, fetchCategories } from "@/data/products
 import EmptyState from "@/components/EmptyState";
 import LocationPicker from "@/components/LocationPicker";
 import { useImportJob, type BulkCandidate, type ImportedProduct, type MarkupMode } from "@/store/importJob";
+import ImageUpload from "@/components/ImageUpload";
 
 const titles: Record<string, { title: string; sub: string }> = {
   products: { title: "My products", sub: "Manage your catalog" },
@@ -27,6 +28,7 @@ const titles: Record<string, { title: string; sub: string }> = {
   "services/vehicles": { title: "My vehicles", sub: "Cars, EVs, trucks, bikes" },
   "services/industrial": { title: "My industrial listings", sub: "Machinery, materials, capacity" },
   "services/news": { title: "News & editorial", sub: "Publish articles" },
+  "services/driver": { title: "Driver mode", sub: "Register as a PUBSTORE driver" },
 };
 
 export default function StoreSection() {
@@ -61,6 +63,7 @@ export default function StoreSection() {
       {key === "services/vehicles" && <VehiclesServiceView />}
       {key === "services/industrial" && <IndustrialServiceView />}
       {key === "services/news" && <NewsServiceView />}
+      {key === "services/driver" && <DriverServiceView />}
     </div>
   );
 }
@@ -1880,7 +1883,14 @@ function StayFormDialog({ supplierId, initial, onClose, onSaved }: { supplierId:
         <LabeledInput label="City" value={form.city} onChange={(v) => setForm({ ...form, city: v })} />
         <LabeledInput label="Country" value={form.country} onChange={(v) => setForm({ ...form, country: v })} />
       </div>
-      <LabeledInput label="Cover image URL" value={form.cover} onChange={(v) => setForm({ ...form, cover: v })} />
+      <ImageUpload
+        label="Cover photo"
+        value={form.cover}
+        onChange={(v) => setForm({ ...form, cover: v })}
+        folder="stays"
+        aspect="aspect-video"
+        hint="Show the room, view, or building"
+      />
       <div className="grid grid-cols-4 gap-2">
         <LabeledInput label="Bedrooms" type="number" value={form.bedrooms} onChange={(v) => setForm({ ...form, bedrooms: Number(v) || 1 })} />
         <LabeledInput label="Beds" type="number" value={form.beds} onChange={(v) => setForm({ ...form, beds: Number(v) || 1 })} />
@@ -2021,10 +2031,15 @@ function VehicleFormDialog({ supplierId, initial, onClose, onSaved }: { supplier
         </div>
         <LabeledInput label="Mileage km" type="number" value={form.mileage_km} onChange={(v) => setForm({ ...form, mileage_km: Number(v) || 0 })} />
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        <LabeledInput label="Price ($)" type="number" value={form.price} onChange={(v) => setForm({ ...form, price: Number(v) || 0 })} />
-        <LabeledInput label="Cover URL" value={form.cover} onChange={(v) => setForm({ ...form, cover: v })} />
-      </div>
+      <LabeledInput label="Price ($)" type="number" value={form.price} onChange={(v) => setForm({ ...form, price: Number(v) || 0 })} />
+      <ImageUpload
+        label="Cover photo"
+        value={form.cover}
+        onChange={(v) => setForm({ ...form, cover: v })}
+        folder="vehicles"
+        aspect="aspect-video"
+        hint="Hero shot of the vehicle"
+      />
       <div className="grid grid-cols-2 gap-2">
         <LabeledInput label="City" value={form.city} onChange={(v) => setForm({ ...form, city: v })} />
         <LabeledInput label="Country" value={form.country} onChange={(v) => setForm({ ...form, country: v })} />
@@ -2131,7 +2146,14 @@ function IndustrialFormDialog({ supplierId, initial, onClose, onSaved }: { suppl
         </div>
         <LabeledInput label="Subcategory" value={form.subcategory} onChange={(v) => setForm({ ...form, subcategory: v })} />
       </div>
-      <LabeledInput label="Cover URL" value={form.cover} onChange={(v) => setForm({ ...form, cover: v })} />
+      <ImageUpload
+        label="Cover photo"
+        value={form.cover}
+        onChange={(v) => setForm({ ...form, cover: v })}
+        folder="industrial"
+        aspect="aspect-video"
+        hint="Machine, material, or facility shot"
+      />
       <div className="grid grid-cols-3 gap-2">
         <LabeledInput label="MOQ" type="number" value={form.moq} onChange={(v) => setForm({ ...form, moq: Number(v) || 1 })} />
         <LabeledInput label="Unit" value={form.unit} onChange={(v) => setForm({ ...form, unit: v })} />
@@ -2272,7 +2294,14 @@ function NewsFormDialog({ initial, onClose, onSaved }: { initial: any | null; on
         <LabeledInput label="Author" value={form.author} onChange={(v) => setForm({ ...form, author: v })} />
         <LabeledInput label="Read min" type="number" value={form.read_minutes} onChange={(v) => setForm({ ...form, read_minutes: Number(v) || 3 })} />
       </div>
-      <LabeledInput label="Cover URL" value={form.cover} onChange={(v) => setForm({ ...form, cover: v })} />
+      <ImageUpload
+        label="Cover photo"
+        value={form.cover}
+        onChange={(v) => setForm({ ...form, cover: v })}
+        folder="news"
+        aspect="aspect-video"
+        hint="Hero image for the article"
+      />
       <div>
         <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Body (markdown)</label>
         <textarea value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} rows={10} className="w-full rounded-xl border bg-background p-3 text-sm mt-1 font-mono" />
@@ -2283,6 +2312,203 @@ function NewsFormDialog({ initial, onClose, onSaved }: { initial: any | null; on
       </label>
       <Button onClick={save} disabled={busy} className="w-full h-12">{busy ? "Publishing…" : initial ? "Save changes" : "Publish article"}</Button>
     </FormSheet>
+  );
+}
+
+/* ---------------- Driver registration ---------------- */
+function DriverServiceView() {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) { navigate("/auth"); return; }
+      setUserId(session.user.id);
+    });
+  }, [navigate]);
+
+  const { data: profile, isLoading } = useQuery({
+    queryKey: ["my-driver-profile", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await supabase.from("driver_profiles").select("*").eq("user_id", userId!).maybeSingle();
+      return data;
+    },
+  });
+
+  const [form, setForm] = useState({
+    display_name: "",
+    phone: "",
+    whatsapp: "",
+    email: "",
+    vehicle_class: "economy",
+    vehicle_make: "",
+    vehicle_model: "",
+    vehicle_color: "",
+    vehicle_year: new Date().getFullYear(),
+    vehicle_plate: "",
+    vehicle_photo: "",
+    plate_photo: "",
+    selfie_photo: "",
+    license_photo: "",
+    bio: "",
+    city: "",
+    country: "",
+    active: true,
+  });
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    if (profile && !hydrated) {
+      setForm({
+        display_name: profile.display_name ?? "",
+        phone: profile.phone ?? "",
+        whatsapp: profile.whatsapp ?? "",
+        email: profile.email ?? "",
+        vehicle_class: profile.vehicle_class ?? "economy",
+        vehicle_make: profile.vehicle_make ?? "",
+        vehicle_model: profile.vehicle_model ?? "",
+        vehicle_color: profile.vehicle_color ?? "",
+        vehicle_year: profile.vehicle_year ?? new Date().getFullYear(),
+        vehicle_plate: profile.vehicle_plate ?? "",
+        vehicle_photo: profile.vehicle_photo ?? "",
+        plate_photo: profile.plate_photo ?? "",
+        selfie_photo: profile.selfie_photo ?? "",
+        license_photo: profile.license_photo ?? "",
+        bio: profile.bio ?? "",
+        city: profile.city ?? "",
+        country: profile.country ?? "",
+        active: profile.active ?? true,
+      });
+      setHydrated(true);
+    }
+  }, [profile, hydrated]);
+
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    if (!userId) return;
+    if (!form.vehicle_plate.trim()) { toast.error("Number plate is required"); return; }
+    if (!form.phone.trim()) { toast.error("Phone is required"); return; }
+    if (!form.vehicle_photo) { toast.error("Add a photo of your vehicle"); return; }
+    if (!form.plate_photo) { toast.error("Add a photo of the number plate"); return; }
+    setBusy(true);
+    const payload = { ...form, user_id: userId, vehicle_year: Number(form.vehicle_year) || null };
+    const { error } = profile
+      ? await supabase.from("driver_profiles").update(payload).eq("user_id", userId)
+      : await supabase.from("driver_profiles").insert(payload);
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(profile ? "Driver profile updated" : "You're registered as a PUBSTORE driver 🚗");
+    qc.invalidateQueries({ queryKey: ["my-driver-profile"] });
+  };
+
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+
+  return (
+    <div className="px-4 py-4 space-y-4">
+      <div className="rounded-2xl bg-gradient-to-br from-emerald-500/15 via-teal-500/10 to-transparent border border-emerald-500/20 p-4">
+        <div className="flex items-center gap-3">
+          <span className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-400 text-white flex items-center justify-center shadow-soft">
+            <Truck className="w-5 h-5" />
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm">{profile ? "Your driver profile" : "Become a PUBSTORE driver"}</p>
+            <p className="text-[11px] text-muted-foreground">
+              {profile
+                ? `Active · ${profile.trips ?? 0} trips · ★ ${Number(profile.rating ?? 5).toFixed(1)}`
+                : "Earn by accepting fair-fare ride requests in your city"}
+            </p>
+          </div>
+          {profile && (
+            <Link to="/driver" className="h-9 px-3 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center gap-1 shadow-card">
+              Open driver mode
+            </Link>
+          )}
+        </div>
+      </div>
+
+      <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Contact</p>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Display name" value={form.display_name} onChange={(v) => setForm({ ...form, display_name: v })} />
+        <LabeledInput label="Phone" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="WhatsApp" value={form.whatsapp} onChange={(v) => setForm({ ...form, whatsapp: v })} />
+        <LabeledInput label="Email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="City" value={form.city} onChange={(v) => setForm({ ...form, city: v })} />
+        <LabeledInput label="Country" value={form.country} onChange={(v) => setForm({ ...form, country: v })} />
+      </div>
+
+      <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground pt-2">Vehicle</p>
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Class</label>
+          <select value={form.vehicle_class} onChange={(e) => setForm({ ...form, vehicle_class: e.target.value })} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1">
+            {["moto","economy","comfort","xl"].map((k) => <option key={k} value={k}>{k}</option>)}
+          </select>
+        </div>
+        <LabeledInput label="Year" type="number" value={form.vehicle_year} onChange={(v) => setForm({ ...form, vehicle_year: Number(v) || 0 })} />
+        <LabeledInput label="Color" value={form.vehicle_color} onChange={(v) => setForm({ ...form, vehicle_color: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Make" value={form.vehicle_make} onChange={(v) => setForm({ ...form, vehicle_make: v })} />
+        <LabeledInput label="Model" value={form.vehicle_model} onChange={(v) => setForm({ ...form, vehicle_model: v })} />
+      </div>
+      <LabeledInput label="Number plate (required)" value={form.vehicle_plate} onChange={(v) => setForm({ ...form, vehicle_plate: v.toUpperCase() })} />
+
+      <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground pt-2">Photos · required</p>
+      <div className="grid grid-cols-2 gap-3">
+        <ImageUpload
+          label="Vehicle photo"
+          value={form.vehicle_photo}
+          onChange={(v) => setForm({ ...form, vehicle_photo: v })}
+          folder="driver"
+          aspect="aspect-square"
+          hint="Side profile of the car"
+        />
+        <ImageUpload
+          label="Number plate"
+          value={form.plate_photo}
+          onChange={(v) => setForm({ ...form, plate_photo: v })}
+          folder="driver"
+          aspect="aspect-square"
+          hint="Clear, readable plate"
+        />
+        <ImageUpload
+          label="Your selfie"
+          value={form.selfie_photo}
+          onChange={(v) => setForm({ ...form, selfie_photo: v })}
+          folder="driver"
+          aspect="aspect-square"
+          hint="So riders recognize you"
+        />
+        <ImageUpload
+          label="Driver license"
+          value={form.license_photo}
+          onChange={(v) => setForm({ ...form, license_photo: v })}
+          folder="driver"
+          aspect="aspect-square"
+          hint="For verification only"
+        />
+      </div>
+
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Short bio</label>
+        <textarea value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} rows={3} className="w-full rounded-xl border bg-background p-3 text-sm mt-1" placeholder="A friendly note for riders" />
+      </div>
+
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="w-4 h-4" />
+        Active — show me to riders looking for a driver
+      </label>
+
+      <Button onClick={save} disabled={busy} className="w-full h-12">
+        {busy ? "Saving…" : profile ? "Save driver profile" : "Register as a driver"}
+      </Button>
+    </div>
   );
 }
 
