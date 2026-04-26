@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Car, Bike, Crown, Users, MapPin, Navigation, Crosshair, Plus, Minus, Star, Clock, Zap, Shield, Phone, X, ArrowRight, Sparkles, Wallet } from "lucide-react";
+import {
+  Car, Bike, Users, MapPin, Navigation, Crosshair, Plus, Minus, Star, Clock, Zap, Shield, Phone, X, ArrowRight,
+  Sparkles, Wallet, TrendingUp, AlertTriangle, Route as RouteIcon, Gauge, Fuel, Leaf, Activity, Radio, Timer,
+  CloudRain, Sun, ChevronRight, Flame,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useNearbyDrivers, useRideOffers, useActiveRide, suggestFare, haversineKm, type Ride } from "@/hooks/useRides";
@@ -11,11 +15,11 @@ import CircleSpinner from "@/components/CircleSpinner";
 type LatLng = { lat: number; lng: number };
 type VClass = Ride["vehicle_class"];
 
-const CLASSES: { id: VClass; label: string; icon: typeof Car; eta: string; seats: string; tone: string }[] = [
-  { id: "moto",    label: "Moto",    icon: Bike,  eta: "2 min", seats: "1 seat",  tone: "from-amber-500 to-orange-400" },
-  { id: "economy", label: "Economy", icon: Car,   eta: "4 min", seats: "4 seats", tone: "from-emerald-500 to-teal-400" },
-  { id: "comfort", label: "Comfort", icon: Car,   eta: "5 min", seats: "4 seats", tone: "from-sky-500 to-blue-400" },
-  { id: "xl",      label: "XL",      icon: Users, eta: "6 min", seats: "6 seats", tone: "from-zinc-900 to-zinc-600" },
+const CLASSES: { id: VClass; label: string; icon: typeof Car; eta: string; seats: string; tone: string; mult: number }[] = [
+  { id: "moto",    label: "Moto",    icon: Bike,  eta: "2 min", seats: "1 seat",  tone: "from-amber-500 to-orange-400", mult: 0.55 },
+  { id: "economy", label: "Economy", icon: Car,   eta: "4 min", seats: "4 seats", tone: "from-emerald-500 to-teal-400", mult: 1.0 },
+  { id: "comfort", label: "Comfort", icon: Car,   eta: "5 min", seats: "4 seats", tone: "from-sky-500 to-blue-400", mult: 1.35 },
+  { id: "xl",      label: "XL",      icon: Users, eta: "6 min", seats: "6 seats", tone: "from-zinc-900 to-zinc-600", mult: 1.7 },
 ];
 
 async function reverseGeocode(lat: number, lng: number): Promise<string> {
@@ -35,6 +39,39 @@ async function searchPlace(q: string): Promise<{ lat: number; lng: number; label
   } catch { return []; }
 }
 
+/** Build 3 alternative curved polyline routes between pickup → dropoff. */
+function buildRoutes(p: LatLng, d: LatLng) {
+  const make = (curve: number, segs = 24): [number, number][] => {
+    const dx = d.lng - p.lng;
+    const dy = d.lat - p.lat;
+    // perpendicular offset
+    const nx = -dy;
+    const ny = dx;
+    const norm = Math.sqrt(nx * nx + ny * ny) || 1;
+    const ox = (nx / norm) * curve;
+    const oy = (ny / norm) * curve;
+    const cx = (p.lng + d.lng) / 2 + ox;
+    const cy = (p.lat + d.lat) / 2 + oy;
+    const out: [number, number][] = [];
+    for (let i = 0; i <= segs; i++) {
+      const t = i / segs;
+      const x = (1 - t) * (1 - t) * p.lng + 2 * (1 - t) * t * cx + t * t * d.lng;
+      const y = (1 - t) * (1 - t) * p.lat + 2 * (1 - t) * t * cy + t * t * d.lat;
+      out.push([y, x]);
+    }
+    return out;
+  };
+  const base = haversineKm(p.lat, p.lng, d.lat, d.lng);
+  const fastest = make(base * 0.003);
+  const balanced = make(-base * 0.006);
+  const scenic = make(base * 0.012);
+  return [
+    { id: "fastest",  label: "Fastest",  km: base * 1.05, mins: Math.max(4, Math.round(base * 2.4)),  traffic: "moderate" as const, coords: fastest,  color: "hsl(var(--primary))",         dash: undefined,  weight: 6, opacity: 0.95 },
+    { id: "balanced", label: "Balanced", km: base * 1.18, mins: Math.max(5, Math.round(base * 2.8)),  traffic: "light" as const,    coords: balanced, color: "hsl(142 71% 45%)",            dash: "8 6",      weight: 4, opacity: 0.7 },
+    { id: "scenic",   label: "Scenic",   km: base * 1.42, mins: Math.max(7, Math.round(base * 3.6)),  traffic: "free" as const,     coords: scenic,   color: "hsl(38 95% 55%)",             dash: "2 6",      weight: 4, opacity: 0.7 },
+  ];
+}
+
 export default function Rides() {
   const { userId, requireAuth } = useRequireAuth();
   const [me, setMe] = useState<LatLng | null>(null);
@@ -46,6 +83,8 @@ export default function Rides() {
   const [notes, setNotes] = useState("");
   const [activeRideId, setActiveRideId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [routeChoice, setRouteChoice] = useState<"fastest" | "balanced" | "scenic">("fastest");
+  const [tab, setTab] = useState<"now" | "schedule" | "share">("now");
 
   const ride = useActiveRide(activeRideId);
   const offers = useRideOffers(activeRideId);
@@ -53,6 +92,16 @@ export default function Rides() {
 
   const distance = useMemo(() => (pickup && dropoff ? haversineKm(pickup.lat, pickup.lng, dropoff.lat, dropoff.lng) : 0), [pickup, dropoff]);
   const suggested = useMemo(() => (distance > 0 ? suggestFare(distance, vClass) : 0), [distance, vClass]);
+  const routes = useMemo(() => (pickup && dropoff ? buildRoutes(pickup, dropoff) : []), [pickup, dropoff]);
+  const activeRoute = routes.find((r) => r.id === routeChoice) ?? routes[0];
+
+  // Surge index — simulated based on driver supply / demand
+  const surge = useMemo(() => {
+    if (drivers.length === 0) return 1.6;
+    if (drivers.length < 3) return 1.35;
+    if (drivers.length < 6) return 1.1;
+    return 1.0;
+  }, [drivers.length]);
 
   // Get my location once on mount
   useEffect(() => {
@@ -73,7 +122,7 @@ export default function Rides() {
     );
   }, []); // eslint-disable-line
 
-  // Live update rider position to the ride row while ride is active
+  // Live update rider position
   useEffect(() => {
     if (!activeRideId || !navigator.geolocation) return;
     const w = navigator.geolocation.watchPosition(async (p) => {
@@ -84,8 +133,7 @@ export default function Rides() {
     return () => navigator.geolocation.clearWatch(w);
   }, [activeRideId]);
 
-  // Suggest fare when distance changes
-  useEffect(() => { if (suggested > 0) setFare(suggested); }, [suggested]);
+  useEffect(() => { if (suggested > 0) setFare(+(suggested * surge).toFixed(2)); }, [suggested, surge]);
 
   const requestRide = async () => {
     const uid = requireAuth({ message: "Sign in to request a ride" });
@@ -99,7 +147,7 @@ export default function Rides() {
       pickup_lat: pickup.lat, pickup_lng: pickup.lng,
       dropoff_address: dropoff.address,
       dropoff_lat: dropoff.lat, dropoff_lng: dropoff.lng,
-      distance_km: Number(distance.toFixed(2)),
+      distance_km: Number((activeRoute?.km ?? distance).toFixed(2)),
       rider_offer: fare,
       vehicle_class: vClass,
       notes: notes || null,
@@ -109,7 +157,6 @@ export default function Rides() {
     setCreating(false);
     if (error || !data) { toast.error(error?.message ?? "Could not create ride"); return; }
     setActiveRideId(data.id);
-    // simulate incoming driver counter-offers
     seedSimulatedOffers(data.id, drivers, fare, vClass);
     toast.success("Looking for nearby drivers…");
   };
@@ -154,39 +201,119 @@ export default function Rides() {
 
   const inActiveFlow = ride && ["searching", "offered", "accepted", "arriving", "in_progress"].includes(ride.status);
 
+  const mapRoutes = activeRoute
+    ? routes.map((r) => ({
+        coords: r.coords,
+        color: r.color,
+        weight: r.id === routeChoice ? 6 : 3,
+        opacity: r.id === routeChoice ? 0.95 : 0.45,
+        dash: r.id === routeChoice ? undefined : "4 6",
+      }))
+    : undefined;
+
   return (
     <div className="relative min-h-[calc(100dvh-3.5rem)] bg-gradient-to-b from-background via-background to-muted/30">
-      {/* Hero map */}
+      {/* Hero map with overlays */}
       <div className="relative">
-        <div className="h-[42vh] min-h-[280px] w-full">
+        <div className="h-[46vh] min-h-[320px] w-full">
           <RideMap
             me={me}
             pickup={pickup ? { lat: pickup.lat, lng: pickup.lng } : null}
             dropoff={dropoff ? { lat: dropoff.lat, lng: dropoff.lng } : null}
             drivers={inActiveFlow ? [] : drivers.map((d) => ({ ...d, lat: Number(d.lat), lng: Number(d.lng) }))}
             driverPosition={ride?.driver_lat && ride?.driver_lng ? { lat: Number(ride.driver_lat), lng: Number(ride.driver_lng) } : null}
+            routes={mapRoutes as any}
             className="w-full h-full"
           />
         </div>
-        {/* Floating header chip */}
-        <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
-          <div className="px-3 h-9 rounded-full bg-background/90 backdrop-blur border border-border shadow-card flex items-center gap-2 pointer-events-auto">
-            <span className="relative w-2 h-2 rounded-full bg-emerald-500">
+
+        {/* Top status strip */}
+        <div className="absolute top-3 left-3 right-3 flex items-center gap-2 pointer-events-none">
+          <div className="px-2.5 h-8 rounded-full bg-background/95 backdrop-blur border border-border shadow-card flex items-center gap-1.5 pointer-events-auto">
+            <span className="relative w-1.5 h-1.5 rounded-full bg-emerald-500">
               <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-60" />
             </span>
-            <span className="text-xs font-bold">{drivers.length} drivers nearby</span>
+            <span className="text-[10px] font-bold">{drivers.length} live</span>
           </div>
-          <button
-            onClick={() => useMyLocationFor("pickup")}
-            className="h-9 w-9 rounded-full bg-background/95 backdrop-blur border border-border shadow-card flex items-center justify-center pointer-events-auto"
-          >
-            {locBusy ? <CircleSpinner size={14} /> : <Crosshair className="w-4 h-4" />}
-          </button>
+          <div className="px-2.5 h-8 rounded-full bg-background/95 backdrop-blur border border-border shadow-card flex items-center gap-1.5 pointer-events-auto">
+            <Flame className="w-3 h-3 text-amber-500" />
+            <span className="text-[10px] font-bold">{surge.toFixed(2)}× surge</span>
+          </div>
+          <div className="px-2.5 h-8 rounded-full bg-background/95 backdrop-blur border border-border shadow-card flex items-center gap-1.5 pointer-events-auto">
+            <Sun className="w-3 h-3 text-sky-500" />
+            <span className="text-[10px] font-bold">24°</span>
+          </div>
+          <div className="ml-auto pointer-events-auto">
+            <button
+              onClick={() => useMyLocationFor("pickup")}
+              className="h-8 w-8 rounded-full bg-background/95 backdrop-blur border border-border shadow-card flex items-center justify-center"
+            >
+              {locBusy ? <CircleSpinner size={12} /> : <Crosshair className="w-3.5 h-3.5" />}
+            </button>
+          </div>
         </div>
+
+        {/* Bottom map overlay: route alternatives */}
+        {!inActiveFlow && routes.length > 0 && (
+          <div className="absolute bottom-3 left-3 right-3 pointer-events-auto">
+            <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
+              {routes.map((r) => {
+                const active = r.id === routeChoice;
+                return (
+                  <button
+                    key={r.id}
+                    onClick={() => setRouteChoice(r.id as any)}
+                    className={`shrink-0 px-3 h-9 rounded-full backdrop-blur border flex items-center gap-2 transition-all ${
+                      active
+                        ? "bg-foreground text-background border-foreground shadow-elevated scale-105"
+                        : "bg-background/90 border-border"
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: r.color }} />
+                    <span className="text-[10px] font-black tracking-wide uppercase">{r.label}</span>
+                    <span className="text-[10px] font-bold opacity-80">{r.mins}m · {r.km.toFixed(1)}km</span>
+                    <span className={`text-[9px] font-bold px-1.5 rounded-full ${
+                      r.traffic === "free"     ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" :
+                      r.traffic === "light"    ? "bg-sky-500/20 text-sky-700 dark:text-sky-300" :
+                                                  "bg-amber-500/20 text-amber-700 dark:text-amber-300"
+                    }`}>{r.traffic}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
+      {/* Mode tabs */}
+      {!inActiveFlow && (
+        <div className="px-3 mt-3">
+          <div className="flex gap-1 p-1 rounded-2xl bg-muted/60 border border-border">
+            {[
+              { id: "now",      label: "Ride now",  icon: Zap },
+              { id: "schedule", label: "Schedule",  icon: Timer },
+              { id: "share",    label: "Pool",      icon: Users },
+            ].map((t) => {
+              const active = tab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id as any)}
+                  className={`flex-1 h-9 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition ${
+                    active ? "bg-background shadow-card text-foreground" : "text-muted-foreground"
+                  }`}
+                >
+                  <t.icon className="w-3.5 h-3.5" />
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Main panel */}
-      <div className="relative -mt-6 z-10">
+      <div className="relative mt-3 z-10">
         <div className="mx-3 rounded-3xl bg-card border border-border shadow-elevated overflow-hidden">
           {!inActiveFlow ? (
             <RequestPanel
@@ -194,13 +321,16 @@ export default function Rides() {
               dropoff={dropoff} setDropoff={setDropoff}
               vClass={vClass} setVClass={setVClass}
               fare={fare} setFare={setFare}
-              suggested={suggested} distance={distance}
+              suggested={suggested} distance={activeRoute?.km ?? distance}
+              etaMins={activeRoute?.mins ?? 0}
+              surge={surge}
               notes={notes} setNotes={setNotes}
               onSwap={swapPickupDrop}
               onUseMy={useMyLocationFor}
               onSubmit={requestRide}
               busy={creating}
               driversCount={drivers.length}
+              tab={tab}
             />
           ) : (
             <ActiveRidePanel
@@ -212,25 +342,66 @@ export default function Rides() {
           )}
         </div>
 
+        {/* Trip insight strip */}
+        {!inActiveFlow && pickup && dropoff && (
+          <div className="px-3 mt-3 grid grid-cols-4 gap-2">
+            <Insight icon={RouteIcon} label="Route" value={`${(activeRoute?.km ?? distance).toFixed(1)}km`} tone="text-primary" />
+            <Insight icon={Timer} label="ETA" value={`${activeRoute?.mins ?? 0}m`} tone="text-emerald-500" />
+            <Insight icon={Fuel} label="CO₂" value={`${(((activeRoute?.km ?? distance) * 0.19)).toFixed(1)}kg`} tone="text-amber-500" />
+            <Insight icon={Leaf} label="Saved" value={`$${(((activeRoute?.km ?? distance) * 0.35)).toFixed(1)}`} tone="text-rose-500" />
+          </div>
+        )}
+
         {/* Trust + perks */}
-        <div className="px-3 mt-4 grid grid-cols-3 gap-2">
+        <div className="px-3 mt-3 grid grid-cols-3 gap-2">
           <Perk icon={Shield} label="Verified drivers" tone="text-emerald-500" />
           <Perk icon={Zap} label="Fair-fare bidding" tone="text-amber-500" />
-          <Perk icon={Wallet} label="In-app wallet pay" tone="text-sky-500" />
+          <Perk icon={Wallet} label="In-app wallet" tone="text-sky-500" />
+        </div>
+
+        {/* Demand & surge zones */}
+        <div className="px-3 mt-5">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-bold tracking-wide">Demand zones</h3>
+            <span className="text-[10px] text-muted-foreground inline-flex items-center gap-1">
+              <Activity className="w-3 h-3" /> Updated live
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { area: "City Center", level: "High",   mult: "1.4×", trend: "+12%", tone: "from-rose-500 to-orange-400", icon: Flame },
+              { area: "Airport",     level: "Peak",   mult: "1.7×", trend: "+28%", tone: "from-violet-500 to-fuchsia-400", icon: TrendingUp },
+              { area: "University",  level: "Medium", mult: "1.1×", trend: "+4%",  tone: "from-sky-500 to-blue-400", icon: Activity },
+              { area: "Suburbs",     level: "Low",    mult: "1.0×", trend: "−2%",  tone: "from-emerald-500 to-teal-400", icon: Leaf },
+            ].map((z) => (
+              <div key={z.area} className="rounded-2xl bg-card border border-border p-3 shadow-card">
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`w-8 h-8 rounded-lg bg-gradient-to-br ${z.tone} flex items-center justify-center shadow-soft`}>
+                    <z.icon className="w-4 h-4 text-white" />
+                  </span>
+                  <span className="text-[10px] font-black tracking-wider text-muted-foreground">{z.trend}</span>
+                </div>
+                <p className="text-sm font-black">{z.area}</p>
+                <p className="text-[10px] text-muted-foreground">{z.level} demand</p>
+                <p className="text-xs font-bold text-primary mt-0.5">{z.mult} surge</p>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Recent destinations / shortcuts */}
         <div className="px-3 mt-5">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-bold tracking-wide">Saved & frequent</h3>
-            <Link to="/addresses" className="text-xs font-semibold text-primary">Manage</Link>
+            <Link to="/addresses" className="text-xs font-semibold text-primary inline-flex items-center gap-0.5">Manage <ChevronRight className="w-3 h-3" /></Link>
           </div>
           <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-3 px-3 pb-2">
             {[
-              { label: "Home", sub: "Set address", icon: MapPin, tone: "from-emerald-500 to-teal-400" },
-              { label: "Work", sub: "Set address", icon: MapPin, tone: "from-sky-500 to-blue-400" },
-              { label: "Airport", sub: "Quick fare", icon: Navigation, tone: "from-violet-500 to-fuchsia-400" },
-              { label: "Mall", sub: "Quick fare", icon: Sparkles, tone: "from-rose-500 to-orange-400" },
+              { label: "Home",    sub: "Set address", icon: MapPin,     tone: "from-emerald-500 to-teal-400" },
+              { label: "Work",    sub: "Set address", icon: MapPin,     tone: "from-sky-500 to-blue-400" },
+              { label: "Airport", sub: "Quick fare",  icon: Navigation, tone: "from-violet-500 to-fuchsia-400" },
+              { label: "Mall",    sub: "Quick fare",  icon: Sparkles,   tone: "from-rose-500 to-orange-400" },
+              { label: "Hospital",sub: "Priority",    icon: AlertTriangle, tone: "from-red-500 to-rose-400" },
             ].map((s) => (
               <button key={s.label} className="shrink-0 w-32 rounded-2xl bg-muted/50 p-3 text-left border border-border hover:bg-muted transition">
                 <span className={`w-9 h-9 rounded-xl bg-gradient-to-br ${s.tone} flex items-center justify-center mb-2 shadow-soft`}>
@@ -246,29 +417,36 @@ export default function Rides() {
         {/* Driver radar list */}
         <div className="px-3 mt-5 pb-8">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-bold tracking-wide">Live radar</h3>
+            <h3 className="text-sm font-bold tracking-wide flex items-center gap-1.5"><Radio className="w-3.5 h-3.5 text-primary" /> Live radar</h3>
             <div className="flex items-center gap-2">
               <Link to="/driver" className="text-[11px] font-bold text-primary inline-flex items-center gap-1">
                 <Car className="w-3 h-3" /> Switch to driver
               </Link>
-              <span className="text-[11px] text-muted-foreground">{drivers.length} online · within 10km</span>
+              <span className="text-[11px] text-muted-foreground">{drivers.length} · 10km</span>
             </div>
           </div>
           <div className="rounded-2xl bg-card border border-border shadow-card divide-y divide-border">
-            {drivers.slice(0, 5).map((d) => {
+            {drivers.slice(0, 6).map((d, idx) => {
               const km = me ? haversineKm(me.lat, me.lng, Number(d.lat), Number(d.lng)) : 0;
+              const eta = Math.max(1, Math.round(km * 2.2));
               return (
                 <div key={d.user_id} className="flex items-center gap-3 p-3">
-                  <span className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-400 flex items-center justify-center text-white">
-                    <Car className="w-4 h-4" />
+                  <span className={`w-9 h-9 rounded-full bg-gradient-to-br ${
+                    d.vehicle_class === "moto" ? "from-amber-500 to-orange-400" :
+                    d.vehicle_class === "comfort" ? "from-sky-500 to-blue-400" :
+                    d.vehicle_class === "xl" ? "from-zinc-900 to-zinc-600" :
+                    "from-emerald-500 to-teal-400"
+                  } flex items-center justify-center text-white relative`}>
+                    {d.vehicle_class === "moto" ? <Bike className="w-4 h-4" /> : <Car className="w-4 h-4" />}
+                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-card" />
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold truncate">{d.display_name ?? "Driver"}</p>
+                    <p className="text-sm font-bold truncate">{d.display_name ?? `Driver ${idx + 1}`}</p>
                     <p className="text-[11px] text-muted-foreground truncate">{d.vehicle_label ?? d.vehicle_class}</p>
                   </div>
                   <div className="text-right">
-                    <div className="flex items-center gap-1 text-xs font-bold"><Star className="w-3 h-3 fill-amber-400 text-amber-400" /> {Number(d.rating).toFixed(1)}</div>
-                    <p className="text-[10px] text-muted-foreground">{km.toFixed(1)} km</p>
+                    <div className="flex items-center gap-1 text-xs font-bold justify-end"><Star className="w-3 h-3 fill-amber-400 text-amber-400" /> {Number(d.rating).toFixed(1)}</div>
+                    <p className="text-[10px] text-muted-foreground">{km.toFixed(1)}km · {eta}m</p>
                   </div>
                 </div>
               );
@@ -295,6 +473,8 @@ function RequestPanel(props: {
   setFare: (v: number) => void;
   suggested: number;
   distance: number;
+  etaMins: number;
+  surge: number;
   notes: string;
   setNotes: (v: string) => void;
   onSwap: () => void;
@@ -302,8 +482,13 @@ function RequestPanel(props: {
   onSubmit: () => void;
   busy: boolean;
   driversCount: number;
+  tab: "now" | "schedule" | "share";
 }) {
-  const { pickup, setPickup, dropoff, setDropoff, vClass, setVClass, fare, setFare, suggested, distance, notes, setNotes, onSwap, onUseMy, onSubmit, busy } = props;
+  const { pickup, setPickup, dropoff, setDropoff, vClass, setVClass, fare, setFare, suggested, distance, etaMins, surge, notes, setNotes, onSwap, onUseMy, onSubmit, busy, tab } = props;
+  const baseFare = suggested;
+  const surgeAdd = baseFare * (surge - 1);
+  const platformFee = +(fare * 0.08).toFixed(2);
+  const driverEarn = +(fare - platformFee).toFixed(2);
 
   return (
     <div className="p-4 space-y-4">
@@ -334,13 +519,30 @@ function RequestPanel(props: {
         )}
       </div>
 
-      {/* Vehicle class */}
+      {tab === "schedule" && (
+        <div className="rounded-2xl bg-sky-500/10 border border-sky-500/20 p-3 flex items-center gap-2">
+          <Timer className="w-4 h-4 text-sky-500 shrink-0" />
+          <p className="text-[11px] text-foreground/80">Schedule up to 7 days ahead. We'll match you 15 min before pickup with the lowest fair fare.</p>
+        </div>
+      )}
+      {tab === "share" && (
+        <div className="rounded-2xl bg-emerald-500/10 border border-emerald-500/20 p-3 flex items-center gap-2">
+          <Users className="w-4 h-4 text-emerald-500 shrink-0" />
+          <p className="text-[11px] text-foreground/80">Pool with riders going your way. Save up to 35% — adds ~5 min to your trip.</p>
+        </div>
+      )}
+
+      {/* Vehicle class with live price tags */}
       <div>
-        <p className="text-[11px] font-bold tracking-wider text-muted-foreground mb-2">CHOOSE A RIDE</p>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[11px] font-bold tracking-wider text-muted-foreground">CHOOSE A RIDE</p>
+          {distance > 0 && <p className="text-[10px] text-muted-foreground">{distance.toFixed(1)} km · ~{etaMins} min</p>}
+        </div>
         <div className="grid grid-cols-4 gap-2">
           {CLASSES.map((c) => {
             const active = vClass === c.id;
             const Icon = c.icon;
+            const price = distance > 0 ? suggestFare(distance, c.id) * surge : 0;
             return (
               <button
                 key={c.id}
@@ -352,6 +554,7 @@ function RequestPanel(props: {
                 </span>
                 <p className="text-[11px] font-bold leading-none">{c.label}</p>
                 <p className="text-[9px] text-muted-foreground mt-1">{c.eta} · {c.seats}</p>
+                {price > 0 && <p className="text-[10px] font-black text-primary mt-1">${price.toFixed(2)}</p>}
                 {active && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary" />}
               </button>
             );
@@ -359,12 +562,16 @@ function RequestPanel(props: {
         </div>
       </div>
 
-      {/* Fare bidding */}
+      {/* Fare bidding with breakdown */}
       <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 p-3">
         <div className="flex items-center justify-between mb-2">
           <div>
             <p className="text-[10px] font-bold tracking-wider text-primary">YOUR FAIR FARE</p>
-            <p className="text-[10px] text-muted-foreground">{distance > 0 ? `${distance.toFixed(1)} km` : "Set destination"} {suggested > 0 && ` · suggested $${suggested.toFixed(2)}`}</p>
+            <p className="text-[10px] text-muted-foreground">
+              {distance > 0 ? `${distance.toFixed(1)} km` : "Set destination"}
+              {suggested > 0 && ` · suggested $${(suggested * surge).toFixed(2)}`}
+              {surge > 1 && <span className="ml-1 text-amber-600 dark:text-amber-400 font-bold">{surge.toFixed(2)}× surge</span>}
+            </p>
           </div>
           <div className="flex items-center gap-1.5">
             <button onClick={() => setFare(Math.max(1, +(fare - 0.5).toFixed(2)))} className="w-8 h-8 rounded-full bg-background border border-border flex items-center justify-center"><Minus className="w-3.5 h-3.5" /></button>
@@ -373,29 +580,51 @@ function RequestPanel(props: {
         </div>
         <div className="flex items-baseline gap-2">
           <span className="text-3xl font-black tracking-tight">${fare.toFixed(2)}</span>
-          {suggested > 0 && fare < suggested * 0.85 && <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">May get fewer offers</span>}
-          {suggested > 0 && fare >= suggested * 1.1 && <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Faster matches likely</span>}
+          {suggested > 0 && fare < suggested * surge * 0.85 && <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 inline-flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Fewer offers</span>}
+          {suggested > 0 && fare >= suggested * surge * 1.1 && <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1"><Zap className="w-3 h-3" /> Faster</span>}
         </div>
         <input
-          type="range" min={Math.max(1, suggested * 0.6)} max={Math.max(suggested * 1.6, 20)} step={0.5} value={fare}
+          type="range" min={Math.max(1, suggested * 0.6)} max={Math.max(suggested * 2, 25)} step={0.5} value={fare}
           onChange={(e) => setFare(Number(e.target.value))}
           className="w-full mt-2 accent-primary"
         />
+        {/* Fare breakdown */}
+        {distance > 0 && (
+          <div className="mt-3 pt-3 border-t border-border/50 grid grid-cols-3 gap-2 text-[10px]">
+            <div>
+              <p className="text-muted-foreground">Base</p>
+              <p className="font-black">${baseFare.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Surge</p>
+              <p className={`font-black ${surge > 1 ? "text-amber-600 dark:text-amber-400" : ""}`}>+${surgeAdd.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Driver gets</p>
+              <p className="font-black text-emerald-600 dark:text-emerald-400">${driverEarn.toFixed(2)}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Notes */}
-      <input
-        value={notes} onChange={(e) => setNotes(e.target.value)}
-        placeholder="Note for driver (optional)…"
-        className="w-full h-10 px-3 rounded-xl bg-muted/50 border border-border text-sm outline-none focus:border-primary"
-      />
+      <div className="flex items-center gap-2">
+        <input
+          value={notes} onChange={(e) => setNotes(e.target.value)}
+          placeholder="Note for driver (optional)…"
+          className="flex-1 h-10 px-3 rounded-xl bg-muted/50 border border-border text-sm outline-none focus:border-primary"
+        />
+        <button className="h-10 px-3 rounded-xl bg-muted/50 border border-border text-[10px] font-bold flex items-center gap-1">
+          <Wallet className="w-3.5 h-3.5" /> Wallet
+        </button>
+      </div>
 
       <button
         onClick={onSubmit}
         disabled={busy || !pickup || !dropoff}
         className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-bold text-sm shadow-elevated disabled:opacity-50 flex items-center justify-center gap-2"
       >
-        {busy ? <CircleSpinner size={16} /> : <><Sparkles className="w-4 h-4" /> Find drivers · ${fare.toFixed(2)}</>}
+        {busy ? <CircleSpinner size={16} /> : <><Sparkles className="w-4 h-4" /> {tab === "schedule" ? "Schedule ride" : tab === "share" ? "Find pool" : "Find drivers"} · ${fare.toFixed(2)}</>}
       </button>
     </div>
   );
@@ -473,14 +702,17 @@ function ActiveRidePanel({ ride, offers, onAccept, onCancel }: {
   }, [ride.created_at]);
 
   const acceptedOffer = offers.find((o) => o.status === "accepted");
+  const sortedOffers = [...offers].sort((a, b) => a.fare - b.fare);
+  const cheapest = sortedOffers[0];
+  const fastest = [...offers].sort((a, b) => a.eta_minutes - b.eta_minutes)[0];
 
   if (ride.status === "searching" || ride.status === "offered") {
     return (
       <div className="p-4 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-bold tracking-wider text-primary">FINDING YOU A DRIVER</p>
-            <p className="text-xl font-black mt-0.5">{Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")}</p>
+            <p className="text-[10px] font-bold tracking-wider text-primary inline-flex items-center gap-1"><Radio className="w-3 h-3" /> FINDING YOU A DRIVER</p>
+            <p className="text-2xl font-black mt-0.5 tabular-nums">{Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")}</p>
           </div>
           <button onClick={onCancel} className="h-9 px-3 rounded-full bg-muted text-xs font-bold flex items-center gap-1"><X className="w-3 h-3" /> Cancel</button>
         </div>
@@ -488,15 +720,32 @@ function ActiveRidePanel({ ride, offers, onAccept, onCancel }: {
           <div className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-primary/60 via-primary to-primary/60 animate-[slide_1.4s_ease-in-out_infinite]" />
         </div>
 
+        {/* Quick badges for cheapest/fastest */}
+        {offers.length > 1 && (
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-2.5">
+              <p className="text-[9px] font-bold tracking-wider text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1"><Wallet className="w-3 h-3" /> CHEAPEST</p>
+              <p className="text-sm font-black mt-0.5">${cheapest?.fare.toFixed(2)} · {cheapest?.driver_name}</p>
+            </div>
+            <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-2.5">
+              <p className="text-[9px] font-bold tracking-wider text-amber-600 dark:text-amber-400 inline-flex items-center gap-1"><Gauge className="w-3 h-3" /> FASTEST</p>
+              <p className="text-sm font-black mt-0.5">{fastest?.eta_minutes}m · {fastest?.driver_name}</p>
+            </div>
+          </div>
+        )}
+
         <div>
-          <p className="text-xs font-bold mb-2">Driver offers ({offers.length})</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-bold">Driver offers ({offers.length})</p>
+            <p className="text-[10px] text-muted-foreground">Sorted by fare</p>
+          </div>
           {offers.length === 0 ? (
             <div className="rounded-xl bg-muted/40 border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
-              Drivers are reviewing your offer of <span className="font-bold text-foreground">${ride.rider_offer.toFixed(2)}</span>…
+              Drivers reviewing your offer of <span className="font-bold text-foreground">${ride.rider_offer.toFixed(2)}</span>…
             </div>
           ) : (
             <div className="space-y-2">
-              {offers.map((o) => (
+              {sortedOffers.map((o) => (
                 <div key={o.id} className="rounded-2xl bg-card border border-border p-3 flex items-center gap-3">
                   <span className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-400 text-white font-bold flex items-center justify-center text-sm">
                     {(o.driver_name ?? "D").slice(0, 1)}
@@ -504,8 +753,9 @@ function ActiveRidePanel({ ride, offers, onAccept, onCancel }: {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold truncate">{o.driver_name ?? "Driver"}</p>
                     <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1.5">
-                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" /> {o.driver_rating.toFixed(1)} · {o.vehicle_label}
+                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" /> {o.driver_rating.toFixed(1)} · {o.driver_trips} trips
                     </p>
+                    <p className="text-[10px] text-muted-foreground truncate">{o.vehicle_label} · {o.vehicle_plate}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-base font-black">${o.fare.toFixed(2)}</p>
@@ -572,6 +822,16 @@ function Stat({ label, value, icon: Icon }: { label: string; value: string; icon
   );
 }
 
+function Insight({ icon: Icon, label, value, tone }: { icon: typeof Clock; label: string; value: string; tone: string }) {
+  return (
+    <div className="rounded-2xl bg-card border border-border shadow-card p-2.5">
+      <Icon className={`w-4 h-4 ${tone}`} />
+      <p className="text-sm font-black mt-1">{value}</p>
+      <p className="text-[9px] font-bold tracking-wider text-muted-foreground uppercase">{label}</p>
+    </div>
+  );
+}
+
 function Perk({ icon: Icon, label, tone }: { icon: typeof Shield; label: string; tone: string }) {
   return (
     <div className="rounded-2xl bg-card border border-border shadow-card p-2.5 text-center">
@@ -583,7 +843,6 @@ function Perk({ icon: Icon, label, tone }: { icon: typeof Shield; label: string;
 
 /* ---------- Demo: simulated counter-offers + driver approach ---------- */
 async function seedSimulatedOffers(rideId: string, drivers: any[], userFare: number, vClass: VClass) {
-  // Create 2-4 offers from random nearby drivers with slight fare variation
   const pool = drivers.filter((d) => d.vehicle_class === vClass).slice(0, 6);
   const sample = (pool.length ? pool : drivers).slice(0, 4);
   for (let i = 0; i < sample.length; i++) {
@@ -609,7 +868,6 @@ async function seedSimulatedOffers(rideId: string, drivers: any[], userFare: num
 }
 
 async function simulateDriverApproach(rideId: string) {
-  // Move the driver coordinates progressively toward the rider
   const { data: r } = await supabase.from("rides").select("rider_lat,rider_lng,driver_lat,driver_lng").eq("id", rideId).maybeSingle();
   if (!r?.rider_lat || !r?.rider_lng) return;
   let dLat = Number(r.driver_lat ?? Number(r.rider_lat) + 0.01);
