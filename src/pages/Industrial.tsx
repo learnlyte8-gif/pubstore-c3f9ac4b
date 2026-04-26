@@ -2,7 +2,11 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchIndustrial, fetchIndustrialItem } from "@/data/verticals";
 import { ArrowLeft, Factory, Boxes, Truck, ShieldCheck, Briefcase, Zap, Clock, MapPin } from "lucide-react";
-import { useState } from "react";
+import { useMemo } from "react";
+import { useUrlFilters } from "@/hooks/useUrlFilters";
+import { FilterBar, FilterField, SortPills } from "@/components/marketplace/FilterBar";
+import { Slider } from "@/components/ui/slider";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const CATS = [
   { id: "all", label: "All", icon: Factory },
@@ -14,6 +18,13 @@ const CATS = [
   { id: "equipment", label: "Equipment", icon: Zap },
 ];
 
+const SORTS = [
+  { id: "newest", label: "Newest" },
+  { id: "price_asc", label: "Price ↑" },
+  { id: "price_desc", label: "Price ↓" },
+  { id: "moq_low", label: "Lowest MOQ" },
+];
+
 export default function Industrial() {
   const { id } = useParams();
   if (id) return <IndustrialDetail id={id} />;
@@ -21,11 +32,47 @@ export default function Industrial() {
 }
 
 function IndustrialIndex() {
-  const [cat, setCat] = useState("all");
-  const { data: items = [], isLoading } = useQuery({
-    queryKey: ["industrial", cat],
-    queryFn: () => fetchIndustrial(cat === "all" ? {} : { category: cat }),
+  const { values, update, reset } = useUrlFilters({
+    q: "",
+    cat: "all",
+    sort: "newest",
+    maxPrice: "",
+    certified: "",
   });
+
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ["industrial", values.cat],
+    queryFn: () => fetchIndustrial(values.cat === "all" ? {} : { category: values.cat }),
+  });
+
+  const priceMax = useMemo(
+    () => Math.max(1000, Math.ceil((items.reduce((m, it) => Math.max(m, it.price ?? 0), 0) || 50000) / 1000) * 1000),
+    [items],
+  );
+
+  const filtered = useMemo(() => {
+    const q = values.q.trim().toLowerCase();
+    const cap = values.maxPrice ? Number(values.maxPrice) : 0;
+    let list = items.filter((it) => {
+      if (cap > 0 && (it.price ?? Infinity) > cap) return false;
+      if (values.certified === "1" && it.certifications.length === 0) return false;
+      if (!q) return true;
+      const specStr = Object.entries(it.spec ?? {}).map(([k, v]) => `${k} ${v}`).join(" ");
+      const hay = `${it.title} ${it.subcategory ?? ""} ${it.country ?? ""} ${it.certifications.join(" ")} ${specStr}`.toLowerCase();
+      return hay.includes(q);
+    });
+    list = [...list].sort((a, b) => {
+      if (values.sort === "price_asc") return (a.price ?? Infinity) - (b.price ?? Infinity);
+      if (values.sort === "price_desc") return (b.price ?? -Infinity) - (a.price ?? -Infinity);
+      if (values.sort === "moq_low") return (a.moq ?? Infinity) - (b.moq ?? Infinity);
+      return 0;
+    });
+    return list;
+  }, [items, values]);
+
+  const advancedCount =
+    (values.sort !== "newest" ? 1 : 0) + (values.maxPrice ? 1 : 0) + (values.certified === "1" ? 1 : 0);
+  const anyActive = !!values.q || values.cat !== "all" || advancedCount > 0;
 
   return (
     <div className="pb-10">
@@ -51,35 +98,64 @@ function IndustrialIndex() {
         </div>
       </div>
 
-      {/* Filter */}
-      <div className="px-4 mt-4 flex gap-2 overflow-x-auto scrollbar-none">
-        {CATS.map((c) => {
-          const Icon = c.icon;
-          const active = cat === c.id;
-          return (
-            <button
-              key={c.id}
-              onClick={() => setCat(c.id)}
-              className={`shrink-0 px-3 h-9 rounded-md text-[11px] font-bold flex items-center gap-1.5 transition ${
-                active
-                  ? "bg-sky-950 text-sky-50"
-                  : "bg-muted text-foreground hover:bg-muted/70"
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              {c.label}
-            </button>
-          );
-        })}
-      </div>
+      <FilterBar
+        tone="blueprint"
+        search={values.q}
+        onSearchChange={(q) => update({ q })}
+        searchPlaceholder="Search spec, certification, origin…"
+        chips={CATS}
+        chipValue={values.cat}
+        onChipChange={(cat) => update({ cat })}
+        canReset={anyActive}
+        onReset={reset}
+        activeAdvancedCount={advancedCount}
+        trailing={`${filtered.length} ${filtered.length === 1 ? "listing" : "listings"}`}
+        advanced={
+          <div className="space-y-3">
+            <FilterField label="Sort by">
+              <SortPills value={values.sort} onChange={(v) => update({ sort: v })} options={SORTS} />
+            </FilterField>
+            <FilterField label={`Max price${values.maxPrice ? ` · $${Number(values.maxPrice).toLocaleString()}` : ""}`}>
+              <Slider
+                min={0}
+                max={priceMax}
+                step={500}
+                value={[values.maxPrice ? Number(values.maxPrice) : 0]}
+                onValueChange={([v]) => update({ maxPrice: v ? String(v) : "" })}
+              />
+              <p className="text-[10px] text-muted-foreground">0 = any · up to ${priceMax.toLocaleString()}</p>
+            </FilterField>
+            <label className="flex items-center gap-2 text-[12px] font-semibold cursor-pointer">
+              <Checkbox
+                checked={values.certified === "1"}
+                onCheckedChange={(c) => update({ certified: c ? "1" : "" })}
+              />
+              Certified suppliers only
+            </label>
+          </div>
+        }
+      />
 
       {isLoading && <p className="px-4 mt-8 text-center text-sm text-muted-foreground">Loading listings…</p>}
 
+      {!isLoading && filtered.length === 0 && (
+        <div className="px-4 mt-10 text-center">
+          <Factory className="w-8 h-8 mx-auto text-muted-foreground" />
+          <p className="mt-2 text-sm font-bold">No listings match.</p>
+          <button onClick={reset} className="mt-1 text-xs text-primary font-bold">Reset filters</button>
+        </div>
+      )}
+
       <div className="px-4 mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {items.map((it) => {
+        {filtered.map((it, i) => {
           const specEntries = Object.entries(it.spec ?? {}).slice(0, 3);
           return (
-            <Link key={it.id} to={`/industrial/${it.id}`} className="bg-card border rounded-xl shadow-card hover:shadow-elevated transition group overflow-hidden">
+            <Link
+              key={it.id}
+              to={`/industrial/${it.id}`}
+              className="bg-card border rounded-xl shadow-card hover:shadow-elevated transition group overflow-hidden animate-fade-in"
+              style={{ animationDelay: `${Math.min(i, 8) * 30}ms`, animationFillMode: "backwards" }}
+            >
               <div className="relative aspect-[16/10] bg-muted">
                 {it.cover && <img src={it.cover} alt="" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />}
                 <span className="absolute top-2 left-2 px-2 py-0.5 rounded-sm bg-sky-950 text-sky-50 text-[9px] font-mono uppercase tracking-wider">
@@ -129,7 +205,7 @@ function IndustrialDetail({ id }: { id: string }) {
   if (!it) return <p className="px-4 py-12 text-center text-sm">Listing not found.</p>;
 
   return (
-    <div className="pb-32">
+    <div className="pb-32 animate-fade-in">
       <div className="relative h-72 bg-muted">
         {it.cover && <img src={it.cover} alt={it.title} className="w-full h-full object-cover" />}
         <button onClick={() => navigate(-1)} className="absolute top-3 left-3 w-9 h-9 rounded-full bg-background/90 backdrop-blur flex items-center justify-center shadow">

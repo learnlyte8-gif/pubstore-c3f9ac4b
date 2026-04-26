@@ -16,7 +16,7 @@ export default function NewsRail() {
   if (news.length === 0) return null;
   const [lead, ...rest] = news;
   return (
-    <section className="mt-7">
+    <section className="mt-7 animate-fade-in">
       {/* Newsprint header */}
       <div className="px-4 flex items-end justify-between border-b-2 border-foreground pb-2">
         <div className="flex items-center gap-2">

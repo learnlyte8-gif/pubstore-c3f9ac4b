@@ -2,7 +2,11 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchStays, fetchStay } from "@/data/verticals";
 import { ArrowLeft, BedDouble, Star, MapPin, Users, Bath, Wifi, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useMemo } from "react";
+import { useUrlFilters } from "@/hooks/useUrlFilters";
+import { FilterBar, FilterField, SortPills } from "@/components/marketplace/FilterBar";
+import { Slider } from "@/components/ui/slider";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const KINDS = [
   { id: "all", label: "All stays" },
@@ -13,6 +17,13 @@ const KINDS = [
   { id: "retreat", label: "Retreats" },
 ];
 
+const SORTS = [
+  { id: "rating", label: "Top rated" },
+  { id: "price_asc", label: "Price ↑" },
+  { id: "price_desc", label: "Price ↓" },
+  { id: "reviews", label: "Most reviewed" },
+];
+
 export default function Stays() {
   const { id } = useParams();
   if (id) return <StayDetail id={id} />;
@@ -20,11 +31,46 @@ export default function Stays() {
 }
 
 function StaysIndex() {
-  const [kind, setKind] = useState("all");
-  const { data: stays = [], isLoading } = useQuery({
-    queryKey: ["stays", kind],
-    queryFn: () => fetchStays(kind === "all" ? {} : { kind }),
+  const { values, update, reset } = useUrlFilters({
+    q: "",
+    kind: "all",
+    sort: "rating",
+    maxPrice: "",
+    superhost: "",
   });
+
+  const { data: stays = [], isLoading } = useQuery({
+    queryKey: ["stays", values.kind],
+    queryFn: () => fetchStays(values.kind === "all" ? {} : { kind: values.kind }),
+  });
+
+  const priceMax = useMemo(
+    () => Math.max(50, Math.ceil((stays.reduce((m, s) => Math.max(m, s.price_per_night), 0) || 500) / 50) * 50),
+    [stays],
+  );
+
+  const filtered = useMemo(() => {
+    const q = values.q.trim().toLowerCase();
+    const cap = values.maxPrice ? Number(values.maxPrice) : 0;
+    let list = stays.filter((s) => {
+      if (cap > 0 && s.price_per_night > cap) return false;
+      if (values.superhost === "1" && !s.superhost) return false;
+      if (!q) return true;
+      const hay = `${s.title} ${s.city ?? ""} ${s.country ?? ""} ${s.kind} ${s.amenities.join(" ")}`.toLowerCase();
+      return hay.includes(q);
+    });
+    list = [...list].sort((a, b) => {
+      if (values.sort === "price_asc") return a.price_per_night - b.price_per_night;
+      if (values.sort === "price_desc") return b.price_per_night - a.price_per_night;
+      if (values.sort === "reviews") return b.review_count - a.review_count;
+      return b.rating - a.rating;
+    });
+    return list;
+  }, [stays, values]);
+
+  const advancedCount =
+    (values.sort !== "rating" ? 1 : 0) + (values.maxPrice ? 1 : 0) + (values.superhost === "1" ? 1 : 0);
+  const anyActive = !!values.q || values.kind !== "all" || advancedCount > 0;
 
   return (
     <div className="pb-10">
@@ -46,29 +92,63 @@ function StaysIndex() {
         </div>
       </div>
 
-      {/* Filter chips */}
-      <div className="px-4 mt-4 flex gap-2 overflow-x-auto scrollbar-none">
-        {KINDS.map((k) => (
-          <button
-            key={k.id}
-            onClick={() => setKind(k.id)}
-            className={`shrink-0 px-3 h-8 rounded-full text-[11px] font-bold transition ${
-              kind === k.id
-                ? "bg-foreground text-background"
-                : "bg-muted text-foreground hover:bg-muted/70"
-            }`}
-          >
-            {k.label}
-          </button>
-        ))}
-      </div>
+      <FilterBar
+        tone="light"
+        search={values.q}
+        onSearchChange={(q) => update({ q })}
+        searchPlaceholder="Search city, host, amenities…"
+        chips={KINDS}
+        chipValue={values.kind}
+        onChipChange={(kind) => update({ kind })}
+        canReset={anyActive}
+        onReset={reset}
+        activeAdvancedCount={advancedCount}
+        trailing={`${filtered.length} ${filtered.length === 1 ? "stay" : "stays"}`}
+        advanced={
+          <div className="space-y-3">
+            <FilterField label="Sort by">
+              <SortPills value={values.sort} onChange={(v) => update({ sort: v })} options={SORTS} />
+            </FilterField>
+            <FilterField label={`Max price${values.maxPrice ? ` · $${values.maxPrice}/night` : ""}`}>
+              <Slider
+                min={0}
+                max={priceMax}
+                step={25}
+                value={[values.maxPrice ? Number(values.maxPrice) : 0]}
+                onValueChange={([v]) => update({ maxPrice: v ? String(v) : "" })}
+              />
+              <p className="text-[10px] text-muted-foreground">0 = any price · up to ${priceMax}</p>
+            </FilterField>
+            <label className="flex items-center gap-2 text-[12px] font-semibold cursor-pointer">
+              <Checkbox
+                checked={values.superhost === "1"}
+                onCheckedChange={(c) => update({ superhost: c ? "1" : "" })}
+              />
+              Superhosts only
+            </label>
+          </div>
+        }
+      />
 
       {isLoading && <p className="px-4 mt-8 text-center text-sm text-muted-foreground">Loading stays…</p>}
 
+      {!isLoading && filtered.length === 0 && (
+        <div className="px-4 mt-10 text-center">
+          <BedDouble className="w-8 h-8 mx-auto text-muted-foreground" />
+          <p className="mt-2 text-sm font-bold">No stays match your filters.</p>
+          <button onClick={reset} className="mt-1 text-xs text-primary font-bold">Reset filters</button>
+        </div>
+      )}
+
       <div className="px-4 mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {stays.map((s) => (
-          <Link key={s.id} to={`/stays/${s.id}`} className="block group">
-            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-muted shadow-card">
+        {filtered.map((s, i) => (
+          <Link
+            key={s.id}
+            to={`/stays/${s.id}`}
+            className="block group animate-fade-in"
+            style={{ animationDelay: `${Math.min(i, 8) * 30}ms`, animationFillMode: "backwards" }}
+          >
+            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-muted shadow-card transition-shadow duration-300 group-hover:shadow-elevated">
               {s.cover && <img src={s.cover} alt={s.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />}
               {s.superhost && (
                 <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-amber-400 text-foreground text-[10px] font-bold uppercase tracking-wider shadow">
@@ -106,7 +186,7 @@ function StayDetail({ id }: { id: string }) {
   if (!stay) return <p className="px-4 py-12 text-center text-sm">Stay not found.</p>;
 
   return (
-    <div className="pb-32">
+    <div className="pb-32 animate-fade-in">
       <div className="relative h-72">
         {stay.cover && <img src={stay.cover} alt={stay.title} className="w-full h-full object-cover" />}
         <div className="absolute inset-0 bg-gradient-to-b from-foreground/40 via-transparent to-transparent" />
