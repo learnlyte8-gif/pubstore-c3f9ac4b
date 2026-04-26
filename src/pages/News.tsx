@@ -2,9 +2,25 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchNews, fetchNewsArticle } from "@/data/verticals";
 import { ArrowLeft, Clock3, Newspaper } from "lucide-react";
-import { useState } from "react";
+import { useMemo } from "react";
+import { useUrlFilters } from "@/hooks/useUrlFilters";
+import { FilterBar, FilterField, SortPills } from "@/components/marketplace/FilterBar";
+import { Slider } from "@/components/ui/slider";
 
-const CATS = ["all", "marketplace", "industrial", "automotive", "stays"] as const;
+const CATS = [
+  { id: "all", label: "All" },
+  { id: "marketplace", label: "Marketplace" },
+  { id: "industrial", label: "Industrial" },
+  { id: "automotive", label: "Automotive" },
+  { id: "stays", label: "Stays" },
+];
+
+const SORTS = [
+  { id: "recent", label: "Most recent" },
+  { id: "longest", label: "Longest read" },
+  { id: "shortest", label: "Quick reads" },
+  { id: "popular", label: "Most viewed" },
+];
 
 const ago = (iso: string) => {
   const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
@@ -21,13 +37,41 @@ export default function News() {
 }
 
 function NewsIndex() {
-  const [cat, setCat] = useState<(typeof CATS)[number]>("all");
-  const { data: articles = [], isLoading } = useQuery({
-    queryKey: ["news", cat],
-    queryFn: () => fetchNews(cat === "all" ? {} : { category: cat }),
+  const { values, update, reset } = useUrlFilters({
+    q: "",
+    cat: "all",
+    sort: "recent",
+    maxRead: "",
   });
-  const featured = articles.filter((a) => a.featured)[0] ?? articles[0];
-  const rest = articles.filter((a) => a.id !== featured?.id);
+
+  const { data: articles = [], isLoading } = useQuery({
+    queryKey: ["news", values.cat],
+    queryFn: () => fetchNews(values.cat === "all" ? {} : { category: values.cat }),
+  });
+
+  const filtered = useMemo(() => {
+    const q = values.q.trim().toLowerCase();
+    const max = values.maxRead ? Number(values.maxRead) : 0;
+    let list = articles.filter((a) => {
+      if (max > 0 && a.read_minutes > max) return false;
+      if (!q) return true;
+      const hay = `${a.title} ${a.dek ?? ""} ${a.author ?? ""} ${a.tags.join(" ")}`.toLowerCase();
+      return hay.includes(q);
+    });
+    list = [...list].sort((a, b) => {
+      if (values.sort === "longest") return b.read_minutes - a.read_minutes;
+      if (values.sort === "shortest") return a.read_minutes - b.read_minutes;
+      if (values.sort === "popular") return b.views - a.views;
+      return new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
+    });
+    return list;
+  }, [articles, values]);
+
+  const featured = filtered.find((a) => a.featured) ?? filtered[0];
+  const rest = filtered.filter((a) => a.id !== featured?.id);
+
+  const advancedCount = (values.sort !== "recent" ? 1 : 0) + (values.maxRead ? 1 : 0);
+  const anyActive = !!values.q || values.cat !== "all" || advancedCount > 0;
 
   return (
     <div className="pb-10">
@@ -42,30 +86,52 @@ function NewsIndex() {
         </p>
       </header>
 
-      {/* Filter */}
-      <div className="px-4 mt-4 flex gap-2 overflow-x-auto scrollbar-none">
-        {CATS.map((c) => (
-          <button
-            key={c}
-            onClick={() => setCat(c)}
-            className={`shrink-0 px-3 h-8 rounded-full text-[11px] font-bold uppercase tracking-wider border transition ${
-              cat === c
-                ? "bg-foreground text-background border-foreground"
-                : "bg-background text-foreground border-foreground/20 hover:border-foreground/50"
-            }`}
-          >
-            {c}
-          </button>
-        ))}
-      </div>
+      <FilterBar
+        tone="newsprint"
+        search={values.q}
+        onSearchChange={(q) => update({ q })}
+        searchPlaceholder="Search headlines, authors, tags…"
+        chips={CATS}
+        chipValue={values.cat}
+        onChipChange={(cat) => update({ cat })}
+        canReset={anyActive}
+        onReset={reset}
+        activeAdvancedCount={advancedCount}
+        trailing={`${filtered.length} ${filtered.length === 1 ? "story" : "stories"}`}
+        advanced={
+          <div className="space-y-3">
+            <FilterField label="Sort by">
+              <SortPills value={values.sort} onChange={(v) => update({ sort: v })} options={SORTS} />
+            </FilterField>
+            <FilterField label={`Max read time${values.maxRead ? ` · ${values.maxRead} min` : ""}`}>
+              <Slider
+                min={0}
+                max={20}
+                step={1}
+                value={[values.maxRead ? Number(values.maxRead) : 0]}
+                onValueChange={([v]) => update({ maxRead: v ? String(v) : "" })}
+              />
+              <p className="text-[10px] text-muted-foreground">0 = any length</p>
+            </FilterField>
+          </div>
+        }
+      />
 
       {isLoading && <p className="px-4 mt-8 text-center text-sm text-muted-foreground">Loading…</p>}
 
+      {!isLoading && filtered.length === 0 && (
+        <div className="px-4 mt-10 text-center">
+          <Newspaper className="w-8 h-8 mx-auto text-muted-foreground" />
+          <p className="mt-2 text-sm font-bold">No stories match.</p>
+          <button onClick={reset} className="mt-1 text-xs text-primary font-bold">Reset filters</button>
+        </div>
+      )}
+
       {/* Featured */}
       {featured && (
-        <Link to={`/news/${featured.slug}`} className="block px-4 mt-5">
+        <Link key={featured.id} to={`/news/${featured.slug}`} className="block px-4 mt-5 animate-fade-in">
           <div className="relative aspect-[16/10] rounded-2xl overflow-hidden bg-muted shadow-elevated">
-            {featured.cover && <img src={featured.cover} alt="" className="absolute inset-0 w-full h-full object-cover" />}
+            {featured.cover && <img src={featured.cover} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-[1.03]" />}
             <div className="absolute inset-0 bg-gradient-to-t from-foreground/85 via-foreground/15 to-transparent" />
             <div className="absolute top-3 left-3">
               <span className="px-2 py-0.5 rounded-full bg-background text-foreground text-[10px] font-bold uppercase tracking-wider">
@@ -89,15 +155,20 @@ function NewsIndex() {
 
       {/* Two-column print layout */}
       <div className="px-4 mt-6 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
-        {rest.map((n) => (
-          <Link key={n.id} to={`/news/${n.slug}`} className="block group">
+        {rest.map((n, i) => (
+          <Link
+            key={n.id}
+            to={`/news/${n.slug}`}
+            className="block group animate-fade-in"
+            style={{ animationDelay: `${Math.min(i, 8) * 30}ms`, animationFillMode: "backwards" }}
+          >
             <div className="relative aspect-[16/10] rounded-lg overflow-hidden bg-muted">
               {n.cover && <img src={n.cover} alt="" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />}
             </div>
             <p className="text-[9px] font-mono uppercase tracking-[0.18em] text-muted-foreground mt-2">
               {n.category} · {ago(n.published_at)} ago · {n.read_minutes} min
             </p>
-            <h3 className="font-serif text-lg leading-tight tracking-tight mt-1 line-clamp-2">{n.title}</h3>
+            <h3 className="font-serif text-lg leading-tight tracking-tight mt-1 line-clamp-2 group-hover:underline underline-offset-4 decoration-2">{n.title}</h3>
             {n.dek && <p className="text-[12px] text-muted-foreground line-clamp-2 mt-1">{n.dek}</p>}
             <p className="text-[11px] mt-1.5 italic">— {n.author ?? "Editorial"}</p>
           </Link>
@@ -123,7 +194,7 @@ function NewsArticleView({ slug }: { slug: string }) {
   }
 
   return (
-    <article className="pb-12">
+    <article className="pb-12 animate-fade-in">
       <button onClick={() => navigate(-1)} className="mx-4 mt-3 inline-flex items-center gap-1 text-xs font-bold text-muted-foreground hover:text-foreground">
         <ArrowLeft className="w-3.5 h-3.5" /> Back
       </button>
