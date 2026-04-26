@@ -69,7 +69,7 @@ const carIcon = (heading = 0, klass = "economy") => {
   });
 };
 
-export default function RideMap({ me, pickup, dropoff, drivers = [], driverPosition, className }: Props) {
+export default function RideMap({ me, pickup, dropoff, drivers = [], driverPosition, routes, className }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.LayerGroup | null>(null);
