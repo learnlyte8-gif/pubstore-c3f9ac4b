@@ -364,6 +364,28 @@ function LiveRoom({ stream, hostUserId, onLeave }: { stream: EnrichedStream; hos
 
   const pinnedProduct = pinned.find((p) => p.id === pinnedId);
 
+  // Background carousel: pinned product first, then other live products
+  const bgImages = useMemo(() => {
+    const ordered = pinnedProduct
+      ? [pinnedProduct, ...pinned.filter((p) => p.id !== pinnedProduct.id)]
+      : pinned;
+    const imgs = ordered.map((p) => p.image).filter((s): s is string => !!s && s !== "/placeholder.svg");
+    if (imgs.length === 0 && stream.cover) return [stream.cover];
+    return imgs;
+  }, [pinned, pinnedProduct, stream.cover]);
+
+  const [bgIdx, setBgIdx] = useState(0);
+  useEffect(() => {
+    if (bgImages.length <= 1) return;
+    const t = setInterval(() => setBgIdx((i) => (i + 1) % bgImages.length), 4000);
+    return () => clearInterval(t);
+  }, [bgImages.length]);
+
+  // Reset / clamp index when image set changes
+  useEffect(() => {
+    setBgIdx((i) => (bgImages.length ? i % bgImages.length : 0));
+  }, [bgImages.length]);
+
   const startedMin = Math.max(1, Math.floor((Date.now() - new Date(stream.started_at).getTime()) / 60000));
 
   const FloatingPinned = pinnedProduct ? (
