@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, Link } from "react-router-dom";
-import { Home, Search, LayoutGrid, Heart, User, ShoppingCart, Bell, MessageCircle } from "lucide-react";
+import { Home, Search, LayoutGrid, Heart, User, ShoppingCart, Bell, MessageCircle, Navigation } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useShop } from "@/store/shop";
@@ -97,9 +97,10 @@ export default function AppShell() {
       <nav className="fixed bottom-0 inset-x-0 z-40 bg-background border-t border-border safe-bottom lg:hidden shadow-elevated">
         <ul className="max-w-2xl mx-auto h-16 px-1 flex items-center justify-around">
           <TabItem to="/home" icon={Home} label="Home" />
-          <TabItem to="/categories" icon={LayoutGrid} label="Categories" />
+          <TabItem to="/categories" icon={LayoutGrid} label="Shop" />
+          <TabItem to="/rides" icon={Navigation} label="Rides" />
           <TabItem to="/messages" icon={MessageCircle} label="Chat" badge={chatsWithUnread} />
-          <TabItem to="/wishlist" icon={Heart} label="Wishlist" badge={wishlist.length} />
+          <TabItem to="/wishlist" icon={Heart} label="Saved" badge={wishlist.length} />
           <TabItem to="/profile" icon={User} label="Account" />
         </ul>
       </nav>

@@ -272,6 +272,11 @@
 }
 .animate-pulse-dot { animation: pulse-dot 1.6s ease-in-out infinite; }
 
+@keyframes slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+
 @keyframes float-drift {
   0%   { transform: translate3d(0, 0, 0) rotate(0deg); }
   50%  { transform: translate3d(var(--drift, 20px), -22px, 0) rotate(8deg); }
