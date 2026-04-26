@@ -11,7 +11,7 @@ export default function StaysRail() {
   const { data: stays = [] } = useQuery({ queryKey: ["home-stays"], queryFn: () => fetchStays({ limit: 8 }) });
   if (stays.length === 0) return null;
   return (
-    <section className="mt-7">
+    <section className="mt-7 animate-fade-in">
       <div className="px-4 flex items-end justify-between">
         <div>
           <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300">
@@ -24,11 +24,11 @@ export default function StaysRail() {
         <Link to="/stays" className="text-xs font-bold text-primary">Browse all</Link>
       </div>
 
-      <div className="mt-3 -mx-1 px-1 pb-2 flex gap-3 overflow-x-auto scrollbar-none">
+      <div className="mt-3 -mx-1 px-1 pb-2 flex gap-3 overflow-x-auto scrollbar-none snap-x snap-mandatory scroll-smooth">
         {stays.map((s) => (
-          <Link key={s.id} to={`/stays/${s.id}`} className="shrink-0 w-56">
-            <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-muted shadow-card">
-              {s.cover && <img src={s.cover} alt={s.title} className="absolute inset-0 w-full h-full object-cover" />}
+          <Link key={s.id} to={`/stays/${s.id}`} className="shrink-0 w-56 snap-start group transition-transform duration-300 hover:-translate-y-0.5">
+            <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-muted shadow-card transition-shadow duration-300 group-hover:shadow-elevated">
+              {s.cover && <img src={s.cover} alt={s.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />}
               <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-transparent to-transparent" />
               {s.superhost && (
                 <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-amber-400 text-foreground text-[9px] font-bold uppercase tracking-wider">

@@ -11,7 +11,7 @@ export default function IndustrialRail() {
   const { data: items = [] } = useQuery({ queryKey: ["home-industrial"], queryFn: () => fetchIndustrial({ limit: 8 }) });
   if (items.length === 0) return null;
   return (
-    <section className="mt-7 px-4">
+    <section className="mt-7 px-4 animate-fade-in">
       {/* Blueprint header */}
       <div className="rounded-2xl bg-sky-950 text-sky-50 p-4 relative overflow-hidden shadow-elevated">
         <div
@@ -42,7 +42,7 @@ export default function IndustrialRail() {
           const Icon = ICONS[it.category] ?? Factory;
           const specEntries = Object.entries(it.spec ?? {}).slice(0, 2);
           return (
-            <Link key={it.id} to={`/industrial/${it.id}`} className="bg-card rounded-xl border shadow-card p-2.5 hover:shadow-elevated transition group">
+            <Link key={it.id} to={`/industrial/${it.id}`} className="bg-card rounded-xl border shadow-card p-2.5 hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-300 group">
               <div className="relative aspect-[4/3] rounded-lg overflow-hidden bg-muted mb-2">
                 {it.cover && <img src={it.cover} alt="" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform" />}
                 <span className="absolute top-1.5 left-1.5 w-6 h-6 rounded-md bg-sky-950 text-sky-50 flex items-center justify-center">

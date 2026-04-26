@@ -7,7 +7,7 @@ export default function AutoRail() {
   const { data: vehicles = [] } = useQuery({ queryKey: ["home-vehicles"], queryFn: () => fetchVehicles({ limit: 8 }) });
   if (vehicles.length === 0) return null;
   return (
-    <section className="mt-7 -mx-4 px-4 py-6 bg-zinc-950 text-zinc-100 relative overflow-hidden">
+    <section className="mt-7 -mx-4 px-4 py-6 bg-zinc-950 text-zinc-100 relative overflow-hidden animate-fade-in">
       {/* Garage backdrop pattern */}
       <div
         aria-hidden
@@ -33,9 +33,9 @@ export default function AutoRail() {
         </Link>
       </div>
 
-      <div className="relative mt-4 -mx-1 px-1 pb-1 flex gap-3 overflow-x-auto scrollbar-none">
+      <div className="relative mt-4 -mx-1 px-1 pb-1 flex gap-3 overflow-x-auto scrollbar-none snap-x snap-mandatory scroll-smooth">
         {vehicles.map((v) => (
-          <Link key={v.id} to={`/auto/${v.id}`} className="shrink-0 w-60 group">
+          <Link key={v.id} to={`/auto/${v.id}`} className="shrink-0 w-60 snap-start group transition-transform duration-300 hover:-translate-y-0.5">
             <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-zinc-900 ring-1 ring-zinc-100/10">
               {v.cover && <img src={v.cover} alt={v.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />}
               {v.badge && (
