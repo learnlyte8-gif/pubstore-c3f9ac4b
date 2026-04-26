@@ -276,6 +276,89 @@ export type Database = {
           },
         ]
       }
+      industrial_listings: {
+        Row: {
+          active: boolean
+          capacity: string | null
+          category: string
+          certifications: string[]
+          country: string | null
+          cover: string | null
+          created_at: string
+          currency: string
+          description: string | null
+          gallery: string[]
+          id: string
+          lead_time: string | null
+          moq: number | null
+          price: number | null
+          ship_from: string | null
+          slug: string | null
+          spec: Json
+          subcategory: string | null
+          supplier_id: string | null
+          title: string
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          capacity?: string | null
+          category?: string
+          certifications?: string[]
+          country?: string | null
+          cover?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          gallery?: string[]
+          id?: string
+          lead_time?: string | null
+          moq?: number | null
+          price?: number | null
+          ship_from?: string | null
+          slug?: string | null
+          spec?: Json
+          subcategory?: string | null
+          supplier_id?: string | null
+          title: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          capacity?: string | null
+          category?: string
+          certifications?: string[]
+          country?: string | null
+          cover?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          gallery?: string[]
+          id?: string
+          lead_time?: string | null
+          moq?: number | null
+          price?: number | null
+          ship_from?: string | null
+          slug?: string | null
+          spec?: Json
+          subcategory?: string | null
+          supplier_id?: string | null
+          title?: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "industrial_listings_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       live_messages: {
         Row: {
           body: string
@@ -425,6 +508,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      news_articles: {
+        Row: {
+          author: string | null
+          body: string | null
+          category: string
+          cover: string | null
+          created_at: string
+          dek: string | null
+          featured: boolean
+          id: string
+          published_at: string
+          read_minutes: number
+          slug: string
+          source: string | null
+          source_url: string | null
+          tags: string[]
+          title: string
+          updated_at: string
+          views: number
+        }
+        Insert: {
+          author?: string | null
+          body?: string | null
+          category?: string
+          cover?: string | null
+          created_at?: string
+          dek?: string | null
+          featured?: boolean
+          id?: string
+          published_at?: string
+          read_minutes?: number
+          slug: string
+          source?: string | null
+          source_url?: string | null
+          tags?: string[]
+          title: string
+          updated_at?: string
+          views?: number
+        }
+        Update: {
+          author?: string | null
+          body?: string | null
+          category?: string
+          cover?: string | null
+          created_at?: string
+          dek?: string | null
+          featured?: boolean
+          id?: string
+          published_at?: string
+          read_minutes?: number
+          slug?: string
+          source?: string | null
+          source_url?: string | null
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          views?: number
+        }
+        Relationships: []
       }
       notification_preferences: {
         Row: {
@@ -1063,6 +1206,95 @@ export type Database = {
         }
         Relationships: []
       }
+      stays: {
+        Row: {
+          active: boolean
+          amenities: string[]
+          baths: number
+          bedrooms: number
+          beds: number
+          city: string | null
+          country: string | null
+          country_code: string | null
+          cover: string | null
+          created_at: string
+          currency: string
+          description: string | null
+          gallery: string[]
+          guests: number
+          id: string
+          kind: string
+          price_per_night: number
+          rating: number
+          review_count: number
+          slug: string | null
+          superhost: boolean
+          supplier_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          amenities?: string[]
+          baths?: number
+          bedrooms?: number
+          beds?: number
+          city?: string | null
+          country?: string | null
+          country_code?: string | null
+          cover?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          gallery?: string[]
+          guests?: number
+          id?: string
+          kind?: string
+          price_per_night?: number
+          rating?: number
+          review_count?: number
+          slug?: string | null
+          superhost?: boolean
+          supplier_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          amenities?: string[]
+          baths?: number
+          bedrooms?: number
+          beds?: number
+          city?: string | null
+          country?: string | null
+          country_code?: string | null
+          cover?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          gallery?: string[]
+          guests?: number
+          id?: string
+          kind?: string
+          price_per_night?: number
+          rating?: number
+          review_count?: number
+          slug?: string | null
+          superhost?: boolean
+          supplier_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stays_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           about: string | null
@@ -1211,6 +1443,107 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      vehicles: {
+        Row: {
+          active: boolean
+          badge: string | null
+          body_type: string | null
+          city: string | null
+          condition: string
+          country: string | null
+          cover: string | null
+          created_at: string
+          currency: string
+          description: string | null
+          drivetrain: string | null
+          features: string[]
+          fuel: string | null
+          gallery: string[]
+          id: string
+          kind: string
+          make: string | null
+          mileage_km: number | null
+          model: string | null
+          original_price: number | null
+          power_hp: number | null
+          price: number
+          slug: string | null
+          supplier_id: string | null
+          title: string
+          transmission: string | null
+          updated_at: string
+          year: number | null
+        }
+        Insert: {
+          active?: boolean
+          badge?: string | null
+          body_type?: string | null
+          city?: string | null
+          condition?: string
+          country?: string | null
+          cover?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          drivetrain?: string | null
+          features?: string[]
+          fuel?: string | null
+          gallery?: string[]
+          id?: string
+          kind?: string
+          make?: string | null
+          mileage_km?: number | null
+          model?: string | null
+          original_price?: number | null
+          power_hp?: number | null
+          price?: number
+          slug?: string | null
+          supplier_id?: string | null
+          title: string
+          transmission?: string | null
+          updated_at?: string
+          year?: number | null
+        }
+        Update: {
+          active?: boolean
+          badge?: string | null
+          body_type?: string | null
+          city?: string | null
+          condition?: string
+          country?: string | null
+          cover?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          drivetrain?: string | null
+          features?: string[]
+          fuel?: string | null
+          gallery?: string[]
+          id?: string
+          kind?: string
+          make?: string | null
+          mileage_km?: number | null
+          model?: string | null
+          original_price?: number | null
+          power_hp?: number | null
+          price?: number
+          slug?: string | null
+          supplier_id?: string | null
+          title?: string
+          transmission?: string | null
+          updated_at?: string
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicles_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       wallet_transactions: {
         Row: {
