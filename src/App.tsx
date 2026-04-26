@@ -37,6 +37,10 @@ import Placeholder from "./pages/Placeholder.tsx";
 import Wallet from "./pages/Wallet.tsx";
 import Verification from "./pages/Verification.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import News from "./pages/News.tsx";
+import Stays from "./pages/Stays.tsx";
+import Auto from "./pages/Auto.tsx";
+import Industrial from "./pages/Industrial.tsx";
 
 const queryClient = new QueryClient();
 
@@ -82,6 +86,14 @@ const App = () => (
                 <Route path="/settings/notifications" element={<NotificationPreferences />} />
                 <Route path="/wallet" element={<Wallet />} />
                 <Route path="/verification" element={<Verification />} />
+                <Route path="/news" element={<News />} />
+                <Route path="/news/:slug" element={<News />} />
+                <Route path="/stays" element={<Stays />} />
+                <Route path="/stays/:id" element={<Stays />} />
+                <Route path="/auto" element={<Auto />} />
+                <Route path="/auto/:id" element={<Auto />} />
+                <Route path="/industrial" element={<Industrial />} />
+                <Route path="/industrial/:id" element={<Industrial />} />
               </Route>
               <Route path="/index" element={<Navigate to="/home" replace />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
