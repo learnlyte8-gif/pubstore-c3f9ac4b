@@ -179,10 +179,18 @@ const Home = () => {
                 <RegionSourcing />
               </section>
 
+              <NewsRail />
+
+              <StaysRail />
+
               <section className="px-4 mt-6">
                 <SectionHeader icon={Newspaper} title="Live activity" subtitle="What buyers are doing right now" />
                 <LiveFeed />
               </section>
+
+              <AutoRail />
+
+              <IndustrialRail />
 
               <section className="px-4 mt-6">
                 <SectionHeader icon={LayoutGrid} title="Explore catalog" subtitle="Mixed picks, ads & ideas" />
