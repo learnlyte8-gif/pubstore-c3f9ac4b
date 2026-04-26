@@ -2,7 +2,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchStays, fetchStay } from "@/data/verticals";
 import { ArrowLeft, BedDouble, Star, MapPin, Users, Bath, Wifi, Sparkles } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import StayBookingDialog from "@/components/marketplace/StayBookingDialog";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { FilterBar, FilterField, SortPills } from "@/components/marketplace/FilterBar";
 import { Slider } from "@/components/ui/slider";
@@ -180,6 +181,7 @@ function StaysIndex() {
 
 function StayDetail({ id }: { id: string }) {
   const navigate = useNavigate();
+  const [bookOpen, setBookOpen] = useState(false);
   const { data: stay, isLoading } = useQuery({ queryKey: ["stay", id], queryFn: () => fetchStay(id) });
 
   if (isLoading) return <p className="px-4 py-12 text-center text-sm text-muted-foreground">Loading…</p>;
@@ -250,11 +252,13 @@ function StayDetail({ id }: { id: string }) {
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">From</p>
             <p className="font-bold text-lg leading-none tabular-nums">${Math.round(stay.price_per_night)}<span className="text-[10px] font-normal text-muted-foreground"> / night</span></p>
           </div>
-          <button className="h-11 px-5 rounded-full bg-foreground text-background text-sm font-bold shadow-card">
+          <button onClick={() => setBookOpen(true)} className="h-11 px-5 rounded-full bg-foreground text-background text-sm font-bold shadow-card">
             Reserve
           </button>
         </div>
       </div>
+
+      <StayBookingDialog stay={stay} open={bookOpen} onOpenChange={setBookOpen} />
     </div>
   );
 }

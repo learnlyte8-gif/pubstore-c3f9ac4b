@@ -1,8 +1,10 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchVehicles, fetchVehicle } from "@/data/verticals";
-import { ArrowLeft, Car, Fuel, Cog, Gauge, MapPin, Zap } from "lucide-react";
-import { useMemo } from "react";
+import { ArrowLeft, Car, Fuel, Cog, Gauge, MapPin, Zap, Heart, Calculator } from "lucide-react";
+import { useMemo, useState } from "react";
+import VehicleInquiryDialog from "@/components/marketplace/VehicleInquiryDialog";
+import { useVehicleSaves } from "@/hooks/useVehicleSaves";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { FilterBar, FilterField, SortPills } from "@/components/marketplace/FilterBar";
 import { Slider } from "@/components/ui/slider";
@@ -222,10 +224,13 @@ function AutoIndex() {
 
 function AutoDetail({ id }: { id: string }) {
   const navigate = useNavigate();
+  const [dialog, setDialog] = useState<null | "inquiry" | "test_drive" | "financing">(null);
+  const { isSaved, toggle } = useVehicleSaves();
   const { data: v, isLoading } = useQuery({ queryKey: ["vehicle", id], queryFn: () => fetchVehicle(id) });
 
   if (isLoading) return <p className="px-4 py-12 text-center text-sm text-muted-foreground">Loading…</p>;
   if (!v) return <p className="px-4 py-12 text-center text-sm">Vehicle not found.</p>;
+  const saved = isSaved(v.id);
 
   return (
     <div className="pb-32 bg-zinc-950 text-zinc-50 min-h-[calc(100vh-3.5rem)] animate-fade-in">
@@ -234,6 +239,13 @@ function AutoDetail({ id }: { id: string }) {
         <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/40 via-transparent to-zinc-950" />
         <button onClick={() => navigate(-1)} className="absolute top-3 left-3 w-9 h-9 rounded-full bg-zinc-950/80 backdrop-blur flex items-center justify-center">
           <ArrowLeft className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => toggle(v.id)}
+          aria-label={saved ? "Unsave" : "Save"}
+          className="absolute top-3 right-14 w-9 h-9 rounded-full bg-zinc-950/80 backdrop-blur flex items-center justify-center"
+        >
+          <Heart className={`w-4 h-4 ${saved ? "fill-rose-400 text-rose-400" : "text-zinc-50"}`} />
         </button>
         {v.badge && (
           <span className="absolute top-3 right-3 px-2.5 py-1 rounded-sm bg-zinc-50 text-zinc-950 text-[10px] font-bold uppercase tracking-wider">
@@ -280,14 +292,20 @@ function AutoDetail({ id }: { id: string }) {
       </div>
 
       <div className="fixed bottom-16 inset-x-0 z-20 px-3">
-        <div className="max-w-md mx-auto bg-zinc-50 text-zinc-950 rounded-2xl p-3 flex items-center gap-3 shadow-elevated">
+        <div className="max-w-md mx-auto bg-zinc-50 text-zinc-950 rounded-2xl p-3 flex items-center gap-2 shadow-elevated">
           <div className="flex-1 min-w-0">
             <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">List price</p>
             <p className="font-black text-lg leading-none tabular-nums">${v.price.toLocaleString()}</p>
           </div>
-          <button className="h-11 px-5 rounded-full bg-zinc-950 text-zinc-50 text-sm font-bold">Inquire</button>
+          <button onClick={() => setDialog("financing")} aria-label="Financing" className="w-11 h-11 rounded-full bg-zinc-100 text-zinc-950 flex items-center justify-center">
+            <Calculator className="w-4 h-4" />
+          </button>
+          <button onClick={() => setDialog("test_drive")} className="h-11 px-3 rounded-full bg-zinc-100 text-zinc-950 text-xs font-bold">Test drive</button>
+          <button onClick={() => setDialog("inquiry")} className="h-11 px-4 rounded-full bg-zinc-950 text-zinc-50 text-sm font-bold">Inquire</button>
         </div>
       </div>
+
+      <VehicleInquiryDialog vehicle={v} open={!!dialog} onOpenChange={(o) => !o && setDialog(null)} initialMode={dialog ?? "inquiry"} />
     </div>
   );
 }
