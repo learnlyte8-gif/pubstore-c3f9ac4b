@@ -1245,6 +1245,38 @@ export type Database = {
         }
         Relationships: []
       }
+      ride_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          ride_id: string
+          sender_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          ride_id: string
+          sender_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          ride_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_messages_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ride_offers: {
         Row: {
           created_at: string
@@ -1300,6 +1332,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "ride_offers_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ride_ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          direction: string
+          id: string
+          ratee_id: string
+          rater_id: string
+          ride_id: string
+          stars: number
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          direction: string
+          id?: string
+          ratee_id: string
+          rater_id: string
+          ride_id: string
+          stars: number
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          direction?: string
+          id?: string
+          ratee_id?: string
+          rater_id?: string
+          ride_id?: string
+          stars?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_ratings_ride_id_fkey"
             columns: ["ride_id"]
             isOneToOne: false
             referencedRelation: "rides"
@@ -1396,6 +1469,71 @@ export type Database = {
           vehicle_class?: string
         }
         Relationships: []
+      }
+      stay_bookings: {
+        Row: {
+          check_in: string
+          check_out: string
+          cleaning_fee: number
+          created_at: string
+          currency: string
+          guest_id: string
+          guests: number
+          id: string
+          nightly_rate: number
+          nights: number
+          notes: string | null
+          service_fee: number
+          status: string
+          stay_id: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          check_in: string
+          check_out: string
+          cleaning_fee?: number
+          created_at?: string
+          currency?: string
+          guest_id: string
+          guests?: number
+          id?: string
+          nightly_rate?: number
+          nights?: number
+          notes?: string | null
+          service_fee?: number
+          status?: string
+          stay_id: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          check_in?: string
+          check_out?: string
+          cleaning_fee?: number
+          created_at?: string
+          currency?: string
+          guest_id?: string
+          guests?: number
+          id?: string
+          nightly_rate?: number
+          nights?: number
+          notes?: string | null
+          service_fee?: number
+          status?: string
+          stay_id?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stay_bookings_stay_id_fkey"
+            columns: ["stay_id"]
+            isOneToOne: false
+            referencedRelation: "stays"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stays: {
         Row: {
@@ -1634,6 +1772,97 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      vehicle_inquiries: {
+        Row: {
+          buyer_id: string
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          down_payment: number | null
+          estimated_monthly: number | null
+          id: string
+          kind: string
+          loan_term_months: number | null
+          message: string | null
+          preferred_date: string | null
+          status: string
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          buyer_id: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          down_payment?: number | null
+          estimated_monthly?: number | null
+          id?: string
+          kind?: string
+          loan_term_months?: number | null
+          message?: string | null
+          preferred_date?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          buyer_id?: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          down_payment?: number | null
+          estimated_monthly?: number | null
+          id?: string
+          kind?: string
+          loan_term_months?: number | null
+          message?: string | null
+          preferred_date?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_inquiries_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_saves: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_saves_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vehicles: {
         Row: {
@@ -1901,6 +2130,44 @@ export type Database = {
           to: "wallet_transactions"
           isOneToOne: true
           isSetofReturn: false
+        }
+      }
+      pending_rides_for_driver: {
+        Args: { _lat: number; _lng: number; _radius_km?: number }
+        Returns: {
+          accepted_at: string | null
+          completed_at: string | null
+          created_at: string
+          currency: string
+          distance_km: number
+          driver_id: string | null
+          driver_lat: number | null
+          driver_lng: number | null
+          driver_rating: number | null
+          dropoff_address: string
+          dropoff_lat: number
+          dropoff_lng: number
+          final_fare: number | null
+          id: string
+          notes: string | null
+          pickup_address: string
+          pickup_lat: number
+          pickup_lng: number
+          rider_id: string
+          rider_lat: number | null
+          rider_lng: number | null
+          rider_offer: number
+          rider_rating: number | null
+          started_at: string | null
+          status: string
+          updated_at: string
+          vehicle_class: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "rides"
+          isOneToOne: false
+          isSetofReturn: true
         }
       }
       resolve_master_supplier: {
