@@ -286,6 +286,87 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_profiles: {
+        Row: {
+          active: boolean
+          bio: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          license_photo: string | null
+          phone: string | null
+          plate_photo: string | null
+          rating: number
+          selfie_photo: string | null
+          trips: number
+          updated_at: string
+          user_id: string
+          vehicle_class: string
+          vehicle_color: string | null
+          vehicle_make: string | null
+          vehicle_model: string | null
+          vehicle_photo: string | null
+          vehicle_plate: string
+          vehicle_year: number | null
+          whatsapp: string | null
+        }
+        Insert: {
+          active?: boolean
+          bio?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          license_photo?: string | null
+          phone?: string | null
+          plate_photo?: string | null
+          rating?: number
+          selfie_photo?: string | null
+          trips?: number
+          updated_at?: string
+          user_id: string
+          vehicle_class?: string
+          vehicle_color?: string | null
+          vehicle_make?: string | null
+          vehicle_model?: string | null
+          vehicle_photo?: string | null
+          vehicle_plate: string
+          vehicle_year?: number | null
+          whatsapp?: string | null
+        }
+        Update: {
+          active?: boolean
+          bio?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          license_photo?: string | null
+          phone?: string | null
+          plate_photo?: string | null
+          rating?: number
+          selfie_photo?: string | null
+          trips?: number
+          updated_at?: string
+          user_id?: string
+          vehicle_class?: string
+          vehicle_color?: string | null
+          vehicle_make?: string | null
+          vehicle_model?: string | null
+          vehicle_photo?: string | null
+          vehicle_plate?: string
+          vehicle_year?: number | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       followers: {
         Row: {
           created_at: string
