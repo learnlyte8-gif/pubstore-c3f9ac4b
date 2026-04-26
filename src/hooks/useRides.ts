@@ -23,6 +23,9 @@ export type Ride = {
   driver_lat: number | null;
   driver_lng: number | null;
   created_at: string;
+  accepted_at?: string | null;
+  started_at?: string | null;
+  completed_at?: string | null;
 };
 
 export type RideOffer = {
@@ -54,6 +57,14 @@ export type DriverLocation = {
   lng: number;
   heading: number;
   updated_at: string;
+};
+
+export type RideMessage = {
+  id: string;
+  ride_id: string;
+  sender_id: string;
+  body: string;
+  created_at: string;
 };
 
 export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -135,4 +146,53 @@ export function useActiveRide(rideId: string | null) {
   }, [rideId]);
 
   return ride;
+}
+
+/** Ride chat between rider & driver. */
+export function useRideMessages(rideId: string | null) {
+  const [messages, setMessages] = useState<RideMessage[]>([]);
+
+  useEffect(() => {
+    if (!rideId) { setMessages([]); return; }
+    const load = async () => {
+      const { data } = await supabase
+        .from("ride_messages").select("*").eq("ride_id", rideId).order("created_at", { ascending: true });
+      setMessages((data ?? []) as RideMessage[]);
+    };
+    load();
+    const ch = supabase
+      .channel(`ride-msgs:${rideId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "ride_messages", filter: `ride_id=eq.${rideId}` }, load)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [rideId]);
+
+  return messages;
+}
+
+/** Pending ride requests near a driver — uses RPC to keep RLS simple & safe. */
+export function useNearbyRideRequests(driverPos: { lat: number; lng: number } | null, radiusKm = 12) {
+  const [rides, setRides] = useState<Ride[]>([]);
+
+  useEffect(() => {
+    if (!driverPos) { setRides([]); return; }
+    let mounted = true;
+    const load = async () => {
+      const { data } = await supabase.rpc("pending_rides_for_driver", {
+        _lat: driverPos.lat,
+        _lng: driverPos.lng,
+        _radius_km: radiusKm,
+      });
+      if (mounted) setRides((data ?? []) as Ride[]);
+    };
+    load();
+    const ch = supabase
+      .channel("driver-pending")
+      .on("postgres_changes", { event: "*", schema: "public", table: "rides" }, load)
+      .subscribe();
+    const t = setInterval(load, 7000);
+    return () => { mounted = false; supabase.removeChannel(ch); clearInterval(t); };
+  }, [driverPos?.lat, driverPos?.lng, radiusKm]);
+
+  return rides;
 }
