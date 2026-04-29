@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Heart, Star, Plus, Truck, ShieldCheck, Award, Timer } from "lucide-react";
+import { Heart, Star, Plus, Truck, ShieldCheck, Award, Timer, Package } from "lucide-react";
 import { toast } from "sonner";
 import { type Product, discountPct } from "@/data/products";
 import { useShop } from "@/store/shop";
@@ -9,6 +9,26 @@ import { supabase } from "@/integrations/supabase/client";
 const fmtPrice = (n: number) => `$${n.toFixed(2)}`;
 const fmtSold = (n: number) =>
   n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k+ sold` : `${n} sold`;
+
+// Estimate delivery date from a free-form lead time string like "3-5 days", "2 weeks", "24h".
+function estimateDeliveryDate(leadTime?: string): { label: string; range: string } | null {
+  if (!leadTime || leadTime === "—") return { label: "Delivery", range: deliveryRange(3, 7) };
+  const s = leadTime.toLowerCase();
+  const nums = s.match(/\d+/g)?.map(Number) ?? [];
+  let minDays = nums[0] ?? 3;
+  let maxDays = nums[1] ?? minDays + 4;
+  if (/week/.test(s)) { minDays *= 7; maxDays *= 7; }
+  else if (/month/.test(s)) { minDays *= 30; maxDays *= 30; }
+  else if (/hour|hr|\bh\b/.test(s)) { minDays = 1; maxDays = 2; }
+  return { label: "Delivery", range: deliveryRange(minDays, maxDays) };
+}
+function deliveryRange(minDays: number, maxDays: number): string {
+  const fmt = (d: Date) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const now = new Date();
+  const a = new Date(now); a.setDate(now.getDate() + minDays);
+  const b = new Date(now); b.setDate(now.getDate() + maxDays);
+  return `${fmt(a)} – ${fmt(b)}`;
+}
 
 const pad = (n: number) => n.toString().padStart(2, "0");
 function useDealCountdown(endsAt?: string | null) {
@@ -102,8 +122,19 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
           )}
         </div>
         <div className="mt-1.5">
-          <p className="text-[11px] font-bold text-destructive">{fmtPrice(product.price)}</p>
+          <p className="text-[11px] font-bold text-destructive">
+            {fmtPrice(product.price)}
+            <span className="text-muted-foreground font-medium">/{product.unit || "unit"}</span>
+          </p>
           <p className="text-xs font-bold tracking-tight line-clamp-2 leading-snug mt-0.5">{product.title}</p>
+          {(() => {
+            const d = estimateDeliveryDate(product.leadTime);
+            return d ? (
+              <p className="text-[10px] text-muted-foreground mt-0.5 inline-flex items-center gap-0.5">
+                <Truck className="w-2.5 h-2.5" /> {d.range}
+              </p>
+            ) : null;
+          })()}
         </div>
       </Link>
     );
@@ -156,6 +187,7 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
 
         <div className="flex items-baseline gap-1.5 mt-1.5">
           <span className="text-base font-bold text-destructive">{fmtPrice(product.price)}</span>
+          <span className="text-[10px] text-muted-foreground font-medium">/{product.unit || "unit"}</span>
           {product.originalPrice && (
             <span className="text-[11px] text-muted-foreground line-through">
               {fmtPrice(product.originalPrice)}
@@ -169,6 +201,16 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
           <span>·</span>
           <span>{fmtSold(product.sold)}</span>
         </div>
+
+        {(() => {
+          const d = estimateDeliveryDate(product.leadTime);
+          return d ? (
+            <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground">
+              <Truck className="w-3 h-3 text-primary" />
+              <span>Get it <span className="font-semibold text-foreground">{d.range}</span></span>
+            </div>
+          ) : null;
+        })()}
 
         {(product.freeShipping || supplierVerified || supplierGold) && (
           <div className="flex items-center gap-1.5 mt-1 text-[10px] flex-wrap">
