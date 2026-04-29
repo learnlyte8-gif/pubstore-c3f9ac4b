@@ -202,6 +202,16 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
           <span>{fmtSold(product.sold)}</span>
         </div>
 
+        {(() => {
+          const d = estimateDeliveryDate(product.leadTime);
+          return d ? (
+            <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground">
+              <Truck className="w-3 h-3 text-primary" />
+              <span>Get it <span className="font-semibold text-foreground">{d.range}</span></span>
+            </div>
+          ) : null;
+        })()}
+
         {(product.freeShipping || supplierVerified || supplierGold) && (
           <div className="flex items-center gap-1.5 mt-1 text-[10px] flex-wrap">
             {supplierVerified && (
