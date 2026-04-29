@@ -122,8 +122,19 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
           )}
         </div>
         <div className="mt-1.5">
-          <p className="text-[11px] font-bold text-destructive">{fmtPrice(product.price)}</p>
+          <p className="text-[11px] font-bold text-destructive">
+            {fmtPrice(product.price)}
+            <span className="text-muted-foreground font-medium">/{product.unit || "unit"}</span>
+          </p>
           <p className="text-xs font-bold tracking-tight line-clamp-2 leading-snug mt-0.5">{product.title}</p>
+          {(() => {
+            const d = estimateDeliveryDate(product.leadTime);
+            return d ? (
+              <p className="text-[10px] text-muted-foreground mt-0.5 inline-flex items-center gap-0.5">
+                <Truck className="w-2.5 h-2.5" /> {d.range}
+              </p>
+            ) : null;
+          })()}
         </div>
       </Link>
     );
