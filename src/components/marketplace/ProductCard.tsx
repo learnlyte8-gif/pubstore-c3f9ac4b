@@ -187,6 +187,7 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
 
         <div className="flex items-baseline gap-1.5 mt-1.5">
           <span className="text-base font-bold text-destructive">{fmtPrice(product.price)}</span>
+          <span className="text-[10px] text-muted-foreground font-medium">/{product.unit || "unit"}</span>
           {product.originalPrice && (
             <span className="text-[11px] text-muted-foreground line-through">
               {fmtPrice(product.originalPrice)}
