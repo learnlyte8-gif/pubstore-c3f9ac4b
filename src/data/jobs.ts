@@ -190,6 +190,103 @@ export async function fetchSeekerProfile(userId: string): Promise<JobSeekerProfi
   return (data as JobSeekerProfile) ?? null;
 }
 
+export type JobExperience = {
+  id: string;
+  user_id: string;
+  title: string;
+  company: string;
+  employment_type: string | null;
+  location: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  is_current: boolean;
+  description: string | null;
+  sort_order: number;
+};
+
+export type JobEducation = {
+  id: string;
+  user_id: string;
+  school: string;
+  degree: string | null;
+  field_of_study: string | null;
+  start_year: number | null;
+  end_year: number | null;
+  description: string | null;
+  sort_order: number;
+};
+
+export async function fetchSeekerExperiences(userId: string): Promise<JobExperience[]> {
+  const { data } = await supabase
+    .from("job_seeker_experiences")
+    .select("*")
+    .eq("user_id", userId)
+    .order("is_current", { ascending: false })
+    .order("start_date", { ascending: false });
+  return (data ?? []) as JobExperience[];
+}
+
+export async function fetchSeekerEducation(userId: string): Promise<JobEducation[]> {
+  const { data } = await supabase
+    .from("job_seeker_education")
+    .select("*")
+    .eq("user_id", userId)
+    .order("end_year", { ascending: false });
+  return (data ?? []) as JobEducation[];
+}
+
+export type JobConnection = {
+  id: string;
+  requester_id: string;
+  recipient_id: string;
+  status: "pending" | "accepted" | "declined";
+  message: string | null;
+  created_at: string;
+};
+
+export async function fetchMyConnections(): Promise<JobConnection[]> {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) return [];
+  const { data } = await supabase
+    .from("job_connections")
+    .select("*")
+    .or(`requester_id.eq.${u.user.id},recipient_id.eq.${u.user.id}`)
+    .order("created_at", { ascending: false });
+  return (data ?? []) as JobConnection[];
+}
+
+export type JobPost = {
+  id: string;
+  author_id: string;
+  body: string;
+  media: string[];
+  link_url: string | null;
+  visibility: string;
+  likes_count: number;
+  comments_count: number;
+  created_at: string;
+};
+
+export async function fetchFeed(limit = 50): Promise<JobPost[]> {
+  const { data } = await supabase
+    .from("job_posts")
+    .select("*")
+    .eq("visibility", "public")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return (data ?? []) as JobPost[];
+}
+
+export async function fetchSuggestedSeekers(limit = 12): Promise<JobSeekerProfile[]> {
+  const { data } = await supabase
+    .from("job_seeker_profiles")
+    .select("*")
+    .eq("visibility", "public")
+    .order("updated_at", { ascending: false })
+    .limit(limit);
+  return (data ?? []) as JobSeekerProfile[];
+}
+
 export function formatSalary(j: Pick<JobPosting, "salary_min" | "salary_max" | "salary_currency" | "salary_period" | "show_salary">) {
   if (!j.show_salary || (!j.salary_min && !j.salary_max)) return null;
   const cur = j.salary_currency || "USD";
