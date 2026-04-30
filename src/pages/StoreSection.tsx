@@ -1663,6 +1663,7 @@ function ProfileView() {
       phone: form.phone || null,
       email: form.email || null,
       website: form.website || null,
+      trade_type: form.tradeType || "both",
       categories: form.categories,
     }).eq("id", supplier.id);
     setSaving(false);
