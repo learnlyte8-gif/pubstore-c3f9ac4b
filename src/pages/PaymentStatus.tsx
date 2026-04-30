@@ -34,7 +34,22 @@ export default function PaymentStatus() {
       return;
     }
 
-    const terminalFail = new Set(["FAILED", "CANCELLED", "DECLINED"]);
+    const terminalSuccess = new Set(["SUCCESS", "PAID", "AUTHORIZED"]);
+    const terminalFail = new Set([
+      "FAILED",
+      "CANCELLED",
+      "DECLINED",
+      "AUTHORIZATION_FAILED",
+      "CLOSED",
+      "CLOSED_PERIOD_ELAPSED",
+      "ERROR",
+      "INSUFFICIENT_FUNDS",
+      "REVERSED",
+      "SERVICE_UNAVAILABLE",
+      "TERMINATED",
+      "TIME_OUT",
+    ]);
+    // PENDING-ish: INITIATED, PENDING, PROCESSING, PARTIALLY_PAID
 
     const poll = async () => {
       for (let i = 0; i < MAX_ATTEMPTS; i++) {
@@ -45,20 +60,19 @@ export default function PaymentStatus() {
         try {
           const { data, error } = await sb.functions.invoke("pesepay-status", {
             body: {
-              reference: merchantReference, // ✅ keep it simple
+              reference: merchantReference,
             },
           });
 
           if (error) throw error;
 
-          console.log("🔍 FULL DATA:", data); // DEBUG
+          console.log("🔍 FULL DATA:", data);
 
           const status = String(data?.status ?? "").toUpperCase();
           setStatusText(status || "PENDING");
           setAmount(Number(data?.amount || 0));
 
-          // ✅ FIX: use status, NOT data.paid
-          if (status === "SUCCESS") {
+          if (terminalSuccess.has(status) || data?.paid === true) {
             setPhase("paid");
             sessionStorage.removeItem("pubstore.pesepay.return");
             return;

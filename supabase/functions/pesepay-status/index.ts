@@ -212,7 +212,20 @@ Deno.serve(async (req) => {
     const amount = Number(inner.amount || inner?.amountDetails?.amount || checkJson?.amount || checkJson?.amountDetails?.amount || 0);
     const gatewayReference = String(inner.referenceNumber || inner.applicationCode || checkJson?.referenceNumber || pesepayReference || "");
     const paid = status === "SUCCESS" || status === "PAID" || status === "AUTHORIZED";
-    const failed = status === "FAILED" || status === "CANCELLED" || status === "DECLINED";
+    const failed = [
+      "FAILED",
+      "CANCELLED",
+      "DECLINED",
+      "AUTHORIZATION_FAILED",
+      "CLOSED",
+      "CLOSED_PERIOD_ELAPSED",
+      "ERROR",
+      "INSUFFICIENT_FUNDS",
+      "REVERSED",
+      "SERVICE_UNAVAILABLE",
+      "TERMINATED",
+      "TIME_OUT",
+    ].includes(status);
 
     if (decryptFailed && existingState) {
       return json({ ok: true, ...existingState, source: "history-fallback" });
