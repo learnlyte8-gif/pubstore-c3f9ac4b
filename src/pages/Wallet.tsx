@@ -120,6 +120,7 @@ export default function WalletPage() {
         window.location.href = data.redirectUrl;
         return;
       }
+    } catch (e: any) {
       setRedirecting(false);
       setSelected(null);
       toast.error(await getEdgeFunctionErrorMessage(e, "Could not start checkout"));
