@@ -143,6 +143,13 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
               </p>
             ) : null;
           })()}
+          {(supplierLocLabel || distLabel) && (
+            <p className="text-[10px] text-muted-foreground mt-0.5 inline-flex items-center gap-0.5 max-w-full">
+              <MapPin className="w-2.5 h-2.5 shrink-0" />
+              <span className="truncate">{supplierLocLabel ?? "Nearby"}</span>
+              {distLabel && <span className="font-semibold text-foreground shrink-0">· {distLabel}</span>}
+            </p>
+          )}
         </div>
       </Link>
     );
