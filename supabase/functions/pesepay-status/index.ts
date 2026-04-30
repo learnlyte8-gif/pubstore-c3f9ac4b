@@ -121,7 +121,10 @@ Deno.serve(async (req) => {
     if (typeof checkJson?.payload === "string") {
       try {
         inner = JSON.parse(await decryptPayload(checkJson.payload, encryptionKey));
-      } catch (e) { console.error("decrypt failed", e); }
+      } catch (e) {
+        console.error("decrypt failed", e);
+        console.log("pesepay check raw response", JSON.stringify(checkJson));
+      }
     }
 
     const status: string = String(inner.transactionStatus || inner.status || checkJson?.transactionStatus || checkJson?.status || "").toUpperCase();
