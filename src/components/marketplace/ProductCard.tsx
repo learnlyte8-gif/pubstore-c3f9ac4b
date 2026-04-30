@@ -66,11 +66,18 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
   const liked = isWishlisted(product.id);
   const off = discountPct(product);
   const countdown = useDealCountdown(product.dealEndsAt);
+  const userLoc = useUserLocation();
   // Hide internal "Imported · …" badges from public product cards.
   const displayBadge =
     product.badge && !/^imported/i.test(product.badge) ? product.badge : null;
   const supplierVerified = product.supplierVerified === true;
   const supplierGold = product.supplierGold === true;
+
+  const supplierLocLabel = product.supplierLocation || product.shipFrom || null;
+  const distLabel =
+    userLoc && product.supplierLat != null && product.supplierLng != null
+      ? formatDistance(distanceKm(userLoc.lat, userLoc.lng, product.supplierLat, product.supplierLng))
+      : null;
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
