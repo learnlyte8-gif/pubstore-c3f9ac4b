@@ -12,6 +12,19 @@ export type WalletTx = {
   created_at: string;
 };
 
+export type PaymentStatusHistory = {
+  id: string;
+  provider: string;
+  purpose: string;
+  merchant_reference: string;
+  gateway_reference: string | null;
+  status: string;
+  amount: number | null;
+  currency: string;
+  details: Record<string, unknown> | null;
+  created_at: string;
+};
+
 // The wallet tables were just added; cast through `any` until Supabase types regenerate.
 const sb = supabase as any;
 
@@ -52,9 +65,25 @@ export function useWallet() {
     },
   });
 
+  const paymentHistoryQuery = useQuery({
+    queryKey: ["wallet-payment-history", userId],
+    enabled: !!userId,
+    queryFn: async (): Promise<PaymentStatusHistory[]> => {
+      const { data } = await sb
+        .from("payment_status_history")
+        .select("*")
+        .eq("provider", "pesepay")
+        .eq("purpose", "wallet_topup")
+        .order("created_at", { ascending: false })
+        .limit(60);
+      return (data ?? []) as PaymentStatusHistory[];
+    },
+  });
+
   const refresh = useCallback(() => {
     qc.invalidateQueries({ queryKey: ["wallet", userId] });
     qc.invalidateQueries({ queryKey: ["wallet-tx", userId] });
+    qc.invalidateQueries({ queryKey: ["wallet-payment-history", userId] });
   }, [qc, userId]);
 
   // Live updates when a tx is inserted (top-up, purchase, refund).
@@ -84,6 +113,7 @@ export function useWallet() {
     balance: balanceQuery.data ?? 0,
     isLoading: balanceQuery.isLoading,
     transactions: txQuery.data ?? [],
+    paymentHistory: paymentHistoryQuery.data ?? [],
     refresh,
     payOrder,
   };
