@@ -33,7 +33,9 @@ import EmptyState from "@/components/EmptyState";
 import SupplierCard from "@/components/marketplace/SupplierCard";
 import { useProducts, useSuppliers } from "@/hooks/useCatalog";
 import { useFollowingFeed, useFollowingSupplierIds, useAuthUserId } from "@/hooks/useFollowing";
-import { useMyInterests, useWishlistInterestSlugs, interestsToSlugs, prioritizeByCategories } from "@/hooks/useInterests";
+import { useMyInterests, useWishlistInterestSlugs, interestsToSlugs, prioritizeByCategories, useRecentSearchSlugs, rankByAffinity } from "@/hooks/useInterests";
+import { useTradeMode } from "@/hooks/useTradeMode";
+import TradeModeSwitch from "@/components/marketplace/TradeModeSwitch";
 import { useWallet } from "@/hooks/useWallet";
 import { Wallet as WalletIcon, Plus } from "lucide-react";
 
