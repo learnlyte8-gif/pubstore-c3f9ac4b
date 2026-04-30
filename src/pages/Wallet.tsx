@@ -16,6 +16,7 @@ const sb = supabase as any;
 
 type Pending = { orderID: string; amount: number };
 type Provider = "paypal" | "pesepay";
+type ActivePesepayPayment = { reference: string; pesepayReference: string; pollUrl?: string };
 type TimelineStep = { key: "initiated" | "confirming" | "credited"; label: string };
 
 const TIMELINE_STEPS: TimelineStep[] = [
@@ -23,6 +24,36 @@ const TIMELINE_STEPS: TimelineStep[] = [
   { key: "confirming", label: "Confirming" },
   { key: "credited", label: "Credited" },
 ];
+
+function readStoredPesepayReturn(): ActivePesepayPayment | null {
+  if (typeof window === "undefined") return null;
+
+  const stored = sessionStorage.getItem(PESEPAY_RETURN_KEY);
+  if (!stored) return null;
+
+  try {
+    if (stored.trim().startsWith("{")) {
+      const parsed = JSON.parse(stored) as Partial<ActivePesepayPayment>;
+      if (parsed.reference && parsed.pesepayReference) {
+        return {
+          reference: parsed.reference,
+          pesepayReference: parsed.pesepayReference,
+          pollUrl: parsed.pollUrl,
+        };
+      }
+    }
+
+    const storedUrl = new URL(stored);
+    const reference = storedUrl.searchParams.get("pesepay_ref");
+    const pesepayReference = storedUrl.searchParams.get("pesepay_pref");
+    const pollUrl = storedUrl.searchParams.get("pesepay_poll") ?? undefined;
+
+    if (!reference || !pesepayReference) return null;
+    return { reference, pesepayReference, pollUrl };
+  } catch {
+    return null;
+  }
+}
 
 export default function WalletPage() {
   const { balance, transactions, paymentHistory, isLoading, userId, refresh } = useWallet();
@@ -32,7 +63,7 @@ export default function WalletPage() {
   const [redirecting, setRedirecting] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [provider, setProvider] = useState<Provider>("pesepay");
-  const [activePayment, setActivePayment] = useState<{ reference: string; pesepayReference: string } | null>(null);
+  const [activePayment, setActivePayment] = useState<ActivePesepayPayment | null>(null);
   
   const captureRanRef = useRef(false);
   const pesepayRanRef = useRef(false);
@@ -42,87 +73,91 @@ export default function WalletPage() {
     if (pesepayRanRef.current) return;
     let ref = searchParams.get("pesepay_ref");
     let pref = searchParams.get("pesepay_pref");
+    let pollUrl = searchParams.get("pesepay_poll") ?? undefined;
 
-    if ((!ref || ref === "PENDING" || !pref) && typeof window !== "undefined") {
-      const stored = sessionStorage.getItem(PESEPAY_RETURN_KEY);
+    if (!ref || ref === "PENDING" || !pref) {
+      const stored = readStoredPesepayReturn();
       if (stored) {
-        const storedUrl = new URL(stored);
-        ref = storedUrl.searchParams.get("pesepay_ref");
-        pref = storedUrl.searchParams.get("pesepay_pref");
+        ref = stored.reference;
+        pref = stored.pesepayReference;
+        pollUrl = stored.pollUrl;
       }
     }
 
     if (!ref || !pref) return;
     pesepayRanRef.current = true;
     setCapturing(true);
-    setActivePayment({ reference: ref, pesepayReference: pref });
-    (async () => {
-      try {
-        const { data, error } = await sb.functions.invoke("pesepay-status", {
-          body: { reference: ref, pesepayReference: pref },
-        });
-        if (error) throw error;
-        if (data?.paid) {
-          toast.success(`Added ${fmt(Number(data.amount || 0))} to PUBSTORE Pay 🎉`);
-          refresh();
-        } else {
-          toast.message("Payment is still pending", { description: "We'll update your balance once it clears." });
-        }
-      } catch (e: any) {
-        toast.error(e?.message ?? "Could not verify Pesepay payment");
-      } finally {
-        sessionStorage.removeItem(PESEPAY_RETURN_KEY);
-        setCapturing(false);
-        const next = new URLSearchParams(searchParams);
-        next.delete("pesepay_ref");
-        next.delete("pesepay_pref");
-        setSearchParams(next, { replace: true });
-      }
-    })();
-  }, [searchParams, setSearchParams, refresh]);
+    setActivePayment({ reference: ref, pesepayReference: pref, pollUrl });
+
+    const next = new URLSearchParams(searchParams);
+    next.delete("pesepay_ref");
+    next.delete("pesepay_pref");
+    next.delete("pesepay_poll");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     if (!activePayment?.reference || !activePayment?.pesepayReference) return;
 
-    const current = paymentHistory.filter((item) => item.merchant_reference === activePayment.reference);
-    const hasCredited = current.some((item) => item.status === "credited");
-    if (hasCredited) {
-      setActivePayment(null);
-      setCapturing(false);
-      refresh();
-      return;
-    }
+    let cancelled = false;
+    const terminalFailure = new Set(["FAILED", "CANCELLED", "DECLINED"]);
 
-    const hasPending = current.some((item) => item.status === "pending" || item.status === "initiated" || item.status === "confirming");
-    if (!hasPending) return;
+    const run = async () => {
+      for (let attempt = 0; attempt < 10 && !cancelled; attempt += 1) {
+        try {
+          const { data, error } = await sb.functions.invoke("pesepay-status", {
+            body: {
+              reference: activePayment.reference,
+              pesepayReference: activePayment.pesepayReference,
+              pollUrl: activePayment.pollUrl,
+            },
+          });
+          if (error) throw error;
 
-    let attempts = 0;
-    const id = window.setInterval(async () => {
-      attempts += 1;
-      try {
-        const { data, error } = await sb.functions.invoke("pesepay-status", {
-          body: {
-            reference: activePayment.reference,
-            pesepayReference: activePayment.pesepayReference,
-          },
-        });
-        if (error) throw error;
-        refresh();
-        if (data?.paid || attempts >= 6) {
-          window.clearInterval(id);
+          refresh();
+
+          const status = String(data?.status ?? "").toUpperCase();
           if (data?.paid) {
+            sessionStorage.removeItem(PESEPAY_RETURN_KEY);
             toast.success(`Added ${fmt(Number(data.amount || 0))} to PUBSTORE Pay 🎉`);
             setActivePayment(null);
             setCapturing(false);
+            return;
+          }
+
+          if (terminalFailure.has(status)) {
+            sessionStorage.removeItem(PESEPAY_RETURN_KEY);
+            toast.error(`Pesepay payment ${status.toLowerCase()}`);
+            setActivePayment(null);
+            setCapturing(false);
+            return;
+          }
+        } catch (e: any) {
+          if (attempt === 0) {
+            toast.message("Still confirming your payment", {
+              description: e?.message ?? "We're waiting for Pesepay to finish processing.",
+            });
           }
         }
-      } catch {
-        if (attempts >= 6) window.clearInterval(id);
-      }
-    }, 2500);
 
-    return () => window.clearInterval(id);
-  }, [activePayment, paymentHistory, refresh]);
+        if (attempt < 9) {
+          await new Promise((resolve) => window.setTimeout(resolve, 2500));
+        }
+      }
+
+      if (!cancelled) {
+        setCapturing(false);
+        toast.message("Payment is still confirming", {
+          description: "We'll keep checking when you reopen this page.",
+        });
+      }
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [activePayment, refresh]);
 
   const timelineGroups = paymentHistory.reduce<Record<string, typeof paymentHistory>>((acc, entry) => {
     (acc[entry.merchant_reference] ||= []).push(entry);
@@ -233,6 +268,7 @@ export default function WalletPage() {
         const back = new URL(`${origin}/wallet`);
         back.searchParams.set("pesepay_ref", data.reference);
         back.searchParams.set("pesepay_pref", data.pesepayReference || "");
+        if (data.pollUrl) back.searchParams.set("pesepay_poll", data.pollUrl);
         sessionStorage.setItem(PESEPAY_RETURN_KEY, back.toString());
         window.location.href = data.redirectUrl;
         return;
