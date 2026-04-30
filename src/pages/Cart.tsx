@@ -491,20 +491,10 @@ export default function Cart() {
           </div>
         )}
 
-        {(payMethod === "ecocash" || payMethod === "onemoney") && (
-          <div className="mt-3">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              {payMethod === "ecocash" ? "EcoCash" : "OneMoney"} number
-            </label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="0771234567"
-              className="mt-1 w-full h-11 rounded-xl border bg-background px-3 text-sm tabular-nums"
-              inputMode="tel"
-            />
-          </div>
+        {payMethod === "pesepay" && (
+          <p className="mt-3 text-[10px] text-muted-foreground leading-tight">
+            You'll be redirected to Pesepay to complete payment with EcoCash, OneMoney, ZIPIT or your Visa card. We'll bring you right back when it's done.
+          </p>
         )}
       </div>
 
