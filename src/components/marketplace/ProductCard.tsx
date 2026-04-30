@@ -6,6 +6,7 @@ import { type Product, discountPct } from "@/data/products";
 import { useShop } from "@/store/shop";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserLocation, distanceKm, formatDistance } from "@/hooks/useUserLocation";
+import { logProductClick } from "@/hooks/usePersonalizationLog";
 
 const fmtPrice = (n: number) => `$${n.toFixed(2)}`;
 const fmtSold = (n: number) =>
