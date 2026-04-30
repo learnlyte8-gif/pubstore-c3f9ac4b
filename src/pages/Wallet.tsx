@@ -24,7 +24,7 @@ export default function WalletPage() {
   const [redirecting, setRedirecting] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [provider, setProvider] = useState<Provider>("pesepay");
-  const [phone, setPhone] = useState("");
+  
   const captureRanRef = useRef(false);
   const pesepayRanRef = useRef(false);
 
