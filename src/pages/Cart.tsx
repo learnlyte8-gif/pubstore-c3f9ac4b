@@ -242,10 +242,8 @@ export default function Cart() {
       });
       return;
     }
-    if ((payMethod === "ecocash" || payMethod === "onemoney") && phone.replace(/\D/g, "").length < 9) {
-      toast.error("Enter your mobile money number");
-      return;
-    }
+    // No mobile-money pre-check needed: Pesepay collects details on its hosted page.
+
     if (payMethod === "cod" && !isVerified) {
       toast.error("Verification required for Cash on delivery", {
         description: "Upload your ID and proof of residency to unlock COD.",
