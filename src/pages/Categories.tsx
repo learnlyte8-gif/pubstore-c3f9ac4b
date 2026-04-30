@@ -2,13 +2,16 @@ import { useState } from "react";
 import { LayoutGrid } from "lucide-react";
 import ProductCard from "@/components/marketplace/ProductCard";
 import EmptyState from "@/components/EmptyState";
+import TradeModeSwitch from "@/components/marketplace/TradeModeSwitch";
 import { useCategories, useProducts } from "@/hooks/useCatalog";
 import {
   useMyInterests,
   useWishlistInterestSlugs,
+  useRecentSearchSlugs,
   interestsToSlugs,
-  prioritizeByCategories,
+  rankByAffinity,
 } from "@/hooks/useInterests";
+import { useTradeMode } from "@/hooks/useTradeMode";
 
 const ALL_ID = "__all__";
 
@@ -19,17 +22,18 @@ export default function Categories() {
 
   const { interests } = useMyInterests();
   const wishlistSlugs = useWishlistInterestSlugs();
+  const { slugs: searchSlugs, tokens: searchTokens } = useRecentSearchSlugs();
+  const { mode: tradeMode } = useTradeMode();
 
   const { data: products = [], isLoading } = useProducts(
-    isAll ? { limit: 120 } : { category: active, limit: 60 },
+    isAll ? { limit: 120, tradeMode } : { category: active, limit: 60, tradeMode },
   );
 
-  const ordered = isAll
-    ? prioritizeByCategories(products, [
-        ...interestsToSlugs(interests),
-        ...wishlistSlugs,
-      ])
-    : products;
+  const interestSlugs = interestsToSlugs(interests);
+  const priorityCounts = [...interestSlugs, ...interestSlugs, ...wishlistSlugs, ...searchSlugs].reduce<Record<string, number>>(
+    (acc, s) => { acc[s] = (acc[s] ?? 0) + 1; return acc; }, {},
+  );
+  const ordered = isAll ? rankByAffinity(products, priorityCounts, searchTokens) : products;
 
   const ActiveCat = cats.find((c) => c.id === active);
   const ActiveIcon = ActiveCat?.icon;
@@ -69,18 +73,23 @@ export default function Categories() {
       </aside>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="px-4 py-4 border-b bg-card shadow-soft flex items-center gap-2">
-          <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shadow-soft">
+        <div className="px-4 py-3 border-b bg-card shadow-soft flex items-center gap-2">
+          <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shadow-soft shrink-0">
             {isAll ? <LayoutGrid className="w-5 h-5" strokeWidth={2} /> : ActiveIcon ? <ActiveIcon className="w-5 h-5" strokeWidth={2} /> : null}
           </span>
-          <div>
-            <h2 className="font-bold text-base capitalize">
+          <div className="min-w-0 flex-1">
+            <h2 className="font-bold text-base capitalize truncate">
               {isAll ? "All products" : ActiveCat?.name}
             </h2>
-            <p className="text-xs text-muted-foreground">
-              {ordered.length} products{isAll && interests.length > 0 ? " · sorted by your interests" : ""}
+            <p className="text-xs text-muted-foreground truncate">
+              {ordered.length} products
+              {tradeMode !== "all" ? ` · ${tradeMode}` : ""}
+              {isAll && interests.length > 0 ? " · personalized" : ""}
             </p>
           </div>
+        </div>
+        <div className="px-4 py-2 bg-card/60 border-b flex justify-center">
+          <TradeModeSwitch />
         </div>
 
         {isLoading ? (

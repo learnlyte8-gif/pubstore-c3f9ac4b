@@ -53,6 +53,7 @@ export type Supplier = {
   website: string | null;
   categories: string[];
   onboardingCompletedAt: string | null;
+  tradeType: "retail" | "wholesale" | "both";
 };
 
 export type Review = {
@@ -88,6 +89,10 @@ export type Product = {
   supplierLng?: number | null;
   moq: number;
   unit: string;
+  /** Derived: 'wholesale' if moq > 1, otherwise 'retail'. */
+  tradeType: "retail" | "wholesale";
+  /** The supplier's declared trade type (retail / wholesale / both). */
+  supplierTradeType?: "retail" | "wholesale" | "both";
   leadTime: string;
   shipFrom: string;
   tierPrices?: TierPrice[];
@@ -157,6 +162,7 @@ type DbSupplier = {
   website?: string | null;
   categories?: string[] | null;
   onboarding_completed_at?: string | null;
+  trade_type?: string | null;
 };
 
 type DbProduct = {
@@ -210,6 +216,7 @@ export const mapSupplier = (s: DbSupplier): Supplier => ({
   website: s.website ?? null,
   categories: (s.categories ?? []) as string[],
   onboardingCompletedAt: s.onboarding_completed_at ?? null,
+  tradeType: ((s.trade_type as Supplier["tradeType"]) ?? "both"),
 });
 
 type DbProductWithSupplier = DbProduct & {
@@ -221,6 +228,7 @@ type DbProductWithSupplier = DbProduct & {
     location_address: string | null;
     latitude: number | string | null;
     longitude: number | string | null;
+    trade_type?: string | null;
   } | null;
 };
 
@@ -250,6 +258,8 @@ export const mapProduct = (p: DbProduct | DbProductWithSupplier): Product => {
     supplierLng: Number.isFinite(supLng as number) ? (supLng as number) : null,
     moq: p.moq ?? 1,
     unit: p.unit ?? "piece",
+    tradeType: (p.moq ?? 1) > 1 ? "wholesale" : "retail",
+    supplierTradeType: (sup?.trade_type as Product["supplierTradeType"]) ?? "both",
     leadTime: p.lead_time ?? "—",
     shipFrom: p.ship_from ?? "—",
     specs: Array.isArray(p.specs) ? (p.specs as { label: string; value: string }[]) : [],
@@ -286,6 +296,8 @@ export async function fetchProducts(opts: {
   search?: string;
   limit?: number;
   sortBy?: "newest" | "sold" | "price_asc" | "price_desc" | "rating";
+  /** "retail" → moq <= 1, "wholesale" → moq > 1, "all" → no filter */
+  tradeMode?: "all" | "retail" | "wholesale";
 } = {}): Promise<Product[]> {
   // If filtering by a mirror store, swap to master so we show its catalog.
   let supplierId = opts.supplierId;
@@ -293,14 +305,13 @@ export async function fetchProducts(opts: {
 
   let q = supabase
     .from("products")
-    .select("*, suppliers!inner(name, verified, gold, country, location_address, latitude, longitude)")
+    .select("*, suppliers!inner(name, verified, gold, country, location_address, latitude, longitude, trade_type)")
     .eq("active", true);
   if (opts.category) q = q.eq("category_slug", opts.category);
   if (supplierId) q = q.eq("supplier_id", supplierId);
+  if (opts.tradeMode === "wholesale") q = q.gt("moq", 1);
+  if (opts.tradeMode === "retail") q = q.lte("moq", 1);
   if (opts.search) {
-    // Broad pre-filter — the real ranking happens client-side via lib/search.ts.
-    // We `or` across title, description, category and badge so the candidate
-    // set is wide enough for fuzzy ranking without sending the whole catalog.
     const term = opts.search.replace(/[%,]/g, " ").trim();
     if (term) {
       const like = `%${term}%`;

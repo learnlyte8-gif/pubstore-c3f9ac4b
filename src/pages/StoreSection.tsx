@@ -1579,6 +1579,7 @@ function ProfileView() {
     name: "", country: "", about: "", logo: "", banner: "",
     latitude: null as number | null, longitude: null as number | null, locationAddress: "",
     businessType: "", phone: "", email: "", website: "",
+    tradeType: "both" as "retail" | "wholesale" | "both",
     categories: [] as string[],
   });
   const [saving, setSaving] = useState(false);
@@ -1601,6 +1602,7 @@ function ProfileView() {
       phone: supplier.phone || "",
       email: supplier.email || "",
       website: supplier.website || "",
+      tradeType: (supplier.tradeType ?? "both"),
       categories: supplier.categories || [],
     });
   }, [supplier]);
@@ -1661,6 +1663,7 @@ function ProfileView() {
       phone: form.phone || null,
       email: form.email || null,
       website: form.website || null,
+      trade_type: form.tradeType || "both",
       categories: form.categories,
     }).eq("id", supplier.id);
     setSaving(false);
@@ -1758,6 +1761,26 @@ function ProfileView() {
           <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Business email" type="email" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
           <input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="Website (optional)" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
         </div>
+      </div>
+
+      {/* Trade type */}
+      <div>
+        <p className="text-xs font-bold mb-2 text-muted-foreground uppercase tracking-wide">Trade type</p>
+        <div className="flex flex-wrap gap-1.5">
+          {(["retail", "wholesale", "both"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setForm({ ...form, tradeType: t })}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold border capitalize ${form.tradeType === t ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border"}`}
+            >
+              {t === "both" ? "Retail & Wholesale" : t}
+            </button>
+          ))}
+        </div>
+        <p className="text-[11px] text-muted-foreground mt-1.5">
+          Products with a minimum order quantity (MOQ) above 1 are auto-tagged as wholesale.
+        </p>
       </div>
 
       {/* Category preferences */}

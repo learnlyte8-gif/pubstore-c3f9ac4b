@@ -2945,6 +2945,7 @@ export type Database = {
           response_time: string | null
           slug: string | null
           trade_assurance: boolean | null
+          trade_type: string
           updated_at: string
           verified: boolean | null
           website: string | null
@@ -2976,6 +2977,7 @@ export type Database = {
           response_time?: string | null
           slug?: string | null
           trade_assurance?: boolean | null
+          trade_type?: string
           updated_at?: string
           verified?: boolean | null
           website?: string | null
@@ -3007,6 +3009,7 @@ export type Database = {
           response_time?: string | null
           slug?: string | null
           trade_assurance?: boolean | null
+          trade_type?: string
           updated_at?: string
           verified?: boolean | null
           website?: string | null
