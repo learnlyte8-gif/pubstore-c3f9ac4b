@@ -220,7 +220,7 @@ export default function Jobs() {
               <Button size="sm" onClick={() => setShowCompany(true)}><Plus className="w-4 h-4 mr-1" /> New</Button>
             </div>
             {myCompanies.length === 0 ? (
-              <EmptyState icon={Building2} title="No companies yet" subtitle="Create one to start posting jobs." />
+              <EmptyState icon={<Building2 className="w-7 h-7 text-muted-foreground" />} title="No companies yet" description="Create one to start posting jobs." />
             ) : (
               <div className="mt-3 space-y-2">
                 {myCompanies.map((c) => (
@@ -264,9 +264,9 @@ export default function Jobs() {
           {isLoading && <div className="text-center text-xs text-muted-foreground py-6">Loading jobs…</div>}
           {!isLoading && visibleJobs.length === 0 && (
             <EmptyState
-              icon={Briefcase}
+              icon={<Briefcase className="w-7 h-7 text-muted-foreground" />}
               title={tab === "saved" ? "No saved jobs yet" : tab === "applied" ? "You haven't applied yet" : "No jobs match your filters"}
-              subtitle={tab === "feed" ? "Try a different search or category." : "Browse the All jobs tab to find opportunities."}
+              description={tab === "feed" ? "Try a different search or category." : "Browse the All jobs tab to find opportunities."}
             />
           )}
           {visibleJobs.map((j) => (
