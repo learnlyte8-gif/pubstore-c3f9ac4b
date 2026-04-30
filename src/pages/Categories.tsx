@@ -44,7 +44,7 @@ export default function Categories() {
 
   const bumpActivity = () => {
     if (idleTimer.current) clearTimeout(idleTimer.current);
-    idleTimer.current = setTimeout(() => setCollapsed(true), 10_000);
+    idleTimer.current = setTimeout(() => setCollapsed(true), 3_000);
   };
 
   useEffect(() => {
