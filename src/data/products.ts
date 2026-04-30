@@ -201,6 +201,12 @@ export const mapSupplier = (s: DbSupplier): Supplier => ({
   longitude: s.longitude != null ? Number(s.longitude) : null,
   locationAddress: s.location_address ?? null,
   mirrorOf: s.mirror_of ?? null,
+  businessType: s.business_type ?? null,
+  phone: s.phone ?? null,
+  email: s.email ?? null,
+  website: s.website ?? null,
+  categories: (s.categories ?? []) as string[],
+  onboardingCompletedAt: s.onboarding_completed_at ?? null,
 });
 
 type DbProductWithSupplier = DbProduct & {
