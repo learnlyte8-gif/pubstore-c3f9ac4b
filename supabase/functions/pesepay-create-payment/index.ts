@@ -20,6 +20,11 @@ const corsHeaders = {
 
 const PESEPAY_INITIATE = "https://api.pesepay.com/api/payments-engine/v1/payments/initiate";
 
+/** Strip whitespace/newlines/quotes that sometimes get pasted into env-var values. */
+function cleanHeader(v: string): string {
+  return v.replace(/^[\s"']+|[\s"']+$/g, "").replace(/[\r\n]/g, "");
+}
+
 function b64encode(bytes: Uint8Array): string {
   let s = "";
   for (let i = 0; i < bytes.length; i += 1) s += String.fromCharCode(bytes[i]);
