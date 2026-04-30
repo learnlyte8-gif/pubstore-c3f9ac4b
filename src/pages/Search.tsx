@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
-import { Search as SearchIcon, SlidersHorizontal, X, Star, Truck, Sparkles, Loader2, ArrowRight, History, TrendingUp } from "lucide-react";
-import ProductCard from "@/components/marketplace/ProductCard";
+import { Search as SearchIcon, SlidersHorizontal, X, Star, Truck, Sparkles, ArrowRight, History, TrendingUp, Package, Wrench, Home as HomeIcon, Banknote, Car, BedDouble, Factory, Newspaper, Store as StoreIcon, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLiveHints } from "@/components/RotatingHint";
 import { Link } from "react-router-dom";
-import { useProducts, useCategories } from "@/hooks/useCatalog";
+import { useCategories } from "@/hooks/useCatalog";
 import EmptyState from "@/components/EmptyState";
-import { rankSearch, suggestCompletions, tokenize } from "@/lib/search";
+import { suggestCompletions, tokenize } from "@/lib/search";
+import { useUniversalPool, searchUniversal, type UniversalHit } from "@/hooks/useUniversalSearch";
 
 const SORTS = [
   { id: "relevance", label: "Relevance" },
@@ -47,15 +47,14 @@ export default function SearchPage() {
   const HINTS = useLiveHints();
   const { data: cats = [] } = useCategories();
 
-  // Wide candidate pool. We pull a single richer set; client-side ranker filters.
-  const { data: candidates = [], isLoading } = useProducts({
-    search: submitted || undefined,
-    category: category || undefined,
-    limit: submitted ? 200 : 0,
-  });
+  const [kindFilter, setKindFilter] = useState<UniversalHit["kind"] | null>(null);
 
-  // Always-loaded set used for suggestions while typing.
-  const { data: suggestPool = [] } = useProducts({ limit: 60, sortBy: "sold" });
+  // Single universal pool covers products, services, properties, finance,
+  // logistics, vehicles, stays, industrial, news and suppliers. The
+  // client-side ranker handles fuzzy matching so unrelated keywords like
+  // "jobs" or "cars" still surface relevant rows.
+  const { data: pool = [], isLoading } = useUniversalPool();
+  const suggestPool = pool;
 
   useEffect(() => {
     if (query) return;
@@ -69,34 +68,29 @@ export default function SearchPage() {
     return suggestCompletions(suggestPool, query);
   }, [query, suggestPool]);
 
-  // Ranked + filtered results
+  // Ranked + filtered results across the whole catalog (all verticals).
   const ranked = useMemo(() => {
     if (!submitted) return [];
-    const tokens = tokenize(submitted);
-    let list = candidates;
+    let list = pool;
 
-    // Apply hard filters first (rating/price/shipping) — they're objective.
+    // Apply objective filters first.
     list = list.filter((p) => {
       if (p.rating < minRating) return false;
-      if (p.price > maxPrice) return false;
+      if (p.price != null && p.price > maxPrice) return false;
       if (freeShipOnly && !p.freeShipping) return false;
       return true;
     });
 
-    // Score with the YouTube-style ranker only when there's a query.
-    let scored = tokens.length
-      ? rankSearch(list, submitted)
-      : list.map((item) => ({ item, score: 0 }));
+    let scored = searchUniversal(list, submitted, kindFilter);
 
     if (sort !== "relevance") {
-      const byPrice = (a: any, b: any) => a.item.price - b.item.price;
-      if (sort === "price-asc") scored = [...scored].sort(byPrice);
-      if (sort === "price-desc") scored = [...scored].sort((a, b) => b.item.price - a.item.price);
+      if (sort === "price-asc") scored = [...scored].sort((a, b) => (a.item.price ?? 0) - (b.item.price ?? 0));
+      if (sort === "price-desc") scored = [...scored].sort((a, b) => (b.item.price ?? 0) - (a.item.price ?? 0));
       if (sort === "rating") scored = [...scored].sort((a, b) => b.item.rating - a.item.rating);
       if (sort === "sold") scored = [...scored].sort((a, b) => b.item.sold - a.item.sold);
     }
     return scored;
-  }, [candidates, submitted, sort, minRating, maxPrice, freeShipOnly]);
+  }, [pool, submitted, sort, minRating, maxPrice, freeShipOnly, kindFilter]);
 
   const askTapson = async (q: string) => {
     if (!q.trim()) return;
@@ -319,9 +313,10 @@ export default function SearchPage() {
             />
           ) : (
             <>
+              <KindFilterChips value={kindFilter} onChange={setKindFilter} pool={ranked.map((r) => r.item)} />
               <p className="text-sm text-muted-foreground mb-3">{ranked.length} result{ranked.length === 1 ? "" : "s"} for "{submitted}"</p>
-              <div className="grid grid-cols-2 gap-3">
-                {ranked.map(({ item }) => (<ProductCard key={item.id} product={item} />))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {ranked.slice(0, 80).map(({ item }) => (<UniversalResultCard key={item.id} hit={item} />))}
               </div>
             </>
           )}
@@ -342,5 +337,83 @@ function highlightMatch(text: string, query: string) {
       <strong className="text-foreground font-bold">{text.slice(i, i + q.length)}</strong>
       {text.slice(i + q.length)}
     </>
+  );
+}
+
+const KIND_META: Record<UniversalHit["kind"], { label: string; icon: any }> = {
+  product: { label: "Products", icon: Package },
+  service: { label: "Services / Jobs", icon: Wrench },
+  property: { label: "Property", icon: HomeIcon },
+  finance: { label: "Finance", icon: Banknote },
+  logistics: { label: "Delivery", icon: Truck },
+  vehicle: { label: "Vehicles", icon: Car },
+  stay: { label: "Stays", icon: BedDouble },
+  industrial: { label: "Industrial", icon: Factory },
+  news: { label: "News", icon: Newspaper },
+  supplier: { label: "Suppliers", icon: StoreIcon },
+  ride: { label: "Rides", icon: Navigation },
+};
+
+function KindFilterChips({
+  value, onChange, pool,
+}: { value: UniversalHit["kind"] | null; onChange: (k: UniversalHit["kind"] | null) => void; pool: UniversalHit[] }) {
+  const counts = pool.reduce<Record<string, number>>((acc, h) => { acc[h.kind] = (acc[h.kind] ?? 0) + 1; return acc; }, {});
+  const kinds = (Object.keys(counts) as UniversalHit["kind"][]).sort((a, b) => counts[b] - counts[a]);
+  if (kinds.length <= 1) return null;
+  return (
+    <div className="flex gap-1.5 overflow-x-auto scrollbar-none -mx-1 px-1 mb-3 pb-1">
+      <button onClick={() => onChange(null)}
+        className={`shrink-0 px-3 h-8 rounded-full text-xs font-bold border ${value === null ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border"}`}>
+        All · {pool.length}
+      </button>
+      {kinds.map((k) => {
+        const meta = KIND_META[k];
+        const Icon = meta.icon;
+        const active = value === k;
+        return (
+          <button key={k} onClick={() => onChange(active ? null : k)}
+            className={`shrink-0 inline-flex items-center gap-1.5 px-3 h-8 rounded-full text-xs font-bold border ${active ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border"}`}>
+            <Icon className="w-3.5 h-3.5" /> {meta.label} · {counts[k]}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function UniversalResultCard({ hit }: { hit: UniversalHit }) {
+  const meta = KIND_META[hit.kind];
+  const Icon = meta.icon;
+  const priceLabel = hit.price != null && hit.price > 0
+    ? `${hit.currency ?? "$"}${hit.price.toLocaleString()}`
+    : null;
+  return (
+    <Link to={hit.href} className="group flex gap-3 bg-card border rounded-2xl p-2.5 shadow-card hover:shadow-elevated transition">
+      <div className="w-20 h-20 rounded-xl bg-muted overflow-hidden shrink-0 relative">
+        {hit.image ? (
+          <img src={hit.image} alt={hit.title} loading="lazy" className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-muted-foreground"><Icon className="w-6 h-6" /></div>
+        )}
+        <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-background/90 backdrop-blur shadow-soft inline-flex items-center gap-1">
+          <Icon className="w-2.5 h-2.5" /> {meta.label}
+        </span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold leading-tight line-clamp-2">{hit.title}</p>
+        {hit.description && <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{hit.description}</p>}
+        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+          {priceLabel && <span className="text-sm font-black text-primary">{priceLabel}</span>}
+          {hit.rating > 0 && (
+            <span className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground">
+              <Star className="w-3 h-3 fill-amber-500 text-amber-500" /> {hit.rating.toFixed(1)}
+            </span>
+          )}
+          {(hit.city || hit.country) && (
+            <span className="text-[10px] text-muted-foreground truncate">{[hit.city, hit.country].filter(Boolean).join(", ")}</span>
+          )}
+        </div>
+      </div>
+    </Link>
   );
 }

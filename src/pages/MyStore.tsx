@@ -1,18 +1,23 @@
 import { useEffect, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useNavigate } from "react-router-dom";
-import { Store, Package, BarChart3, Megaphone, Truck, Star, Plus, ShoppingBag, Video, MessageCircle, Settings, ChevronRight, ImagePlus, Radio, StopCircle, Loader2, Download, BedDouble, Car, Factory, Newspaper, Sparkles, Navigation, Wrench, Home as HomeIcon, Banknote } from "lucide-react";
+import { Store, Package, BarChart3, Megaphone, Truck, Star, Plus, ShoppingBag, Video, MessageCircle, Settings, ChevronRight, ImagePlus, Radio, StopCircle, Loader2, Download, BedDouble, Car, Factory, Newspaper, Sparkles, Navigation, Wrench, Home as HomeIcon, Banknote, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchMySupplier, fetchProducts } from "@/data/products";
 import EmptyState from "@/components/EmptyState";
 import { toast } from "sonner";
+import SupplierOnboarding, { buildOnboardingSteps, isOnboardingComplete, OnboardingBlockedBanner } from "@/components/SupplierOnboarding";
+import { useVerification } from "@/hooks/useVerification";
 
 export default function MyStore() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { data: supplier, isLoading } = useQuery({ queryKey: ["my-supplier"], queryFn: fetchMySupplier });
+  const { status: verificationStatus } = useVerification();
+  const onboardingSteps = buildOnboardingSteps(supplier ?? null, verificationStatus);
+  const canPublish = isOnboardingComplete(onboardingSteps);
   const { data: myProducts = [] } = useQuery({
     queryKey: ["my-products", supplier?.id],
     queryFn: () => (supplier ? fetchProducts({ supplierId: supplier.id, limit: 6 }) : Promise.resolve([])),
@@ -159,6 +164,10 @@ export default function MyStore() {
         </div>
       ) : null}
 
+      {/* Supplier onboarding gate */}
+      <SupplierOnboarding steps={onboardingSteps} />
+      {!canPublish && <OnboardingBlockedBanner steps={onboardingSteps} />}
+
       <div className="px-4 mt-5 grid grid-cols-3 gap-2">
         <Stat label="Products" value={String(myProducts.length)} icon={Package} />
         <Stat label="Orders" value={String(stats?.orderCount ?? 0)} icon={ShoppingBag} />
@@ -168,10 +177,20 @@ export default function MyStore() {
       <div className="px-4 mt-5">
         <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2 px-1">Quick actions</p>
         <div className="grid grid-cols-4 gap-2">
-          <Link to="/store/products/new" className="bg-card border rounded-2xl p-3 flex flex-col items-center gap-1.5 shadow-card hover:shadow-elevated transition">
-            <span className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center"><Plus className="w-4 h-4" /></span>
-            <span className="text-[10px] font-semibold text-center leading-tight">Add product</span>
-          </Link>
+          {canPublish ? (
+            <Link to="/store/products/new" className="bg-card border rounded-2xl p-3 flex flex-col items-center gap-1.5 shadow-card hover:shadow-elevated transition">
+              <span className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center"><Plus className="w-4 h-4" /></span>
+              <span className="text-[10px] font-semibold text-center leading-tight">Add product</span>
+            </Link>
+          ) : (
+            <button
+              onClick={() => toast.error("Finish supplier onboarding to publish products")}
+              className="bg-muted/50 border border-dashed rounded-2xl p-3 flex flex-col items-center gap-1.5 opacity-70"
+            >
+              <span className="w-9 h-9 rounded-xl bg-muted text-muted-foreground flex items-center justify-center"><Lock className="w-4 h-4" /></span>
+              <span className="text-[10px] font-semibold text-center leading-tight">Add product</span>
+            </button>
+          )}
           {liveStream ? (
             <Link to={`/live/${liveStream.id}`} className="bg-destructive text-destructive-foreground rounded-2xl p-3 flex flex-col items-center gap-1.5 shadow-card">
               <span className="w-9 h-9 rounded-xl bg-background/20 flex items-center justify-center"><Radio className="w-4 h-4 animate-pulse" /></span>
@@ -250,9 +269,17 @@ export default function MyStore() {
           )}
         </div>
 
-        <Button asChild className="w-full h-12 shadow-elevated">
-          <Link to="/store/products/new"><Plus className="w-4 h-4 mr-2" /> Add new product</Link>
-        </Button>
+        {canPublish ? (
+          <Button asChild className="w-full h-12 shadow-elevated">
+            <Link to="/store/products/new"><Plus className="w-4 h-4 mr-2" /> Add new product</Link>
+          </Button>
+        ) : (
+          <Button asChild className="w-full h-12 shadow-elevated" variant="outline">
+            <Link to={onboardingSteps.find((s) => !s.done)?.to ?? "/store/profile"}>
+              <Lock className="w-4 h-4 mr-2" /> Finish onboarding to publish
+            </Link>
+          </Button>
+        )}
       </div>
 
       {/* Go live modal */}

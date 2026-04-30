@@ -46,6 +46,13 @@ export type Supplier = {
   locationAddress: string | null;
   /** When set, this supplier is a "mirror" of another store and shares its products. */
   mirrorOf: string | null;
+  // Supplier onboarding fields
+  businessType: string | null;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  categories: string[];
+  onboardingCompletedAt: string | null;
 };
 
 export type Review = {
@@ -141,6 +148,12 @@ type DbSupplier = {
   longitude?: number | string | null;
   location_address?: string | null;
   mirror_of?: string | null;
+  business_type?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  website?: string | null;
+  categories?: string[] | null;
+  onboarding_completed_at?: string | null;
 };
 
 type DbProduct = {
@@ -188,6 +201,12 @@ export const mapSupplier = (s: DbSupplier): Supplier => ({
   longitude: s.longitude != null ? Number(s.longitude) : null,
   locationAddress: s.location_address ?? null,
   mirrorOf: s.mirror_of ?? null,
+  businessType: s.business_type ?? null,
+  phone: s.phone ?? null,
+  email: s.email ?? null,
+  website: s.website ?? null,
+  categories: (s.categories ?? []) as string[],
+  onboardingCompletedAt: s.onboarding_completed_at ?? null,
 });
 
 type DbProductWithSupplier = DbProduct & {

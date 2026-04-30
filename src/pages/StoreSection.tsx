@@ -1578,11 +1578,14 @@ function ProfileView() {
   const [form, setForm] = useState({
     name: "", country: "", about: "", logo: "", banner: "",
     latitude: null as number | null, longitude: null as number | null, locationAddress: "",
+    businessType: "", phone: "", email: "", website: "",
+    categories: [] as string[],
   });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<"logo" | "banner" | null>(null);
   const logoRef = useRef<HTMLInputElement>(null);
   const bannerRef = useRef<HTMLInputElement>(null);
+  const { data: cats = [] } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
 
   useEffect(() => {
     if (supplier) setForm({
@@ -1594,6 +1597,11 @@ function ProfileView() {
       latitude: supplier.latitude,
       longitude: supplier.longitude,
       locationAddress: supplier.locationAddress || "",
+      businessType: supplier.businessType || "",
+      phone: supplier.phone || "",
+      email: supplier.email || "",
+      website: supplier.website || "",
+      categories: supplier.categories || [],
     });
   }, [supplier]);
 
@@ -1636,12 +1644,24 @@ function ProfileView() {
     }
   };
 
+  const toggleCategory = (slug: string) => {
+    setForm((f) => ({
+      ...f,
+      categories: f.categories.includes(slug) ? f.categories.filter((c) => c !== slug) : [...f.categories, slug],
+    }));
+  };
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supplier) return;
     setSaving(true);
-    const { error } = await supabase.from("suppliers").update({
+    const { error } = await (supabase.from("suppliers") as any).update({
       name: form.name, country: form.country, about: form.about,
+      business_type: form.businessType || null,
+      phone: form.phone || null,
+      email: form.email || null,
+      website: form.website || null,
+      categories: form.categories,
     }).eq("id", supplier.id);
     setSaving(false);
     if (error) toast.error(error.message); else { toast.success("Saved"); qc.invalidateQueries({ queryKey: ["my-supplier"] }); }
@@ -1720,6 +1740,40 @@ function ProfileView() {
           address={form.locationAddress}
           onChange={handlePin}
         />
+      </div>
+
+      {/* Business details */}
+      <div>
+        <p className="text-xs font-bold mb-2 text-muted-foreground uppercase tracking-wide">Business details</p>
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-1.5">
+            {["individual", "company", "factory", "distributor"].map((t) => (
+              <button key={t} type="button" onClick={() => setForm({ ...form, businessType: t })}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold border capitalize ${form.businessType === t ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border"}`}>
+                {t}
+              </button>
+            ))}
+          </div>
+          <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Phone (e.g. +263…)" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+          <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Business email" type="email" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+          <input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="Website (optional)" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+        </div>
+      </div>
+
+      {/* Category preferences */}
+      <div>
+        <p className="text-xs font-bold mb-2 text-muted-foreground uppercase tracking-wide">What do you sell? <span className="text-muted-foreground/70 normal-case">({form.categories.length} selected)</span></p>
+        <div className="flex flex-wrap gap-1.5">
+          {cats.map((c) => {
+            const active = form.categories.includes(c.id);
+            return (
+              <button key={c.id} type="button" onClick={() => toggleCategory(c.id)}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold border ${active ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border"}`}>
+                {c.name}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <Button type="submit" disabled={saving} className="w-full h-12">{saving ? "Saving…" : "Save changes"}</Button>

@@ -2288,9 +2288,12 @@ export type Database = {
         Row: {
           about: string | null
           banner: string | null
+          business_type: string | null
+          categories: string[]
           country: string | null
           country_code: string | null
           created_at: string
+          email: string | null
           gold: boolean | null
           id: string
           latitude: number | null
@@ -2300,7 +2303,9 @@ export type Database = {
           mirror_of: string | null
           name: string
           on_time_delivery: number | null
+          onboarding_completed_at: string | null
           owner_id: string
+          phone: string | null
           rating: number | null
           response_rate: number | null
           response_time: string | null
@@ -2308,14 +2313,18 @@ export type Database = {
           trade_assurance: boolean | null
           updated_at: string
           verified: boolean | null
+          website: string | null
           years_active: number | null
         }
         Insert: {
           about?: string | null
           banner?: string | null
+          business_type?: string | null
+          categories?: string[]
           country?: string | null
           country_code?: string | null
           created_at?: string
+          email?: string | null
           gold?: boolean | null
           id?: string
           latitude?: number | null
@@ -2325,7 +2334,9 @@ export type Database = {
           mirror_of?: string | null
           name: string
           on_time_delivery?: number | null
+          onboarding_completed_at?: string | null
           owner_id: string
+          phone?: string | null
           rating?: number | null
           response_rate?: number | null
           response_time?: string | null
@@ -2333,14 +2344,18 @@ export type Database = {
           trade_assurance?: boolean | null
           updated_at?: string
           verified?: boolean | null
+          website?: string | null
           years_active?: number | null
         }
         Update: {
           about?: string | null
           banner?: string | null
+          business_type?: string | null
+          categories?: string[]
           country?: string | null
           country_code?: string | null
           created_at?: string
+          email?: string | null
           gold?: boolean | null
           id?: string
           latitude?: number | null
@@ -2350,7 +2365,9 @@ export type Database = {
           mirror_of?: string | null
           name?: string
           on_time_delivery?: number | null
+          onboarding_completed_at?: string | null
           owner_id?: string
+          phone?: string | null
           rating?: number | null
           response_rate?: number | null
           response_time?: string | null
@@ -2358,6 +2375,7 @@ export type Database = {
           trade_assurance?: boolean | null
           updated_at?: string
           verified?: boolean | null
+          website?: string | null
           years_active?: number | null
         }
         Relationships: [
