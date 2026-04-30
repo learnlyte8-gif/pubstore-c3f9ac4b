@@ -93,13 +93,14 @@ Deno.serve(async (req) => {
 
     if (!paid) {
       if (merchantReference.startsWith("wallet_topup_")) {
-        const userPrefix = merchantReference.split("_")[2];
-        const { data: candidates } = await admin
-          .from("profiles")
+        const { data: initiated } = await admin
+          .from("payment_status_history")
           .select("user_id")
-          .ilike("user_id", `${userPrefix}%`)
-          .limit(1);
-        const uid = candidates?.[0]?.user_id;
+          .eq("provider", "pesepay")
+          .eq("merchant_reference", merchantReference)
+          .eq("status", "initiated")
+          .maybeSingle();
+        const uid = initiated?.user_id;
         if (uid) {
           await logPaymentStatus(admin, {
             userId: uid,
@@ -131,13 +132,14 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (existing) return new Response("ok", { status: 200 });
 
-      const userPrefix = merchantReference.split("_")[2];
-      const { data: candidates } = await admin
-        .from("profiles")
+      const { data: initiated } = await admin
+        .from("payment_status_history")
         .select("user_id")
-        .ilike("user_id", `${userPrefix}%`)
-        .limit(1);
-      const uid = candidates?.[0]?.user_id;
+        .eq("provider", "pesepay")
+        .eq("merchant_reference", merchantReference)
+        .eq("status", "initiated")
+        .maybeSingle();
+      const uid = initiated?.user_id;
       if (!uid) return new Response("user not found", { status: 200 });
 
        await logPaymentStatus(admin, {
