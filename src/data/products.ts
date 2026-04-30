@@ -89,6 +89,10 @@ export type Product = {
   supplierLng?: number | null;
   moq: number;
   unit: string;
+  /** Derived: 'wholesale' if moq > 1, otherwise 'retail'. */
+  tradeType: "retail" | "wholesale";
+  /** The supplier's declared trade type (retail / wholesale / both). */
+  supplierTradeType?: "retail" | "wholesale" | "both";
   leadTime: string;
   shipFrom: string;
   tierPrices?: TierPrice[];
