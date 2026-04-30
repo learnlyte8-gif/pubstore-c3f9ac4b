@@ -83,6 +83,9 @@ export type Product = {
   supplierVerified?: boolean;
   supplierGold?: boolean;
   supplierName?: string;
+  supplierLocation?: string | null;
+  supplierLat?: number | null;
+  supplierLng?: number | null;
   moq: number;
   unit: string;
   leadTime: string;
@@ -210,11 +213,21 @@ export const mapSupplier = (s: DbSupplier): Supplier => ({
 });
 
 type DbProductWithSupplier = DbProduct & {
-  suppliers?: { name: string | null; verified: boolean | null; gold: boolean | null } | null;
+  suppliers?: {
+    name: string | null;
+    verified: boolean | null;
+    gold: boolean | null;
+    country: string | null;
+    location_address: string | null;
+    latitude: number | string | null;
+    longitude: number | string | null;
+  } | null;
 };
 
 export const mapProduct = (p: DbProduct | DbProductWithSupplier): Product => {
   const sup = (p as DbProductWithSupplier).suppliers ?? null;
+  const supLat = sup?.latitude != null ? Number(sup.latitude) : null;
+  const supLng = sup?.longitude != null ? Number(sup.longitude) : null;
   return {
     id: p.id,
     title: p.title,
@@ -232,6 +245,9 @@ export const mapProduct = (p: DbProduct | DbProductWithSupplier): Product => {
     supplierVerified: sup ? !!sup.verified : undefined,
     supplierGold: sup ? !!sup.gold : undefined,
     supplierName: sup?.name ?? undefined,
+    supplierLocation: sup?.location_address ?? sup?.country ?? null,
+    supplierLat: Number.isFinite(supLat as number) ? (supLat as number) : null,
+    supplierLng: Number.isFinite(supLng as number) ? (supLng as number) : null,
     moq: p.moq ?? 1,
     unit: p.unit ?? "piece",
     leadTime: p.lead_time ?? "—",
@@ -277,7 +293,7 @@ export async function fetchProducts(opts: {
 
   let q = supabase
     .from("products")
-    .select("*, suppliers!inner(name, verified, gold)")
+    .select("*, suppliers!inner(name, verified, gold, country, location_address, latitude, longitude)")
     .eq("active", true);
   if (opts.category) q = q.eq("category_slug", opts.category);
   if (supplierId) q = q.eq("supplier_id", supplierId);
@@ -309,7 +325,7 @@ export async function fetchProducts(opts: {
 export async function fetchProduct(id: string): Promise<Product | null> {
   const { data } = await supabase
     .from("products")
-    .select("*, suppliers!inner(name, verified, gold)")
+    .select("*, suppliers!inner(name, verified, gold, country, location_address, latitude, longitude)")
     .eq("id", id)
     .maybeSingle();
   return data ? mapProduct(data as DbProductWithSupplier) : null;

@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Heart, Star, Plus, Truck, ShieldCheck, Award, Timer, Package } from "lucide-react";
+import { Heart, Star, Plus, Truck, ShieldCheck, Award, Timer, Package, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { type Product, discountPct } from "@/data/products";
 import { useShop } from "@/store/shop";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserLocation, distanceKm, formatDistance } from "@/hooks/useUserLocation";
 
 const fmtPrice = (n: number) => `$${n.toFixed(2)}`;
 const fmtSold = (n: number) =>
@@ -65,11 +66,19 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
   const liked = isWishlisted(product.id);
   const off = discountPct(product);
   const countdown = useDealCountdown(product.dealEndsAt);
+  const userLoc = useUserLocation();
   // Hide internal "Imported · …" badges from public product cards.
   const displayBadge =
     product.badge && !/^imported/i.test(product.badge) ? product.badge : null;
   const supplierVerified = product.supplierVerified === true;
   const supplierGold = product.supplierGold === true;
+
+  const rawShipFrom = product.shipFrom && product.shipFrom !== "—" ? product.shipFrom : null;
+  const supplierLocLabel = product.supplierLocation || rawShipFrom;
+  const distLabel =
+    userLoc && product.supplierLat != null && product.supplierLng != null
+      ? formatDistance(distanceKm(userLoc.lat, userLoc.lng, product.supplierLat, product.supplierLng))
+      : null;
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -135,6 +144,13 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
               </p>
             ) : null;
           })()}
+          {(supplierLocLabel || distLabel) && (
+            <p className="text-[10px] text-muted-foreground mt-0.5 inline-flex items-center gap-0.5 max-w-full">
+              <MapPin className="w-2.5 h-2.5 shrink-0" />
+              <span className="truncate">{supplierLocLabel ?? "Nearby"}</span>
+              {distLabel && <span className="font-semibold text-foreground shrink-0">· {distLabel}</span>}
+            </p>
+          )}
         </div>
       </Link>
     );
@@ -211,6 +227,16 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
             </div>
           ) : null;
         })()}
+
+        {(supplierLocLabel || distLabel) && (
+          <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground min-w-0">
+            <MapPin className="w-3 h-3 text-primary shrink-0" />
+            <span className="truncate">{supplierLocLabel ?? "Nearby supplier"}</span>
+            {distLabel && (
+              <span className="ml-auto font-bold text-foreground tabular-nums shrink-0">{distLabel} away</span>
+            )}
+          </div>
+        )}
 
         {(product.freeShipping || supplierVerified || supplierGold) && (
           <div className="flex items-center gap-1.5 mt-1 text-[10px] flex-wrap">
