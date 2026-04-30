@@ -120,7 +120,7 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
 
   if (variant === "compact") {
     return (
-      <Link to={`/product/${product.id}`} className="shrink-0 w-36 group block">
+      <Link to={`/product/${product.id}`} onClick={() => logProductClick(product, "card-compact")} className="shrink-0 w-36 group block">
         <div className="relative aspect-square rounded-xl overflow-hidden bg-muted shadow-card group-hover:shadow-elevated transition">
           <img
             src={product.image}
@@ -176,6 +176,7 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
   return (
     <Link
       to={`/product/${product.id}`}
+      onClick={() => logProductClick(product, "card")}
       className="group rounded-xl overflow-hidden bg-card border border-border shadow-card hover:shadow-elevated hover:-translate-y-0.5 transition block"
     >
       <div className="relative aspect-square bg-muted overflow-hidden">
