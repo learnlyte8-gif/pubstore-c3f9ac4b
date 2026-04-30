@@ -1585,7 +1585,7 @@ function ProfileView() {
   const [uploading, setUploading] = useState<"logo" | "banner" | null>(null);
   const logoRef = useRef<HTMLInputElement>(null);
   const bannerRef = useRef<HTMLInputElement>(null);
-  const { data: cats = [] } = useCategories();
+  const { data: cats = [] } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
 
   useEffect(() => {
     if (supplier) setForm({
