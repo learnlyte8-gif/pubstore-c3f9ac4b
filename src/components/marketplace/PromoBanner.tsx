@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { ShoppingBag, Sparkles, Flame, BedDouble, Car, Factory, Newspaper, Radio, Crown, Navigation } from "lucide-react";
+import { ShoppingBag, Sparkles, Flame, BedDouble, Car, Factory, Newspaper, Radio, Crown, Navigation, Wrench, Home as HomeIcon, Truck, Banknote } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type Slide = {
@@ -32,7 +32,7 @@ async function buildSlides(): Promise<Slide[]> {
   const now = new Date().toISOString();
 
   // Run all queries in parallel
-  const [deals, hot, sup, stays, vehicles, industrial, news, lives] = await Promise.all([
+  const [deals, hot, sup, stays, vehicles, industrial, news, lives, services, properties, finance] = await Promise.all([
     supabase.from("products").select("id,title,image,price,original_price,deal_ends_at").eq("active", true).not("deal_ends_at", "is", null).gt("deal_ends_at", now).order("deal_ends_at", { ascending: true }).limit(2),
     supabase.from("products").select("id,title,image,sold").eq("active", true).order("sold", { ascending: false }).limit(2),
     supabase.from("suppliers").select("id,name,country,banner,gold,verified").or("gold.eq.true,verified.eq.true").order("rating", { ascending: false }).limit(2),
@@ -41,6 +41,9 @@ async function buildSlides(): Promise<Slide[]> {
     supabase.from("industrial_listings").select("id,title,category,cover,price").eq("active", true).order("created_at", { ascending: false }).limit(2),
     supabase.from("news_articles").select("id,slug,title,dek,cover").eq("featured", true).order("published_at", { ascending: false }).limit(2),
     supabase.from("live_streams").select("id,title,cover,viewer_count").eq("status", "live").order("viewer_count", { ascending: false }).limit(2),
+    supabase.from("service_providers").select("id,display_name,category,cover,hourly_rate,city").eq("active", true).order("rating", { ascending: false }).limit(2),
+    supabase.from("properties").select("id,title,city,cover,price,listing_type,price_period").eq("active", true).order("featured", { ascending: false }).limit(2),
+    supabase.from("finance_products").select("id,title,kind,cover,interest_rate,provider_name").eq("active", true).order("featured", { ascending: false }).limit(2),
   ]);
 
   let g = 0;
