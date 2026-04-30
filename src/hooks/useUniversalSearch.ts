@@ -49,8 +49,8 @@ async function loadUniversalPool(): Promise<UniversalHit[]> {
     supabase.from("properties").select("id,title,description,property_kind,listing_type,city,country,price,currency,cover,bedrooms,baths,featured,views").eq("active", true).limit(200),
     supabase.from("finance_products").select("id,title,kind,description,provider_name,country,city,cover,min_amount,max_amount,interest_rate,currency,featured").eq("active", true).limit(120),
     supabase.from("logistics_requests").select("id,title,description,vehicle_type,pickup_address,dropoff_address,budget,currency,status").eq("status", "open").limit(120),
-    supabase.from("vehicles").select("id,title,description,kind,brand,model,city,country,price,currency,cover").eq("active", true).limit(200),
-    supabase.from("stays").select("id,title,description,kind,city,country,price_per_night,currency,cover,featured").eq("active", true).limit(200),
+    supabase.from("vehicles").select("id,title,description,kind,make,model,city,country,price,currency,cover").eq("active", true).limit(200),
+    supabase.from("stays").select("id,title,description,kind,city,country,price_per_night,currency,cover,rating,review_count,superhost").eq("active", true).limit(200),
     supabase.from("industrial_listings").select("id,title,description,category,subcategory,country,price,currency,cover").eq("active", true).limit(200),
     supabase.from("news_articles").select("id,title,dek,slug,category,cover,tags,read_minutes").limit(120),
   ]);
