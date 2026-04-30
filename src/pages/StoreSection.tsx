@@ -1763,6 +1763,26 @@ function ProfileView() {
         </div>
       </div>
 
+      {/* Trade type */}
+      <div>
+        <p className="text-xs font-bold mb-2 text-muted-foreground uppercase tracking-wide">Trade type</p>
+        <div className="flex flex-wrap gap-1.5">
+          {(["retail", "wholesale", "both"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setForm({ ...form, tradeType: t })}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold border capitalize ${form.tradeType === t ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border"}`}
+            >
+              {t === "both" ? "Retail & Wholesale" : t}
+            </button>
+          ))}
+        </div>
+        <p className="text-[11px] text-muted-foreground mt-1.5">
+          Products with a minimum order quantity (MOQ) above 1 are auto-tagged as wholesale.
+        </p>
+      </div>
+
       {/* Category preferences */}
       <div>
         <p className="text-xs font-bold mb-2 text-muted-foreground uppercase tracking-wide">What do you sell? <span className="text-muted-foreground/70 normal-case">({form.categories.length} selected)</span></p>
