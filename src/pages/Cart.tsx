@@ -443,25 +443,11 @@ export default function Cart() {
             insufficient={balance < total}
           />
           <PayOption
-            active={payMethod === "ecocash"}
-            onClick={() => setPayMethod("ecocash")}
+            active={payMethod === "pesepay"}
+            onClick={() => setPayMethod("pesepay")}
             icon={Smartphone}
-            label="EcoCash"
-            sub="Mobile prompt"
-          />
-          <PayOption
-            active={payMethod === "onemoney"}
-            onClick={() => setPayMethod("onemoney")}
-            icon={Smartphone}
-            label="OneMoney"
-            sub="Mobile prompt"
-          />
-          <PayOption
-            active={payMethod === "paynow"}
-            onClick={() => setPayMethod("paynow")}
-            icon={CreditCard}
-            label="Paynow Web"
-            sub="Visa / ZIPIT"
+            label="Pesepay"
+            sub="EcoCash · OneMoney · Visa"
           />
           <PayOption
             active={payMethod === "paypal"}
