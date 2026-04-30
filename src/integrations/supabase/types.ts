@@ -367,6 +367,141 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_applications: {
+        Row: {
+          amount_requested: number | null
+          applicant_email: string | null
+          applicant_id: string
+          applicant_name: string | null
+          applicant_phone: string | null
+          created_at: string
+          employment_status: string | null
+          id: string
+          monthly_income: number | null
+          notes: string | null
+          product_id: string
+          purpose: string | null
+          status: string
+          term_months: number | null
+          updated_at: string
+        }
+        Insert: {
+          amount_requested?: number | null
+          applicant_email?: string | null
+          applicant_id: string
+          applicant_name?: string | null
+          applicant_phone?: string | null
+          created_at?: string
+          employment_status?: string | null
+          id?: string
+          monthly_income?: number | null
+          notes?: string | null
+          product_id: string
+          purpose?: string | null
+          status?: string
+          term_months?: number | null
+          updated_at?: string
+        }
+        Update: {
+          amount_requested?: number | null
+          applicant_email?: string | null
+          applicant_id?: string
+          applicant_name?: string | null
+          applicant_phone?: string | null
+          created_at?: string
+          employment_status?: string | null
+          id?: string
+          monthly_income?: number | null
+          notes?: string | null
+          product_id?: string
+          purpose?: string | null
+          status?: string
+          term_months?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      finance_products: {
+        Row: {
+          active: boolean
+          city: string | null
+          contact_phone: string | null
+          contact_whatsapp: string | null
+          country: string | null
+          cover: string | null
+          created_at: string
+          currency: string
+          description: string | null
+          featured: boolean
+          features: string[]
+          gallery: string[]
+          id: string
+          interest_rate: number | null
+          kind: string
+          max_amount: number | null
+          min_amount: number | null
+          owner_user_id: string
+          provider_name: string | null
+          requirements: string[]
+          supplier_id: string | null
+          term_months: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          city?: string | null
+          contact_phone?: string | null
+          contact_whatsapp?: string | null
+          country?: string | null
+          cover?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          featured?: boolean
+          features?: string[]
+          gallery?: string[]
+          id?: string
+          interest_rate?: number | null
+          kind: string
+          max_amount?: number | null
+          min_amount?: number | null
+          owner_user_id: string
+          provider_name?: string | null
+          requirements?: string[]
+          supplier_id?: string | null
+          term_months?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          city?: string | null
+          contact_phone?: string | null
+          contact_whatsapp?: string | null
+          country?: string | null
+          cover?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          featured?: boolean
+          features?: string[]
+          gallery?: string[]
+          id?: string
+          interest_rate?: number | null
+          kind?: string
+          max_amount?: number | null
+          min_amount?: number | null
+          owner_user_id?: string
+          provider_name?: string | null
+          requirements?: string[]
+          supplier_id?: string | null
+          term_months?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       followers: {
         Row: {
           created_at: string
@@ -596,6 +731,132 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      logistics_bids: {
+        Row: {
+          created_at: string
+          currency: string
+          driver_avatar: string | null
+          driver_id: string
+          driver_name: string | null
+          driver_rating: number
+          eta_minutes: number
+          fare: number
+          id: string
+          message: string | null
+          request_id: string
+          status: string
+          vehicle_label: string | null
+          vehicle_plate: string | null
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          driver_avatar?: string | null
+          driver_id: string
+          driver_name?: string | null
+          driver_rating?: number
+          eta_minutes?: number
+          fare: number
+          id?: string
+          message?: string | null
+          request_id: string
+          status?: string
+          vehicle_label?: string | null
+          vehicle_plate?: string | null
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          driver_avatar?: string | null
+          driver_id?: string
+          driver_name?: string | null
+          driver_rating?: number
+          eta_minutes?: number
+          fare?: number
+          id?: string
+          message?: string | null
+          request_id?: string
+          status?: string
+          vehicle_label?: string | null
+          vehicle_plate?: string | null
+        }
+        Relationships: []
+      }
+      logistics_requests: {
+        Row: {
+          assigned_driver_id: string | null
+          budget: number | null
+          buyer_id: string
+          created_at: string
+          currency: string
+          description: string | null
+          distance_km: number | null
+          dropoff_address: string
+          dropoff_lat: number | null
+          dropoff_lng: number | null
+          gallery: string[]
+          id: string
+          package_kind: string | null
+          pickup_address: string
+          pickup_at: string | null
+          pickup_lat: number | null
+          pickup_lng: number | null
+          status: string
+          title: string
+          updated_at: string
+          vehicle_type: string
+          weight_kg: number | null
+        }
+        Insert: {
+          assigned_driver_id?: string | null
+          budget?: number | null
+          buyer_id: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          distance_km?: number | null
+          dropoff_address: string
+          dropoff_lat?: number | null
+          dropoff_lng?: number | null
+          gallery?: string[]
+          id?: string
+          package_kind?: string | null
+          pickup_address: string
+          pickup_at?: string | null
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          status?: string
+          title: string
+          updated_at?: string
+          vehicle_type?: string
+          weight_kg?: number | null
+        }
+        Update: {
+          assigned_driver_id?: string | null
+          budget?: number | null
+          buyer_id?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          distance_km?: number | null
+          dropoff_address?: string
+          dropoff_lat?: number | null
+          dropoff_lng?: number | null
+          gallery?: string[]
+          id?: string
+          package_kind?: string | null
+          pickup_address?: string
+          pickup_at?: string | null
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          status?: string
+          title?: string
+          updated_at?: string
+          vehicle_type?: string
+          weight_kg?: number | null
+        }
+        Relationships: []
       }
       messages: {
         Row: {
@@ -1159,6 +1420,147 @@ export type Database = {
         }
         Relationships: []
       }
+      properties: {
+        Row: {
+          active: boolean
+          address: string | null
+          amenities: string[]
+          area_sqm: number | null
+          available_from: string | null
+          baths: number | null
+          bedrooms: number | null
+          city: string | null
+          contact_phone: string | null
+          contact_whatsapp: string | null
+          country: string | null
+          cover: string | null
+          created_at: string
+          currency: string
+          description: string | null
+          featured: boolean
+          furnished: boolean
+          gallery: string[]
+          id: string
+          lat: number | null
+          listing_type: string
+          lng: number | null
+          owner_user_id: string
+          price: number
+          price_period: string | null
+          property_kind: string
+          supplier_id: string | null
+          title: string
+          updated_at: string
+          views: number
+          virtual_tour_url: string | null
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          amenities?: string[]
+          area_sqm?: number | null
+          available_from?: string | null
+          baths?: number | null
+          bedrooms?: number | null
+          city?: string | null
+          contact_phone?: string | null
+          contact_whatsapp?: string | null
+          country?: string | null
+          cover?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          featured?: boolean
+          furnished?: boolean
+          gallery?: string[]
+          id?: string
+          lat?: number | null
+          listing_type?: string
+          lng?: number | null
+          owner_user_id: string
+          price: number
+          price_period?: string | null
+          property_kind?: string
+          supplier_id?: string | null
+          title: string
+          updated_at?: string
+          views?: number
+          virtual_tour_url?: string | null
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          amenities?: string[]
+          area_sqm?: number | null
+          available_from?: string | null
+          baths?: number | null
+          bedrooms?: number | null
+          city?: string | null
+          contact_phone?: string | null
+          contact_whatsapp?: string | null
+          country?: string | null
+          cover?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          featured?: boolean
+          furnished?: boolean
+          gallery?: string[]
+          id?: string
+          lat?: number | null
+          listing_type?: string
+          lng?: number | null
+          owner_user_id?: string
+          price?: number
+          price_period?: string | null
+          property_kind?: string
+          supplier_id?: string | null
+          title?: string
+          updated_at?: string
+          views?: number
+          virtual_tour_url?: string | null
+        }
+        Relationships: []
+      }
+      property_inquiries: {
+        Row: {
+          created_at: string
+          id: string
+          inquirer_email: string | null
+          inquirer_id: string
+          inquirer_name: string | null
+          inquirer_phone: string | null
+          message: string | null
+          preferred_date: string | null
+          property_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inquirer_email?: string | null
+          inquirer_id: string
+          inquirer_name?: string | null
+          inquirer_phone?: string | null
+          message?: string | null
+          preferred_date?: string | null
+          property_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inquirer_email?: string | null
+          inquirer_id?: string
+          inquirer_name?: string | null
+          inquirer_phone?: string | null
+          message?: string | null
+          preferred_date?: string | null
+          property_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string
@@ -1548,6 +1950,183 @@ export type Database = {
           status?: string
           updated_at?: string
           vehicle_class?: string
+        }
+        Relationships: []
+      }
+      service_bids: {
+        Row: {
+          created_at: string
+          currency: string
+          eta_days: number | null
+          id: string
+          message: string | null
+          price: number
+          provider_avatar: string | null
+          provider_name: string | null
+          provider_user_id: string
+          request_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          eta_days?: number | null
+          id?: string
+          message?: string | null
+          price: number
+          provider_avatar?: string | null
+          provider_name?: string | null
+          provider_user_id: string
+          request_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          eta_days?: number | null
+          id?: string
+          message?: string | null
+          price?: number
+          provider_avatar?: string | null
+          provider_name?: string | null
+          provider_user_id?: string
+          request_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      service_providers: {
+        Row: {
+          active: boolean
+          bio: string | null
+          category: string
+          city: string | null
+          country: string | null
+          cover: string | null
+          created_at: string
+          currency: string
+          display_name: string
+          email: string | null
+          gallery: string[]
+          hourly_rate: number | null
+          id: string
+          jobs_completed: number
+          phone: string | null
+          rating: number
+          service_area: string | null
+          skills: string[]
+          subcategory: string | null
+          updated_at: string
+          user_id: string
+          verified: boolean
+          whatsapp: string | null
+        }
+        Insert: {
+          active?: boolean
+          bio?: string | null
+          category: string
+          city?: string | null
+          country?: string | null
+          cover?: string | null
+          created_at?: string
+          currency?: string
+          display_name: string
+          email?: string | null
+          gallery?: string[]
+          hourly_rate?: number | null
+          id?: string
+          jobs_completed?: number
+          phone?: string | null
+          rating?: number
+          service_area?: string | null
+          skills?: string[]
+          subcategory?: string | null
+          updated_at?: string
+          user_id: string
+          verified?: boolean
+          whatsapp?: string | null
+        }
+        Update: {
+          active?: boolean
+          bio?: string | null
+          category?: string
+          city?: string | null
+          country?: string | null
+          cover?: string | null
+          created_at?: string
+          currency?: string
+          display_name?: string
+          email?: string | null
+          gallery?: string[]
+          hourly_rate?: number | null
+          id?: string
+          jobs_completed?: number
+          phone?: string | null
+          rating?: number
+          service_area?: string | null
+          skills?: string[]
+          subcategory?: string | null
+          updated_at?: string
+          user_id?: string
+          verified?: boolean
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      service_requests: {
+        Row: {
+          address: string | null
+          assigned_provider_id: string | null
+          budget: number | null
+          buyer_id: string
+          category: string
+          city: string | null
+          country: string | null
+          created_at: string
+          currency: string
+          deadline: string | null
+          description: string | null
+          gallery: string[]
+          id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          assigned_provider_id?: string | null
+          budget?: number | null
+          buyer_id: string
+          category: string
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          currency?: string
+          deadline?: string | null
+          description?: string | null
+          gallery?: string[]
+          id?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          assigned_provider_id?: string | null
+          budget?: number | null
+          buyer_id?: string
+          category?: string
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          currency?: string
+          deadline?: string | null
+          description?: string | null
+          gallery?: string[]
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
