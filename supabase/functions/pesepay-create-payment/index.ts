@@ -221,6 +221,7 @@ Deno.serve(async (req) => {
 
     const redirectUrl: string | undefined = responseInner.redirectUrl || initJson.redirectUrl;
     const referenceNumber: string | undefined = responseInner.referenceNumber || initJson.referenceNumber;
+    const pollUrl: string | undefined = responseInner.pollUrl || initJson.pollUrl;
 
     if (!redirectUrl) {
       console.error("pesepay missing redirectUrl", responseInner);
@@ -256,6 +257,7 @@ Deno.serve(async (req) => {
       ok: true,
       reference: merchantReference,
       pesepayReference: referenceNumber,
+      pollUrl,
       redirectUrl,
       amount: amount.toFixed(2),
     });
