@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useNavigate } from "react-router-dom";
-import { Store, Package, BarChart3, Megaphone, Truck, Star, Plus, ShoppingBag, Video, MessageCircle, Settings, ChevronRight, ImagePlus, Radio, StopCircle, Loader2, Download, BedDouble, Car, Factory, Newspaper, Sparkles, Navigation } from "lucide-react";
+import { Store, Package, BarChart3, Megaphone, Truck, Star, Plus, ShoppingBag, Video, MessageCircle, Settings, ChevronRight, ImagePlus, Radio, StopCircle, Loader2, Download, BedDouble, Car, Factory, Newspaper, Sparkles, Navigation, Wrench, Home as HomeIcon, Banknote } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -214,6 +214,10 @@ export default function MyStore() {
           <Row icon={Car} label="Vehicles" hint="Cars, EVs, trucks, bikes, parts" to="/store/services/vehicles" />
           <Row icon={Factory} label="Industrial listings" hint="Machinery, materials, capacity" to="/store/services/industrial" />
           <Row icon={Navigation} label="Driver mode" hint="Earn driving riders · register your car" to="/store/services/driver" />
+          <Row icon={Wrench} label="Local services" hint="Plumbing, electrical, tutoring, freelance" to="/store/services/pros" />
+          <Row icon={HomeIcon} label="Real estate" hint="Rent or sell apartments, houses, land" to="/store/services/properties" />
+          <Row icon={Truck} label="Delivery / courier" hint="Take last-mile, freight bids" to="/store/services/logistics" />
+          <Row icon={Banknote} label="Finance products" hint="Loans, vehicle financing, insurance" to="/store/services/finance" />
           {canImport && <Row icon={Newspaper} label="News & editorial" hint="Publish articles · admin" to="/store/services/news" />}
         </Section>
 
