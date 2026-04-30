@@ -11,6 +11,7 @@ import { getEdgeFunctionErrorMessage } from "@/lib/edgeFunctionError";
 const fmt = (n: number) => `$${Number(n).toFixed(2)}`;
 const TOPUP_AMOUNTS = [10, 25, 50, 100, 250, 500];
 const PENDING_KEY = "pubstore.paypal.pending";
+const PESEPAY_RETURN_KEY = "pubstore.pesepay.return";
 const sb = supabase as any;
 
 type Pending = { orderID: string; amount: number };
@@ -31,8 +32,18 @@ export default function WalletPage() {
   // After Pesepay redirects back, confirm via pesepay-status.
   useEffect(() => {
     if (pesepayRanRef.current) return;
-    const ref = searchParams.get("pesepay_ref");
-    const pref = searchParams.get("pesepay_pref");
+    let ref = searchParams.get("pesepay_ref");
+    let pref = searchParams.get("pesepay_pref");
+
+    if ((!ref || ref === "PENDING" || !pref) && typeof window !== "undefined") {
+      const stored = sessionStorage.getItem(PESEPAY_RETURN_KEY);
+      if (stored) {
+        const storedUrl = new URL(stored);
+        ref = storedUrl.searchParams.get("pesepay_ref");
+        pref = storedUrl.searchParams.get("pesepay_pref");
+      }
+    }
+
     if (!ref || !pref) return;
     pesepayRanRef.current = true;
     setCapturing(true);
@@ -51,6 +62,7 @@ export default function WalletPage() {
       } catch (e: any) {
         toast.error(e?.message ?? "Could not verify Pesepay payment");
       } finally {
+        sessionStorage.removeItem(PESEPAY_RETURN_KEY);
         setCapturing(false);
         const next = new URLSearchParams(searchParams);
         next.delete("pesepay_ref");
@@ -149,7 +161,7 @@ export default function WalletPage() {
         const back = new URL(`${origin}/wallet`);
         back.searchParams.set("pesepay_ref", data.reference);
         back.searchParams.set("pesepay_pref", data.pesepayReference || "");
-        sessionStorage.setItem("pubstore.pesepay.return", back.toString());
+        sessionStorage.setItem(PESEPAY_RETURN_KEY, back.toString());
         window.location.href = data.redirectUrl;
         return;
       }
