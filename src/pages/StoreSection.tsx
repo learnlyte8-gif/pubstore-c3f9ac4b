@@ -1578,11 +1578,14 @@ function ProfileView() {
   const [form, setForm] = useState({
     name: "", country: "", about: "", logo: "", banner: "",
     latitude: null as number | null, longitude: null as number | null, locationAddress: "",
+    businessType: "", phone: "", email: "", website: "",
+    categories: [] as string[],
   });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<"logo" | "banner" | null>(null);
   const logoRef = useRef<HTMLInputElement>(null);
   const bannerRef = useRef<HTMLInputElement>(null);
+  const { data: cats = [] } = useCategories();
 
   useEffect(() => {
     if (supplier) setForm({
@@ -1594,6 +1597,11 @@ function ProfileView() {
       latitude: supplier.latitude,
       longitude: supplier.longitude,
       locationAddress: supplier.locationAddress || "",
+      businessType: supplier.businessType || "",
+      phone: supplier.phone || "",
+      email: supplier.email || "",
+      website: supplier.website || "",
+      categories: supplier.categories || [],
     });
   }, [supplier]);
 
