@@ -146,9 +146,13 @@ export default function WalletPage() {
       }
 
       if (!cancelled) {
+        // Stop the loop and clear stored ref so a refresh doesn't restart polling
+        // (which creates spurious $0.00 timeline entries).
+        sessionStorage.removeItem(PESEPAY_RETURN_KEY);
+        setActivePayment(null);
         setCapturing(false);
         toast.message("Payment is still confirming", {
-          description: "We'll keep checking when you reopen this page.",
+          description: "Reopen this page later — we'll show it once Pesepay confirms.",
         });
       }
     };
