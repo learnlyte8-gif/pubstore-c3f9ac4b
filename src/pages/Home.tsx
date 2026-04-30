@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   TrendingUp, Sparkles, LayoutGrid, Building2, Compass, Users, Home as HomeIcon, Store as StoreIcon,
   Globe2, Award, Newspaper, Zap, ShieldCheck, Truck, Flame,
@@ -34,10 +35,11 @@ import SupplierCard from "@/components/marketplace/SupplierCard";
 import { useProducts, useSuppliers } from "@/hooks/useCatalog";
 import { useFollowingFeed, useFollowingSupplierIds, useAuthUserId } from "@/hooks/useFollowing";
 import { useMyInterests, useWishlistInterestSlugs, interestsToSlugs, prioritizeByCategories, useRecentSearchSlugs, rankByAffinity } from "@/hooks/useInterests";
+import { useClickAffinity, useRefreshFeed } from "@/hooks/usePersonalizationLog";
 import { useTradeMode } from "@/hooks/useTradeMode";
 import TradeModeSwitch from "@/components/marketplace/TradeModeSwitch";
 import { useWallet } from "@/hooks/useWallet";
-import { Wallet as WalletIcon, Plus } from "lucide-react";
+import { Wallet as WalletIcon, Plus, RefreshCw } from "lucide-react";
 
 type Tab = "home" | "fyp" | "following";
 const TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
@@ -51,6 +53,8 @@ const Home = () => {
   const { interests } = useMyInterests();
   const wishlistSlugs = useWishlistInterestSlugs();
   const { slugs: searchSlugs, tokens: searchTokens } = useRecentSearchSlugs();
+  const { counts: clickCounts, tokens: clickTokens } = useClickAffinity();
+  const { seed, refresh } = useRefreshFeed();
   const interestSlugs = interestsToSlugs(interests);
   const prioritySlugs = [...interestSlugs, ...wishlistSlugs, ...searchSlugs];
   // Weighted counts: interests count twice (explicit), wishlist/search once.
@@ -59,6 +63,8 @@ const Home = () => {
     return acc;
   }, {});
   for (const s of interestSlugs) priorityCounts[s] = (priorityCounts[s] ?? 0) + 1;
+  // Merge in click-derived affinity (already weighted by recency in the hook).
+  for (const [cat, n] of Object.entries(clickCounts)) priorityCounts[cat] = (priorityCounts[cat] ?? 0) + n;
 
   const { balance, userId: walletUserId } = useWallet();
   const { mode: tradeMode } = useTradeMode();
@@ -68,8 +74,11 @@ const Home = () => {
   const { data: dealPool = [] } = useProducts({ sortBy: "newest", limit: 50, tradeMode });
   const { data: suppliers = [] } = useSuppliers({ limit: 6 });
 
-  // Personalized ordering: rank by affinity to interests, wishlist, recent searches.
-  const products = rankByAffinity(rawProducts, priorityCounts, searchTokens);
+  // Personalized ordering: rank by affinity (interests + wishlist + searches + clicks).
+  // The `seed` reshuffles ties when the user taps "Refresh my feed".
+  const allTokens = [...searchTokens, ...clickTokens];
+  const ranked = rankByAffinity(rawProducts, priorityCounts, allTokens);
+  const products = seed > 0 ? [...ranked].sort(() => Math.random() - 0.5) : ranked;
 
   // Real flash deals: products with an active deal_ends_at OR ≥30% off
   const now = Date.now();
@@ -109,8 +118,16 @@ const Home = () => {
             );
           })}
         </div>
-        <div className="flex justify-center">
+        <div className="flex items-center justify-center gap-2">
           <TradeModeSwitch />
+          <button
+            onClick={() => { refresh(); toast.success("Feed refreshed", { description: "Reordered using your latest activity" }); }}
+            aria-label="Refresh my feed"
+            className="h-8 px-3 rounded-full bg-foreground text-background text-[11px] font-bold flex items-center gap-1.5 shadow-card active:scale-95 transition"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${seed > 0 ? "animate-spin-once" : ""}`} strokeWidth={2.6} />
+            Refresh feed
+          </button>
         </div>
       </div>
 
