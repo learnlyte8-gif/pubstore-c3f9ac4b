@@ -50,17 +50,26 @@ const Home = () => {
   const [tab, setTab] = useState<Tab>("home");
   const { interests } = useMyInterests();
   const wishlistSlugs = useWishlistInterestSlugs();
-  const prioritySlugs = [...interestsToSlugs(interests), ...wishlistSlugs];
-  const { balance, userId: walletUserId } = useWallet();
+  const { slugs: searchSlugs, tokens: searchTokens } = useRecentSearchSlugs();
+  const interestSlugs = interestsToSlugs(interests);
+  const prioritySlugs = [...interestSlugs, ...wishlistSlugs, ...searchSlugs];
+  // Weighted counts: interests count twice (explicit), wishlist/search once.
+  const priorityCounts = prioritySlugs.reduce<Record<string, number>>((acc, s) => {
+    acc[s] = (acc[s] ?? 0) + 1;
+    return acc;
+  }, {});
+  for (const s of interestSlugs) priorityCounts[s] = (priorityCounts[s] ?? 0) + 1;
 
-  const { data: rawProducts = [], isLoading } = useProducts({ limit: 80 });
-  const { data: trending = [] } = useProducts({ sortBy: "sold", limit: 6 });
-  const { data: dealPool = [] } = useProducts({ sortBy: "newest", limit: 50 });
+  const { balance, userId: walletUserId } = useWallet();
+  const { mode: tradeMode } = useTradeMode();
+
+  const { data: rawProducts = [], isLoading } = useProducts({ limit: 80, tradeMode });
+  const { data: trending = [] } = useProducts({ sortBy: "sold", limit: 6, tradeMode });
+  const { data: dealPool = [] } = useProducts({ sortBy: "newest", limit: 50, tradeMode });
   const { data: suppliers = [] } = useSuppliers({ limit: 6 });
 
-  // Personalized ordering: products matching the user's interests (and wishlist
-  // categories) bubble to the top, the rest follow in original order.
-  const products = prioritizeByCategories(rawProducts, prioritySlugs);
+  // Personalized ordering: rank by affinity to interests, wishlist, recent searches.
+  const products = rankByAffinity(rawProducts, priorityCounts, searchTokens);
 
   // Real flash deals: products with an active deal_ends_at OR ≥30% off
   const now = Date.now();
