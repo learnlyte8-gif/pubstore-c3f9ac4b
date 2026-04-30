@@ -196,6 +196,12 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
             -{off}%
           </span>
         )}
+        {product.moq && product.moq > 1 && (
+          <span className="absolute bottom-2 left-2 bg-background/90 backdrop-blur text-foreground text-[10px] font-bold px-2 py-0.5 rounded-full border border-border shadow-card inline-flex items-center gap-1">
+            <Package className="w-3 h-3" />
+            MOQ {product.moq}{product.unit ? ` ${product.unit}` : ""}
+          </span>
+        )}
         <button
           onClick={handleLike}
           aria-label="Wishlist"
