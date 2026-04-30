@@ -47,6 +47,7 @@ import Services from "./pages/Services.tsx";
 import Properties from "./pages/Properties.tsx";
 import Logistics from "./pages/Logistics.tsx";
 import Finance from "./pages/Finance.tsx";
+import Jobs from "./pages/Jobs.tsx";
 
 const queryClient = new QueryClient();
 
@@ -107,6 +108,8 @@ const App = () => (
                 <Route path="/properties" element={<Properties />} />
                 <Route path="/logistics" element={<Logistics />} />
                 <Route path="/finance" element={<Finance />} />
+                <Route path="/jobs" element={<Jobs />} />
+                <Route path="/jobs/:id" element={<Jobs />} />
               </Route>
               <Route path="/index" element={<Navigate to="/home" replace />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
