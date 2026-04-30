@@ -289,6 +289,8 @@ export async function fetchProducts(opts: {
   search?: string;
   limit?: number;
   sortBy?: "newest" | "sold" | "price_asc" | "price_desc" | "rating";
+  /** "retail" → moq <= 1, "wholesale" → moq > 1, "all" → no filter */
+  tradeMode?: "all" | "retail" | "wholesale";
 } = {}): Promise<Product[]> {
   // If filtering by a mirror store, swap to master so we show its catalog.
   let supplierId = opts.supplierId;
@@ -296,14 +298,13 @@ export async function fetchProducts(opts: {
 
   let q = supabase
     .from("products")
-    .select("*, suppliers!inner(name, verified, gold, country, location_address, latitude, longitude)")
+    .select("*, suppliers!inner(name, verified, gold, country, location_address, latitude, longitude, trade_type)")
     .eq("active", true);
   if (opts.category) q = q.eq("category_slug", opts.category);
   if (supplierId) q = q.eq("supplier_id", supplierId);
+  if (opts.tradeMode === "wholesale") q = q.gt("moq", 1);
+  if (opts.tradeMode === "retail") q = q.lte("moq", 1);
   if (opts.search) {
-    // Broad pre-filter — the real ranking happens client-side via lib/search.ts.
-    // We `or` across title, description, category and badge so the candidate
-    // set is wide enough for fuzzy ranking without sending the whole catalog.
     const term = opts.search.replace(/[%,]/g, " ").trim();
     if (term) {
       const like = `%${term}%`;
