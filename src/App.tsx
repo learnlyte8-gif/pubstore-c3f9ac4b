@@ -48,6 +48,9 @@ import Properties from "./pages/Properties.tsx";
 import Logistics from "./pages/Logistics.tsx";
 import Finance from "./pages/Finance.tsx";
 import Jobs from "./pages/Jobs.tsx";
+import JobsProfile from "./pages/JobsProfile.tsx";
+import JobsNetwork from "./pages/JobsNetwork.tsx";
+import JobsFeed from "./pages/JobsFeed.tsx";
 
 const queryClient = new QueryClient();
 
@@ -109,6 +112,10 @@ const App = () => (
                 <Route path="/logistics" element={<Logistics />} />
                 <Route path="/finance" element={<Finance />} />
                 <Route path="/jobs" element={<Jobs />} />
+                <Route path="/jobs/feed" element={<JobsFeed />} />
+                <Route path="/jobs/network" element={<JobsNetwork />} />
+                <Route path="/jobs/me" element={<JobsProfile />} />
+                <Route path="/jobs/people/:userId" element={<JobsProfile />} />
                 <Route path="/jobs/:id" element={<Jobs />} />
               </Route>
               <Route path="/index" element={<Navigate to="/home" replace />} />
