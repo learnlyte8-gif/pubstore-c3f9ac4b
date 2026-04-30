@@ -45,7 +45,7 @@ export default function Cart() {
   const [validating, setValidating] = useState(false);
   const [coupons, setCoupons] = useState<AppliedCoupon[]>([]);
   const [payMethod, setPayMethod] = useState<PayMethod>("wallet");
-  const [phone, setPhone] = useState("");
+  
 
   // Group cart by supplier for coupon math
   const supplierGroups = useMemo(() => {
