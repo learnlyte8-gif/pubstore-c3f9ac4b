@@ -28,7 +28,7 @@ type AppliedCoupon = {
   discount: number;
 };
 
-type PayMethod = "wallet" | "paynow" | "ecocash" | "onemoney" | "paypal" | "cod";
+type PayMethod = "wallet" | "pesepay" | "paypal" | "cod";
 
 const sb = supabase as any;
 
@@ -45,7 +45,7 @@ export default function Cart() {
   const [validating, setValidating] = useState(false);
   const [coupons, setCoupons] = useState<AppliedCoupon[]>([]);
   const [payMethod, setPayMethod] = useState<PayMethod>("wallet");
-  const [phone, setPhone] = useState("");
+  
 
   // Group cart by supplier for coupon math
   const supplierGroups = useMemo(() => {
@@ -81,15 +81,15 @@ export default function Cart() {
     })();
   }, []);
 
-  // After Paynow web redirect, finalise via paynow-status
+  // After Pesepay web redirect, finalise via pesepay-status
   useEffect(() => {
-    const ref = searchParams.get("paynow_ref");
-    const pollUrl = searchParams.get("paynow_poll");
-    if (!ref || !pollUrl) return;
+    const ref = searchParams.get("pesepay_ref");
+    const pref = searchParams.get("pesepay_pref");
+    if (!ref || !pref) return;
     (async () => {
       try {
-        const { data, error } = await sb.functions.invoke("paynow-status", {
-          body: { reference: ref, pollUrl: decodeURIComponent(pollUrl) },
+        const { data, error } = await sb.functions.invoke("pesepay-status", {
+          body: { reference: ref, pesepayReference: pref },
         });
         if (error) throw error;
         if (data?.paid) {
@@ -100,11 +100,11 @@ export default function Cart() {
         }
         toast.message("Payment is still pending", { description: "We'll update your order once it clears." });
       } catch (e) {
-        toast.error("Could not verify Paynow payment");
+        toast.error("Could not verify Pesepay payment");
       } finally {
         const next = new URLSearchParams(searchParams);
-        next.delete("paynow_ref");
-        next.delete("paynow_poll");
+        next.delete("pesepay_ref");
+        next.delete("pesepay_pref");
         setSearchParams(next, { replace: true });
       }
     })();
@@ -242,10 +242,8 @@ export default function Cart() {
       });
       return;
     }
-    if ((payMethod === "ecocash" || payMethod === "onemoney") && phone.replace(/\D/g, "").length < 9) {
-      toast.error("Enter your mobile money number");
-      return;
-    }
+    // No mobile-money pre-check needed: Pesepay collects details on its hosted page.
+
     if (payMethod === "cod" && !isVerified) {
       toast.error("Verification required for Cash on delivery", {
         description: "Upload your ID and proof of residency to unlock COD.",
@@ -291,47 +289,26 @@ export default function Cart() {
         return;
       }
 
-      if (payMethod === "paynow") {
+      if (payMethod === "pesepay") {
         const origin = window.location.origin;
-        const { data, error } = await sb.functions.invoke("paynow-create-payment", {
-          body: {
-            purpose: "order",
-            flow: "web",
-            orderIds,
-            returnUrl: `${origin}/cart`, // we'll re-poll on return
-          },
-        });
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
-        await clearCart();
-        // tack the reference + pollUrl onto the return URL so we can confirm
+        // The hosted page handles the rest — we'll confirm via pesepay-status on return.
         const back = new URL(`${origin}/cart`);
-        back.searchParams.set("paynow_ref", data.reference);
-        back.searchParams.set("paynow_poll", encodeURIComponent(data.pollUrl));
-        // browserurl from Paynow already has its own returnurl, so we hop there now.
-        // After Paynow the user will land on whatever returnurl the server set.
-        window.location.href = data.redirectUrl;
-        return;
-      }
-
-      // EcoCash / OneMoney express
-      if (payMethod === "ecocash" || payMethod === "onemoney") {
-        const { data, error } = await sb.functions.invoke("paynow-create-payment", {
+        const { data, error } = await sb.functions.invoke("pesepay-create-payment", {
           body: {
             purpose: "order",
-            flow: "express",
-            method: payMethod,
-            phone,
             orderIds,
+            returnUrl: back.toString(),
           },
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
         await clearCart();
-        toast.success("Check your phone", {
-          description: data.instructions || "Approve the prompt to complete payment.",
-        });
-        navigate(`/orders`);
+        // Tack our refs onto the return URL so we can confirm. Pesepay preserves the URL.
+        back.searchParams.set("pesepay_ref", data.reference);
+        back.searchParams.set("pesepay_pref", data.pesepayReference || "");
+        // We can't change Pesepay's saved returnUrl after init, but most flows redirect
+        // straight to redirectUrl which itself bounces back to our `back` value.
+        window.location.href = data.redirectUrl;
         return;
       }
     } catch (e) {
@@ -466,25 +443,11 @@ export default function Cart() {
             insufficient={balance < total}
           />
           <PayOption
-            active={payMethod === "ecocash"}
-            onClick={() => setPayMethod("ecocash")}
+            active={payMethod === "pesepay"}
+            onClick={() => setPayMethod("pesepay")}
             icon={Smartphone}
-            label="EcoCash"
-            sub="Mobile prompt"
-          />
-          <PayOption
-            active={payMethod === "onemoney"}
-            onClick={() => setPayMethod("onemoney")}
-            icon={Smartphone}
-            label="OneMoney"
-            sub="Mobile prompt"
-          />
-          <PayOption
-            active={payMethod === "paynow"}
-            onClick={() => setPayMethod("paynow")}
-            icon={CreditCard}
-            label="Paynow Web"
-            sub="Visa / ZIPIT"
+            label="Pesepay"
+            sub="EcoCash · OneMoney · Visa"
           />
           <PayOption
             active={payMethod === "paypal"}
@@ -528,20 +491,10 @@ export default function Cart() {
           </div>
         )}
 
-        {(payMethod === "ecocash" || payMethod === "onemoney") && (
-          <div className="mt-3">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              {payMethod === "ecocash" ? "EcoCash" : "OneMoney"} number
-            </label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="0771234567"
-              className="mt-1 w-full h-11 rounded-xl border bg-background px-3 text-sm tabular-nums"
-              inputMode="tel"
-            />
-          </div>
+        {payMethod === "pesepay" && (
+          <p className="mt-3 text-[10px] text-muted-foreground leading-tight">
+            You'll be redirected to Pesepay to complete payment with EcoCash, OneMoney, ZIPIT or your Visa card. We'll bring you right back when it's done.
+          </p>
         )}
       </div>
 

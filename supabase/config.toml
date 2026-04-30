@@ -3,5 +3,5 @@ project_id = "ccprnnqxpnrkdrfsudjc"
 [functions.paypal-public-config]
 verify_jwt = false
 
-[functions.paynow-result]
+[functions.pesepay-result]
 verify_jwt = false

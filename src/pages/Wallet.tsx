@@ -14,7 +14,7 @@ const PENDING_KEY = "pubstore.paypal.pending";
 const sb = supabase as any;
 
 type Pending = { orderID: string; amount: number };
-type Provider = "paypal" | "paynow" | "ecocash" | "onemoney";
+type Provider = "paypal" | "pesepay";
 
 export default function WalletPage() {
   const { balance, transactions, isLoading, userId, refresh } = useWallet();
@@ -23,9 +23,42 @@ export default function WalletPage() {
   const [selected, setSelected] = useState<number | null>(null);
   const [redirecting, setRedirecting] = useState(false);
   const [capturing, setCapturing] = useState(false);
-  const [provider, setProvider] = useState<Provider>("paypal");
-  const [phone, setPhone] = useState("");
+  const [provider, setProvider] = useState<Provider>("pesepay");
+  
   const captureRanRef = useRef(false);
+  const pesepayRanRef = useRef(false);
+
+  // After Pesepay redirects back, confirm via pesepay-status.
+  useEffect(() => {
+    if (pesepayRanRef.current) return;
+    const ref = searchParams.get("pesepay_ref");
+    const pref = searchParams.get("pesepay_pref");
+    if (!ref || !pref) return;
+    pesepayRanRef.current = true;
+    setCapturing(true);
+    (async () => {
+      try {
+        const { data, error } = await sb.functions.invoke("pesepay-status", {
+          body: { reference: ref, pesepayReference: pref },
+        });
+        if (error) throw error;
+        if (data?.paid) {
+          toast.success(`Added ${fmt(Number(data.amount || 0))} to PUBSTORE Pay 🎉`);
+          refresh();
+        } else {
+          toast.message("Payment is still pending", { description: "We'll update your balance once it clears." });
+        }
+      } catch (e: any) {
+        toast.error(e?.message ?? "Could not verify Pesepay payment");
+      } finally {
+        setCapturing(false);
+        const next = new URLSearchParams(searchParams);
+        next.delete("pesepay_ref");
+        next.delete("pesepay_pref");
+        setSearchParams(next, { replace: true });
+      }
+    })();
+  }, [searchParams, setSearchParams, refresh]);
 
   // After PayPal redirects back, capture the order and credit the wallet.
   useEffect(() => {
@@ -106,31 +139,20 @@ export default function WalletPage() {
         return;
       }
 
-      if (provider === "paynow") {
-        const { data, error } = await sb.functions.invoke("paynow-create-payment", {
-          body: { purpose: "wallet_topup", flow: "web", amount, returnUrl: `${origin}/wallet` },
+      if (provider === "pesepay") {
+        const { data, error } = await sb.functions.invoke("pesepay-create-payment", {
+          body: { purpose: "wallet_topup", amount, returnUrl: `${origin}/wallet?pesepay_ref=PENDING` },
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
+        // Stash the reference + pesepay reference so we can confirm on return.
+        const back = new URL(`${origin}/wallet`);
+        back.searchParams.set("pesepay_ref", data.reference);
+        back.searchParams.set("pesepay_pref", data.pesepayReference || "");
+        sessionStorage.setItem("pubstore.pesepay.return", back.toString());
         window.location.href = data.redirectUrl;
         return;
       }
-
-      // EcoCash / OneMoney express
-      if (phone.replace(/\D/g, "").length < 9) {
-        toast.error("Enter your mobile money number");
-        setRedirecting(false); setSelected(null);
-        return;
-      }
-      const { data, error } = await sb.functions.invoke("paynow-create-payment", {
-        body: { purpose: "wallet_topup", flow: "express", amount, phone, method: provider },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      toast.success("Check your phone", { description: data.instructions || "Approve the prompt to credit your wallet." });
-      setRedirecting(false);
-      setSelected(null);
-      // Wallet will update via webhook + realtime subscription
     } catch (e: any) {
       setRedirecting(false);
       setSelected(null);
@@ -183,22 +205,10 @@ export default function WalletPage() {
 
           {/* Provider picker */}
           <div className="grid grid-cols-2 gap-2 mb-3">
+            <ProviderBtn active={provider === "pesepay"} onClick={() => setProvider("pesepay")} icon={Smartphone} label="Pesepay" sub="EcoCash · OneMoney · Visa" />
             <ProviderBtn active={provider === "paypal"} onClick={() => setProvider("paypal")} icon={CreditCard} label="PayPal" sub="Cards & PayPal" />
-            <ProviderBtn active={provider === "paynow"} onClick={() => setProvider("paynow")} icon={CreditCard} label="Paynow Web" sub="Visa / ZIPIT" />
-            <ProviderBtn active={provider === "ecocash"} onClick={() => setProvider("ecocash")} icon={Smartphone} label="EcoCash" sub="Mobile prompt" />
-            <ProviderBtn active={provider === "onemoney"} onClick={() => setProvider("onemoney")} icon={Smartphone} label="OneMoney" sub="Mobile prompt" />
           </div>
 
-          {(provider === "ecocash" || provider === "onemoney") && (
-            <input
-              type="tel"
-              inputMode="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder={provider === "ecocash" ? "EcoCash number e.g. 0771234567" : "OneMoney number"}
-              className="mb-3 w-full h-11 rounded-xl border bg-background px-3 text-sm tabular-nums"
-            />
-          )}
 
           <div className="grid grid-cols-3 gap-2">
             {TOPUP_AMOUNTS.map((a) => (
