@@ -339,3 +339,81 @@ function highlightMatch(text: string, query: string) {
     </>
   );
 }
+
+const KIND_META: Record<UniversalHit["kind"], { label: string; icon: any }> = {
+  product: { label: "Products", icon: Package },
+  service: { label: "Services / Jobs", icon: Wrench },
+  property: { label: "Property", icon: HomeIcon },
+  finance: { label: "Finance", icon: Banknote },
+  logistics: { label: "Delivery", icon: Truck },
+  vehicle: { label: "Vehicles", icon: Car },
+  stay: { label: "Stays", icon: BedDouble },
+  industrial: { label: "Industrial", icon: Factory },
+  news: { label: "News", icon: Newspaper },
+  supplier: { label: "Suppliers", icon: StoreIcon },
+  ride: { label: "Rides", icon: Navigation },
+};
+
+function KindFilterChips({
+  value, onChange, pool,
+}: { value: UniversalHit["kind"] | null; onChange: (k: UniversalHit["kind"] | null) => void; pool: UniversalHit[] }) {
+  const counts = pool.reduce<Record<string, number>>((acc, h) => { acc[h.kind] = (acc[h.kind] ?? 0) + 1; return acc; }, {});
+  const kinds = (Object.keys(counts) as UniversalHit["kind"][]).sort((a, b) => counts[b] - counts[a]);
+  if (kinds.length <= 1) return null;
+  return (
+    <div className="flex gap-1.5 overflow-x-auto scrollbar-none -mx-1 px-1 mb-3 pb-1">
+      <button onClick={() => onChange(null)}
+        className={`shrink-0 px-3 h-8 rounded-full text-xs font-bold border ${value === null ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border"}`}>
+        All · {pool.length}
+      </button>
+      {kinds.map((k) => {
+        const meta = KIND_META[k];
+        const Icon = meta.icon;
+        const active = value === k;
+        return (
+          <button key={k} onClick={() => onChange(active ? null : k)}
+            className={`shrink-0 inline-flex items-center gap-1.5 px-3 h-8 rounded-full text-xs font-bold border ${active ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border"}`}>
+            <Icon className="w-3.5 h-3.5" /> {meta.label} · {counts[k]}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function UniversalResultCard({ hit }: { hit: UniversalHit }) {
+  const meta = KIND_META[hit.kind];
+  const Icon = meta.icon;
+  const priceLabel = hit.price != null && hit.price > 0
+    ? `${hit.currency ?? "$"}${hit.price.toLocaleString()}`
+    : null;
+  return (
+    <Link to={hit.href} className="group flex gap-3 bg-card border rounded-2xl p-2.5 shadow-card hover:shadow-elevated transition">
+      <div className="w-20 h-20 rounded-xl bg-muted overflow-hidden shrink-0 relative">
+        {hit.image ? (
+          <img src={hit.image} alt={hit.title} loading="lazy" className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-muted-foreground"><Icon className="w-6 h-6" /></div>
+        )}
+        <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-background/90 backdrop-blur shadow-soft inline-flex items-center gap-1">
+          <Icon className="w-2.5 h-2.5" /> {meta.label}
+        </span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold leading-tight line-clamp-2">{hit.title}</p>
+        {hit.description && <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{hit.description}</p>}
+        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+          {priceLabel && <span className="text-sm font-black text-primary">{priceLabel}</span>}
+          {hit.rating > 0 && (
+            <span className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground">
+              <Star className="w-3 h-3 fill-amber-500 text-amber-500" /> {hit.rating.toFixed(1)}
+            </span>
+          )}
+          {(hit.city || hit.country) && (
+            <span className="text-[10px] text-muted-foreground truncate">{[hit.city, hit.country].filter(Boolean).join(", ")}</span>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
