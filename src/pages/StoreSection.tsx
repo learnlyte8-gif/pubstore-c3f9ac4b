@@ -1579,6 +1579,7 @@ function ProfileView() {
     name: "", country: "", about: "", logo: "", banner: "",
     latitude: null as number | null, longitude: null as number | null, locationAddress: "",
     businessType: "", phone: "", email: "", website: "",
+    tradeType: "both" as "retail" | "wholesale" | "both",
     categories: [] as string[],
   });
   const [saving, setSaving] = useState(false);
