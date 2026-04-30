@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
     const integrationKeyRaw = Deno.env.get("PESEPAY_INTEGRATION_KEY");
     const encryptionKeyRaw = Deno.env.get("PESEPAY_ENCRYPTION_KEY");
     if (!integrationKeyRaw || !encryptionKeyRaw) return json({ error: "Pesepay not configured" }, 500);
-    const integrationKey = integrationKeyRaw.replace(/^[\s"']+|[\s"']+$/g, "").replace(/[\r\n]/g, "");
+    const integrationKey = integrationKeyRaw.replace(/[^\x21-\x7E]/g, "");
     const encryptionKey = encryptionKeyRaw.replace(/^[\s"']+|[\s"']+$/g, "");
 
     const authHeader = req.headers.get("Authorization") || "";
