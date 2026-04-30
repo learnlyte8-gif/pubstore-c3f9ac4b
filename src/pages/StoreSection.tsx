@@ -1062,17 +1062,11 @@ function NewProductView() {
       const supplier = await fetchMySupplier();
       if (!supplier) { toast.error("Create your store first"); navigate("/become-supplier"); return; }
 
-      // Upload images
-      const urls: string[] = [];
-      for (const file of files) {
-        const ext = file.name.split(".").pop() || "jpg";
-        const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("product-images").upload(path, file, {
-          cacheControl: "3600", upsert: false,
-        });
-        if (upErr) throw upErr;
-        const { data: { publicUrl } } = supabase.storage.from("product-images").getPublicUrl(path);
-        urls.push(publicUrl);
+      // Upload images (parallel, validated, partial-success aware)
+      const { urls, failed } = await uploadProductImages(files, { userId: user.id });
+      if (failed.length) {
+        toast.error(`${failed.length} photo(s) failed: ${failed.map((f) => f.reason).join(", ")}`);
+        if (urls.length === 0 && files.length > 0) { setSubmitting(false); return; }
       }
 
       const { data: product, error } = await supabase.from("products").insert({
