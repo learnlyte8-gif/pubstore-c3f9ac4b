@@ -1,8 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
-import { Store, Newspaper, BedDouble, Car, Factory, Navigation, Wrench, Home as HomeIcon, Truck, Banknote, type LucideIcon } from "lucide-react";
+import { Store, Newspaper, BedDouble, Car, Factory, Navigation, Wrench, Home as HomeIcon, Truck, Banknote, Briefcase, type LucideIcon } from "lucide-react";
 
 const DEPTS: { to: string; label: string; icon: LucideIcon; tone: string }[] = [
   { to: "/home",       label: "Market",     icon: Store,      tone: "from-primary to-primary/70" },
+  { to: "/jobs",       label: "Jobs",       icon: Briefcase,  tone: "from-blue-700 to-indigo-500" },
   { to: "/rides",      label: "Rides",      icon: Navigation, tone: "from-emerald-500 to-teal-400" },
   { to: "/services",   label: "Services",   icon: Wrench,     tone: "from-violet-600 to-fuchsia-500" },
   { to: "/properties", label: "Property",   icon: HomeIcon,   tone: "from-sky-700 to-blue-500" },
