@@ -30,44 +30,6 @@ function resolvePesepayApiBase(): string {
 
 const PESEPAY_INITIATE = `${resolvePesepayApiBase()}/v1/payments/initiate`;
 
-async function logPaymentStatus(
-  admin: ReturnType<typeof createClient>,
-  {
-    userId,
-    purpose,
-    merchantReference,
-    gatewayReference,
-    status,
-    amount,
-    details = {},
-  }: {
-    userId: string;
-    purpose: "wallet_topup" | "order";
-    merchantReference: string;
-    gatewayReference?: string;
-    status: string;
-    amount?: number;
-    details?: Record<string, unknown>;
-  },
-) {
-  const { error } = await admin.from("payment_status_history").upsert({
-    user_id: userId,
-    provider: "pesepay",
-    purpose,
-    merchant_reference: merchantReference,
-    gateway_reference: gatewayReference ?? null,
-    status,
-    amount: amount ?? null,
-    currency: "USD",
-    details,
-  }, {
-    onConflict: "provider,merchant_reference,status",
-    ignoreDuplicates: true,
-  });
-
-  if (error) console.error("payment history log failed", error);
-}
-
 /** Keep only printable ASCII (0x21-0x7E). Header values must be valid HTTP token chars. */
 function cleanHeader(v: string): string {
   return v.replace(/[^\x21-\x7E]/g, "");
@@ -221,7 +183,6 @@ Deno.serve(async (req) => {
 
     const redirectUrl: string | undefined = responseInner.redirectUrl || initJson.redirectUrl;
     const referenceNumber: string | undefined = responseInner.referenceNumber || initJson.referenceNumber;
-    const pollUrl: string | undefined = responseInner.pollUrl || initJson.pollUrl;
 
     if (!redirectUrl) {
       console.error("pesepay missing redirectUrl", responseInner);
@@ -240,24 +201,10 @@ Deno.serve(async (req) => {
         .in("id", orderIds);
     }
 
-    await logPaymentStatus(admin, {
-      userId,
-      purpose,
-      merchantReference,
-      gatewayReference: referenceNumber,
-      status: "initiated",
-      amount: Number(amount.toFixed(2)),
-      details: {
-        redirectUrl,
-        resultUrl,
-      },
-    });
-
     return json({
       ok: true,
       reference: merchantReference,
       pesepayReference: referenceNumber,
-      pollUrl,
       redirectUrl,
       amount: amount.toFixed(2),
     });

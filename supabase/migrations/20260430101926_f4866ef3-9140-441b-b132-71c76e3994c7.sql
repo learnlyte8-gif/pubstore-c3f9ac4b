@@ -1,1 +1,0 @@
-drop policy if exists "Users insert own payment status history" on public.payment_status_history;

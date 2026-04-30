@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, ShieldCheck, Zap, Smartphone, CreditCard, CheckCircle2, CircleDot, LoaderCircle } from "lucide-react";
+import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, Loader2, ShieldCheck, Zap, Smartphone, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/useWallet";
@@ -11,59 +11,19 @@ import { getEdgeFunctionErrorMessage } from "@/lib/edgeFunctionError";
 const fmt = (n: number) => `$${Number(n).toFixed(2)}`;
 const TOPUP_AMOUNTS = [10, 25, 50, 100, 250, 500];
 const PENDING_KEY = "pubstore.paypal.pending";
-const PESEPAY_RETURN_KEY = "pubstore.pesepay.return";
 const sb = supabase as any;
 
 type Pending = { orderID: string; amount: number };
 type Provider = "paypal" | "pesepay";
-type ActivePesepayPayment = { reference: string; pesepayReference: string; pollUrl?: string };
-type TimelineStep = { key: "initiated" | "confirming" | "credited"; label: string };
-
-const TIMELINE_STEPS: TimelineStep[] = [
-  { key: "initiated", label: "Initiated" },
-  { key: "confirming", label: "Confirming" },
-  { key: "credited", label: "Credited" },
-];
-
-function readStoredPesepayReturn(): ActivePesepayPayment | null {
-  if (typeof window === "undefined") return null;
-
-  const stored = sessionStorage.getItem(PESEPAY_RETURN_KEY);
-  if (!stored) return null;
-
-  try {
-    if (stored.trim().startsWith("{")) {
-      const parsed = JSON.parse(stored) as Partial<ActivePesepayPayment>;
-      if (parsed.reference && parsed.pesepayReference) {
-        return {
-          reference: parsed.reference,
-          pesepayReference: parsed.pesepayReference,
-          pollUrl: parsed.pollUrl,
-        };
-      }
-    }
-
-    const storedUrl = new URL(stored);
-    const reference = storedUrl.searchParams.get("pesepay_ref");
-    const pesepayReference = storedUrl.searchParams.get("pesepay_pref");
-    const pollUrl = storedUrl.searchParams.get("pesepay_poll") ?? undefined;
-
-    if (!reference || !pesepayReference) return null;
-    return { reference, pesepayReference, pollUrl };
-  } catch {
-    return null;
-  }
-}
 
 export default function WalletPage() {
-  const { balance, transactions, paymentHistory, isLoading, userId, refresh } = useWallet();
+  const { balance, transactions, isLoading, userId, refresh } = useWallet();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selected, setSelected] = useState<number | null>(null);
   const [redirecting, setRedirecting] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [provider, setProvider] = useState<Provider>("pesepay");
-  const [activePayment, setActivePayment] = useState<ActivePesepayPayment | null>(null);
   
   const captureRanRef = useRef(false);
   const pesepayRanRef = useRef(false);
@@ -71,141 +31,34 @@ export default function WalletPage() {
   // After Pesepay redirects back, confirm via pesepay-status.
   useEffect(() => {
     if (pesepayRanRef.current) return;
-    let ref = searchParams.get("pesepay_ref");
-    let pref = searchParams.get("pesepay_pref");
-    let pollUrl = searchParams.get("pesepay_poll") ?? undefined;
-
-    if (!ref || ref === "PENDING" || !pref) {
-      const stored = readStoredPesepayReturn();
-      if (stored) {
-        ref = stored.reference;
-        pref = stored.pesepayReference;
-        pollUrl = stored.pollUrl;
-      }
-    }
-
+    const ref = searchParams.get("pesepay_ref");
+    const pref = searchParams.get("pesepay_pref");
     if (!ref || !pref) return;
     pesepayRanRef.current = true;
     setCapturing(true);
-    setActivePayment({ reference: ref, pesepayReference: pref, pollUrl });
-
-    const next = new URLSearchParams(searchParams);
-    next.delete("pesepay_ref");
-    next.delete("pesepay_pref");
-    next.delete("pesepay_poll");
-    setSearchParams(next, { replace: true });
-  }, [searchParams, setSearchParams]);
-
-  useEffect(() => {
-    if (!activePayment?.reference || !activePayment?.pesepayReference) return;
-
-    let cancelled = false;
-    const terminalFailure = new Set(["FAILED", "CANCELLED", "DECLINED"]);
-
-    const run = async () => {
-      for (let attempt = 0; attempt < 10 && !cancelled; attempt += 1) {
-        try {
-          const { data, error } = await sb.functions.invoke("pesepay-status", {
-            body: {
-              reference: activePayment.reference,
-              pesepayReference: activePayment.pesepayReference,
-              pollUrl: activePayment.pollUrl,
-            },
-          });
-          if (error) throw error;
-
-          refresh();
-
-          const status = String(data?.status ?? "").toUpperCase();
-          if (data?.paid) {
-            sessionStorage.removeItem(PESEPAY_RETURN_KEY);
-            toast.success(`Added ${fmt(Number(data.amount || 0))} to PUBSTORE Pay 🎉`);
-            setActivePayment(null);
-            setCapturing(false);
-            return;
-          }
-
-          if (terminalFailure.has(status)) {
-            sessionStorage.removeItem(PESEPAY_RETURN_KEY);
-            toast.error(`Pesepay payment ${status.toLowerCase()}`);
-            setActivePayment(null);
-            setCapturing(false);
-            return;
-          }
-        } catch (e: any) {
-          if (attempt === 0) {
-            toast.message("Still confirming your payment", {
-              description: e?.message ?? "We're waiting for Pesepay to finish processing.",
-            });
-          }
-        }
-
-        if (attempt < 9) {
-          await new Promise((resolve) => window.setTimeout(resolve, 2500));
-        }
-      }
-
-      if (!cancelled) {
-        // Stop the loop and clear stored ref so a refresh doesn't restart polling
-        // (which creates spurious $0.00 timeline entries).
-        sessionStorage.removeItem(PESEPAY_RETURN_KEY);
-        setActivePayment(null);
-        setCapturing(false);
-        toast.message("Payment is still confirming", {
-          description: "Reopen this page later — we'll show it once Pesepay confirms.",
+    (async () => {
+      try {
+        const { data, error } = await sb.functions.invoke("pesepay-status", {
+          body: { reference: ref, pesepayReference: pref },
         });
+        if (error) throw error;
+        if (data?.paid) {
+          toast.success(`Added ${fmt(Number(data.amount || 0))} to PUBSTORE Pay 🎉`);
+          refresh();
+        } else {
+          toast.message("Payment is still pending", { description: "We'll update your balance once it clears." });
+        }
+      } catch (e: any) {
+        toast.error(e?.message ?? "Could not verify Pesepay payment");
+      } finally {
+        setCapturing(false);
+        const next = new URLSearchParams(searchParams);
+        next.delete("pesepay_ref");
+        next.delete("pesepay_pref");
+        setSearchParams(next, { replace: true });
       }
-    };
-
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [activePayment, refresh]);
-
-  const timelineGroups = paymentHistory.reduce<Record<string, typeof paymentHistory>>((acc, entry) => {
-    (acc[entry.merchant_reference] ||= []).push(entry);
-    return acc;
-  }, {});
-
-  const timelineItems = Object.entries(timelineGroups)
-    .map(([reference, entries]) => {
-      const sorted = [...entries].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-      const first = sorted[0];
-      return {
-        reference,
-        amount: Number(first?.amount ?? 0),
-        createdAt: first?.created_at,
-        gatewayReference: sorted.find((item) => item.gateway_reference)?.gateway_reference ?? null,
-        steps: sorted,
-      };
-    })
-    .filter((item) => item.amount > 0)
-    .sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime())
-    .slice(0, 10);
-
-  useEffect(() => {
-    if (!activePayment?.reference) return;
-
-    const matching = paymentHistory.filter((entry) => entry.merchant_reference === activePayment.reference);
-    const credited = matching.find((entry) => entry.status === "credited");
-    const failed = matching.find((entry) => entry.status === "failed");
-
-    if (credited) {
-      sessionStorage.removeItem(PESEPAY_RETURN_KEY);
-      toast.success(`Added ${fmt(Number(credited.amount || 0))} to PUBSTORE Pay 🎉`);
-      setActivePayment(null);
-      setCapturing(false);
-      return;
-    }
-
-    if (failed) {
-      sessionStorage.removeItem(PESEPAY_RETURN_KEY);
-      toast.error("Pesepay payment failed");
-      setActivePayment(null);
-      setCapturing(false);
-    }
-  }, [activePayment, paymentHistory]);
+    })();
+  }, [searchParams, setSearchParams, refresh]);
 
   // After PayPal redirects back, capture the order and credit the wallet.
   useEffect(() => {
@@ -288,16 +141,15 @@ export default function WalletPage() {
 
       if (provider === "pesepay") {
         const { data, error } = await sb.functions.invoke("pesepay-create-payment", {
-          body: { purpose: "wallet_topup", amount, returnUrl: `${origin}/payment-status?merchantReference=PENDING` },
+          body: { purpose: "wallet_topup", amount, returnUrl: `${origin}/wallet?pesepay_ref=PENDING` },
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
-        // Build the actual return URL with the real references so /payment-status can poll.
-        const back = new URL(`${origin}/payment-status`);
-        back.searchParams.set("merchantReference", data.reference);
-        if (data.pesepayReference) back.searchParams.set("referenceNumber", data.pesepayReference);
-        if (data.pollUrl) back.searchParams.set("pollUrl", data.pollUrl);
-        sessionStorage.setItem(PESEPAY_RETURN_KEY, back.toString());
+        // Stash the reference + pesepay reference so we can confirm on return.
+        const back = new URL(`${origin}/wallet`);
+        back.searchParams.set("pesepay_ref", data.reference);
+        back.searchParams.set("pesepay_pref", data.pesepayReference || "");
+        sessionStorage.setItem("pubstore.pesepay.return", back.toString());
         window.location.href = data.redirectUrl;
         return;
       }
@@ -338,7 +190,7 @@ export default function WalletPage() {
         <div className="px-4 -mt-6 relative z-10">
           <div className="rounded-2xl border border-primary/30 bg-primary/5 p-3 flex items-center gap-2 shadow-elevated">
             <CircleSpinner size={16} className="text-primary" />
-            <p className="text-xs font-bold">Confirming your payment…</p>
+            <p className="text-xs font-bold">Confirming your PayPal payment…</p>
           </div>
         </div>
       )}
@@ -414,49 +266,6 @@ export default function WalletPage() {
                   </li>
                 );
               })}
-            </ul>
-          )}
-        </div>
-      </div>
-
-      <div className="px-4 mt-6">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2 px-1">Pesepay status</p>
-        <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
-          {timelineItems.length === 0 ? (
-            <p className="p-6 text-center text-sm text-muted-foreground">Your Pesepay top-up timeline will appear here.</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {timelineItems.map((item) => (
-                <li key={item.reference} className="px-4 py-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-black tracking-tight">Top-up {fmt(item.amount)}</p>
-                      <p className="text-[11px] text-muted-foreground mt-1 break-all">{item.gatewayReference ?? item.reference}</p>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground whitespace-nowrap">{item.createdAt ? new Date(item.createdAt).toLocaleString() : ""}</p>
-                  </div>
-
-                  <div className="mt-4 space-y-3">
-                    {TIMELINE_STEPS.map((step) => {
-                      const hit = item.steps.find((entry) => entry.status === step.key);
-                      const isDone = Boolean(hit);
-                      const isLive = !hit && step.key === "confirming" && item.steps.some((entry) => entry.status === "pending" || entry.status === "initiated");
-
-                      return (
-                        <div key={step.key} className="flex items-center gap-3">
-                          <span className={`w-8 h-8 rounded-full flex items-center justify-center border ${isDone ? "border-primary bg-primary/10 text-primary" : isLive ? "border-primary/40 bg-primary/5 text-primary" : "border-border bg-muted/30 text-muted-foreground"}`}>
-                            {isDone ? <CheckCircle2 className="w-4 h-4" /> : isLive ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <CircleDot className="w-4 h-4" />}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold">{step.label}</p>
-                            <p className="text-[11px] text-muted-foreground">{hit ? new Date(hit.created_at).toLocaleString() : "Waiting…"}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </li>
-              ))}
             </ul>
           )}
         </div>

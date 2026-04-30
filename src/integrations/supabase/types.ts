@@ -1219,48 +1219,6 @@ export type Database = {
         }
         Relationships: []
       }
-      payment_status_history: {
-        Row: {
-          amount: number | null
-          created_at: string
-          currency: string
-          details: Json
-          gateway_reference: string | null
-          id: string
-          merchant_reference: string
-          provider: string
-          purpose: string
-          status: string
-          user_id: string
-        }
-        Insert: {
-          amount?: number | null
-          created_at?: string
-          currency?: string
-          details?: Json
-          gateway_reference?: string | null
-          id?: string
-          merchant_reference: string
-          provider: string
-          purpose: string
-          status: string
-          user_id: string
-        }
-        Update: {
-          amount?: number | null
-          created_at?: string
-          currency?: string
-          details?: Json
-          gateway_reference?: string | null
-          id?: string
-          merchant_reference?: string
-          provider?: string
-          purpose?: string
-          status?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       product_tier_prices: {
         Row: {
           id: string

@@ -21,8 +21,6 @@ type AddrRow = {
   is_default: boolean | null;
 };
 
-const PESEPAY_RETURN_KEY = "pubstore.pesepay.return";
-
 type AppliedCoupon = {
   id: string;
   code: string;
@@ -85,16 +83,8 @@ export default function Cart() {
 
   // After Pesepay web redirect, finalise via pesepay-status
   useEffect(() => {
-    let ref = searchParams.get("pesepay_ref");
-    let pref = searchParams.get("pesepay_pref");
-    if ((!ref || !pref) && typeof window !== "undefined") {
-      const stored = sessionStorage.getItem(PESEPAY_RETURN_KEY);
-      if (stored) {
-        const storedUrl = new URL(stored);
-        ref = storedUrl.searchParams.get("pesepay_ref");
-        pref = storedUrl.searchParams.get("pesepay_pref");
-      }
-    }
+    const ref = searchParams.get("pesepay_ref");
+    const pref = searchParams.get("pesepay_pref");
     if (!ref || !pref) return;
     (async () => {
       try {
@@ -112,7 +102,6 @@ export default function Cart() {
       } catch (e) {
         toast.error("Could not verify Pesepay payment");
       } finally {
-        sessionStorage.removeItem(PESEPAY_RETURN_KEY);
         const next = new URLSearchParams(searchParams);
         next.delete("pesepay_ref");
         next.delete("pesepay_pref");
@@ -317,7 +306,6 @@ export default function Cart() {
         // Tack our refs onto the return URL so we can confirm. Pesepay preserves the URL.
         back.searchParams.set("pesepay_ref", data.reference);
         back.searchParams.set("pesepay_pref", data.pesepayReference || "");
-        sessionStorage.setItem(PESEPAY_RETURN_KEY, back.toString());
         // We can't change Pesepay's saved returnUrl after init, but most flows redirect
         // straight to redirectUrl which itself bounces back to our `back` value.
         window.location.href = data.redirectUrl;

@@ -26,44 +26,6 @@ function resolvePesepayApiBase(): string {
 
 const PESEPAY_CHECK = `${resolvePesepayApiBase()}/v1/payments/check-payment`;
 
-async function logPaymentStatus(
-  admin: ReturnType<typeof createClient>,
-  {
-    userId,
-    purpose,
-    merchantReference,
-    gatewayReference,
-    status,
-    amount,
-    details = {},
-  }: {
-    userId: string;
-    purpose: string;
-    merchantReference: string;
-    gatewayReference?: string;
-    status: string;
-    amount?: number;
-    details?: Record<string, unknown>;
-  },
-) {
-  const { error } = await admin.from("payment_status_history").upsert({
-    user_id: userId,
-    provider: "pesepay",
-    purpose,
-    merchant_reference: merchantReference,
-    gateway_reference: gatewayReference ?? null,
-    status,
-    amount: amount ?? null,
-    currency: "USD",
-    details,
-  }, {
-    onConflict: "provider,merchant_reference,status",
-    ignoreDuplicates: true,
-  });
-
-  if (error) console.error("payment history log failed", error);
-}
-
 function b64decode(b64: string): Uint8Array {
   const bin = atob(b64);
   const out = new Uint8Array(bin.length);
@@ -76,52 +38,6 @@ async function decryptPayload(b64: string, encryptionKey: string): Promise<strin
   const cryptoKey = await crypto.subtle.importKey("raw", keyBytes, { name: "AES-CBC" }, false, ["decrypt"]);
   const plain = await crypto.subtle.decrypt({ name: "AES-CBC", iv }, cryptoKey, b64decode(b64));
   return new TextDecoder().decode(plain);
-}
-
-async function getExistingPaymentState(
-  admin: ReturnType<typeof createClient>,
-  merchantReference: string,
-  pesepayReference: string,
-) {
-  const [{ data: credited }, { data: latest }] = await Promise.all([
-    admin
-      .from("payment_status_history")
-      .select("status, amount, gateway_reference, details, created_at")
-      .eq("provider", "pesepay")
-      .eq("merchant_reference", merchantReference)
-      .eq("status", "credited")
-      .maybeSingle(),
-    admin
-      .from("payment_status_history")
-      .select("status, amount, gateway_reference, details, created_at")
-      .eq("provider", "pesepay")
-      .eq("merchant_reference", merchantReference)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-  ]);
-
-  if (credited) {
-    return {
-      paid: true,
-      status: "SUCCESS",
-      amount: Number(credited.amount ?? latest?.amount ?? 0),
-      referenceNumber: credited.gateway_reference || pesepayReference || "",
-      source: "history",
-    };
-  }
-
-  if (latest) {
-    return {
-      paid: false,
-      status: String(latest.status || "PENDING").toUpperCase(),
-      amount: Number(latest.amount ?? 0),
-      referenceNumber: latest.gateway_reference || pesepayReference || "",
-      source: "history",
-    };
-  }
-
-  return null;
 }
 
 Deno.serve(async (req) => {
@@ -148,44 +64,10 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const reference: string = body?.reference || "";
-    let pesepayReference: string = body?.pesepayReference || "";
-    let pollUrlRaw: string = body?.pollUrl || "";
-    if (!reference && !pesepayReference && !pollUrlRaw) {
-      return json({ error: "reference, pesepayReference or pollUrl required" }, 400);
-    }
+    const pesepayReference: string = body?.pesepayReference || "";
+    if (!pesepayReference) return json({ error: "pesepayReference required" }, 400);
 
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
-
-    // If we only have the merchantReference, look up the gateway reference / pollUrl from history
-    if (!pesepayReference && !pollUrlRaw && reference) {
-      const { data: hist } = await admin
-        .from("payment_status_history")
-        .select("gateway_reference, details")
-        .eq("provider", "pesepay")
-        .eq("merchant_reference", reference)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (hist?.gateway_reference) pesepayReference = hist.gateway_reference;
-      const detailsPoll = (hist?.details as any)?.pollUrl;
-      if (detailsPoll) pollUrlRaw = detailsPoll;
-    }
-
-    const existingState = await getExistingPaymentState(admin, reference, pesepayReference);
-    if (existingState?.paid) {
-      return json({ ok: true, ...existingState });
-    }
-
-    if (!pesepayReference && !pollUrlRaw) {
-      // Nothing to poll yet — return whatever history we have (likely pending)
-      if (existingState) return json({ ok: true, ...existingState });
-      return json({ ok: true, paid: false, status: "PENDING", amount: 0, referenceNumber: "" });
-    }
-
-    const url = pollUrlRaw || `${PESEPAY_CHECK}?referenceNumber=${encodeURIComponent(pesepayReference)}`;
+    const url = `${PESEPAY_CHECK}?referenceNumber=${encodeURIComponent(pesepayReference)}`;
     const checkRes = await fetch(url, {
       method: "GET",
       headers: { "authorization": integrationKey, "Content-Type": "application/json" },
@@ -197,49 +79,20 @@ Deno.serve(async (req) => {
     }
 
     let inner: any = checkJson;
-    let decryptFailed = false;
     if (typeof checkJson?.payload === "string") {
       try {
         inner = JSON.parse(await decryptPayload(checkJson.payload, encryptionKey));
-      } catch (e) {
-        decryptFailed = true;
-        console.error("decrypt failed", e);
-        console.log("pesepay check raw response", JSON.stringify(checkJson));
-      }
+      } catch (e) { console.error("decrypt failed", e); }
     }
 
-    const status: string = String(inner.transactionStatus || inner.status || checkJson?.transactionStatus || checkJson?.status || "").toUpperCase();
-    const amount = Number(inner.amount || inner?.amountDetails?.amount || checkJson?.amount || checkJson?.amountDetails?.amount || 0);
-    const gatewayReference = String(inner.referenceNumber || inner.applicationCode || checkJson?.referenceNumber || pesepayReference || "");
+    const status: string = String(inner.transactionStatus || inner.status || "").toUpperCase();
     const paid = status === "SUCCESS" || status === "PAID" || status === "AUTHORIZED";
-    const failed = [
-      "FAILED",
-      "CANCELLED",
-      "DECLINED",
-      "AUTHORIZATION_FAILED",
-      "CLOSED",
-      "CLOSED_PERIOD_ELAPSED",
-      "ERROR",
-      "INSUFFICIENT_FUNDS",
-      "REVERSED",
-      "SERVICE_UNAVAILABLE",
-      "TERMINATED",
-      "TIME_OUT",
-    ].includes(status);
+    const amount = Number(inner.amount || inner?.amountDetails?.amount || 0);
 
-    if (decryptFailed && existingState) {
-      return json({ ok: true, ...existingState, source: "history-fallback" });
-    }
-
-    await logPaymentStatus(admin, {
-      userId,
-      purpose: reference.startsWith("order_") ? "order" : "wallet_topup",
-      merchantReference: reference,
-      gatewayReference,
-      status: paid ? "confirming" : failed ? "failed" : "pending",
-      amount,
-      details: { gatewayStatus: status, pollUrl: pollUrlRaw || null, decryptFailed },
-    });
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
 
     if (paid && reference.startsWith("wallet_topup_")) {
       const internalRef = `pesepay:${pesepayReference}`;
@@ -257,16 +110,6 @@ Deno.serve(async (req) => {
           _reference: internalRef,
         });
       }
-
-      await logPaymentStatus(admin, {
-        userId,
-        purpose: "wallet_topup",
-        merchantReference: reference,
-        gatewayReference,
-        status: "credited",
-        amount,
-        details: { gatewayStatus: status, internalReference: internalRef },
-      });
     }
 
     if (paid && reference.startsWith("order_")) {
@@ -280,19 +123,14 @@ Deno.serve(async (req) => {
         .eq("payment_reference", reference);
     }
 
-    if (!paid && reference.startsWith("order_") && failed) {
+    if (!paid && reference.startsWith("order_") && (status === "CANCELLED" || status === "FAILED")) {
       await admin
         .from("orders")
         .update({ payment_status: status === "CANCELLED" ? "cancelled" : "failed" })
         .eq("payment_reference", reference);
     }
 
-    const historyState = await getExistingPaymentState(admin, reference, gatewayReference || pesepayReference);
-    if (!paid && decryptFailed && historyState) {
-      return json({ ok: true, ...historyState, source: "history-after-poll" });
-    }
-
-    return json({ ok: true, paid, status, amount, referenceNumber: gatewayReference, decryptFailed });
+    return json({ ok: true, paid, status, amount });
   } catch (e) {
     console.error("pesepay-status error", e);
     return json({ error: e instanceof Error ? e.message : "Unexpected error" }, 500);
