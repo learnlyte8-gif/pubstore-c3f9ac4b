@@ -139,8 +139,8 @@ async function loadUniversalPool(): Promise<UniversalHit[]> {
     hits.push({
       id: `vh:${v.id}`, kind: "vehicle",
       title: v.title,
-      category: `vehicle car auto ${v.kind ?? ""} ${v.brand ?? ""} ${v.model ?? ""}`,
-      description: [v.description, v.brand, v.model].filter(Boolean).join(" "),
+      category: `vehicle car auto ${v.kind ?? ""} ${v.make ?? ""} ${v.model ?? ""}`,
+      description: [v.description, v.make, v.model].filter(Boolean).join(" "),
       image: v.cover, href: `/auto?id=${v.id}`,
       price: Number(v.price ?? 0), currency: v.currency,
       rating: 4.5, reviews: 0, sold: 0,
