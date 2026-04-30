@@ -155,6 +155,12 @@ export default function Jobs() {
           />
         </div>
 
+        <div className="mt-3 flex gap-2 overflow-x-auto scrollbar-none">
+          <Link to="/jobs/feed" className="shrink-0 px-3 h-8 rounded-full bg-white/15 backdrop-blur text-white text-xs font-bold flex items-center gap-1">📰 Feed</Link>
+          <Link to="/jobs/network" className="shrink-0 px-3 h-8 rounded-full bg-white/15 backdrop-blur text-white text-xs font-bold flex items-center gap-1"><Users className="w-3.5 h-3.5" /> Network</Link>
+          <Link to="/jobs/me" className="shrink-0 px-3 h-8 rounded-full bg-white/15 backdrop-blur text-white text-xs font-bold flex items-center gap-1"><Sparkles className="w-3.5 h-3.5" /> My profile</Link>
+        </div>
+
         <div className="mt-3 flex bg-white/15 backdrop-blur rounded-full p-1">
           {(["feed", "saved", "applied", "manage"] as Tab[]).map((t) => (
             <button
