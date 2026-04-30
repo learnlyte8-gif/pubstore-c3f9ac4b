@@ -23,9 +23,42 @@ export default function WalletPage() {
   const [selected, setSelected] = useState<number | null>(null);
   const [redirecting, setRedirecting] = useState(false);
   const [capturing, setCapturing] = useState(false);
-  const [provider, setProvider] = useState<Provider>("paypal");
+  const [provider, setProvider] = useState<Provider>("pesepay");
   const [phone, setPhone] = useState("");
   const captureRanRef = useRef(false);
+  const pesepayRanRef = useRef(false);
+
+  // After Pesepay redirects back, confirm via pesepay-status.
+  useEffect(() => {
+    if (pesepayRanRef.current) return;
+    const ref = searchParams.get("pesepay_ref");
+    const pref = searchParams.get("pesepay_pref");
+    if (!ref || !pref) return;
+    pesepayRanRef.current = true;
+    setCapturing(true);
+    (async () => {
+      try {
+        const { data, error } = await sb.functions.invoke("pesepay-status", {
+          body: { reference: ref, pesepayReference: pref },
+        });
+        if (error) throw error;
+        if (data?.paid) {
+          toast.success(`Added ${fmt(Number(data.amount || 0))} to PUBSTORE Pay 🎉`);
+          refresh();
+        } else {
+          toast.message("Payment is still pending", { description: "We'll update your balance once it clears." });
+        }
+      } catch (e: any) {
+        toast.error(e?.message ?? "Could not verify Pesepay payment");
+      } finally {
+        setCapturing(false);
+        const next = new URLSearchParams(searchParams);
+        next.delete("pesepay_ref");
+        next.delete("pesepay_pref");
+        setSearchParams(next, { replace: true });
+      }
+    })();
+  }, [searchParams, setSearchParams, refresh]);
 
   // After PayPal redirects back, capture the order and credit the wallet.
   useEffect(() => {
