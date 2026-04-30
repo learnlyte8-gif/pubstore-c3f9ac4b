@@ -4,7 +4,7 @@ import { Loader2, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { supabase as sb } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { fmt } from "@/lib/utils";
+const fmt = (n: number) => `$${n.toFixed(2)}`;
 
 type Phase = "loading" | "pending" | "paid" | "failed";
 
