@@ -133,3 +133,66 @@ export function prioritizeByCategories<T extends { category: string }>(
   for (const p of products) (set.has(p.category) ? matched : rest).push(p);
   return [...matched, ...rest];
 }
+
+/**
+ * Score products by how many priority signals they match.
+ * Heavier weights for repeated signals make the feed feel "personal".
+ */
+export function rankByAffinity<T extends { category: string; title: string; sold?: number; rating?: number }>(
+  products: T[],
+  priorityCounts: Record<string, number>,
+  searchTokens: string[] = [],
+): T[] {
+  if (!Object.keys(priorityCounts).length && !searchTokens.length) return products;
+  const tokens = searchTokens.map((t) => t.toLowerCase()).filter((t) => t.length >= 3);
+  return [...products].sort((a, b) => score(b) - score(a));
+
+  function score(p: T): number {
+    let s = 0;
+    s += (priorityCounts[p.category] ?? 0) * 5;
+    const title = p.title.toLowerCase();
+    for (const t of tokens) if (title.includes(t)) s += 3;
+    s += Math.min((p.sold ?? 0) / 100, 2);
+    s += Math.min((p.rating ?? 0) / 2, 2);
+    return s;
+  }
+}
+
+/**
+ * Derive category slugs from recent search queries stored in localStorage by
+ * the Search page (key: "pubstore.recent-searches").
+ */
+export function useRecentSearchSlugs(): { slugs: string[]; tokens: string[] } {
+  const [state, setState] = useState<{ slugs: string[]; tokens: string[] }>({ slugs: [], tokens: [] });
+  useEffect(() => {
+    const compute = () => {
+      try {
+        const raw = localStorage.getItem("pubstore.recent-searches");
+        const arr: string[] = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(arr)) return;
+        const tokens = Array.from(
+          new Set(
+            arr
+              .slice(0, 20)
+              .flatMap((q) => q.toLowerCase().split(/\s+/))
+              .filter((t) => t.length >= 3),
+          ),
+        );
+        const slugs = Array.from(
+          new Set(tokens.map(interestToSlug).filter((s): s is string => !!s)),
+        );
+        setState({ slugs, tokens });
+      } catch {
+        setState({ slugs: [], tokens: [] });
+      }
+    };
+    compute();
+    const onStorage = (e: StorageEvent) => {
+      if (!e.key || e.key === "pubstore.recent-searches") compute();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+  return state;
+}
+
