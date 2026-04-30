@@ -2534,3 +2534,399 @@ function FormSheet({ title, children, onClose }: { title: string; children: Reac
     </div>
   );
 }
+
+/* ---------------- Pro / Service provider ---------------- */
+function ProServiceView() {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  useEffect(() => { supabase.auth.getUser().then(({ data: { user } }) => setUserId(user?.id ?? null)); }, []);
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ["my-pros", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await supabase.from("service_providers").select("*").eq("user_id", userId!).order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+  const remove = async (id: string) => {
+    if (!confirm("Delete this provider profile?")) return;
+    const { error } = await supabase.from("service_providers").delete().eq("id", id);
+    if (error) toast.error(error.message); else { toast.success("Removed"); qc.invalidateQueries({ queryKey: ["my-pros"] }); }
+  };
+  if (!userId) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+  return (
+    <>
+      <ServiceShell
+        title={`${items.length} pro profile(s)`}
+        items={items}
+        isLoading={isLoading}
+        emptyHint="List your skills (plumbing, tutoring, design…) so customers can hire you."
+        onAdd={() => { setEditing(null); setOpen(true); }}
+        renderItem={(p: any) => (
+          <div key={p.id} className="bg-card border rounded-2xl shadow-card p-3 flex gap-3">
+            <div className="w-16 h-16 rounded-xl bg-muted overflow-hidden shrink-0">{p.cover && <img src={p.cover} alt="" className="w-full h-full object-cover" />}</div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm truncate">{p.display_name}</p>
+              <p className="text-[11px] text-muted-foreground capitalize">{p.category} · {p.city ?? "—"}</p>
+              {p.hourly_rate && <p className="text-xs font-bold mt-1">${p.hourly_rate}/hr</p>}
+            </div>
+            <div className="flex flex-col gap-1">
+              <button onClick={() => { setEditing(p); setOpen(true); }} className="w-8 h-8 rounded-full hover:bg-muted flex items-center justify-center"><Pencil className="w-3.5 h-3.5" /></button>
+              <button onClick={() => remove(p.id)} className="w-8 h-8 rounded-full hover:bg-destructive/10 text-destructive flex items-center justify-center"><Trash2 className="w-3.5 h-3.5" /></button>
+            </div>
+          </div>
+        )}
+      />
+      {open && <ProFormDialog userId={userId} initial={editing} onClose={() => setOpen(false)} onSaved={() => { setOpen(false); qc.invalidateQueries({ queryKey: ["my-pros"] }); qc.invalidateQueries({ queryKey: ["service-providers"] }); qc.invalidateQueries({ queryKey: ["home-services"] }); }} />}
+    </>
+  );
+}
+
+function ProFormDialog({ userId, initial, onClose, onSaved }: { userId: string; initial: any | null; onClose: () => void; onSaved: () => void }) {
+  const [f, setF] = useState({
+    display_name: initial?.display_name ?? "",
+    category: initial?.category ?? "plumber",
+    bio: initial?.bio ?? "",
+    hourly_rate: initial?.hourly_rate ?? "",
+    city: initial?.city ?? "",
+    country: initial?.country ?? "",
+    phone: initial?.phone ?? "",
+    whatsapp: initial?.whatsapp ?? "",
+    cover: initial?.cover ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+  const save = async () => {
+    if (!f.display_name.trim()) { toast.error("Add your display name"); return; }
+    setSaving(true);
+    const payload = {
+      user_id: userId,
+      display_name: f.display_name.trim(),
+      category: f.category,
+      bio: f.bio || null,
+      hourly_rate: f.hourly_rate ? Number(f.hourly_rate) : null,
+      city: f.city || null,
+      country: f.country || null,
+      phone: f.phone || null,
+      whatsapp: f.whatsapp || null,
+      cover: f.cover || null,
+    };
+    const res = initial?.id
+      ? await supabase.from("service_providers").update(payload).eq("id", initial.id)
+      : await supabase.from("service_providers").insert(payload);
+    setSaving(false);
+    if (res.error) { toast.error(res.error.message); return; }
+    toast.success("Saved"); onSaved();
+  };
+  return (
+    <FormSheet title={initial ? "Edit provider profile" : "New provider profile"} onClose={onClose}>
+      <ImageUpload value={f.cover} onChange={(v) => setF({ ...f, cover: v })} label="Cover photo" />
+      <LabeledInput label="Display name" value={f.display_name} onChange={(v) => setF({ ...f, display_name: v })} />
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Category</label>
+        <select value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1">
+          {["plumber","electrician","mechanic","tutor","tailor","hairdresser","cleaner","painter","tiler","photographer","designer","marketing","other"].map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </div>
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Bio</label>
+        <textarea value={f.bio} onChange={(e) => setF({ ...f, bio: e.target.value })} rows={3} className="w-full rounded-xl border bg-background p-3 text-sm mt-1" />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Hourly rate ($)" type="number" value={f.hourly_rate} onChange={(v) => setF({ ...f, hourly_rate: v })} />
+        <LabeledInput label="City" value={f.city} onChange={(v) => setF({ ...f, city: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Phone" value={f.phone} onChange={(v) => setF({ ...f, phone: v })} />
+        <LabeledInput label="WhatsApp" value={f.whatsapp} onChange={(v) => setF({ ...f, whatsapp: v })} />
+      </div>
+      <Button onClick={save} disabled={saving} className="w-full h-11">{saving ? "Saving…" : "Save profile"}</Button>
+    </FormSheet>
+  );
+}
+
+/* ---------------- Properties ---------------- */
+function PropertyServiceView() {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  useEffect(() => { supabase.auth.getUser().then(({ data: { user } }) => setUserId(user?.id ?? null)); }, []);
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ["my-properties", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await supabase.from("properties").select("*").eq("owner_user_id", userId!).order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+  const remove = async (id: string) => {
+    if (!confirm("Delete this property?")) return;
+    const { error } = await supabase.from("properties").delete().eq("id", id);
+    if (error) toast.error(error.message); else { toast.success("Removed"); qc.invalidateQueries({ queryKey: ["my-properties"] }); }
+  };
+  if (!userId) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+  return (
+    <>
+      <ServiceShell
+        title={`${items.length} properties listed`}
+        items={items}
+        isLoading={isLoading}
+        emptyHint="List apartments, houses, rooms, land or commercial spaces for rent or sale."
+        onAdd={() => { setEditing(null); setOpen(true); }}
+        renderItem={(p: any) => (
+          <div key={p.id} className="bg-card border rounded-2xl shadow-card p-3 flex gap-3">
+            <div className="w-20 h-20 rounded-xl bg-muted overflow-hidden shrink-0">{p.cover && <img src={p.cover} alt="" className="w-full h-full object-cover" />}</div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm truncate">{p.title}</p>
+              <p className="text-[11px] text-muted-foreground capitalize">{p.listing_type} · {p.property_kind} · {p.city ?? "—"}</p>
+              <p className="text-xs font-bold mt-1">${Number(p.price).toLocaleString()}{p.listing_type === "rent" ? `/${p.price_period}` : ""}</p>
+            </div>
+            <div className="flex flex-col gap-1">
+              <button onClick={() => { setEditing(p); setOpen(true); }} className="w-8 h-8 rounded-full hover:bg-muted flex items-center justify-center"><Pencil className="w-3.5 h-3.5" /></button>
+              <button onClick={() => remove(p.id)} className="w-8 h-8 rounded-full hover:bg-destructive/10 text-destructive flex items-center justify-center"><Trash2 className="w-3.5 h-3.5" /></button>
+            </div>
+          </div>
+        )}
+      />
+      {open && <PropertyFormDialog userId={userId} initial={editing} onClose={() => setOpen(false)} onSaved={() => { setOpen(false); qc.invalidateQueries({ queryKey: ["my-properties"] }); qc.invalidateQueries({ queryKey: ["properties"] }); qc.invalidateQueries({ queryKey: ["home-properties"] }); }} />}
+    </>
+  );
+}
+
+function PropertyFormDialog({ userId, initial, onClose, onSaved }: { userId: string; initial: any | null; onClose: () => void; onSaved: () => void }) {
+  const [f, setF] = useState({
+    title: initial?.title ?? "",
+    listing_type: initial?.listing_type ?? "rent",
+    property_kind: initial?.property_kind ?? "apartment",
+    bedrooms: initial?.bedrooms ?? "",
+    baths: initial?.baths ?? "",
+    area_sqm: initial?.area_sqm ?? "",
+    price: initial?.price ?? "",
+    price_period: initial?.price_period ?? "month",
+    city: initial?.city ?? "",
+    country: initial?.country ?? "",
+    address: initial?.address ?? "",
+    description: initial?.description ?? "",
+    cover: initial?.cover ?? "",
+    contact_phone: initial?.contact_phone ?? "",
+    contact_whatsapp: initial?.contact_whatsapp ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+  const save = async () => {
+    if (!f.title.trim() || !f.price) { toast.error("Title and price required"); return; }
+    setSaving(true);
+    const payload: any = {
+      owner_user_id: userId,
+      title: f.title.trim(),
+      listing_type: f.listing_type,
+      property_kind: f.property_kind,
+      bedrooms: f.bedrooms ? Number(f.bedrooms) : null,
+      baths: f.baths ? Number(f.baths) : null,
+      area_sqm: f.area_sqm ? Number(f.area_sqm) : null,
+      price: Number(f.price),
+      price_period: f.price_period,
+      city: f.city || null,
+      country: f.country || null,
+      address: f.address || null,
+      description: f.description || null,
+      cover: f.cover || null,
+      contact_phone: f.contact_phone || null,
+      contact_whatsapp: f.contact_whatsapp || null,
+    };
+    const res = initial?.id
+      ? await supabase.from("properties").update(payload).eq("id", initial.id)
+      : await supabase.from("properties").insert(payload);
+    setSaving(false);
+    if (res.error) { toast.error(res.error.message); return; }
+    toast.success("Saved"); onSaved();
+  };
+  return (
+    <FormSheet title={initial ? "Edit property" : "New property"} onClose={onClose}>
+      <ImageUpload value={f.cover} onChange={(v) => setF({ ...f, cover: v })} label="Cover photo" />
+      <LabeledInput label="Title" value={f.title} onChange={(v) => setF({ ...f, title: v })} />
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Listing</label>
+          <select value={f.listing_type} onChange={(e) => setF({ ...f, listing_type: e.target.value })} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1">
+            <option value="rent">Rent</option><option value="sale">Sale</option><option value="shared">Shared</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Type</label>
+          <select value={f.property_kind} onChange={(e) => setF({ ...f, property_kind: e.target.value })} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1">
+            <option value="apartment">Apartment</option><option value="house">House</option><option value="room">Room</option><option value="land">Land</option><option value="commercial">Commercial</option>
+          </select>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <LabeledInput label="Beds" type="number" value={f.bedrooms} onChange={(v) => setF({ ...f, bedrooms: v })} />
+        <LabeledInput label="Baths" type="number" value={f.baths} onChange={(v) => setF({ ...f, baths: v })} />
+        <LabeledInput label="m²" type="number" value={f.area_sqm} onChange={(v) => setF({ ...f, area_sqm: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Price ($)" type="number" value={f.price} onChange={(v) => setF({ ...f, price: v })} />
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Period</label>
+          <select value={f.price_period} onChange={(e) => setF({ ...f, price_period: e.target.value })} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1">
+            <option value="month">/month</option><option value="year">/year</option><option value="total">total</option>
+          </select>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="City" value={f.city} onChange={(v) => setF({ ...f, city: v })} />
+        <LabeledInput label="Country" value={f.country} onChange={(v) => setF({ ...f, country: v })} />
+      </div>
+      <LabeledInput label="Address" value={f.address} onChange={(v) => setF({ ...f, address: v })} />
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Description</label>
+        <textarea value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} rows={3} className="w-full rounded-xl border bg-background p-3 text-sm mt-1" />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Phone" value={f.contact_phone} onChange={(v) => setF({ ...f, contact_phone: v })} />
+        <LabeledInput label="WhatsApp" value={f.contact_whatsapp} onChange={(v) => setF({ ...f, contact_whatsapp: v })} />
+      </div>
+      <Button onClick={save} disabled={saving} className="w-full h-11">{saving ? "Saving…" : "Save property"}</Button>
+    </FormSheet>
+  );
+}
+
+/* ---------------- Courier (logistics driver) ---------------- */
+function CourierServiceView() {
+  return (
+    <div className="px-4 py-6 space-y-3">
+      <div className="bg-card border rounded-2xl p-4 shadow-card">
+        <p className="font-bold text-sm">Courier mode</p>
+        <p className="text-xs text-muted-foreground mt-1">Browse open delivery requests and submit your bid. Make sure you've registered your vehicle in Driver mode first.</p>
+        <div className="flex gap-2 mt-3">
+          <Button asChild className="flex-1"><Link to="/store/services/driver">Register vehicle</Link></Button>
+          <Button asChild variant="outline" className="flex-1"><Link to="/logistics">Open requests</Link></Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Finance products ---------------- */
+function FinanceServiceView() {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  useEffect(() => { supabase.auth.getUser().then(({ data: { user } }) => setUserId(user?.id ?? null)); }, []);
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ["my-finance", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await supabase.from("finance_products").select("*").eq("owner_user_id", userId!).order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+  const remove = async (id: string) => {
+    if (!confirm("Delete this product?")) return;
+    const { error } = await supabase.from("finance_products").delete().eq("id", id);
+    if (error) toast.error(error.message); else { toast.success("Removed"); qc.invalidateQueries({ queryKey: ["my-finance"] }); }
+  };
+  if (!userId) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+  return (
+    <>
+      <ServiceShell
+        title={`${items.length} products listed`}
+        items={items}
+        isLoading={isLoading}
+        emptyHint="List loans, vehicle financing, working capital or insurance products."
+        onAdd={() => { setEditing(null); setOpen(true); }}
+        renderItem={(p: any) => (
+          <div key={p.id} className="bg-card border rounded-2xl shadow-card p-3 flex gap-3">
+            <div className="w-16 h-16 rounded-xl bg-muted overflow-hidden shrink-0">{p.cover && <img src={p.cover} alt="" className="w-full h-full object-cover" />}</div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm truncate">{p.title}</p>
+              <p className="text-[11px] text-muted-foreground capitalize">{p.kind.replace("_"," ")} · {p.provider_name ?? "—"}</p>
+              {p.interest_rate != null && <p className="text-xs font-bold mt-1">{p.interest_rate}% APR</p>}
+            </div>
+            <div className="flex flex-col gap-1">
+              <button onClick={() => { setEditing(p); setOpen(true); }} className="w-8 h-8 rounded-full hover:bg-muted flex items-center justify-center"><Pencil className="w-3.5 h-3.5" /></button>
+              <button onClick={() => remove(p.id)} className="w-8 h-8 rounded-full hover:bg-destructive/10 text-destructive flex items-center justify-center"><Trash2 className="w-3.5 h-3.5" /></button>
+            </div>
+          </div>
+        )}
+      />
+      {open && <FinanceFormDialog userId={userId} initial={editing} onClose={() => setOpen(false)} onSaved={() => { setOpen(false); qc.invalidateQueries({ queryKey: ["my-finance"] }); qc.invalidateQueries({ queryKey: ["finance-products"] }); qc.invalidateQueries({ queryKey: ["home-finance"] }); }} />}
+    </>
+  );
+}
+
+function FinanceFormDialog({ userId, initial, onClose, onSaved }: { userId: string; initial: any | null; onClose: () => void; onSaved: () => void }) {
+  const [f, setF] = useState({
+    title: initial?.title ?? "",
+    kind: initial?.kind ?? "loan",
+    provider_name: initial?.provider_name ?? "",
+    description: initial?.description ?? "",
+    min_amount: initial?.min_amount ?? "",
+    max_amount: initial?.max_amount ?? "",
+    interest_rate: initial?.interest_rate ?? "",
+    term_months: initial?.term_months ?? "",
+    cover: initial?.cover ?? "",
+    contact_phone: initial?.contact_phone ?? "",
+    contact_whatsapp: initial?.contact_whatsapp ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+  const save = async () => {
+    if (!f.title.trim()) { toast.error("Title required"); return; }
+    setSaving(true);
+    const payload: any = {
+      owner_user_id: userId,
+      title: f.title.trim(),
+      kind: f.kind,
+      provider_name: f.provider_name || null,
+      description: f.description || null,
+      min_amount: f.min_amount ? Number(f.min_amount) : null,
+      max_amount: f.max_amount ? Number(f.max_amount) : null,
+      interest_rate: f.interest_rate ? Number(f.interest_rate) : null,
+      term_months: f.term_months ? Number(f.term_months) : null,
+      cover: f.cover || null,
+      contact_phone: f.contact_phone || null,
+      contact_whatsapp: f.contact_whatsapp || null,
+    };
+    const res = initial?.id
+      ? await supabase.from("finance_products").update(payload).eq("id", initial.id)
+      : await supabase.from("finance_products").insert(payload);
+    setSaving(false);
+    if (res.error) { toast.error(res.error.message); return; }
+    toast.success("Saved"); onSaved();
+  };
+  return (
+    <FormSheet title={initial ? "Edit finance product" : "New finance product"} onClose={onClose}>
+      <ImageUpload value={f.cover} onChange={(v) => setF({ ...f, cover: v })} label="Cover image" />
+      <LabeledInput label="Title" value={f.title} onChange={(v) => setF({ ...f, title: v })} />
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Kind</label>
+        <select value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1">
+          <option value="loan">Personal loan</option>
+          <option value="vehicle_financing">Vehicle financing</option>
+          <option value="working_capital">Working capital</option>
+          <option value="insurance">Insurance</option>
+        </select>
+      </div>
+      <LabeledInput label="Provider name" value={f.provider_name} onChange={(v) => setF({ ...f, provider_name: v })} />
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Description</label>
+        <textarea value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} rows={3} className="w-full rounded-xl border bg-background p-3 text-sm mt-1" />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Min amount ($)" type="number" value={f.min_amount} onChange={(v) => setF({ ...f, min_amount: v })} />
+        <LabeledInput label="Max amount ($)" type="number" value={f.max_amount} onChange={(v) => setF({ ...f, max_amount: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="APR (%)" type="number" value={f.interest_rate} onChange={(v) => setF({ ...f, interest_rate: v })} />
+        <LabeledInput label="Term (months)" type="number" value={f.term_months} onChange={(v) => setF({ ...f, term_months: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Phone" value={f.contact_phone} onChange={(v) => setF({ ...f, contact_phone: v })} />
+        <LabeledInput label="WhatsApp" value={f.contact_whatsapp} onChange={(v) => setF({ ...f, contact_whatsapp: v })} />
+      </div>
+      <Button onClick={save} disabled={saving} className="w-full h-11">{saving ? "Saving…" : "Save product"}</Button>
+    </FormSheet>
+  );
+}
