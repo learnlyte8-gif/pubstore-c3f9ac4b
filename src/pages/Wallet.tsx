@@ -179,6 +179,29 @@ export default function WalletPage() {
     .sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime())
     .slice(0, 10);
 
+  useEffect(() => {
+    if (!activePayment?.reference) return;
+
+    const matching = paymentHistory.filter((entry) => entry.merchant_reference === activePayment.reference);
+    const credited = matching.find((entry) => entry.status === "credited");
+    const failed = matching.find((entry) => entry.status === "failed");
+
+    if (credited) {
+      sessionStorage.removeItem(PESEPAY_RETURN_KEY);
+      toast.success(`Added ${fmt(Number(credited.amount || 0))} to PUBSTORE Pay 🎉`);
+      setActivePayment(null);
+      setCapturing(false);
+      return;
+    }
+
+    if (failed) {
+      sessionStorage.removeItem(PESEPAY_RETURN_KEY);
+      toast.error("Pesepay payment failed");
+      setActivePayment(null);
+      setCapturing(false);
+    }
+  }, [activePayment, paymentHistory]);
+
   // After PayPal redirects back, capture the order and credit the wallet.
   useEffect(() => {
     if (captureRanRef.current) return;
