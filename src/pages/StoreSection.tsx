@@ -1602,6 +1602,7 @@ function ProfileView() {
       phone: supplier.phone || "",
       email: supplier.email || "",
       website: supplier.website || "",
+      tradeType: (supplier.tradeType ?? "both"),
       categories: supplier.categories || [],
     });
   }, [supplier]);
