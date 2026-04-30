@@ -614,6 +614,598 @@ export type Database = {
           },
         ]
       }
+      job_applications: {
+        Row: {
+          applicant_email: string | null
+          applicant_id: string
+          applicant_name: string | null
+          applicant_phone: string | null
+          cover_letter: string | null
+          created_at: string
+          cv_link: string | null
+          cv_url: string | null
+          employer_notes: string | null
+          expected_salary: number | null
+          id: string
+          job_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          applicant_email?: string | null
+          applicant_id: string
+          applicant_name?: string | null
+          applicant_phone?: string | null
+          cover_letter?: string | null
+          created_at?: string
+          cv_link?: string | null
+          cv_url?: string | null
+          employer_notes?: string | null
+          expected_salary?: number | null
+          id?: string
+          job_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          applicant_email?: string | null
+          applicant_id?: string
+          applicant_name?: string | null
+          applicant_phone?: string | null
+          cover_letter?: string | null
+          created_at?: string
+          cv_link?: string | null
+          cv_url?: string | null
+          employer_notes?: string | null
+          expected_salary?: number | null
+          id?: string
+          job_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "job_postings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_companies: {
+        Row: {
+          about: string | null
+          active: boolean
+          city: string | null
+          country: string | null
+          cover_url: string | null
+          created_at: string
+          email: string | null
+          followers_count: number
+          id: string
+          industry: string | null
+          logo_url: string | null
+          name: string
+          owner_user_id: string
+          phone: string | null
+          size: string | null
+          supplier_id: string | null
+          tagline: string | null
+          updated_at: string
+          verified: boolean
+          website: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          about?: string | null
+          active?: boolean
+          city?: string | null
+          country?: string | null
+          cover_url?: string | null
+          created_at?: string
+          email?: string | null
+          followers_count?: number
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          name: string
+          owner_user_id: string
+          phone?: string | null
+          size?: string | null
+          supplier_id?: string | null
+          tagline?: string | null
+          updated_at?: string
+          verified?: boolean
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          about?: string | null
+          active?: boolean
+          city?: string | null
+          country?: string | null
+          cover_url?: string | null
+          created_at?: string
+          email?: string | null
+          followers_count?: number
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          name?: string
+          owner_user_id?: string
+          phone?: string | null
+          size?: string | null
+          supplier_id?: string | null
+          tagline?: string | null
+          updated_at?: string
+          verified?: boolean
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      job_connections: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          recipient_id: string
+          requester_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          recipient_id: string
+          requester_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          recipient_id?: string
+          requester_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      job_post_comments: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "job_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_post_likes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "job_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_postings: {
+        Row: {
+          applicants_count: number
+          apply_email: string | null
+          apply_mode: string
+          apply_url: string | null
+          benefits: string[]
+          category: string
+          city: string | null
+          company_id: string
+          country: string | null
+          created_at: string
+          description: string | null
+          employment_type: string
+          experience_level: string
+          expires_at: string | null
+          featured: boolean
+          id: string
+          posted_by: string
+          salary_currency: string
+          salary_max: number | null
+          salary_min: number | null
+          salary_period: string
+          show_salary: boolean
+          skills_required: string[]
+          status: string
+          title: string
+          updated_at: string
+          views: number
+          workplace_type: string
+        }
+        Insert: {
+          applicants_count?: number
+          apply_email?: string | null
+          apply_mode?: string
+          apply_url?: string | null
+          benefits?: string[]
+          category?: string
+          city?: string | null
+          company_id: string
+          country?: string | null
+          created_at?: string
+          description?: string | null
+          employment_type?: string
+          experience_level?: string
+          expires_at?: string | null
+          featured?: boolean
+          id?: string
+          posted_by: string
+          salary_currency?: string
+          salary_max?: number | null
+          salary_min?: number | null
+          salary_period?: string
+          show_salary?: boolean
+          skills_required?: string[]
+          status?: string
+          title: string
+          updated_at?: string
+          views?: number
+          workplace_type?: string
+        }
+        Update: {
+          applicants_count?: number
+          apply_email?: string | null
+          apply_mode?: string
+          apply_url?: string | null
+          benefits?: string[]
+          category?: string
+          city?: string | null
+          company_id?: string
+          country?: string | null
+          created_at?: string
+          description?: string | null
+          employment_type?: string
+          experience_level?: string
+          expires_at?: string | null
+          featured?: boolean
+          id?: string
+          posted_by?: string
+          salary_currency?: string
+          salary_max?: number | null
+          salary_min?: number | null
+          salary_period?: string
+          show_salary?: boolean
+          skills_required?: string[]
+          status?: string
+          title?: string
+          updated_at?: string
+          views?: number
+          workplace_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_postings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "job_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_posts: {
+        Row: {
+          author_id: string
+          body: string
+          comments_count: number
+          created_at: string
+          id: string
+          likes_count: number
+          link_url: string | null
+          media: string[]
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          comments_count?: number
+          created_at?: string
+          id?: string
+          likes_count?: number
+          link_url?: string | null
+          media?: string[]
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          comments_count?: number
+          created_at?: string
+          id?: string
+          likes_count?: number
+          link_url?: string | null
+          media?: string[]
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: []
+      }
+      job_saves: {
+        Row: {
+          created_at: string
+          id: string
+          job_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_saves_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "job_postings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_seeker_education: {
+        Row: {
+          created_at: string
+          degree: string | null
+          description: string | null
+          end_year: number | null
+          field_of_study: string | null
+          id: string
+          school: string
+          sort_order: number
+          start_year: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          degree?: string | null
+          description?: string | null
+          end_year?: number | null
+          field_of_study?: string | null
+          id?: string
+          school: string
+          sort_order?: number
+          start_year?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          degree?: string | null
+          description?: string | null
+          end_year?: number | null
+          field_of_study?: string | null
+          id?: string
+          school?: string
+          sort_order?: number
+          start_year?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      job_seeker_experiences: {
+        Row: {
+          company: string
+          created_at: string
+          description: string | null
+          employment_type: string | null
+          end_date: string | null
+          id: string
+          is_current: boolean
+          location: string | null
+          sort_order: number
+          start_date: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          company: string
+          created_at?: string
+          description?: string | null
+          employment_type?: string | null
+          end_date?: string | null
+          id?: string
+          is_current?: boolean
+          location?: string | null
+          sort_order?: number
+          start_date?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          company?: string
+          created_at?: string
+          description?: string | null
+          employment_type?: string | null
+          end_date?: string | null
+          id?: string
+          is_current?: boolean
+          location?: string | null
+          sort_order?: number
+          start_date?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      job_seeker_profiles: {
+        Row: {
+          about: string | null
+          avatar_url: string | null
+          cover_url: string | null
+          created_at: string
+          current_company: string | null
+          current_title: string | null
+          cv_link: string | null
+          cv_url: string | null
+          email: string | null
+          expected_salary: number | null
+          expected_salary_currency: string
+          expected_salary_period: string
+          headline: string | null
+          id: string
+          languages: string[]
+          linkedin_url: string | null
+          location_city: string | null
+          location_country: string | null
+          open_to_remote: boolean
+          open_to_work: boolean
+          phone: string | null
+          skills: string[]
+          updated_at: string
+          user_id: string
+          visibility: string
+          website: string | null
+          whatsapp: string | null
+          years_experience: number | null
+        }
+        Insert: {
+          about?: string | null
+          avatar_url?: string | null
+          cover_url?: string | null
+          created_at?: string
+          current_company?: string | null
+          current_title?: string | null
+          cv_link?: string | null
+          cv_url?: string | null
+          email?: string | null
+          expected_salary?: number | null
+          expected_salary_currency?: string
+          expected_salary_period?: string
+          headline?: string | null
+          id?: string
+          languages?: string[]
+          linkedin_url?: string | null
+          location_city?: string | null
+          location_country?: string | null
+          open_to_remote?: boolean
+          open_to_work?: boolean
+          phone?: string | null
+          skills?: string[]
+          updated_at?: string
+          user_id: string
+          visibility?: string
+          website?: string | null
+          whatsapp?: string | null
+          years_experience?: number | null
+        }
+        Update: {
+          about?: string | null
+          avatar_url?: string | null
+          cover_url?: string | null
+          created_at?: string
+          current_company?: string | null
+          current_title?: string | null
+          cv_link?: string | null
+          cv_url?: string | null
+          email?: string | null
+          expected_salary?: number | null
+          expected_salary_currency?: string
+          expected_salary_period?: string
+          headline?: string | null
+          id?: string
+          languages?: string[]
+          linkedin_url?: string | null
+          location_city?: string | null
+          location_country?: string | null
+          open_to_remote?: boolean
+          open_to_work?: boolean
+          phone?: string | null
+          skills?: string[]
+          updated_at?: string
+          user_id?: string
+          visibility?: string
+          website?: string | null
+          whatsapp?: string | null
+          years_experience?: number | null
+        }
+        Relationships: []
+      }
+      job_skill_endorsements: {
+        Row: {
+          created_at: string
+          endorsee_id: string
+          endorser_id: string
+          id: string
+          skill: string
+        }
+        Insert: {
+          created_at?: string
+          endorsee_id: string
+          endorser_id: string
+          id?: string
+          skill: string
+        }
+        Update: {
+          created_at?: string
+          endorsee_id?: string
+          endorser_id?: string
+          id?: string
+          skill?: string
+        }
+        Relationships: []
+      }
       live_messages: {
         Row: {
           body: string
