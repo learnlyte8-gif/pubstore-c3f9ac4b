@@ -24,7 +24,8 @@ export default function WalletPage() {
   const [redirecting, setRedirecting] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [provider, setProvider] = useState<Provider>("pesepay");
-  
+  const [customAmount, setCustomAmount] = useState<string>("");
+
   const captureRanRef = useRef(false);
   const pesepayRanRef = useRef(false);
 
