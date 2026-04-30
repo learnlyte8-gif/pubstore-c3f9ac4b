@@ -114,6 +114,28 @@ async function buildSlides(): Promise<Slide[]> {
     to: `/news/${n.slug}`, bg: nextG(), image: n.cover, icon: Newspaper,
   }));
 
+  (services.data ?? []).forEach((sv: any) => slides.push({
+    key: `svc-${sv.id}`, kind: "Local pro",
+    title: sv.hourly_rate ? `From $${sv.hourly_rate}/hr` : "Trusted pro",
+    subtitle: `${sv.display_name} · ${sv.category}${sv.city ? ` · ${sv.city}` : ""}`,
+    cta: "Hire now", to: `/services`, bg: nextG(), image: sv.cover, icon: Wrench,
+  }));
+
+  (properties.data ?? []).forEach((pr: any) => slides.push({
+    key: `prop-${pr.id}`, kind: "Real estate",
+    title: `$${Number(pr.price).toLocaleString()}${pr.listing_type === "rent" ? `/${pr.price_period}` : ""}`,
+    subtitle: `${pr.title}${pr.city ? ` · ${pr.city}` : ""}`,
+    cta: pr.listing_type === "sale" ? "View property" : "Book viewing",
+    to: `/properties`, bg: nextG(), image: pr.cover, icon: HomeIcon,
+  }));
+
+  (finance.data ?? []).forEach((fp: any) => slides.push({
+    key: `fin-${fp.id}`, kind: "Finance",
+    title: fp.interest_rate != null ? `${fp.interest_rate}% APR` : "Get funded",
+    subtitle: `${fp.title}${fp.provider_name ? ` · ${fp.provider_name}` : ""}`,
+    cta: "Apply now", to: `/finance`, bg: nextG(), image: fp.cover, icon: Banknote,
+  }));
+
   // Always advertise the rides system
   slides.push({
     key: "rides-cta", kind: "Rides",
@@ -122,6 +144,16 @@ async function buildSlides(): Promise<Slide[]> {
     cta: "Open rides", to: "/rides",
     bg: "from-emerald-500 via-teal-500 to-cyan-600",
     image: null, icon: Navigation,
+  });
+
+  // Always advertise logistics
+  slides.push({
+    key: "logistics-cta", kind: "Delivery",
+    title: "Send anything, anywhere",
+    subtitle: "Bike, car, van or truck — drivers bid on your delivery.",
+    cta: "Request delivery", to: "/logistics",
+    bg: "from-orange-600 via-red-600 to-rose-600",
+    image: null, icon: Truck,
   });
 
   // Shuffle to mix verticals (but keep deal/live early)
