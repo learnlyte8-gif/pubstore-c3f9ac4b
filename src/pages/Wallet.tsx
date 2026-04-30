@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, Loader2, ShieldCheck, Zap, Smartphone, CreditCard } from "lucide-react";
+import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, ShieldCheck, Zap, Smartphone, CreditCard, CheckCircle2, CircleDot, LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/useWallet";
@@ -16,15 +16,23 @@ const sb = supabase as any;
 
 type Pending = { orderID: string; amount: number };
 type Provider = "paypal" | "pesepay";
+type TimelineStep = { key: "initiated" | "confirming" | "credited"; label: string };
+
+const TIMELINE_STEPS: TimelineStep[] = [
+  { key: "initiated", label: "Initiated" },
+  { key: "confirming", label: "Confirming" },
+  { key: "credited", label: "Credited" },
+];
 
 export default function WalletPage() {
-  const { balance, transactions, isLoading, userId, refresh } = useWallet();
+  const { balance, transactions, paymentHistory, isLoading, userId, refresh } = useWallet();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selected, setSelected] = useState<number | null>(null);
   const [redirecting, setRedirecting] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [provider, setProvider] = useState<Provider>("pesepay");
+  const [activePayment, setActivePayment] = useState<{ reference: string; pesepayReference: string } | null>(null);
   
   const captureRanRef = useRef(false);
   const pesepayRanRef = useRef(false);
@@ -47,6 +55,7 @@ export default function WalletPage() {
     if (!ref || !pref) return;
     pesepayRanRef.current = true;
     setCapturing(true);
+    setActivePayment({ reference: ref, pesepayReference: pref });
     (async () => {
       try {
         const { data, error } = await sb.functions.invoke("pesepay-status", {
@@ -71,6 +80,69 @@ export default function WalletPage() {
       }
     })();
   }, [searchParams, setSearchParams, refresh]);
+
+  useEffect(() => {
+    if (!activePayment?.reference || !activePayment?.pesepayReference) return;
+
+    const current = paymentHistory.filter((item) => item.merchant_reference === activePayment.reference);
+    const hasCredited = current.some((item) => item.status === "credited");
+    if (hasCredited) {
+      setActivePayment(null);
+      setCapturing(false);
+      refresh();
+      return;
+    }
+
+    const hasPending = current.some((item) => item.status === "pending" || item.status === "initiated" || item.status === "confirming");
+    if (!hasPending) return;
+
+    let attempts = 0;
+    const id = window.setInterval(async () => {
+      attempts += 1;
+      try {
+        const { data, error } = await sb.functions.invoke("pesepay-status", {
+          body: {
+            reference: activePayment.reference,
+            pesepayReference: activePayment.pesepayReference,
+          },
+        });
+        if (error) throw error;
+        refresh();
+        if (data?.paid || attempts >= 6) {
+          window.clearInterval(id);
+          if (data?.paid) {
+            toast.success(`Added ${fmt(Number(data.amount || 0))} to PUBSTORE Pay 🎉`);
+            setActivePayment(null);
+            setCapturing(false);
+          }
+        }
+      } catch {
+        if (attempts >= 6) window.clearInterval(id);
+      }
+    }, 2500);
+
+    return () => window.clearInterval(id);
+  }, [activePayment, paymentHistory, refresh]);
+
+  const timelineGroups = paymentHistory.reduce<Record<string, typeof paymentHistory>>((acc, entry) => {
+    (acc[entry.merchant_reference] ||= []).push(entry);
+    return acc;
+  }, {});
+
+  const timelineItems = Object.entries(timelineGroups)
+    .map(([reference, entries]) => {
+      const sorted = [...entries].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      const first = sorted[0];
+      return {
+        reference,
+        amount: Number(first?.amount ?? 0),
+        createdAt: first?.created_at,
+        gatewayReference: sorted.find((item) => item.gateway_reference)?.gateway_reference ?? null,
+        steps: sorted,
+      };
+    })
+    .sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime())
+    .slice(0, 10);
 
   // After PayPal redirects back, capture the order and credit the wallet.
   useEffect(() => {
@@ -202,7 +274,7 @@ export default function WalletPage() {
         <div className="px-4 -mt-6 relative z-10">
           <div className="rounded-2xl border border-primary/30 bg-primary/5 p-3 flex items-center gap-2 shadow-elevated">
             <CircleSpinner size={16} className="text-primary" />
-            <p className="text-xs font-bold">Confirming your PayPal payment…</p>
+            <p className="text-xs font-bold">Confirming your payment…</p>
           </div>
         </div>
       )}
@@ -278,6 +350,49 @@ export default function WalletPage() {
                   </li>
                 );
               })}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      <div className="px-4 mt-6">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2 px-1">Pesepay status</p>
+        <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
+          {timelineItems.length === 0 ? (
+            <p className="p-6 text-center text-sm text-muted-foreground">Your Pesepay top-up timeline will appear here.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {timelineItems.map((item) => (
+                <li key={item.reference} className="px-4 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-black tracking-tight">Top-up {fmt(item.amount)}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1 break-all">{item.gatewayReference ?? item.reference}</p>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground whitespace-nowrap">{item.createdAt ? new Date(item.createdAt).toLocaleString() : ""}</p>
+                  </div>
+
+                  <div className="mt-4 space-y-3">
+                    {TIMELINE_STEPS.map((step) => {
+                      const hit = item.steps.find((entry) => entry.status === step.key);
+                      const isDone = Boolean(hit);
+                      const isLive = !hit && step.key === "confirming" && item.steps.some((entry) => entry.status === "pending" || entry.status === "initiated");
+
+                      return (
+                        <div key={step.key} className="flex items-center gap-3">
+                          <span className={`w-8 h-8 rounded-full flex items-center justify-center border ${isDone ? "border-primary bg-primary/10 text-primary" : isLive ? "border-primary/40 bg-primary/5 text-primary" : "border-border bg-muted/30 text-muted-foreground"}`}>
+                            {isDone ? <CheckCircle2 className="w-4 h-4" /> : isLive ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <CircleDot className="w-4 h-4" />}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold">{step.label}</p>
+                            <p className="text-[11px] text-muted-foreground">{hit ? new Date(hit.created_at).toLocaleString() : "Waiting…"}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </li>
+              ))}
             </ul>
           )}
         </div>

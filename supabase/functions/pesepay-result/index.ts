@@ -9,6 +9,44 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function logPaymentStatus(
+  admin: ReturnType<typeof createClient>,
+  {
+    userId,
+    purpose,
+    merchantReference,
+    gatewayReference,
+    status,
+    amount,
+    details = {},
+  }: {
+    userId: string;
+    purpose: string;
+    merchantReference: string;
+    gatewayReference?: string;
+    status: string;
+    amount?: number;
+    details?: Record<string, unknown>;
+  },
+) {
+  const { error } = await admin.from("payment_status_history").upsert({
+    user_id: userId,
+    provider: "pesepay",
+    purpose,
+    merchant_reference: merchantReference,
+    gateway_reference: gatewayReference ?? null,
+    status,
+    amount: amount ?? null,
+    currency: "USD",
+    details,
+  }, {
+    onConflict: "provider,merchant_reference,status",
+    ignoreDuplicates: true,
+  });
+
+  if (error) console.error("payment history log failed", error);
+}
+
 function b64decode(b64: string): Uint8Array {
   const bin = atob(b64);
   const out = new Uint8Array(bin.length);
@@ -49,9 +87,33 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    const purpose = merchantReference.startsWith("order_") ? "order" : "wallet_topup";
+
     const paid = status === "SUCCESS" || status === "PAID" || status === "AUTHORIZED";
 
     if (!paid) {
+      if (merchantReference.startsWith("wallet_topup_")) {
+        const { data: initiated } = await admin
+          .from("payment_status_history")
+          .select("user_id")
+          .eq("provider", "pesepay")
+          .eq("merchant_reference", merchantReference)
+          .eq("status", "initiated")
+          .maybeSingle();
+        const uid = initiated?.user_id;
+        if (uid) {
+          await logPaymentStatus(admin, {
+            userId: uid,
+            purpose,
+            merchantReference,
+            gatewayReference: pesepayReference,
+            status: "pending",
+            amount,
+            details: { gatewayStatus: status },
+          });
+        }
+      }
+
       if (merchantReference.startsWith("order_")) {
         await admin
           .from("orders")
@@ -70,14 +132,25 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (existing) return new Response("ok", { status: 200 });
 
-      const userPrefix = merchantReference.split("_")[2];
-      const { data: candidates } = await admin
-        .from("profiles")
+      const { data: initiated } = await admin
+        .from("payment_status_history")
         .select("user_id")
-        .ilike("user_id", `${userPrefix}%`)
-        .limit(1);
-      const uid = candidates?.[0]?.user_id;
+        .eq("provider", "pesepay")
+        .eq("merchant_reference", merchantReference)
+        .eq("status", "initiated")
+        .maybeSingle();
+      const uid = initiated?.user_id;
       if (!uid) return new Response("user not found", { status: 200 });
+
+       await logPaymentStatus(admin, {
+        userId: uid,
+        purpose,
+        merchantReference,
+        gatewayReference: pesepayReference,
+        status: "confirming",
+        amount,
+        details: { gatewayStatus: status },
+      });
 
       await admin.rpc("apply_wallet_transaction", {
         _user_id: uid,
@@ -85,6 +158,16 @@ Deno.serve(async (req) => {
         _amount: amount,
         _description: `Pesepay top-up $${amount.toFixed(2)}`,
         _reference: internalRef,
+      });
+
+      await logPaymentStatus(admin, {
+        userId: uid,
+        purpose,
+        merchantReference,
+        gatewayReference: pesepayReference,
+        status: "credited",
+        amount,
+        details: { gatewayStatus: status, internalReference: internalRef },
       });
       return new Response("ok", { status: 200 });
     }

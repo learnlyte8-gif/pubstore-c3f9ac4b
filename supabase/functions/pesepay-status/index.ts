@@ -26,6 +26,44 @@ function resolvePesepayApiBase(): string {
 
 const PESEPAY_CHECK = `${resolvePesepayApiBase()}/v1/payments/check-payment`;
 
+async function logPaymentStatus(
+  admin: ReturnType<typeof createClient>,
+  {
+    userId,
+    purpose,
+    merchantReference,
+    gatewayReference,
+    status,
+    amount,
+    details = {},
+  }: {
+    userId: string;
+    purpose: string;
+    merchantReference: string;
+    gatewayReference?: string;
+    status: string;
+    amount?: number;
+    details?: Record<string, unknown>;
+  },
+) {
+  const { error } = await admin.from("payment_status_history").upsert({
+    user_id: userId,
+    provider: "pesepay",
+    purpose,
+    merchant_reference: merchantReference,
+    gateway_reference: gatewayReference ?? null,
+    status,
+    amount: amount ?? null,
+    currency: "USD",
+    details,
+  }, {
+    onConflict: "provider,merchant_reference,status",
+    ignoreDuplicates: true,
+  });
+
+  if (error) console.error("payment history log failed", error);
+}
+
 function b64decode(b64: string): Uint8Array {
   const bin = atob(b64);
   const out = new Uint8Array(bin.length);
@@ -94,6 +132,16 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    await logPaymentStatus(admin, {
+      userId,
+      purpose: reference.startsWith("order_") ? "order" : "wallet_topup",
+      merchantReference: reference,
+      gatewayReference: pesepayReference,
+      status: paid ? "confirming" : "pending",
+      amount,
+      details: { gatewayStatus: status },
+    });
+
     if (paid && reference.startsWith("wallet_topup_")) {
       const internalRef = `pesepay:${pesepayReference}`;
       const { data: existing } = await admin
@@ -110,6 +158,16 @@ Deno.serve(async (req) => {
           _reference: internalRef,
         });
       }
+
+      await logPaymentStatus(admin, {
+        userId,
+        purpose: "wallet_topup",
+        merchantReference: reference,
+        gatewayReference: pesepayReference,
+        status: "credited",
+        amount,
+        details: { gatewayStatus: status, internalReference: internalRef },
+      });
     }
 
     if (paid && reference.startsWith("order_")) {
