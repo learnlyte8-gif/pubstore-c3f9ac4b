@@ -28,7 +28,7 @@ type AppliedCoupon = {
   discount: number;
 };
 
-type PayMethod = "wallet" | "paynow" | "ecocash" | "onemoney" | "paypal" | "cod";
+type PayMethod = "wallet" | "pesepay" | "paypal" | "cod";
 
 const sb = supabase as any;
 
