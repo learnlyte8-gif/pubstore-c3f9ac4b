@@ -106,32 +106,20 @@ export default function WalletPage() {
         return;
       }
 
-      if (provider === "paynow") {
-        const { data, error } = await sb.functions.invoke("paynow-create-payment", {
-          body: { purpose: "wallet_topup", flow: "web", amount, returnUrl: `${origin}/wallet` },
+      if (provider === "pesepay") {
+        const { data, error } = await sb.functions.invoke("pesepay-create-payment", {
+          body: { purpose: "wallet_topup", amount, returnUrl: `${origin}/wallet?pesepay_ref=PENDING` },
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
+        // Stash the reference + pesepay reference so we can confirm on return.
+        const back = new URL(`${origin}/wallet`);
+        back.searchParams.set("pesepay_ref", data.reference);
+        back.searchParams.set("pesepay_pref", data.pesepayReference || "");
+        sessionStorage.setItem("pubstore.pesepay.return", back.toString());
         window.location.href = data.redirectUrl;
         return;
       }
-
-      // EcoCash / OneMoney express
-      if (phone.replace(/\D/g, "").length < 9) {
-        toast.error("Enter your mobile money number");
-        setRedirecting(false); setSelected(null);
-        return;
-      }
-      const { data, error } = await sb.functions.invoke("paynow-create-payment", {
-        body: { purpose: "wallet_topup", flow: "express", amount, phone, method: provider },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      toast.success("Check your phone", { description: data.instructions || "Approve the prompt to credit your wallet." });
-      setRedirecting(false);
-      setSelected(null);
-      // Wallet will update via webhook + realtime subscription
-    } catch (e: any) {
       setRedirecting(false);
       setSelected(null);
       toast.error(await getEdgeFunctionErrorMessage(e, "Could not start checkout"));
