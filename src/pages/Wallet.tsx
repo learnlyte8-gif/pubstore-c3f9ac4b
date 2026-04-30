@@ -24,7 +24,8 @@ export default function WalletPage() {
   const [redirecting, setRedirecting] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [provider, setProvider] = useState<Provider>("pesepay");
-  
+  const [customAmount, setCustomAmount] = useState<string>("");
+
   const captureRanRef = useRef(false);
   const pesepayRanRef = useRef(false);
 
@@ -225,6 +226,43 @@ export default function WalletPage() {
                 {redirecting && selected === a ? <CircleSpinner size={16} /> : fmt(a)}
               </button>
             ))}
+          </div>
+
+          {/* Custom amount */}
+          <div className="mt-3">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5 block">
+              Or enter custom amount
+            </label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-black text-muted-foreground">$</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={10}
+                  step="0.01"
+                  placeholder="Min $10.00"
+                  value={customAmount}
+                  onChange={(e) => setCustomAmount(e.target.value)}
+                  disabled={redirecting || capturing}
+                  className="h-11 w-full rounded-xl border border-border bg-muted/40 pl-7 pr-3 text-sm font-black tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary disabled:opacity-50"
+                />
+              </div>
+              <Button
+                className="h-11 px-4"
+                disabled={redirecting || capturing}
+                onClick={() => {
+                  const amt = Number(customAmount);
+                  if (!Number.isFinite(amt) || amt < 10) {
+                    toast.error("Minimum top-up is $10.00");
+                    return;
+                  }
+                  startCheckout(Math.round(amt * 100) / 100);
+                }}
+              >
+                {redirecting && selected !== null && !TOPUP_AMOUNTS.includes(selected) ? <CircleSpinner size={16} /> : "Add"}
+              </Button>
+            </div>
           </div>
 
           <p className="text-[10px] text-muted-foreground mt-3 flex items-center gap-1">
