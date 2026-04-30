@@ -228,6 +228,7 @@ type DbProductWithSupplier = DbProduct & {
     location_address: string | null;
     latitude: number | string | null;
     longitude: number | string | null;
+    trade_type?: string | null;
   } | null;
 };
 
