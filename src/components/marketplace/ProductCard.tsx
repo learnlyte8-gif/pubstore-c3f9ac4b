@@ -80,6 +80,22 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
       ? formatDistance(distanceKm(userLoc.lat, userLoc.lng, product.supplierLat, product.supplierLng))
       : null;
 
+  const mapsUrl = (() => {
+    if (product.supplierLat != null && product.supplierLng != null) {
+      return `https://www.google.com/maps/search/?api=1&query=${product.supplierLat},${product.supplierLng}`;
+    }
+    if (supplierLocLabel) {
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(supplierLocLabel)}`;
+    }
+    return null;
+  })();
+
+  const handleViewMap = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (mapsUrl) window.open(mapsUrl, "_blank", "noopener,noreferrer");
+  };
+
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
