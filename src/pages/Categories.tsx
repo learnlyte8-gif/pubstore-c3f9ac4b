@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { LayoutGrid } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { LayoutGrid, ChevronRight, ChevronLeft } from "lucide-react";
 import ProductCard from "@/components/marketplace/ProductCard";
 import EmptyState from "@/components/EmptyState";
 import TradeModeSwitch from "@/components/marketplace/TradeModeSwitch";
@@ -38,13 +38,43 @@ export default function Categories() {
   const ActiveCat = cats.find((c) => c.id === active);
   const ActiveIcon = ActiveCat?.icon;
 
+  // Auto-collapse the categories sidebar after 10s of inactivity.
+  const [collapsed, setCollapsed] = useState(false);
+  const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const bumpActivity = () => {
+    if (idleTimer.current) clearTimeout(idleTimer.current);
+    idleTimer.current = setTimeout(() => setCollapsed(true), 10_000);
+  };
+
+  useEffect(() => {
+    bumpActivity();
+    return () => { if (idleTimer.current) clearTimeout(idleTimer.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSelect = (id: string) => {
+    setActive(id);
+    setCollapsed(false);
+    bumpActivity();
+  };
+
   return (
-    <div className="flex h-[calc(100dvh-3.5rem-4rem)] lg:h-[calc(100dvh-3.5rem)]">
-      <aside className="w-24 shrink-0 bg-muted/40 overflow-y-auto scrollbar-none border-r">
+    <div
+      className="flex h-[calc(100dvh-3.5rem-4rem)] lg:h-[calc(100dvh-3.5rem)] relative"
+      onPointerDown={bumpActivity}
+      onScroll={bumpActivity}
+    >
+      <aside
+        className={`shrink-0 bg-muted/40 overflow-y-auto scrollbar-none border-r transition-all duration-300 ease-out ${
+          collapsed ? "w-0 border-r-0 opacity-0 pointer-events-none" : "w-24 opacity-100"
+        }`}
+        aria-hidden={collapsed}
+      >
         <ul>
           <li>
             <button
-              onClick={() => setActive(ALL_ID)}
+              onClick={() => handleSelect(ALL_ID)}
               className={`w-full flex flex-col items-center gap-1 py-4 px-1 text-center transition ${
                 isAll ? "bg-background text-primary font-semibold border-l-2 border-primary shadow-card" : "text-muted-foreground hover:bg-background/60"
               }`}
@@ -58,7 +88,7 @@ export default function Categories() {
             return (
               <li key={id}>
                 <button
-                  onClick={() => setActive(id)}
+                  onClick={() => handleSelect(id)}
                   className={`w-full flex flex-col items-center gap-1 py-4 px-1 text-center transition ${
                     isActive ? "bg-background text-primary font-semibold border-l-2 border-primary shadow-card" : "text-muted-foreground hover:bg-background/60"
                   }`}
@@ -71,6 +101,17 @@ export default function Categories() {
           })}
         </ul>
       </aside>
+
+      <button
+        type="button"
+        onClick={() => { setCollapsed((c) => !c); bumpActivity(); }}
+        aria-label={collapsed ? "Show categories" : "Hide categories"}
+        className={`absolute top-3 z-20 w-8 h-8 rounded-full bg-background border border-border shadow-card flex items-center justify-center text-foreground hover:bg-muted transition-all ${
+          collapsed ? "left-2" : "left-[5.5rem]"
+        }`}
+      >
+        {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+      </button>
 
       <div className="flex-1 overflow-y-auto">
         <div className="px-4 py-3 border-b bg-card shadow-soft flex items-center gap-2">
