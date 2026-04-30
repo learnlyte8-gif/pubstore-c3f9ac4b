@@ -29,6 +29,10 @@ const titles: Record<string, { title: string; sub: string }> = {
   "services/industrial": { title: "My industrial listings", sub: "Machinery, materials, capacity" },
   "services/news": { title: "News & editorial", sub: "Publish articles" },
   "services/driver": { title: "Driver mode", sub: "Register as a PUBSTORE driver" },
+  "services/pros": { title: "Service provider", sub: "List your skills as a local pro" },
+  "services/properties": { title: "My properties", sub: "Real estate listings" },
+  "services/logistics": { title: "Courier mode", sub: "Bid on delivery requests" },
+  "services/finance": { title: "Finance products", sub: "Loans, insurance, financing" },
 };
 
 export default function StoreSection() {
@@ -64,6 +68,10 @@ export default function StoreSection() {
       {key === "services/industrial" && <IndustrialServiceView />}
       {key === "services/news" && <NewsServiceView />}
       {key === "services/driver" && <DriverServiceView />}
+      {key === "services/pros" && <ProServiceView />}
+      {key === "services/properties" && <PropertyServiceView />}
+      {key === "services/logistics" && <CourierServiceView />}
+      {key === "services/finance" && <FinanceServiceView />}
     </div>
   );
 }
