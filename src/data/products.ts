@@ -53,6 +53,7 @@ export type Supplier = {
   website: string | null;
   categories: string[];
   onboardingCompletedAt: string | null;
+  tradeType: "retail" | "wholesale" | "both";
 };
 
 export type Review = {
