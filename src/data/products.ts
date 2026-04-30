@@ -258,6 +258,8 @@ export const mapProduct = (p: DbProduct | DbProductWithSupplier): Product => {
     supplierLng: Number.isFinite(supLng as number) ? (supLng as number) : null,
     moq: p.moq ?? 1,
     unit: p.unit ?? "piece",
+    tradeType: (p.moq ?? 1) > 1 ? "wholesale" : "retail",
+    supplierTradeType: (sup?.trade_type as Product["supplierTradeType"]) ?? "both",
     leadTime: p.lead_time ?? "—",
     shipFrom: p.ship_from ?? "—",
     specs: Array.isArray(p.specs) ? (p.specs as { label: string; value: string }[]) : [],
