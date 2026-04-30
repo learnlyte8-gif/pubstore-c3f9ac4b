@@ -158,6 +158,7 @@ type DbSupplier = {
   website?: string | null;
   categories?: string[] | null;
   onboarding_completed_at?: string | null;
+  trade_type?: string | null;
 };
 
 type DbProduct = {
