@@ -180,6 +180,7 @@ export default function WalletPage() {
         steps: sorted,
       };
     })
+    .filter((item) => item.amount > 0)
     .sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime())
     .slice(0, 10);
 
