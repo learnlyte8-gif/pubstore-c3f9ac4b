@@ -269,9 +269,17 @@ export default function MyStore() {
           )}
         </div>
 
-        <Button asChild className="w-full h-12 shadow-elevated">
-          <Link to="/store/products/new"><Plus className="w-4 h-4 mr-2" /> Add new product</Link>
-        </Button>
+        {canPublish ? (
+          <Button asChild className="w-full h-12 shadow-elevated">
+            <Link to="/store/products/new"><Plus className="w-4 h-4 mr-2" /> Add new product</Link>
+          </Button>
+        ) : (
+          <Button asChild className="w-full h-12 shadow-elevated" variant="outline">
+            <Link to={onboardingSteps.find((s) => !s.done)?.to ?? "/store/profile"}>
+              <Lock className="w-4 h-4 mr-2" /> Finish onboarding to publish
+            </Link>
+          </Button>
+        )}
       </div>
 
       {/* Go live modal */}
