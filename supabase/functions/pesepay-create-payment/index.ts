@@ -18,7 +18,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const PESEPAY_INITIATE = "https://api.pesepay.com/api/payments-engine/v1/payments/initiate";
+function resolvePesepayBaseUrl(): string {
+  const configured = (Deno.env.get("PESEPAY_BASE_URL") || "").trim().replace(/\/+$/, "");
+  if (configured) return configured;
+
+  const env = (Deno.env.get("PESEPAY_ENV") || "sandbox").trim().toLowerCase();
+  return env === "live"
+    ? "https://api.pesepay.com"
+    : "https://api.test.sandbox.pesepay.com";
+}
+
+const PESEPAY_INITIATE = `${resolvePesepayBaseUrl()}/api/payments-engine/v1/payments/initiate`;
 
 /** Keep only printable ASCII (0x21-0x7E). Header values must be valid HTTP token chars. */
 function cleanHeader(v: string): string {
@@ -71,7 +81,13 @@ Deno.serve(async (req) => {
     if (!integrationKeyRaw || !encryptionKeyRaw) return json({ error: "Pesepay not configured" }, 500);
     const integrationKey = cleanHeader(integrationKeyRaw);
     const encryptionKey = encryptionKeyRaw.replace(/^[\s"']+|[\s"']+$/g, "");
-    console.log("pesepay key lens", { intRaw: integrationKeyRaw.length, intClean: integrationKey.length, encRaw: encryptionKeyRaw.length, encClean: encryptionKey.length });
+    console.log("pesepay key lens", {
+      intRaw: integrationKeyRaw.length,
+      intClean: integrationKey.length,
+      encRaw: encryptionKeyRaw.length,
+      encClean: encryptionKey.length,
+      baseUrl: resolvePesepayBaseUrl(),
+    });
 
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace(/^Bearer\s+/i, "");
