@@ -289,47 +289,26 @@ export default function Cart() {
         return;
       }
 
-      if (payMethod === "paynow") {
+      if (payMethod === "pesepay") {
         const origin = window.location.origin;
-        const { data, error } = await sb.functions.invoke("paynow-create-payment", {
-          body: {
-            purpose: "order",
-            flow: "web",
-            orderIds,
-            returnUrl: `${origin}/cart`, // we'll re-poll on return
-          },
-        });
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
-        await clearCart();
-        // tack the reference + pollUrl onto the return URL so we can confirm
+        // The hosted page handles the rest — we'll confirm via pesepay-status on return.
         const back = new URL(`${origin}/cart`);
-        back.searchParams.set("paynow_ref", data.reference);
-        back.searchParams.set("paynow_poll", encodeURIComponent(data.pollUrl));
-        // browserurl from Paynow already has its own returnurl, so we hop there now.
-        // After Paynow the user will land on whatever returnurl the server set.
-        window.location.href = data.redirectUrl;
-        return;
-      }
-
-      // EcoCash / OneMoney express
-      if (payMethod === "ecocash" || payMethod === "onemoney") {
-        const { data, error } = await sb.functions.invoke("paynow-create-payment", {
+        const { data, error } = await sb.functions.invoke("pesepay-create-payment", {
           body: {
             purpose: "order",
-            flow: "express",
-            method: payMethod,
-            phone,
             orderIds,
+            returnUrl: back.toString(),
           },
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
         await clearCart();
-        toast.success("Check your phone", {
-          description: data.instructions || "Approve the prompt to complete payment.",
-        });
-        navigate(`/orders`);
+        // Tack our refs onto the return URL so we can confirm. Pesepay preserves the URL.
+        back.searchParams.set("pesepay_ref", data.reference);
+        back.searchParams.set("pesepay_pref", data.pesepayReference || "");
+        // We can't change Pesepay's saved returnUrl after init, but most flows redirect
+        // straight to redirectUrl which itself bounces back to our `back` value.
+        window.location.href = data.redirectUrl;
         return;
       }
     } catch (e) {
