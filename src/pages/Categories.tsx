@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { LayoutGrid } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { LayoutGrid, ChevronRight, ChevronLeft } from "lucide-react";
 import ProductCard from "@/components/marketplace/ProductCard";
 import EmptyState from "@/components/EmptyState";
 import TradeModeSwitch from "@/components/marketplace/TradeModeSwitch";
