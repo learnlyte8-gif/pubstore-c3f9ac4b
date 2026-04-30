@@ -81,15 +81,15 @@ export default function Cart() {
     })();
   }, []);
 
-  // After Paynow web redirect, finalise via paynow-status
+  // After Pesepay web redirect, finalise via pesepay-status
   useEffect(() => {
-    const ref = searchParams.get("paynow_ref");
-    const pollUrl = searchParams.get("paynow_poll");
-    if (!ref || !pollUrl) return;
+    const ref = searchParams.get("pesepay_ref");
+    const pref = searchParams.get("pesepay_pref");
+    if (!ref || !pref) return;
     (async () => {
       try {
-        const { data, error } = await sb.functions.invoke("paynow-status", {
-          body: { reference: ref, pollUrl: decodeURIComponent(pollUrl) },
+        const { data, error } = await sb.functions.invoke("pesepay-status", {
+          body: { reference: ref, pesepayReference: pref },
         });
         if (error) throw error;
         if (data?.paid) {
@@ -100,11 +100,11 @@ export default function Cart() {
         }
         toast.message("Payment is still pending", { description: "We'll update your order once it clears." });
       } catch (e) {
-        toast.error("Could not verify Paynow payment");
+        toast.error("Could not verify Pesepay payment");
       } finally {
         const next = new URLSearchParams(searchParams);
-        next.delete("paynow_ref");
-        next.delete("paynow_poll");
+        next.delete("pesepay_ref");
+        next.delete("pesepay_pref");
         setSearchParams(next, { replace: true });
       }
     })();
