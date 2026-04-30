@@ -83,6 +83,9 @@ export type Product = {
   supplierVerified?: boolean;
   supplierGold?: boolean;
   supplierName?: string;
+  supplierLocation?: string | null;
+  supplierLat?: number | null;
+  supplierLng?: number | null;
   moq: number;
   unit: string;
   leadTime: string;
