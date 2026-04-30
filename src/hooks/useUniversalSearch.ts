@@ -156,7 +156,7 @@ async function loadUniversalPool(): Promise<UniversalHit[]> {
       description: st.description ?? "",
       image: st.cover, href: `/stays?id=${st.id}`,
       price: Number(st.price_per_night ?? 0), currency: st.currency,
-      rating: st.featured ? 5 : 4.5, reviews: 0, sold: 0,
+      rating: Number(st.rating ?? 4.5), reviews: st.review_count ?? 0, sold: 0,
       city: st.city, country: st.country,
     });
   }
