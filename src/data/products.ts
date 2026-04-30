@@ -212,6 +212,7 @@ export const mapSupplier = (s: DbSupplier): Supplier => ({
   website: s.website ?? null,
   categories: (s.categories ?? []) as string[],
   onboardingCompletedAt: s.onboarding_completed_at ?? null,
+  tradeType: ((s.trade_type as Supplier["tradeType"]) ?? "both"),
 });
 
 type DbProductWithSupplier = DbProduct & {
