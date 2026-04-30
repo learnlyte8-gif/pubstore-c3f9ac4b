@@ -249,7 +249,17 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
             <MapPin className="w-3 h-3 text-primary shrink-0" />
             <span className="truncate">{supplierLocLabel ?? "Nearby supplier"}</span>
             {distLabel && (
-              <span className="ml-auto font-bold text-foreground tabular-nums shrink-0">{distLabel} away</span>
+              <span className="ml-1 font-bold text-foreground tabular-nums shrink-0">{distLabel}</span>
+            )}
+            {mapsUrl && (
+              <button
+                type="button"
+                onClick={handleViewMap}
+                aria-label="View supplier on map"
+                className="ml-auto inline-flex items-center gap-0.5 text-primary font-semibold hover:underline shrink-0"
+              >
+                <MapIcon className="w-3 h-3" /> Map
+              </button>
             )}
           </div>
         )}
