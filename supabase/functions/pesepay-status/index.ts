@@ -148,18 +148,41 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const reference: string = body?.reference || "";
-    const pesepayReference: string = body?.pesepayReference || "";
-    const pollUrlRaw: string = body?.pollUrl || "";
-    if (!pesepayReference && !pollUrlRaw) return json({ error: "pesepayReference or pollUrl required" }, 400);
+    let pesepayReference: string = body?.pesepayReference || "";
+    let pollUrlRaw: string = body?.pollUrl || "";
+    if (!reference && !pesepayReference && !pollUrlRaw) {
+      return json({ error: "reference, pesepayReference or pollUrl required" }, 400);
+    }
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    // If we only have the merchantReference, look up the gateway reference / pollUrl from history
+    if (!pesepayReference && !pollUrlRaw && reference) {
+      const { data: hist } = await admin
+        .from("payment_status_history")
+        .select("gateway_reference, details")
+        .eq("provider", "pesepay")
+        .eq("merchant_reference", reference)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (hist?.gateway_reference) pesepayReference = hist.gateway_reference;
+      const detailsPoll = (hist?.details as any)?.pollUrl;
+      if (detailsPoll) pollUrlRaw = detailsPoll;
+    }
+
     const existingState = await getExistingPaymentState(admin, reference, pesepayReference);
     if (existingState?.paid) {
       return json({ ok: true, ...existingState });
+    }
+
+    if (!pesepayReference && !pollUrlRaw) {
+      // Nothing to poll yet — return whatever history we have (likely pending)
+      if (existingState) return json({ ok: true, ...existingState });
+      return json({ ok: true, paid: false, status: "PENDING", amount: 0, referenceNumber: "" });
     }
 
     const url = pollUrlRaw || `${PESEPAY_CHECK}?referenceNumber=${encodeURIComponent(pesepayReference)}`;
