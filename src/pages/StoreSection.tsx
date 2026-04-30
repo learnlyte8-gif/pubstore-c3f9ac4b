@@ -1644,12 +1644,24 @@ function ProfileView() {
     }
   };
 
+  const toggleCategory = (slug: string) => {
+    setForm((f) => ({
+      ...f,
+      categories: f.categories.includes(slug) ? f.categories.filter((c) => c !== slug) : [...f.categories, slug],
+    }));
+  };
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supplier) return;
     setSaving(true);
-    const { error } = await supabase.from("suppliers").update({
+    const { error } = await (supabase.from("suppliers") as any).update({
       name: form.name, country: form.country, about: form.about,
+      business_type: form.businessType || null,
+      phone: form.phone || null,
+      email: form.email || null,
+      website: form.website || null,
+      categories: form.categories,
     }).eq("id", supplier.id);
     setSaving(false);
     if (error) toast.error(error.message); else { toast.success("Saved"); qc.invalidateQueries({ queryKey: ["my-supplier"] }); }
