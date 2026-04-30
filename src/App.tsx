@@ -35,6 +35,7 @@ import Settings from "./pages/Settings.tsx";
 import NotificationPreferences from "./pages/NotificationPreferences.tsx";
 import Placeholder from "./pages/Placeholder.tsx";
 import Wallet from "./pages/Wallet.tsx";
+import PaymentStatus from "./pages/PaymentStatus.tsx";
 import Verification from "./pages/Verification.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import News from "./pages/News.tsx";
@@ -91,6 +92,7 @@ const App = () => (
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/settings/notifications" element={<NotificationPreferences />} />
                 <Route path="/wallet" element={<Wallet />} />
+                <Route path="/payment-status" element={<PaymentStatus />} />
                 <Route path="/verification" element={<Verification />} />
                 <Route path="/news" element={<News />} />
                 <Route path="/news/:slug" element={<News />} />

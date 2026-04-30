@@ -288,15 +288,15 @@ export default function WalletPage() {
 
       if (provider === "pesepay") {
         const { data, error } = await sb.functions.invoke("pesepay-create-payment", {
-          body: { purpose: "wallet_topup", amount, returnUrl: `${origin}/wallet?pesepay_ref=PENDING` },
+          body: { purpose: "wallet_topup", amount, returnUrl: `${origin}/payment-status?merchantReference=PENDING` },
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
-        // Stash the reference + pesepay reference so we can confirm on return.
-        const back = new URL(`${origin}/wallet`);
-        back.searchParams.set("pesepay_ref", data.reference);
-        back.searchParams.set("pesepay_pref", data.pesepayReference || "");
-        if (data.pollUrl) back.searchParams.set("pesepay_poll", data.pollUrl);
+        // Build the actual return URL with the real references so /payment-status can poll.
+        const back = new URL(`${origin}/payment-status`);
+        back.searchParams.set("merchantReference", data.reference);
+        if (data.pesepayReference) back.searchParams.set("referenceNumber", data.pesepayReference);
+        if (data.pollUrl) back.searchParams.set("pollUrl", data.pollUrl);
         sessionStorage.setItem(PESEPAY_RETURN_KEY, back.toString());
         window.location.href = data.redirectUrl;
         return;
