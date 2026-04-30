@@ -66,9 +66,11 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const integrationKey = Deno.env.get("PESEPAY_INTEGRATION_KEY");
-    const encryptionKey = Deno.env.get("PESEPAY_ENCRYPTION_KEY");
-    if (!integrationKey || !encryptionKey) return json({ error: "Pesepay not configured" }, 500);
+    const integrationKeyRaw = Deno.env.get("PESEPAY_INTEGRATION_KEY");
+    const encryptionKeyRaw = Deno.env.get("PESEPAY_ENCRYPTION_KEY");
+    if (!integrationKeyRaw || !encryptionKeyRaw) return json({ error: "Pesepay not configured" }, 500);
+    const integrationKey = cleanHeader(integrationKeyRaw);
+    const encryptionKey = encryptionKeyRaw.replace(/^[\s"']+|[\s"']+$/g, "");
 
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace(/^Bearer\s+/i, "");
