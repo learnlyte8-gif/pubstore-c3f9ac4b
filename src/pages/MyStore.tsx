@@ -164,6 +164,10 @@ export default function MyStore() {
         </div>
       ) : null}
 
+      {/* Supplier onboarding gate */}
+      <SupplierOnboarding steps={onboardingSteps} />
+      {!canPublish && <OnboardingBlockedBanner steps={onboardingSteps} />}
+
       <div className="px-4 mt-5 grid grid-cols-3 gap-2">
         <Stat label="Products" value={String(myProducts.length)} icon={Package} />
         <Stat label="Orders" value={String(stats?.orderCount ?? 0)} icon={ShoppingBag} />
