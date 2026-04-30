@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Heart, Star, Plus, Truck, ShieldCheck, Award, Timer, Package, MapPin } from "lucide-react";
+import { Heart, Star, Plus, Truck, ShieldCheck, Award, Timer, Package, MapPin, Map as MapIcon } from "lucide-react";
 import { toast } from "sonner";
 import { type Product, discountPct } from "@/data/products";
 import { useShop } from "@/store/shop";
