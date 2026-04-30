@@ -73,7 +73,8 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
   const supplierVerified = product.supplierVerified === true;
   const supplierGold = product.supplierGold === true;
 
-  const supplierLocLabel = product.supplierLocation || product.shipFrom || null;
+  const rawShipFrom = product.shipFrom && product.shipFrom !== "—" ? product.shipFrom : null;
+  const supplierLocLabel = product.supplierLocation || rawShipFrom;
   const distLabel =
     userLoc && product.supplierLat != null && product.supplierLng != null
       ? formatDistance(distanceKm(userLoc.lat, userLoc.lng, product.supplierLat, product.supplierLng))
