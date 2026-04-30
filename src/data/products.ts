@@ -293,7 +293,7 @@ export async function fetchProducts(opts: {
 
   let q = supabase
     .from("products")
-    .select("*, suppliers!inner(name, verified, gold)")
+    .select("*, suppliers!inner(name, verified, gold, country, location_address, latitude, longitude)")
     .eq("active", true);
   if (opts.category) q = q.eq("category_slug", opts.category);
   if (supplierId) q = q.eq("supplier_id", supplierId);
@@ -325,7 +325,7 @@ export async function fetchProducts(opts: {
 export async function fetchProduct(id: string): Promise<Product | null> {
   const { data } = await supabase
     .from("products")
-    .select("*, suppliers!inner(name, verified, gold)")
+    .select("*, suppliers!inner(name, verified, gold, country, location_address, latitude, longitude)")
     .eq("id", id)
     .maybeSingle();
   return data ? mapProduct(data as DbProductWithSupplier) : null;
