@@ -10,6 +10,7 @@ import InstallPrompt from "@/components/InstallPrompt";
 import BannerAd from "@/components/marketplace/BannerAd";
 import ImportProgressBanner from "@/components/ImportProgressBanner";
 import { useUnreadChats } from "@/hooks/useUnreadChats";
+import { useHideOnScroll } from "@/hooks/useScrollDirection";
 import logo from "@/assets/pubstore-logo.png";
 
 export default function AppShell() {
@@ -17,6 +18,7 @@ export default function AppShell() {
   const [unreadNotifs, setUnreadNotifs] = useState(0);
   const { cartCount, wishlist } = useShop();
   const { chatsWithUnread } = useUnreadChats();
+  const navHidden = useHideOnScroll();
 
   useEffect(() => {
     if (!session?.user?.id) {
@@ -94,7 +96,11 @@ export default function AppShell() {
       </main>
 
       {/* Bottom tab bar */}
-      <nav className="fixed bottom-0 inset-x-0 z-40 bg-background border-t border-border safe-bottom lg:hidden shadow-elevated">
+      <nav
+        className={`fixed bottom-0 inset-x-0 z-40 bg-background border-t border-border safe-bottom lg:hidden shadow-elevated transition-transform duration-300 ${
+          navHidden ? "translate-y-full" : "translate-y-0"
+        }`}
+      >
         <ul className="max-w-2xl mx-auto h-16 px-1 flex items-center justify-around">
           <TabItem to="/home" icon={Home} label="Home" />
           <TabItem to="/categories" icon={LayoutGrid} label="Shop" />
