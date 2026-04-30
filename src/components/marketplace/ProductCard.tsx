@@ -235,6 +235,31 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
           )}
         </div>
 
+        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+          <span
+            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[9px] font-bold border border-emerald-500/20"
+            title="Trade Assurance — buyer protection on payment, on-time shipment, and quality"
+          >
+            <ShieldCheck className="w-3 h-3" /> Trade Assurance
+          </span>
+          <div className="inline-flex items-center gap-1 text-muted-foreground" aria-label="Accepted payment methods">
+            <span title="EcoCash" className="inline-flex items-center justify-center w-5 h-4 rounded-sm bg-[#E2231A] text-white text-[8px] font-extrabold leading-none">EC</span>
+            <span title="Visa / Mastercard" className="inline-flex items-center justify-center w-5 h-4 rounded-sm bg-foreground/90 text-background">
+              <CreditCard className="w-3 h-3" />
+            </span>
+            <span title="PayPal" className="inline-flex items-center justify-center w-5 h-4 rounded-sm bg-[#003087] text-white text-[8px] font-extrabold tracking-tighter leading-none">PP</span>
+            <span title="Mobile money" className="inline-flex items-center justify-center w-5 h-4 rounded-sm bg-primary/15 text-primary">
+              <Smartphone className="w-3 h-3" />
+            </span>
+            <span title="Wallet" className="inline-flex items-center justify-center w-5 h-4 rounded-sm bg-amber-500/15 text-amber-600">
+              <Wallet className="w-3 h-3" />
+            </span>
+            <span title="Cash on delivery" className="inline-flex items-center justify-center w-5 h-4 rounded-sm bg-muted text-foreground/70">
+              <Banknote className="w-3 h-3" />
+            </span>
+          </div>
+        </div>
+
         <div className="flex items-center gap-1 mt-1 text-[11px] text-muted-foreground">
           <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
           <span className="font-medium text-foreground">{product.rating.toFixed(1)}</span>
