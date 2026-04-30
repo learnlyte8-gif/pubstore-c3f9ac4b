@@ -68,34 +68,29 @@ export default function SearchPage() {
     return suggestCompletions(suggestPool, query);
   }, [query, suggestPool]);
 
-  // Ranked + filtered results
+  // Ranked + filtered results across the whole catalog (all verticals).
   const ranked = useMemo(() => {
     if (!submitted) return [];
-    const tokens = tokenize(submitted);
-    let list = candidates;
+    let list = pool;
 
-    // Apply hard filters first (rating/price/shipping) — they're objective.
+    // Apply objective filters first.
     list = list.filter((p) => {
       if (p.rating < minRating) return false;
-      if (p.price > maxPrice) return false;
+      if (p.price != null && p.price > maxPrice) return false;
       if (freeShipOnly && !p.freeShipping) return false;
       return true;
     });
 
-    // Score with the YouTube-style ranker only when there's a query.
-    let scored = tokens.length
-      ? rankSearch(list, submitted)
-      : list.map((item) => ({ item, score: 0 }));
+    let scored = searchUniversal(list, submitted, kindFilter);
 
     if (sort !== "relevance") {
-      const byPrice = (a: any, b: any) => a.item.price - b.item.price;
-      if (sort === "price-asc") scored = [...scored].sort(byPrice);
-      if (sort === "price-desc") scored = [...scored].sort((a, b) => b.item.price - a.item.price);
+      if (sort === "price-asc") scored = [...scored].sort((a, b) => (a.item.price ?? 0) - (b.item.price ?? 0));
+      if (sort === "price-desc") scored = [...scored].sort((a, b) => (b.item.price ?? 0) - (a.item.price ?? 0));
       if (sort === "rating") scored = [...scored].sort((a, b) => b.item.rating - a.item.rating);
       if (sort === "sold") scored = [...scored].sort((a, b) => b.item.sold - a.item.sold);
     }
     return scored;
-  }, [candidates, submitted, sort, minRating, maxPrice, freeShipOnly]);
+  }, [pool, submitted, sort, minRating, maxPrice, freeShipOnly, kindFilter]);
 
   const askTapson = async (q: string) => {
     if (!q.trim()) return;
