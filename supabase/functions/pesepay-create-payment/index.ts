@@ -20,9 +20,9 @@ const corsHeaders = {
 
 const PESEPAY_INITIATE = "https://api.pesepay.com/api/payments-engine/v1/payments/initiate";
 
-/** Strip whitespace/newlines/quotes that sometimes get pasted into env-var values. */
+/** Keep only printable ASCII (0x21-0x7E). Header values must be valid HTTP token chars. */
 function cleanHeader(v: string): string {
-  return v.replace(/^[\s"']+|[\s"']+$/g, "").replace(/[\r\n]/g, "");
+  return v.replace(/[^\x21-\x7E]/g, "");
 }
 
 function b64encode(bytes: Uint8Array): string {
@@ -71,6 +71,7 @@ Deno.serve(async (req) => {
     if (!integrationKeyRaw || !encryptionKeyRaw) return json({ error: "Pesepay not configured" }, 500);
     const integrationKey = cleanHeader(integrationKeyRaw);
     const encryptionKey = encryptionKeyRaw.replace(/^[\s"']+|[\s"']+$/g, "");
+    console.log("pesepay key lens", { intRaw: integrationKeyRaw.length, intClean: integrationKey.length, encRaw: encryptionKeyRaw.length, encClean: encryptionKey.length });
 
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace(/^Bearer\s+/i, "");
