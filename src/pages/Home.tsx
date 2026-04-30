@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   TrendingUp, Sparkles, LayoutGrid, Building2, Compass, Users, Home as HomeIcon, Store as StoreIcon,
   Globe2, Award, Newspaper, Zap, ShieldCheck, Truck, Flame,
@@ -120,7 +121,7 @@ const Home = () => {
         <div className="flex items-center justify-center gap-2">
           <TradeModeSwitch />
           <button
-            onClick={refresh}
+            onClick={() => { refresh(); toast.success("Feed refreshed", { description: "Reordered using your latest activity" }); }}
             aria-label="Refresh my feed"
             className="h-8 px-3 rounded-full bg-foreground text-background text-[11px] font-bold flex items-center gap-1.5 shadow-card active:scale-95 transition"
           >
