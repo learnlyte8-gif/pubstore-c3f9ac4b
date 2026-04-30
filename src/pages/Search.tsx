@@ -47,15 +47,14 @@ export default function SearchPage() {
   const HINTS = useLiveHints();
   const { data: cats = [] } = useCategories();
 
-  // Wide candidate pool. We pull a single richer set; client-side ranker filters.
-  const { data: candidates = [], isLoading } = useProducts({
-    search: submitted || undefined,
-    category: category || undefined,
-    limit: submitted ? 200 : 0,
-  });
+  const [kindFilter, setKindFilter] = useState<UniversalHit["kind"] | null>(null);
 
-  // Always-loaded set used for suggestions while typing.
-  const { data: suggestPool = [] } = useProducts({ limit: 60, sortBy: "sold" });
+  // Single universal pool covers products, services, properties, finance,
+  // logistics, vehicles, stays, industrial, news and suppliers. The
+  // client-side ranker handles fuzzy matching so unrelated keywords like
+  // "jobs" or "cars" still surface relevant rows.
+  const { data: pool = [], isLoading } = useUniversalPool();
+  const suggestPool = pool;
 
   useEffect(() => {
     if (query) return;
