@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useNavigate } from "react-router-dom";
-import { Store, Package, BarChart3, Megaphone, Truck, Star, Plus, ShoppingBag, Video, MessageCircle, Settings, ChevronRight, ImagePlus, Radio, StopCircle, Loader2, Download, BedDouble, Car, Factory, Newspaper, Sparkles, Navigation, Wrench, Home as HomeIcon, Banknote } from "lucide-react";
+import { Store, Package, BarChart3, Megaphone, Truck, Star, Plus, ShoppingBag, Video, MessageCircle, Settings, ChevronRight, ImagePlus, Radio, StopCircle, Loader2, Download, BedDouble, Car, Factory, Newspaper, Sparkles, Navigation, Wrench, Home as HomeIcon, Banknote, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchMySupplier, fetchProducts } from "@/data/products";
 import EmptyState from "@/components/EmptyState";
 import { toast } from "sonner";
+import SupplierOnboarding, { buildOnboardingSteps, isOnboardingComplete, OnboardingBlockedBanner } from "@/components/SupplierOnboarding";
+import { useVerification } from "@/hooks/useVerification";
 
 export default function MyStore() {
   const navigate = useNavigate();
