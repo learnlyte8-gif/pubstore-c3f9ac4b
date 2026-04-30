@@ -46,6 +46,13 @@ export type Supplier = {
   locationAddress: string | null;
   /** When set, this supplier is a "mirror" of another store and shares its products. */
   mirrorOf: string | null;
+  // Supplier onboarding fields
+  businessType: string | null;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  categories: string[];
+  onboardingCompletedAt: string | null;
 };
 
 export type Review = {
