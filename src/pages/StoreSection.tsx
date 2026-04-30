@@ -905,16 +905,10 @@ function EditProductView({ productId }: { productId: string }) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate("/auth"); return; }
 
-      const uploaded: string[] = [];
-      for (const file of newFiles) {
-        const ext = file.name.split(".").pop() || "jpg";
-        const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("product-images").upload(path, file, {
-          cacheControl: "3600", upsert: false,
-        });
-        if (upErr) throw upErr;
-        const { data: { publicUrl } } = supabase.storage.from("product-images").getPublicUrl(path);
-        uploaded.push(publicUrl);
+      const { urls: uploaded, failed } = await uploadProductImages(newFiles, { userId: user.id });
+      if (failed.length) {
+        toast.error(`${failed.length} photo(s) failed: ${failed.map((f) => f.reason).join(", ")}`);
+        if (uploaded.length === 0 && newFiles.length > 0) { setSaving(false); return; }
       }
       const finalGallery = [...gallery, ...uploaded];
 
