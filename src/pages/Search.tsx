@@ -313,9 +313,10 @@ export default function SearchPage() {
             />
           ) : (
             <>
+              <KindFilterChips value={kindFilter} onChange={setKindFilter} pool={ranked.map((r) => r.item)} />
               <p className="text-sm text-muted-foreground mb-3">{ranked.length} result{ranked.length === 1 ? "" : "s"} for "{submitted}"</p>
-              <div className="grid grid-cols-2 gap-3">
-                {ranked.map(({ item }) => (<ProductCard key={item.id} product={item} />))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {ranked.slice(0, 80).map(({ item }) => (<UniversalResultCard key={item.id} hit={item} />))}
               </div>
             </>
           )}
