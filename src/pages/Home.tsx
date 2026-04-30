@@ -25,6 +25,9 @@ import NewsRail from "@/components/marketplace/NewsRail";
 import StaysRail from "@/components/marketplace/StaysRail";
 import AutoRail from "@/components/marketplace/AutoRail";
 import IndustrialRail from "@/components/marketplace/IndustrialRail";
+import ServicesRail from "@/components/marketplace/ServicesRail";
+import PropertiesRail from "@/components/marketplace/PropertiesRail";
+import FinanceRail from "@/components/marketplace/FinanceRail";
 import TapsonAssistant from "@/components/TapsonAssistant";
 import EmptyState from "@/components/EmptyState";
 import SupplierCard from "@/components/marketplace/SupplierCard";
@@ -189,6 +192,12 @@ const Home = () => {
               </section>
 
               <AutoRail />
+
+              <ServicesRail />
+
+              <PropertiesRail />
+
+              <FinanceRail />
 
               <IndustrialRail />
 

@@ -43,6 +43,10 @@ import Auto from "./pages/Auto.tsx";
 import Industrial from "./pages/Industrial.tsx";
 import Rides from "./pages/Rides.tsx";
 import Driver from "./pages/Driver.tsx";
+import Services from "./pages/Services.tsx";
+import Properties from "./pages/Properties.tsx";
+import Logistics from "./pages/Logistics.tsx";
+import Finance from "./pages/Finance.tsx";
 
 const queryClient = new QueryClient();
 
@@ -99,6 +103,10 @@ const App = () => (
                 <Route path="/rides" element={<Rides />} />
                 <Route path="/rides/:id" element={<Rides />} />
                 <Route path="/driver" element={<Driver />} />
+                <Route path="/services" element={<Services />} />
+                <Route path="/properties" element={<Properties />} />
+                <Route path="/logistics" element={<Logistics />} />
+                <Route path="/finance" element={<Finance />} />
               </Route>
               <Route path="/index" element={<Navigate to="/home" replace />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
