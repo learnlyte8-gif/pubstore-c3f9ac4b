@@ -18,17 +18,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-function resolvePesepayBaseUrl(): string {
+function resolvePesepayApiBase(): string {
   const configured = (Deno.env.get("PESEPAY_BASE_URL") || "").trim().replace(/\/+$/, "");
   if (configured) return configured;
 
   const env = (Deno.env.get("PESEPAY_ENV") || "sandbox").trim().toLowerCase();
   return env === "live"
-    ? "https://api.pesepay.com"
-    : "https://api.test.sandbox.pesepay.com";
+    ? "https://api.pesepay.com/api/payments-engine"
+    : "https://api.test.sandbox.pesepay.com/payments-engine";
 }
 
-const PESEPAY_INITIATE = `${resolvePesepayBaseUrl()}/api/payments-engine/v1/payments/initiate`;
+const PESEPAY_INITIATE = `${resolvePesepayApiBase()}/v1/payments/initiate`;
 
 /** Keep only printable ASCII (0x21-0x7E). Header values must be valid HTTP token chars. */
 function cleanHeader(v: string): string {
@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
       intClean: integrationKey.length,
       encRaw: encryptionKeyRaw.length,
       encClean: encryptionKey.length,
-      baseUrl: resolvePesepayBaseUrl(),
+      baseUrl: resolvePesepayApiBase(),
     });
 
     const authHeader = req.headers.get("Authorization") || "";
