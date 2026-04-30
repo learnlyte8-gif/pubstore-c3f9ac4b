@@ -115,10 +115,14 @@ Deno.serve(async (req) => {
       }
 
       if (merchantReference.startsWith("order_")) {
-        await admin
-          .from("orders")
-          .update({ payment_status: status === "CANCELLED" ? "cancelled" : "failed" })
-          .eq("payment_reference", merchantReference);
+        const cancelledLike = ["CANCELLED", "CLOSED", "CLOSED_PERIOD_ELAPSED", "TERMINATED", "TIME_OUT"].includes(status);
+        const failedLike = ["FAILED", "DECLINED", "AUTHORIZATION_FAILED", "ERROR", "INSUFFICIENT_FUNDS", "REVERSED", "SERVICE_UNAVAILABLE"].includes(status);
+        if (cancelledLike || failedLike) {
+          await admin
+            .from("orders")
+            .update({ payment_status: cancelledLike ? "cancelled" : "failed" })
+            .eq("payment_reference", merchantReference);
+        }
       }
       return new Response("ok", { status: 200 });
     }
