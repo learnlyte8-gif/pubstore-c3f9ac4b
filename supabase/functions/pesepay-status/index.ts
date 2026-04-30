@@ -103,9 +103,10 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const reference: string = body?.reference || "";
     const pesepayReference: string = body?.pesepayReference || "";
-    if (!pesepayReference) return json({ error: "pesepayReference required" }, 400);
+    const pollUrlRaw: string = body?.pollUrl || "";
+    if (!pesepayReference && !pollUrlRaw) return json({ error: "pesepayReference or pollUrl required" }, 400);
 
-    const url = `${PESEPAY_CHECK}?referenceNumber=${encodeURIComponent(pesepayReference)}`;
+    const url = pollUrlRaw || `${PESEPAY_CHECK}?referenceNumber=${encodeURIComponent(pesepayReference)}`;
     const checkRes = await fetch(url, {
       method: "GET",
       headers: { "authorization": integrationKey, "Content-Type": "application/json" },
@@ -120,12 +121,17 @@ Deno.serve(async (req) => {
     if (typeof checkJson?.payload === "string") {
       try {
         inner = JSON.parse(await decryptPayload(checkJson.payload, encryptionKey));
-      } catch (e) { console.error("decrypt failed", e); }
+      } catch (e) {
+        console.error("decrypt failed", e);
+        console.log("pesepay check raw response", JSON.stringify(checkJson));
+      }
     }
 
-    const status: string = String(inner.transactionStatus || inner.status || "").toUpperCase();
+    const status: string = String(inner.transactionStatus || inner.status || checkJson?.transactionStatus || checkJson?.status || "").toUpperCase();
+    const amount = Number(inner.amount || inner?.amountDetails?.amount || checkJson?.amount || checkJson?.amountDetails?.amount || 0);
+    const gatewayReference = String(inner.referenceNumber || inner.applicationCode || checkJson?.referenceNumber || pesepayReference || "");
     const paid = status === "SUCCESS" || status === "PAID" || status === "AUTHORIZED";
-    const amount = Number(inner.amount || inner?.amountDetails?.amount || 0);
+    const failed = status === "FAILED" || status === "CANCELLED" || status === "DECLINED";
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -136,10 +142,10 @@ Deno.serve(async (req) => {
       userId,
       purpose: reference.startsWith("order_") ? "order" : "wallet_topup",
       merchantReference: reference,
-      gatewayReference: pesepayReference,
-      status: paid ? "confirming" : "pending",
+      gatewayReference,
+      status: paid ? "confirming" : failed ? "failed" : "pending",
       amount,
-      details: { gatewayStatus: status },
+      details: { gatewayStatus: status, pollUrl: pollUrlRaw || null },
     });
 
     if (paid && reference.startsWith("wallet_topup_")) {
@@ -163,7 +169,7 @@ Deno.serve(async (req) => {
         userId,
         purpose: "wallet_topup",
         merchantReference: reference,
-        gatewayReference: pesepayReference,
+        gatewayReference,
         status: "credited",
         amount,
         details: { gatewayStatus: status, internalReference: internalRef },
@@ -181,14 +187,14 @@ Deno.serve(async (req) => {
         .eq("payment_reference", reference);
     }
 
-    if (!paid && reference.startsWith("order_") && (status === "CANCELLED" || status === "FAILED")) {
+    if (!paid && reference.startsWith("order_") && failed) {
       await admin
         .from("orders")
         .update({ payment_status: status === "CANCELLED" ? "cancelled" : "failed" })
         .eq("payment_reference", reference);
     }
 
-    return json({ ok: true, paid, status, amount });
+    return json({ ok: true, paid, status, amount, referenceNumber: gatewayReference });
   } catch (e) {
     console.error("pesepay-status error", e);
     return json({ error: e instanceof Error ? e.message : "Unexpected error" }, 500);
