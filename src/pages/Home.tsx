@@ -88,7 +88,7 @@ const Home = () => {
 
   return (
     <div className="pb-6">
-      <div className="px-4 mt-3 sticky top-14 z-10 glass-strong pb-2 pt-2">
+      <div className="px-4 mt-3 sticky top-14 z-10 glass-strong pb-2 pt-2 space-y-2">
         <div className="relative flex bg-muted/70 rounded-full p-1 shadow-card">
           {TABS.map((t) => {
             const active = tab === t.id;
@@ -108,6 +108,9 @@ const Home = () => {
               </button>
             );
           })}
+        </div>
+        <div className="flex justify-center">
+          <TradeModeSwitch />
         </div>
       </div>
 
