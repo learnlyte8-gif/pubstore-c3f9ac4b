@@ -177,10 +177,20 @@ export default function MyStore() {
       <div className="px-4 mt-5">
         <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2 px-1">Quick actions</p>
         <div className="grid grid-cols-4 gap-2">
-          <Link to="/store/products/new" className="bg-card border rounded-2xl p-3 flex flex-col items-center gap-1.5 shadow-card hover:shadow-elevated transition">
-            <span className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center"><Plus className="w-4 h-4" /></span>
-            <span className="text-[10px] font-semibold text-center leading-tight">Add product</span>
-          </Link>
+          {canPublish ? (
+            <Link to="/store/products/new" className="bg-card border rounded-2xl p-3 flex flex-col items-center gap-1.5 shadow-card hover:shadow-elevated transition">
+              <span className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center"><Plus className="w-4 h-4" /></span>
+              <span className="text-[10px] font-semibold text-center leading-tight">Add product</span>
+            </Link>
+          ) : (
+            <button
+              onClick={() => toast.error("Finish supplier onboarding to publish products")}
+              className="bg-muted/50 border border-dashed rounded-2xl p-3 flex flex-col items-center gap-1.5 opacity-70"
+            >
+              <span className="w-9 h-9 rounded-xl bg-muted text-muted-foreground flex items-center justify-center"><Lock className="w-4 h-4" /></span>
+              <span className="text-[10px] font-semibold text-center leading-tight">Add product</span>
+            </button>
+          )}
           {liveStream ? (
             <Link to={`/live/${liveStream.id}`} className="bg-destructive text-destructive-foreground rounded-2xl p-3 flex flex-col items-center gap-1.5 shadow-card">
               <span className="w-9 h-9 rounded-xl bg-background/20 flex items-center justify-center"><Radio className="w-4 h-4 animate-pulse" /></span>
