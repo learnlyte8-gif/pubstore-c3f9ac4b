@@ -133,6 +133,12 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
               -{off}%
             </span>
           )}
+          {product.moq && product.moq > 1 && (
+            <span className="absolute bottom-1.5 left-1.5 bg-background/90 backdrop-blur text-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-border inline-flex items-center gap-0.5">
+              <Package className="w-2.5 h-2.5" />
+              MOQ {product.moq}
+            </span>
+          )}
           <button
             onClick={handleLike}
             aria-label="Wishlist"
