@@ -148,6 +148,12 @@ type DbSupplier = {
   longitude?: number | string | null;
   location_address?: string | null;
   mirror_of?: string | null;
+  business_type?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  website?: string | null;
+  categories?: string[] | null;
+  onboarding_completed_at?: string | null;
 };
 
 type DbProduct = {
