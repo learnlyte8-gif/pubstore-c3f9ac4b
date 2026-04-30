@@ -1742,6 +1742,40 @@ function ProfileView() {
         />
       </div>
 
+      {/* Business details */}
+      <div>
+        <p className="text-xs font-bold mb-2 text-muted-foreground uppercase tracking-wide">Business details</p>
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-1.5">
+            {["individual", "company", "factory", "distributor"].map((t) => (
+              <button key={t} type="button" onClick={() => setForm({ ...form, businessType: t })}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold border capitalize ${form.businessType === t ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border"}`}>
+                {t}
+              </button>
+            ))}
+          </div>
+          <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Phone (e.g. +263…)" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+          <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Business email" type="email" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+          <input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="Website (optional)" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+        </div>
+      </div>
+
+      {/* Category preferences */}
+      <div>
+        <p className="text-xs font-bold mb-2 text-muted-foreground uppercase tracking-wide">What do you sell? <span className="text-muted-foreground/70 normal-case">({form.categories.length} selected)</span></p>
+        <div className="flex flex-wrap gap-1.5">
+          {cats.map((c) => {
+            const active = form.categories.includes(c.id);
+            return (
+              <button key={c.id} type="button" onClick={() => toggleCategory(c.id)}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold border ${active ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border"}`}>
+                {c.name}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <Button type="submit" disabled={saving} className="w-full h-12">{saving ? "Saving…" : "Save changes"}</Button>
     </form>
   );
