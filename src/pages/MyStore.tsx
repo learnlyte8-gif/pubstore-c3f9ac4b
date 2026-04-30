@@ -15,6 +15,9 @@ export default function MyStore() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { data: supplier, isLoading } = useQuery({ queryKey: ["my-supplier"], queryFn: fetchMySupplier });
+  const { status: verificationStatus } = useVerification();
+  const onboardingSteps = buildOnboardingSteps(supplier ?? null, verificationStatus);
+  const canPublish = isOnboardingComplete(onboardingSteps);
   const { data: myProducts = [] } = useQuery({
     queryKey: ["my-products", supplier?.id],
     queryFn: () => (supplier ? fetchProducts({ supplierId: supplier.id, limit: 6 }) : Promise.resolve([])),
