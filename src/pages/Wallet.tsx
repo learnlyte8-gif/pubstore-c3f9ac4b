@@ -172,22 +172,10 @@ export default function WalletPage() {
 
           {/* Provider picker */}
           <div className="grid grid-cols-2 gap-2 mb-3">
+            <ProviderBtn active={provider === "pesepay"} onClick={() => setProvider("pesepay")} icon={Smartphone} label="Pesepay" sub="EcoCash · OneMoney · Visa" />
             <ProviderBtn active={provider === "paypal"} onClick={() => setProvider("paypal")} icon={CreditCard} label="PayPal" sub="Cards & PayPal" />
-            <ProviderBtn active={provider === "paynow"} onClick={() => setProvider("paynow")} icon={CreditCard} label="Paynow Web" sub="Visa / ZIPIT" />
-            <ProviderBtn active={provider === "ecocash"} onClick={() => setProvider("ecocash")} icon={Smartphone} label="EcoCash" sub="Mobile prompt" />
-            <ProviderBtn active={provider === "onemoney"} onClick={() => setProvider("onemoney")} icon={Smartphone} label="OneMoney" sub="Mobile prompt" />
           </div>
 
-          {(provider === "ecocash" || provider === "onemoney") && (
-            <input
-              type="tel"
-              inputMode="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder={provider === "ecocash" ? "EcoCash number e.g. 0771234567" : "OneMoney number"}
-              className="mb-3 w-full h-11 rounded-xl border bg-background px-3 text-sm tabular-nums"
-            />
-          )}
 
           <div className="grid grid-cols-3 gap-2">
             {TOPUP_AMOUNTS.map((a) => (
