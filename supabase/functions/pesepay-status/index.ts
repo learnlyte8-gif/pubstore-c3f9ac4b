@@ -14,7 +14,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const PESEPAY_CHECK = "https://api.pesepay.com/api/payments-engine/v1/payments/check-payment";
+function resolvePesepayApiBase(): string {
+  const configured = (Deno.env.get("PESEPAY_BASE_URL") || "").trim().replace(/\/+$/, "");
+  if (configured) return configured;
+
+  const env = (Deno.env.get("PESEPAY_ENV") || "sandbox").trim().toLowerCase();
+  return env === "live"
+    ? "https://api.pesepay.com/api/payments-engine"
+    : "https://api.test.sandbox.pesepay.com/payments-engine";
+}
+
+const PESEPAY_CHECK = `${resolvePesepayApiBase()}/v1/payments/check-payment`;
 
 function b64decode(b64: string): Uint8Array {
   const bin = atob(b64);
