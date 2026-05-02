@@ -192,7 +192,7 @@ const FALLBACK: Slide[] = [{
 }];
 
 export default function PromoBanner() {
-  const { data } = useQuery({ queryKey: ["promo-slides-v2"], queryFn: buildSlides, staleTime: 60_000 });
+  const { data } = useQuery({ queryKey: ["promo-slides-v3"], queryFn: buildSlides, staleTime: 60_000 });
   const slides = data && data.length > 0 ? data : FALLBACK;
   const [i, setI] = useState(0);
 
