@@ -34,6 +34,7 @@ const titles: Record<string, { title: string; sub: string }> = {
   "services/properties": { title: "My properties", sub: "Real estate listings" },
   "services/logistics": { title: "Courier mode", sub: "Bid on delivery requests" },
   "services/finance": { title: "Finance products", sub: "Loans, insurance, financing" },
+  "services/car-rentals": { title: "Car rentals", sub: "Self-drive listings, rules & penalties" },
 };
 
 export default function StoreSection() {
@@ -73,6 +74,7 @@ export default function StoreSection() {
       {key === "services/properties" && <PropertyServiceView />}
       {key === "services/logistics" && <CourierServiceView />}
       {key === "services/finance" && <FinanceServiceView />}
+      {key === "services/car-rentals" && <CarRentalServiceView />}
     </div>
   );
 }
@@ -2994,5 +2996,346 @@ function FinanceFormDialog({ userId, initial, onClose, onSaved }: { userId: stri
       </div>
       <Button onClick={save} disabled={saving} className="w-full h-11">{saving ? "Saving…" : "Save product"}</Button>
     </FormSheet>
+  );
+}
+
+/* ---------------- Car rentals ---------------- */
+function CarRentalServiceView() {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  useEffect(() => { supabase.auth.getUser().then(({ data: { user } }) => setUserId(user?.id ?? null)); }, []);
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ["my-car-rentals", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await supabase.from("car_rentals").select("*").eq("owner_user_id", userId!).order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+  const remove = async (id: string) => {
+    if (!confirm("Delete this rental listing?")) return;
+    const { error } = await supabase.from("car_rentals").delete().eq("id", id);
+    if (error) toast.error(error.message); else { toast.success("Removed"); qc.invalidateQueries({ queryKey: ["my-car-rentals"] }); }
+  };
+  if (!userId) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+  return (
+    <>
+      <ServiceShell
+        title={`${items.length} rentals listed`}
+        items={items}
+        isLoading={isLoading}
+        emptyHint="List a vehicle for self-drive rental — set price per day, free mileage, rules and penalties."
+        onAdd={() => { setEditing(null); setOpen(true); }}
+        renderItem={(p: any) => (
+          <div key={p.id} className="bg-card border rounded-2xl shadow-card p-3 flex gap-3">
+            <div className="w-16 h-16 rounded-xl bg-muted overflow-hidden shrink-0">{p.cover && <img src={p.cover} alt="" className="w-full h-full object-cover" />}</div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm truncate">{p.title}</p>
+              <p className="text-[11px] text-muted-foreground capitalize truncate">{p.vehicle_class} · {p.transmission} · {p.seats} seats</p>
+              <p className="text-xs font-bold mt-1 tabular-nums">${p.price_per_day}/day · {p.unlimited_km ? "Unlimited km" : `${p.free_km_per_day}km/day`}</p>
+            </div>
+            <div className="flex flex-col gap-1">
+              <button onClick={() => { setEditing(p); setOpen(true); }} className="w-8 h-8 rounded-full hover:bg-muted flex items-center justify-center"><Pencil className="w-3.5 h-3.5" /></button>
+              <button onClick={() => remove(p.id)} className="w-8 h-8 rounded-full hover:bg-destructive/10 text-destructive flex items-center justify-center"><Trash2 className="w-3.5 h-3.5" /></button>
+            </div>
+          </div>
+        )}
+      />
+      {open && <CarRentalFormDialog userId={userId} initial={editing} onClose={() => setOpen(false)} onSaved={() => { setOpen(false); qc.invalidateQueries({ queryKey: ["my-car-rentals"] }); qc.invalidateQueries({ queryKey: ["car-rentals"] }); qc.invalidateQueries({ queryKey: ["home-car-rentals"] }); }} />}
+    </>
+  );
+}
+
+function CarRentalFormDialog({ userId, initial, onClose, onSaved }: { userId: string; initial: any | null; onClose: () => void; onSaved: () => void }) {
+  const [f, setF] = useState({
+    title: initial?.title ?? "",
+    make: initial?.make ?? "",
+    model: initial?.model ?? "",
+    year: initial?.year ?? "",
+    vehicle_class: initial?.vehicle_class ?? "economy",
+    transmission: initial?.transmission ?? "automatic",
+    fuel: initial?.fuel ?? "petrol",
+    seats: initial?.seats ?? 5,
+    cover: initial?.cover ?? "",
+    description: initial?.description ?? "",
+    // Pricing
+    price_per_day: initial?.price_per_day ?? "",
+    price_per_week: initial?.price_per_week ?? "",
+    price_per_month: initial?.price_per_month ?? "",
+    weekend_surcharge_pct: initial?.weekend_surcharge_pct ?? "",
+    deposit: initial?.deposit ?? 0,
+    // Mileage
+    free_km_per_day: initial?.free_km_per_day ?? 200,
+    unlimited_km: initial?.unlimited_km ?? false,
+    extra_km_fee: initial?.extra_km_fee ?? "",
+    // Eligibility
+    min_age: initial?.min_age ?? 21,
+    max_age: initial?.max_age ?? "",
+    min_license_years: initial?.min_license_years ?? 1,
+    young_driver_age_threshold: initial?.young_driver_age_threshold ?? 25,
+    young_driver_fee: initial?.young_driver_fee ?? "",
+    international_license_ok: initial?.international_license_ok ?? true,
+    cross_border_allowed: initial?.cross_border_allowed ?? false,
+    cross_border_fee: initial?.cross_border_fee ?? "",
+    cross_border_countries: (initial?.cross_border_countries ?? []).join(", "),
+    required_documents: (initial?.required_documents ?? ["national_id", "drivers_license"]).join(", "),
+    // Booking
+    min_rental_days: initial?.min_rental_days ?? 1,
+    max_rental_days: initial?.max_rental_days ?? "",
+    advance_booking_hours: initial?.advance_booking_hours ?? 4,
+    pickup_locations: (initial?.pickup_locations ?? []).join(", "),
+    delivery_available: initial?.delivery_available ?? false,
+    delivery_fee: initial?.delivery_fee ?? "",
+    fuel_policy: initial?.fuel_policy ?? "full_to_full",
+    smoking_allowed: initial?.smoking_allowed ?? false,
+    pets_allowed: initial?.pets_allowed ?? false,
+    // Penalties
+    late_return_fee_per_hour: initial?.late_return_fee_per_hour ?? "",
+    cleaning_fee: initial?.cleaning_fee ?? "",
+    smoking_penalty: initial?.smoking_penalty ?? "",
+    pet_penalty: initial?.pet_penalty ?? "",
+    damage_excess: initial?.damage_excess ?? "",
+    cancellation_policy: initial?.cancellation_policy ?? "flexible",
+    cancellation_fee: initial?.cancellation_fee ?? "",
+    custom_rules: (initial?.custom_rules ?? []).join("\n"),
+    custom_penalties: JSON.stringify(initial?.custom_penalties ?? [], null, 0),
+    // Insurance
+    insurance_included: initial?.insurance_included ?? true,
+    insurance_provider: initial?.insurance_provider ?? "",
+    // Features
+    features: (initial?.features ?? []).join(", "),
+    // Location
+    city: initial?.city ?? "",
+    country: initial?.country ?? "",
+    contact_phone: initial?.contact_phone ?? "",
+    contact_whatsapp: initial?.contact_whatsapp ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  const splitList = (s: string) => s.split(/[,\n]/).map((x) => x.trim()).filter(Boolean);
+
+  const save = async () => {
+    if (!f.title.trim()) { toast.error("Title required"); return; }
+    if (!f.price_per_day) { toast.error("Price per day required"); return; }
+
+    let custom_penalties: any[] = [];
+    try { custom_penalties = f.custom_penalties ? JSON.parse(f.custom_penalties) : []; }
+    catch { toast.error("Custom penalties must be valid JSON"); return; }
+
+    setSaving(true);
+    const payload: any = {
+      owner_user_id: userId,
+      title: f.title.trim(),
+      make: f.make || null,
+      model: f.model || null,
+      year: f.year ? Number(f.year) : null,
+      vehicle_class: f.vehicle_class,
+      transmission: f.transmission,
+      fuel: f.fuel,
+      seats: Number(f.seats) || 5,
+      cover: f.cover || null,
+      description: f.description || null,
+      price_per_day: Number(f.price_per_day),
+      price_per_week: f.price_per_week ? Number(f.price_per_week) : null,
+      price_per_month: f.price_per_month ? Number(f.price_per_month) : null,
+      weekend_surcharge_pct: f.weekend_surcharge_pct ? Number(f.weekend_surcharge_pct) : null,
+      deposit: Number(f.deposit) || 0,
+      free_km_per_day: Number(f.free_km_per_day) || 0,
+      unlimited_km: f.unlimited_km,
+      extra_km_fee: f.extra_km_fee ? Number(f.extra_km_fee) : null,
+      min_age: Number(f.min_age) || 21,
+      max_age: f.max_age ? Number(f.max_age) : null,
+      min_license_years: Number(f.min_license_years) || 1,
+      young_driver_age_threshold: f.young_driver_age_threshold ? Number(f.young_driver_age_threshold) : null,
+      young_driver_fee: f.young_driver_fee ? Number(f.young_driver_fee) : null,
+      international_license_ok: f.international_license_ok,
+      cross_border_allowed: f.cross_border_allowed,
+      cross_border_fee: f.cross_border_fee ? Number(f.cross_border_fee) : null,
+      cross_border_countries: splitList(f.cross_border_countries),
+      required_documents: splitList(f.required_documents),
+      min_rental_days: Number(f.min_rental_days) || 1,
+      max_rental_days: f.max_rental_days ? Number(f.max_rental_days) : null,
+      advance_booking_hours: Number(f.advance_booking_hours) || 0,
+      pickup_locations: splitList(f.pickup_locations),
+      delivery_available: f.delivery_available,
+      delivery_fee: f.delivery_fee ? Number(f.delivery_fee) : null,
+      fuel_policy: f.fuel_policy,
+      smoking_allowed: f.smoking_allowed,
+      pets_allowed: f.pets_allowed,
+      late_return_fee_per_hour: f.late_return_fee_per_hour ? Number(f.late_return_fee_per_hour) : null,
+      cleaning_fee: f.cleaning_fee ? Number(f.cleaning_fee) : null,
+      smoking_penalty: f.smoking_penalty ? Number(f.smoking_penalty) : null,
+      pet_penalty: f.pet_penalty ? Number(f.pet_penalty) : null,
+      damage_excess: f.damage_excess ? Number(f.damage_excess) : null,
+      cancellation_policy: f.cancellation_policy,
+      cancellation_fee: f.cancellation_fee ? Number(f.cancellation_fee) : null,
+      custom_rules: splitList(f.custom_rules),
+      custom_penalties,
+      insurance_included: f.insurance_included,
+      insurance_provider: f.insurance_provider || null,
+      features: splitList(f.features),
+      city: f.city || null,
+      country: f.country || null,
+      contact_phone: f.contact_phone || null,
+      contact_whatsapp: f.contact_whatsapp || null,
+    };
+    const res = initial?.id
+      ? await supabase.from("car_rentals").update(payload).eq("id", initial.id)
+      : await supabase.from("car_rentals").insert(payload);
+    setSaving(false);
+    if (res.error) { toast.error(res.error.message); return; }
+    toast.success("Saved"); onSaved();
+  };
+
+  return (
+    <FormSheet title={initial ? "Edit car rental" : "List a car for rent"} onClose={onClose}>
+      <ImageUpload value={f.cover} onChange={(v) => setF({ ...f, cover: v })} label="Cover photo" />
+
+      <SectionHeader>Vehicle</SectionHeader>
+      <LabeledInput label="Listing title" value={f.title} onChange={(v) => setF({ ...f, title: v })} />
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Make" value={f.make} onChange={(v) => setF({ ...f, make: v })} />
+        <LabeledInput label="Model" value={f.model} onChange={(v) => setF({ ...f, model: v })} />
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <LabeledInput label="Year" type="number" value={f.year} onChange={(v) => setF({ ...f, year: v })} />
+        <LabeledInput label="Seats" type="number" value={f.seats} onChange={(v) => setF({ ...f, seats: v })} />
+        <LabeledSelect label="Class" value={f.vehicle_class} onChange={(v) => setF({ ...f, vehicle_class: v })}
+          options={["economy","compact","suv","luxury","exotic","van","bakkie","ev"]} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledSelect label="Transmission" value={f.transmission} onChange={(v) => setF({ ...f, transmission: v })} options={["automatic","manual"]} />
+        <LabeledSelect label="Fuel" value={f.fuel} onChange={(v) => setF({ ...f, fuel: v })} options={["petrol","diesel","hybrid","electric"]} />
+      </div>
+      <LabeledInput label="Features (comma-separated)" value={f.features} onChange={(v) => setF({ ...f, features: v })} />
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Description</label>
+        <textarea value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} rows={3} className="w-full rounded-xl border bg-background p-3 text-sm mt-1" />
+      </div>
+
+      <SectionHeader>Pricing</SectionHeader>
+      <div className="grid grid-cols-3 gap-2">
+        <LabeledInput label="$/day *" type="number" value={f.price_per_day} onChange={(v) => setF({ ...f, price_per_day: v })} />
+        <LabeledInput label="$/week" type="number" value={f.price_per_week} onChange={(v) => setF({ ...f, price_per_week: v })} />
+        <LabeledInput label="$/month" type="number" value={f.price_per_month} onChange={(v) => setF({ ...f, price_per_month: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Weekend surcharge %" type="number" value={f.weekend_surcharge_pct} onChange={(v) => setF({ ...f, weekend_surcharge_pct: v })} />
+        <LabeledInput label="Refundable deposit" type="number" value={f.deposit} onChange={(v) => setF({ ...f, deposit: v })} />
+      </div>
+
+      <SectionHeader>Mileage policy</SectionHeader>
+      <ToggleField label="Unlimited km" value={f.unlimited_km} onChange={(v) => setF({ ...f, unlimited_km: v })} />
+      {!f.unlimited_km && (
+        <div className="grid grid-cols-2 gap-2">
+          <LabeledInput label="Free km / day" type="number" value={f.free_km_per_day} onChange={(v) => setF({ ...f, free_km_per_day: v })} />
+          <LabeledInput label="Extra km fee ($)" type="number" value={f.extra_km_fee} onChange={(v) => setF({ ...f, extra_km_fee: v })} />
+        </div>
+      )}
+
+      <SectionHeader>Eligibility</SectionHeader>
+      <div className="grid grid-cols-3 gap-2">
+        <LabeledInput label="Min age" type="number" value={f.min_age} onChange={(v) => setF({ ...f, min_age: v })} />
+        <LabeledInput label="Max age" type="number" value={f.max_age} onChange={(v) => setF({ ...f, max_age: v })} />
+        <LabeledInput label="License (yrs)" type="number" value={f.min_license_years} onChange={(v) => setF({ ...f, min_license_years: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Young driver age <" type="number" value={f.young_driver_age_threshold} onChange={(v) => setF({ ...f, young_driver_age_threshold: v })} />
+        <LabeledInput label="Young driver fee/day" type="number" value={f.young_driver_fee} onChange={(v) => setF({ ...f, young_driver_fee: v })} />
+      </div>
+      <LabeledInput label="Required docs (comma)" value={f.required_documents} onChange={(v) => setF({ ...f, required_documents: v })} />
+      <ToggleField label="International license accepted" value={f.international_license_ok} onChange={(v) => setF({ ...f, international_license_ok: v })} />
+      <ToggleField label="Cross-border driving allowed" value={f.cross_border_allowed} onChange={(v) => setF({ ...f, cross_border_allowed: v })} />
+      {f.cross_border_allowed && (
+        <div className="grid grid-cols-2 gap-2">
+          <LabeledInput label="Cross-border fee" type="number" value={f.cross_border_fee} onChange={(v) => setF({ ...f, cross_border_fee: v })} />
+          <LabeledInput label="Allowed countries (comma)" value={f.cross_border_countries} onChange={(v) => setF({ ...f, cross_border_countries: v })} />
+        </div>
+      )}
+
+      <SectionHeader>Booking & pickup</SectionHeader>
+      <div className="grid grid-cols-3 gap-2">
+        <LabeledInput label="Min days" type="number" value={f.min_rental_days} onChange={(v) => setF({ ...f, min_rental_days: v })} />
+        <LabeledInput label="Max days" type="number" value={f.max_rental_days} onChange={(v) => setF({ ...f, max_rental_days: v })} />
+        <LabeledInput label="Notice (hrs)" type="number" value={f.advance_booking_hours} onChange={(v) => setF({ ...f, advance_booking_hours: v })} />
+      </div>
+      <LabeledInput label="Pickup locations (comma)" value={f.pickup_locations} onChange={(v) => setF({ ...f, pickup_locations: v })} />
+      <LabeledSelect label="Fuel policy" value={f.fuel_policy} onChange={(v) => setF({ ...f, fuel_policy: v })} options={["full_to_full","prepaid","same_level"]} />
+      <ToggleField label="Delivery available" value={f.delivery_available} onChange={(v) => setF({ ...f, delivery_available: v })} />
+      {f.delivery_available && (
+        <LabeledInput label="Delivery fee" type="number" value={f.delivery_fee} onChange={(v) => setF({ ...f, delivery_fee: v })} />
+      )}
+
+      <SectionHeader>Rules & penalties</SectionHeader>
+      <div className="grid grid-cols-2 gap-2">
+        <ToggleField label="Smoking allowed" value={f.smoking_allowed} onChange={(v) => setF({ ...f, smoking_allowed: v })} />
+        <ToggleField label="Pets allowed" value={f.pets_allowed} onChange={(v) => setF({ ...f, pets_allowed: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Smoking penalty" type="number" value={f.smoking_penalty} onChange={(v) => setF({ ...f, smoking_penalty: v })} />
+        <LabeledInput label="Pet penalty" type="number" value={f.pet_penalty} onChange={(v) => setF({ ...f, pet_penalty: v })} />
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <LabeledInput label="Late return $/hr" type="number" value={f.late_return_fee_per_hour} onChange={(v) => setF({ ...f, late_return_fee_per_hour: v })} />
+        <LabeledInput label="Cleaning fee" type="number" value={f.cleaning_fee} onChange={(v) => setF({ ...f, cleaning_fee: v })} />
+        <LabeledInput label="Damage excess" type="number" value={f.damage_excess} onChange={(v) => setF({ ...f, damage_excess: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledSelect label="Cancellation" value={f.cancellation_policy} onChange={(v) => setF({ ...f, cancellation_policy: v })} options={["flexible","moderate","strict"]} />
+        <LabeledInput label="Cancel fee" type="number" value={f.cancellation_fee} onChange={(v) => setF({ ...f, cancellation_fee: v })} />
+      </div>
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Custom rules (one per line)</label>
+        <textarea value={f.custom_rules} onChange={(e) => setF({ ...f, custom_rules: e.target.value })} rows={3} placeholder={"No off-road driving\nReturn with empty boot"} className="w-full rounded-xl border bg-background p-3 text-sm mt-1" />
+      </div>
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Custom penalties (JSON)</label>
+        <textarea value={f.custom_penalties} onChange={(e) => setF({ ...f, custom_penalties: e.target.value })} rows={2} placeholder='[{"label":"Lost key","amount":150}]' className="w-full rounded-xl border bg-background p-3 text-xs font-mono mt-1" />
+      </div>
+
+      <SectionHeader>Insurance & contact</SectionHeader>
+      <ToggleField label="Insurance included" value={f.insurance_included} onChange={(v) => setF({ ...f, insurance_included: v })} />
+      <LabeledInput label="Insurance provider" value={f.insurance_provider} onChange={(v) => setF({ ...f, insurance_provider: v })} />
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="City" value={f.city} onChange={(v) => setF({ ...f, city: v })} />
+        <LabeledInput label="Country" value={f.country} onChange={(v) => setF({ ...f, country: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Phone" value={f.contact_phone} onChange={(v) => setF({ ...f, contact_phone: v })} />
+        <LabeledInput label="WhatsApp" value={f.contact_whatsapp} onChange={(v) => setF({ ...f, contact_whatsapp: v })} />
+      </div>
+
+      <Button onClick={save} disabled={saving} className="w-full h-11 mt-2">{saving ? "Saving…" : "Save listing"}</Button>
+    </FormSheet>
+  );
+}
+
+function SectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="pt-2 -mx-1 sticky">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-foreground/70 border-b pb-1">{children}</p>
+    </div>
+  );
+}
+
+function LabeledSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: string[] }) {
+  return (
+    <div>
+      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</label>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1">
+        {options.map((o) => <option key={o} value={o}>{o.replace(/_/g, " ")}</option>)}
+      </select>
+    </div>
+  );
+}
+
+function ToggleField({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="flex items-center justify-between border rounded-xl px-3 py-2.5 cursor-pointer">
+      <span className="text-sm font-medium">{label}</span>
+      <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} className="w-4 h-4" />
+    </label>
   );
 }

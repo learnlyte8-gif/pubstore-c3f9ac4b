@@ -225,3 +225,119 @@ export const PROPERTY_KINDS = [
   { slug: "land", label: "Land" },
   { slug: "commercial", label: "Commercial" },
 ];
+
+// =================== CAR RENTALS ===================
+export type CarRental = {
+  id: string;
+  owner_user_id: string;
+  title: string;
+  make: string | null;
+  model: string | null;
+  year: number | null;
+  vehicle_class: string;
+  body_type: string | null;
+  transmission: string;
+  fuel: string;
+  seats: number;
+  doors: number | null;
+  luggage: number | null;
+  ac: boolean;
+  features: string[];
+  cover: string | null;
+  gallery: string[];
+  description: string | null;
+  price_per_day: number;
+  price_per_week: number | null;
+  price_per_month: number | null;
+  weekend_surcharge_pct: number | null;
+  currency: string;
+  deposit: number;
+  free_km_per_day: number;
+  unlimited_km: boolean;
+  extra_km_fee: number | null;
+  min_age: number;
+  max_age: number | null;
+  min_license_years: number;
+  young_driver_fee: number | null;
+  young_driver_age_threshold: number | null;
+  required_documents: string[];
+  international_license_ok: boolean;
+  cross_border_allowed: boolean;
+  cross_border_fee: number | null;
+  cross_border_countries: string[];
+  min_rental_days: number;
+  max_rental_days: number | null;
+  advance_booking_hours: number;
+  pickup_locations: string[];
+  delivery_available: boolean;
+  delivery_fee: number | null;
+  fuel_policy: string;
+  smoking_allowed: boolean;
+  pets_allowed: boolean;
+  late_return_fee_per_hour: number | null;
+  cleaning_fee: number | null;
+  smoking_penalty: number | null;
+  pet_penalty: number | null;
+  damage_excess: number | null;
+  cancellation_policy: string;
+  cancellation_fee: number | null;
+  custom_rules: string[];
+  custom_penalties: { label: string; amount: number; currency?: string }[];
+  insurance_included: boolean;
+  insurance_provider: string | null;
+  insurance_options: { label: string; price_per_day: number }[];
+  city: string | null;
+  country: string | null;
+  address: string | null;
+  contact_phone: string | null;
+  contact_whatsapp: string | null;
+  contact_email: string | null;
+  rating: number;
+  trips_completed: number;
+  active: boolean;
+  featured: boolean;
+  verified: boolean;
+};
+
+export async function fetchCarRentals(opts: { vehicle_class?: string; limit?: number } = {}): Promise<CarRental[]> {
+  let q = supabase.from("car_rentals").select("*").eq("active", true)
+    .order("featured", { ascending: false })
+    .order("rating", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (opts.vehicle_class) q = q.eq("vehicle_class", opts.vehicle_class);
+  if (opts.limit) q = q.limit(opts.limit);
+  const { data } = await q;
+  return (data ?? []) as unknown as CarRental[];
+}
+
+export async function fetchCarRental(id: string): Promise<CarRental | null> {
+  const { data } = await supabase.from("car_rentals").select("*").eq("id", id).maybeSingle();
+  return (data as unknown as CarRental) ?? null;
+}
+
+export const CAR_RENTAL_CLASSES = [
+  { slug: "economy", label: "Economy" },
+  { slug: "compact", label: "Compact" },
+  { slug: "suv", label: "SUV" },
+  { slug: "luxury", label: "Luxury" },
+  { slug: "exotic", label: "Exotic" },
+  { slug: "van", label: "Van / minibus" },
+  { slug: "bakkie", label: "Bakkie / pickup" },
+  { slug: "ev", label: "Electric" },
+];
+
+export const CAR_RENTAL_DOCS = [
+  { slug: "national_id", label: "National ID" },
+  { slug: "drivers_license", label: "Driver's license" },
+  { slug: "passport", label: "Passport" },
+  { slug: "international_permit", label: "International driving permit" },
+  { slug: "proof_of_address", label: "Proof of address" },
+  { slug: "credit_card", label: "Credit card (deposit hold)" },
+  { slug: "second_id", label: "Secondary ID" },
+];
+
+export const CAR_RENTAL_FEATURES = [
+  "Bluetooth", "Apple CarPlay", "Android Auto", "GPS", "Reverse camera", "Sunroof",
+  "Leather seats", "Heated seats", "Cruise control", "Tow bar", "Roof rack",
+  "Child seat available", "Dashcam", "4x4", "Spare tire", "First aid kit",
+];

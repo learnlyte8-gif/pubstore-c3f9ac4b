@@ -237,6 +237,7 @@ export default function MyStore() {
           <Row icon={HomeIcon} label="Real estate" hint="Rent or sell apartments, houses, land" to="/store/services/properties" />
           <Row icon={Truck} label="Delivery / courier" hint="Take last-mile, freight bids" to="/store/services/logistics" />
           <Row icon={Banknote} label="Finance products" hint="Loans, vehicle financing, insurance" to="/store/services/finance" />
+          <Row icon={Car} label="Car rentals" hint="Self-drive listings, mileage, rules & penalties" to="/store/services/car-rentals" />
           {canImport && <Row icon={Newspaper} label="News & editorial" hint="Publish articles · admin" to="/store/services/news" />}
         </Section>
 

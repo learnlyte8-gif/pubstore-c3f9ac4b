@@ -65,6 +65,315 @@ export type Database = {
         }
         Relationships: []
       }
+      car_rental_bookings: {
+        Row: {
+          created_at: string
+          cross_border: boolean
+          cross_border_destination: string | null
+          currency: string
+          delivery_requested: boolean
+          dropoff_location: string | null
+          estimated_total: number | null
+          expected_km: number | null
+          id: string
+          license_years: number | null
+          notes: string | null
+          pickup_at: string
+          pickup_location: string | null
+          rental_id: string
+          renter_age: number | null
+          renter_email: string | null
+          renter_id: string
+          renter_name: string | null
+          renter_phone: string | null
+          return_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cross_border?: boolean
+          cross_border_destination?: string | null
+          currency?: string
+          delivery_requested?: boolean
+          dropoff_location?: string | null
+          estimated_total?: number | null
+          expected_km?: number | null
+          id?: string
+          license_years?: number | null
+          notes?: string | null
+          pickup_at: string
+          pickup_location?: string | null
+          rental_id: string
+          renter_age?: number | null
+          renter_email?: string | null
+          renter_id: string
+          renter_name?: string | null
+          renter_phone?: string | null
+          return_at: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cross_border?: boolean
+          cross_border_destination?: string | null
+          currency?: string
+          delivery_requested?: boolean
+          dropoff_location?: string | null
+          estimated_total?: number | null
+          expected_km?: number | null
+          id?: string
+          license_years?: number | null
+          notes?: string | null
+          pickup_at?: string
+          pickup_location?: string | null
+          rental_id?: string
+          renter_age?: number | null
+          renter_email?: string | null
+          renter_id?: string
+          renter_name?: string | null
+          renter_phone?: string | null
+          return_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      car_rentals: {
+        Row: {
+          ac: boolean
+          active: boolean
+          address: string | null
+          advance_booking_hours: number
+          body_type: string | null
+          cancellation_fee: number | null
+          cancellation_policy: string
+          city: string | null
+          cleaning_fee: number | null
+          contact_email: string | null
+          contact_phone: string | null
+          contact_whatsapp: string | null
+          country: string | null
+          cover: string | null
+          created_at: string
+          cross_border_allowed: boolean
+          cross_border_countries: string[]
+          cross_border_fee: number | null
+          currency: string
+          custom_penalties: Json
+          custom_rules: string[]
+          damage_excess: number | null
+          delivery_available: boolean
+          delivery_fee: number | null
+          deposit: number
+          description: string | null
+          doors: number | null
+          extra_km_fee: number | null
+          featured: boolean
+          features: string[]
+          free_km_per_day: number
+          fuel: string
+          fuel_policy: string
+          gallery: string[]
+          id: string
+          insurance_included: boolean
+          insurance_options: Json
+          insurance_provider: string | null
+          international_license_ok: boolean
+          lat: number | null
+          late_return_fee_per_hour: number | null
+          lng: number | null
+          luggage: number | null
+          make: string | null
+          max_age: number | null
+          max_rental_days: number | null
+          min_age: number
+          min_license_years: number
+          min_rental_days: number
+          model: string | null
+          owner_user_id: string
+          pet_penalty: number | null
+          pets_allowed: boolean
+          pickup_locations: string[]
+          price_per_day: number
+          price_per_month: number | null
+          price_per_week: number | null
+          rating: number
+          required_documents: string[]
+          seats: number
+          smoking_allowed: boolean
+          smoking_penalty: number | null
+          supplier_id: string | null
+          title: string
+          transmission: string
+          trips_completed: number
+          unlimited_km: boolean
+          updated_at: string
+          vehicle_class: string
+          verified: boolean
+          views: number
+          weekend_surcharge_pct: number | null
+          year: number | null
+          young_driver_age_threshold: number | null
+          young_driver_fee: number | null
+        }
+        Insert: {
+          ac?: boolean
+          active?: boolean
+          address?: string | null
+          advance_booking_hours?: number
+          body_type?: string | null
+          cancellation_fee?: number | null
+          cancellation_policy?: string
+          city?: string | null
+          cleaning_fee?: number | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          contact_whatsapp?: string | null
+          country?: string | null
+          cover?: string | null
+          created_at?: string
+          cross_border_allowed?: boolean
+          cross_border_countries?: string[]
+          cross_border_fee?: number | null
+          currency?: string
+          custom_penalties?: Json
+          custom_rules?: string[]
+          damage_excess?: number | null
+          delivery_available?: boolean
+          delivery_fee?: number | null
+          deposit?: number
+          description?: string | null
+          doors?: number | null
+          extra_km_fee?: number | null
+          featured?: boolean
+          features?: string[]
+          free_km_per_day?: number
+          fuel?: string
+          fuel_policy?: string
+          gallery?: string[]
+          id?: string
+          insurance_included?: boolean
+          insurance_options?: Json
+          insurance_provider?: string | null
+          international_license_ok?: boolean
+          lat?: number | null
+          late_return_fee_per_hour?: number | null
+          lng?: number | null
+          luggage?: number | null
+          make?: string | null
+          max_age?: number | null
+          max_rental_days?: number | null
+          min_age?: number
+          min_license_years?: number
+          min_rental_days?: number
+          model?: string | null
+          owner_user_id: string
+          pet_penalty?: number | null
+          pets_allowed?: boolean
+          pickup_locations?: string[]
+          price_per_day: number
+          price_per_month?: number | null
+          price_per_week?: number | null
+          rating?: number
+          required_documents?: string[]
+          seats?: number
+          smoking_allowed?: boolean
+          smoking_penalty?: number | null
+          supplier_id?: string | null
+          title: string
+          transmission?: string
+          trips_completed?: number
+          unlimited_km?: boolean
+          updated_at?: string
+          vehicle_class?: string
+          verified?: boolean
+          views?: number
+          weekend_surcharge_pct?: number | null
+          year?: number | null
+          young_driver_age_threshold?: number | null
+          young_driver_fee?: number | null
+        }
+        Update: {
+          ac?: boolean
+          active?: boolean
+          address?: string | null
+          advance_booking_hours?: number
+          body_type?: string | null
+          cancellation_fee?: number | null
+          cancellation_policy?: string
+          city?: string | null
+          cleaning_fee?: number | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          contact_whatsapp?: string | null
+          country?: string | null
+          cover?: string | null
+          created_at?: string
+          cross_border_allowed?: boolean
+          cross_border_countries?: string[]
+          cross_border_fee?: number | null
+          currency?: string
+          custom_penalties?: Json
+          custom_rules?: string[]
+          damage_excess?: number | null
+          delivery_available?: boolean
+          delivery_fee?: number | null
+          deposit?: number
+          description?: string | null
+          doors?: number | null
+          extra_km_fee?: number | null
+          featured?: boolean
+          features?: string[]
+          free_km_per_day?: number
+          fuel?: string
+          fuel_policy?: string
+          gallery?: string[]
+          id?: string
+          insurance_included?: boolean
+          insurance_options?: Json
+          insurance_provider?: string | null
+          international_license_ok?: boolean
+          lat?: number | null
+          late_return_fee_per_hour?: number | null
+          lng?: number | null
+          luggage?: number | null
+          make?: string | null
+          max_age?: number | null
+          max_rental_days?: number | null
+          min_age?: number
+          min_license_years?: number
+          min_rental_days?: number
+          model?: string | null
+          owner_user_id?: string
+          pet_penalty?: number | null
+          pets_allowed?: boolean
+          pickup_locations?: string[]
+          price_per_day?: number
+          price_per_month?: number | null
+          price_per_week?: number | null
+          rating?: number
+          required_documents?: string[]
+          seats?: number
+          smoking_allowed?: boolean
+          smoking_penalty?: number | null
+          supplier_id?: string | null
+          title?: string
+          transmission?: string
+          trips_completed?: number
+          unlimited_km?: boolean
+          updated_at?: string
+          vehicle_class?: string
+          verified?: boolean
+          views?: number
+          weekend_surcharge_pct?: number | null
+          year?: number | null
+          young_driver_age_threshold?: number | null
+          young_driver_fee?: number | null
+        }
+        Relationships: []
+      }
       cart_items: {
         Row: {
           created_at: string

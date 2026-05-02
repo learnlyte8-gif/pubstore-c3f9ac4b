@@ -29,6 +29,7 @@ import IndustrialRail from "@/components/marketplace/IndustrialRail";
 import ServicesRail from "@/components/marketplace/ServicesRail";
 import PropertiesRail from "@/components/marketplace/PropertiesRail";
 import FinanceRail from "@/components/marketplace/FinanceRail";
+import CarRentalsRail from "@/components/marketplace/CarRentalsRail";
 import TapsonAssistant from "@/components/TapsonAssistant";
 import EmptyState from "@/components/EmptyState";
 import SupplierCard from "@/components/marketplace/SupplierCard";
@@ -225,6 +226,8 @@ const Home = () => {
               <AutoRail />
 
               <ServicesRail />
+
+              <CarRentalsRail />
 
               <PropertiesRail />
 
