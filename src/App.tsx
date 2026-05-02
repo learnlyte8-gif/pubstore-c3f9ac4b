@@ -62,7 +62,29 @@ const App = () => (
         <ImportJobProvider>
         <TooltipProvider>
           <Toaster />
-          <Sonner />
+          <Sonner
+            position="top-center"
+            richColors
+            closeButton
+            expand={false}
+            visibleToasts={3}
+            offset={12}
+            toastOptions={{
+              duration: 3500,
+              classNames: {
+                toast:
+                  "group toast !rounded-2xl !border !border-border/60 !bg-background/85 !backdrop-blur-xl !text-foreground !shadow-[0_10px_30px_-8px_hsl(0_0%_0%/0.25)] !px-4 !py-3 !gap-3 animate-in slide-in-from-top-2 fade-in",
+                title: "!text-[14px] !font-semibold !leading-tight",
+                description: "!text-[12.5px] !text-muted-foreground !leading-snug",
+                actionButton:
+                  "!bg-primary !text-primary-foreground !rounded-full !px-3 !py-1.5 !text-xs !font-semibold",
+                cancelButton:
+                  "!bg-muted !text-muted-foreground !rounded-full !px-3 !py-1.5 !text-xs",
+                closeButton:
+                  "!bg-background !border-border/60 !text-muted-foreground hover:!text-foreground",
+              },
+            }}
+          />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Splash />} />
