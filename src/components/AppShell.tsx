@@ -93,21 +93,19 @@ export default function AppShell() {
         <Outlet />
       </main>
 
-      {/* Bottom tab bar — frosted, fixed, no shake. */}
+      {/* Bottom tab bar — solid, fixed, no blur, 3D icons */}
       <nav
-        className="fixed bottom-0 inset-x-0 z-40 lg:hidden pointer-events-none"
+        className="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-background border-t border-border/70 safe-bottom shadow-[0_-6px_18px_-8px_hsl(0_0%_0%/0.18)]"
         aria-label="Primary"
       >
-        <div className="pointer-events-auto bg-background/85 backdrop-blur-xl border-t border-border/60 safe-bottom">
-          <ul className="max-w-2xl mx-auto h-[58px] px-1.5 flex items-stretch justify-around">
-            <TabItem to="/home" icon={Home} label="Home" />
-            <TabItem to="/categories" icon={LayoutGrid} label="Shop" />
-            <TabItem to="/rides" icon={Navigation} label="Rides" />
-            <TabItem to="/messages" icon={MessageCircle} label="Chat" badge={chatsWithUnread} />
-            <TabItem to="/wishlist" icon={Heart} label="Saved" badge={wishlist.length} />
-            <TabItem to="/profile" icon={User} label="You" />
-          </ul>
-        </div>
+        <ul className="max-w-2xl mx-auto h-[60px] px-1 flex items-stretch justify-around">
+          <TabItem to="/home" icon={Home} label="Home" />
+          <TabItem to="/categories" icon={LayoutGrid} label="Shop" />
+          <TabItem to="/rides" icon={Navigation} label="Rides" />
+          <TabItem to="/messages" icon={MessageCircle} label="Chat" badge={chatsWithUnread} />
+          <TabItem to="/wishlist" icon={Heart} label="Saved" badge={wishlist.length} />
+          <TabItem to="/profile" icon={User} label="You" />
+        </ul>
       </nav>
 
       <LiveActivityToaster />
