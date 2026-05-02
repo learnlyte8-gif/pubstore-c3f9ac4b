@@ -10,7 +10,6 @@ import InstallPrompt from "@/components/InstallPrompt";
 import BannerAd from "@/components/marketplace/BannerAd";
 import ImportProgressBanner from "@/components/ImportProgressBanner";
 import { useUnreadChats } from "@/hooks/useUnreadChats";
-import { useHideOnScroll } from "@/hooks/useScrollDirection";
 import logo from "@/assets/pubstore-logo.png";
 
 export default function AppShell() {
@@ -18,7 +17,6 @@ export default function AppShell() {
   const [unreadNotifs, setUnreadNotifs] = useState(0);
   const { cartCount, wishlist } = useShop();
   const { chatsWithUnread } = useUnreadChats();
-  const navHidden = useHideOnScroll();
 
   useEffect(() => {
     if (!session?.user?.id) {
@@ -51,38 +49,38 @@ export default function AppShell() {
   }, []);
 
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground flex flex-col">
-      {/* Top bar */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border safe-top shadow-soft">
-        <div className="max-w-2xl mx-auto h-14 px-4 flex items-center gap-3">
-          <Link to="/home" className="flex items-center gap-2 shrink-0">
-            <img src={logo} alt="" width={28} height={28} className="w-7 h-7" />
-            <span className="font-brand text-xl tracking-wide hidden sm:inline">PUBSTORE</span>
+    <div className="min-h-[100dvh] bg-background text-foreground flex flex-col overflow-x-hidden">
+      {/* Top bar — compact, frosted */}
+      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/60 safe-top">
+        <div className="max-w-2xl mx-auto h-12 px-3 flex items-center gap-2">
+          <Link to="/home" className="flex items-center gap-2 shrink-0 active:scale-95 transition-transform">
+            <img src={logo} alt="" width={26} height={26} className="w-[26px] h-[26px]" />
+            <span className="font-brand text-lg tracking-wide hidden sm:inline">PUBSTORE</span>
           </Link>
 
           <Link
             to="/search"
-            className="flex-1 h-9 rounded-full bg-muted hover:bg-muted/80 transition flex items-center gap-2 px-4 text-sm text-muted-foreground shadow-soft min-w-0"
+            className="flex-1 h-8 rounded-full bg-muted/70 active:bg-muted transition flex items-center gap-2 px-3.5 text-sm text-muted-foreground min-w-0"
             aria-label="Search products"
           >
-            <Search className="w-4 h-4 shrink-0" strokeWidth={2} />
-            <span className="text-xs sm:text-sm shrink-0">Try</span>
-            <RotatingHint className="text-xs sm:text-sm font-medium text-foreground/80 truncate" />
+            <Search className="w-4 h-4 shrink-0" strokeWidth={2.2} />
+            <span className="text-xs shrink-0">Try</span>
+            <RotatingHint className="text-xs font-medium text-foreground/80 truncate" />
           </Link>
 
-          <div className="flex items-center gap-1 shrink-0">
-            <Link to="/notifications" aria-label="Notifications" className="relative p-2 rounded-full hover:bg-muted transition">
-              <Bell className="w-5 h-5" strokeWidth={1.8} />
+          <div className="flex items-center gap-0.5 shrink-0">
+            <Link to="/notifications" aria-label="Notifications" className="relative p-2 rounded-full active:scale-90 active:bg-muted transition">
+              <Bell className="w-[22px] h-[22px]" strokeWidth={1.8} />
               {unreadNotifs > 0 && (
-                <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center shadow-soft">
+                <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-background">
                   {unreadNotifs > 99 ? "99+" : unreadNotifs}
                 </span>
               )}
             </Link>
-            <Link to="/cart" aria-label="Cart" className="relative p-2 rounded-full hover:bg-muted transition">
-              <ShoppingCart className="w-5 h-5" strokeWidth={1.8} />
+            <Link to="/cart" aria-label="Cart" className="relative p-2 rounded-full active:scale-90 active:bg-muted transition">
+              <ShoppingCart className="w-[22px] h-[22px]" strokeWidth={1.8} />
               {cartCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center shadow-soft">
+                <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-background">
                   {cartCount > 99 ? "99+" : cartCount}
                 </span>
               )}
@@ -91,24 +89,25 @@ export default function AppShell() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-2xl w-full mx-auto pb-20 lg:pb-4">
+      <main className="flex-1 max-w-2xl w-full mx-auto pb-[calc(env(safe-area-inset-bottom)+76px)] lg:pb-4">
         <Outlet />
       </main>
 
-      {/* Bottom tab bar */}
+      {/* Bottom tab bar — frosted, fixed, no shake. */}
       <nav
-        className={`fixed bottom-0 inset-x-0 z-40 bg-background border-t border-border safe-bottom lg:hidden shadow-elevated transition-transform duration-300 ${
-          navHidden ? "translate-y-full" : "translate-y-0"
-        }`}
+        className="fixed bottom-0 inset-x-0 z-40 lg:hidden pointer-events-none"
+        aria-label="Primary"
       >
-        <ul className="max-w-2xl mx-auto h-16 px-1 flex items-center justify-around">
-          <TabItem to="/home" icon={Home} label="Home" />
-          <TabItem to="/categories" icon={LayoutGrid} label="Shop" />
-          <TabItem to="/rides" icon={Navigation} label="Rides" />
-          <TabItem to="/messages" icon={MessageCircle} label="Chat" badge={chatsWithUnread} />
-          <TabItem to="/wishlist" icon={Heart} label="Saved" badge={wishlist.length} />
-          <TabItem to="/profile" icon={User} label="Account" />
-        </ul>
+        <div className="pointer-events-auto bg-background/85 backdrop-blur-xl border-t border-border/60 safe-bottom">
+          <ul className="max-w-2xl mx-auto h-[58px] px-1.5 flex items-stretch justify-around">
+            <TabItem to="/home" icon={Home} label="Home" />
+            <TabItem to="/categories" icon={LayoutGrid} label="Shop" />
+            <TabItem to="/rides" icon={Navigation} label="Rides" />
+            <TabItem to="/messages" icon={MessageCircle} label="Chat" badge={chatsWithUnread} />
+            <TabItem to="/wishlist" icon={Heart} label="Saved" badge={wishlist.length} />
+            <TabItem to="/profile" icon={User} label="You" />
+          </ul>
+        </div>
       </nav>
 
       <LiveActivityToaster />
@@ -131,27 +130,36 @@ function TabItem({
   badge?: number;
 }) {
   return (
-    <li className="flex-1">
+    <li className="flex-1 min-w-0">
       <NavLink
         to={to}
-        className={({ isActive }) =>
-          `flex flex-col items-center justify-center gap-0.5 h-14 ${
-            isActive ? "text-primary" : "text-muted-foreground"
-          }`
-        }
+        className="group flex flex-col items-center justify-center gap-0.5 h-full select-none active:scale-[0.92] transition-transform duration-150 will-change-transform"
         aria-label={label}
       >
         {({ isActive }) => (
           <>
-            <span className="relative">
-              <Icon className="w-5 h-5" strokeWidth={isActive ? 2.4 : 1.8} />
+            <span
+              className={`relative flex items-center justify-center h-7 w-12 rounded-full transition-colors duration-200 ${
+                isActive ? "bg-primary/12" : "bg-transparent"
+              }`}
+            >
+              <Icon
+                className={`w-[22px] h-[22px] transition-colors ${
+                  isActive ? "text-primary" : "text-muted-foreground"
+                }`}
+                strokeWidth={isActive ? 2.4 : 1.9}
+              />
               {badge !== undefined && badge > 0 && (
-                <span className="absolute -top-1.5 -right-2 min-w-[16px] h-[16px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center shadow-soft">
+                <span className="absolute -top-0.5 right-1.5 min-w-[15px] h-[15px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-background">
                   {badge > 99 ? "99+" : badge}
                 </span>
               )}
             </span>
-            <span className={`text-[10px] ${isActive ? "font-semibold" : "font-medium"}`}>
+            <span
+              className={`text-[10px] leading-none tracking-tight transition-colors ${
+                isActive ? "text-primary font-semibold" : "text-muted-foreground font-medium"
+              }`}
+            >
               {label}
             </span>
           </>
