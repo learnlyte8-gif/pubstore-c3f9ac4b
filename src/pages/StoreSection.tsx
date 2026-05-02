@@ -34,6 +34,7 @@ const titles: Record<string, { title: string; sub: string }> = {
   "services/properties": { title: "My properties", sub: "Real estate listings" },
   "services/logistics": { title: "Courier mode", sub: "Bid on delivery requests" },
   "services/finance": { title: "Finance products", sub: "Loans, insurance, financing" },
+  "services/car-rentals": { title: "Car rentals", sub: "Self-drive listings, rules & penalties" },
 };
 
 export default function StoreSection() {
@@ -73,6 +74,7 @@ export default function StoreSection() {
       {key === "services/properties" && <PropertyServiceView />}
       {key === "services/logistics" && <CourierServiceView />}
       {key === "services/finance" && <FinanceServiceView />}
+      {key === "services/car-rentals" && <CarRentalServiceView />}
     </div>
   );
 }
