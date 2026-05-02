@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { ShoppingBag, Sparkles, Flame, BedDouble, Car, Factory, Newspaper, Radio, Crown, Navigation, Wrench, Home as HomeIcon, Truck, Banknote } from "lucide-react";
+import { ShoppingBag, Sparkles, Flame, BedDouble, Car, Factory, Newspaper, Radio, Crown, Navigation, Wrench, Home as HomeIcon, Truck, Banknote, Key } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type Slide = {
@@ -32,7 +32,7 @@ async function buildSlides(): Promise<Slide[]> {
   const now = new Date().toISOString();
 
   // Run all queries in parallel
-  const [deals, hot, sup, stays, vehicles, industrial, news, lives, services, properties, finance] = await Promise.all([
+  const [deals, hot, sup, stays, vehicles, industrial, news, lives, services, properties, finance, carRentals] = await Promise.all([
     supabase.from("products").select("id,title,image,price,original_price,deal_ends_at").eq("active", true).not("deal_ends_at", "is", null).gt("deal_ends_at", now).order("deal_ends_at", { ascending: true }).limit(2),
     supabase.from("products").select("id,title,image,sold").eq("active", true).order("sold", { ascending: false }).limit(2),
     supabase.from("suppliers").select("id,name,country,banner,gold,verified").or("gold.eq.true,verified.eq.true").order("rating", { ascending: false }).limit(2),
@@ -44,6 +44,7 @@ async function buildSlides(): Promise<Slide[]> {
     supabase.from("service_providers").select("id,display_name,category,cover,hourly_rate,city").eq("active", true).order("rating", { ascending: false }).limit(2),
     supabase.from("properties").select("id,title,city,cover,price,listing_type,price_period").eq("active", true).order("featured", { ascending: false }).limit(2),
     supabase.from("finance_products").select("id,title,kind,cover,interest_rate,provider_name").eq("active", true).order("featured", { ascending: false }).limit(2),
+    supabase.from("car_rentals").select("id,title,make,model,year,vehicle_class,cover,price_per_day,city,unlimited_km").eq("active", true).order("featured", { ascending: false }).order("rating", { ascending: false }).limit(2),
   ]);
 
   let g = 0;
@@ -135,6 +136,26 @@ async function buildSlides(): Promise<Slide[]> {
     subtitle: `${fp.title}${fp.provider_name ? ` · ${fp.provider_name}` : ""}`,
     cta: "Apply now", to: `/finance`, bg: nextG(), image: fp.cover, icon: Banknote,
   }));
+
+  (carRentals.data ?? []).forEach((c: any) => slides.push({
+    key: `car-${c.id}`, kind: "Car rental",
+    title: `$${Number(c.price_per_day).toFixed(0)}/day${c.unlimited_km ? " · ∞ km" : ""}`,
+    subtitle: `${c.year ?? ""} ${c.make ?? ""} ${c.model ?? c.title}${c.city ? ` · ${c.city}` : ""}`.trim(),
+    cta: "Rent now",
+    to: `/car-rentals/${c.id}`,
+    bg: "from-orange-600 via-amber-600 to-yellow-500",
+    image: c.cover, icon: Key,
+  }));
+
+  // Always advertise car rentals (fallback CTA)
+  slides.push({
+    key: "car-rentals-cta", kind: "Drive",
+    title: "Keys in 60 seconds",
+    subtitle: "Self-drive rentals — daily, weekly, monthly.",
+    cta: "Browse fleet", to: "/car-rentals",
+    bg: "from-orange-600 via-amber-600 to-yellow-500",
+    image: null, icon: Key,
+  });
 
   // Always advertise the rides system
   slides.push({
