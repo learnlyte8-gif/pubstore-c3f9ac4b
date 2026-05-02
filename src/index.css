@@ -113,15 +113,33 @@
     @apply border-border;
   }
 
+  html {
+    scrollbar-gutter: stable;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
   html, body, #root {
     height: 100%;
+  }
+
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     overscroll-behavior-y: none;
+    touch-action: manipulation;
+  }
+
+  button, a, [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 }
 
