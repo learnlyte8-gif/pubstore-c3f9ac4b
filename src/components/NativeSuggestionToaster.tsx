@@ -3,6 +3,52 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ShoppingBag, BedDouble, Wrench, Car, Briefcase, Sparkles, ChevronRight } from "lucide-react";
 import logo from "@/assets/pubstore-logo.png";
+import { Capacitor } from "@capacitor/core";
+import { LocalNotifications } from "@capacitor/local-notifications";
+
+const isNative = Capacitor.isNativePlatform?.() ?? false;
+
+let nativePermissionReady: Promise<boolean> | null = null;
+async function ensureNativePermission(): Promise<boolean> {
+  if (!isNative) return false;
+  if (!nativePermissionReady) {
+    nativePermissionReady = (async () => {
+      try {
+        const cur = await LocalNotifications.checkPermissions();
+        if (cur.display === "granted") return true;
+        const req = await LocalNotifications.requestPermissions();
+        return req.display === "granted";
+      } catch {
+        return false;
+      }
+    })();
+  }
+  return nativePermissionReady;
+}
+
+async function showNativeNotification(s: Suggestion) {
+  try {
+    const ok = await ensureNativePermission();
+    if (!ok) return false;
+    const meta = KIND_META[s.kind];
+    await LocalNotifications.schedule({
+      notifications: [
+        {
+          id: Math.floor(Math.random() * 2_000_000_000),
+          title: `PUBSTORE · ${meta.label}`,
+          body: s.subtitle ? `${s.title} — ${s.subtitle}` : s.title,
+          schedule: { at: new Date(Date.now() + 500) },
+          smallIcon: "ic_stat_icon_config_sample",
+          largeIcon: s.image || undefined,
+          extra: { url: s.link },
+        },
+      ],
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 type Suggestion = {
   kind: "product" | "stay" | "service" | "rental" | "job";
@@ -115,28 +161,54 @@ export default function NativeSuggestionToaster() {
   useEffect(() => {
     let mounted = true;
 
+    // Pre-warm native permission so OS-level notifications can show on lock screen.
+    ensureNativePermission();
+
+    // Handle taps on the OS notification → navigate inside the app.
+    let clickHandle: { remove: () => Promise<void> } | null = null;
+    if (isNative) {
+      LocalNotifications.addListener("localNotificationActionPerformed", (e) => {
+        const url = (e.notification?.extra as { url?: string } | undefined)?.url;
+        if (url) navRef.current(url);
+      }).then((h) => { clickHandle = h; }).catch(() => {});
+    }
+
+    const fire = async () => {
+      const s = await pickSuggestion();
+      if (!s) return;
+      // On native, prefer OS-level notification (lock screen + notification center).
+      // Fallback to in-app toast if the app is foregrounded and permission denied.
+      const native = await showNativeNotification(s);
+      if (!native) showSuggestion(s, navRef.current);
+    };
+
     // Welcome ping shortly after mount
     const welcomeTimer = window.setTimeout(async () => {
       if (!mounted) return;
       const s = await pickSuggestion();
-      if (s) showSuggestion(s, navRef.current);
-      else toast("Welcome back to PUBSTORE", {
-        description: "Fresh deals waiting for you",
-        icon: <Sparkles className="w-4 h-4 text-primary" />,
-      });
+      if (s) {
+        const native = await showNativeNotification(s);
+        if (!native) showSuggestion(s, navRef.current);
+      } else {
+        toast("Welcome back to PUBSTORE", {
+          description: "Fresh deals waiting for you",
+          icon: <Sparkles className="w-4 h-4 text-primary" />,
+        });
+      }
     }, 8000);
 
-    // Periodic suggestions every 90-150s while tab is visible
-    const interval = window.setInterval(async () => {
-      if (!mounted || document.hidden) return;
-      const s = await pickSuggestion();
-      if (s) showSuggestion(s, navRef.current);
+    // Periodic suggestions — fire even if tab/app is backgrounded on native
+    const interval = window.setInterval(() => {
+      if (!mounted) return;
+      if (!isNative && document.hidden) return;
+      fire();
     }, 110_000);
 
     return () => {
       mounted = false;
       clearTimeout(welcomeTimer);
       clearInterval(interval);
+      clickHandle?.remove().catch(() => {});
     };
   }, []);
 
