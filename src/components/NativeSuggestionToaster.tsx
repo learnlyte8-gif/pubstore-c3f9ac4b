@@ -161,28 +161,54 @@ export default function NativeSuggestionToaster() {
   useEffect(() => {
     let mounted = true;
 
+    // Pre-warm native permission so OS-level notifications can show on lock screen.
+    ensureNativePermission();
+
+    // Handle taps on the OS notification → navigate inside the app.
+    let clickHandle: { remove: () => Promise<void> } | null = null;
+    if (isNative) {
+      LocalNotifications.addListener("localNotificationActionPerformed", (e) => {
+        const url = (e.notification?.extra as { url?: string } | undefined)?.url;
+        if (url) navRef.current(url);
+      }).then((h) => { clickHandle = h; }).catch(() => {});
+    }
+
+    const fire = async () => {
+      const s = await pickSuggestion();
+      if (!s) return;
+      // On native, prefer OS-level notification (lock screen + notification center).
+      // Fallback to in-app toast if the app is foregrounded and permission denied.
+      const native = await showNativeNotification(s);
+      if (!native) showSuggestion(s, navRef.current);
+    };
+
     // Welcome ping shortly after mount
     const welcomeTimer = window.setTimeout(async () => {
       if (!mounted) return;
       const s = await pickSuggestion();
-      if (s) showSuggestion(s, navRef.current);
-      else toast("Welcome back to PUBSTORE", {
-        description: "Fresh deals waiting for you",
-        icon: <Sparkles className="w-4 h-4 text-primary" />,
-      });
+      if (s) {
+        const native = await showNativeNotification(s);
+        if (!native) showSuggestion(s, navRef.current);
+      } else {
+        toast("Welcome back to PUBSTORE", {
+          description: "Fresh deals waiting for you",
+          icon: <Sparkles className="w-4 h-4 text-primary" />,
+        });
+      }
     }, 8000);
 
-    // Periodic suggestions every 90-150s while tab is visible
-    const interval = window.setInterval(async () => {
-      if (!mounted || document.hidden) return;
-      const s = await pickSuggestion();
-      if (s) showSuggestion(s, navRef.current);
+    // Periodic suggestions — fire even if tab/app is backgrounded on native
+    const interval = window.setInterval(() => {
+      if (!mounted) return;
+      if (!isNative && document.hidden) return;
+      fire();
     }, 110_000);
 
     return () => {
       mounted = false;
       clearTimeout(welcomeTimer);
       clearInterval(interval);
+      clickHandle?.remove().catch(() => {});
     };
   }, []);
 
