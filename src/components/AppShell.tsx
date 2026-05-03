@@ -113,6 +113,7 @@ export default function AppShell() {
       </nav>
 
       <LiveActivityToaster />
+      <NativeSuggestionToaster />
       <BannerAd />
       <ImportProgressBanner />
       <InstallPrompt />
