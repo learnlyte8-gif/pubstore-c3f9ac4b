@@ -59,15 +59,17 @@ export default function AppShell() {
             <span className="font-brand text-lg tracking-wide hidden sm:inline">PUBSTORE</span>
           </Link>
 
-          <Link
-            to="/search"
-            className="flex-1 h-8 rounded-full bg-muted/70 active:bg-muted transition flex items-center gap-2 px-3.5 text-sm text-muted-foreground min-w-0"
-            aria-label="Search products"
-          >
-            <Search className="w-4 h-4 shrink-0" strokeWidth={2.2} />
-            <span className="text-xs shrink-0">Try</span>
-            <RotatingHint className="text-xs font-medium text-foreground/80 truncate" />
-          </Link>
+          <div className="flex-1 flex items-center gap-1.5 min-w-0 h-8 rounded-full bg-muted/70 pr-3.5">
+            <RailDrawer />
+            <Link
+              to="/search"
+              className="flex-1 flex items-center gap-2 min-w-0 active:opacity-70 transition"
+              aria-label="Search products"
+            >
+              <span className="text-xs shrink-0 text-muted-foreground">Try</span>
+              <RotatingHint className="text-xs font-medium text-foreground/80 truncate" />
+            </Link>
+          </div>
 
           <div className="flex items-center gap-0.5 shrink-0">
             <Link to="/notifications" aria-label="Notifications" className="relative p-2 rounded-full active:scale-90 active:bg-muted transition">
