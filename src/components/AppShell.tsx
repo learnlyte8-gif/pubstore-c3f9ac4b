@@ -182,3 +182,97 @@ function TabItem({
     </li>
   );
 }
+
+const RAIL_ITEMS: { to: string; label: string; icon: typeof Home; tone: string }[] = [
+  { to: "/categories", label: "Marketplace", icon: Store, tone: "from-blue-500 to-indigo-600" },
+  { to: "/jobs", label: "Jobs", icon: Briefcase, tone: "from-emerald-500 to-teal-600" },
+  { to: "/rides", label: "Rides", icon: Navigation, tone: "from-orange-500 to-red-600" },
+  { to: "/services", label: "Services", icon: Wrench, tone: "from-purple-500 to-fuchsia-600" },
+  { to: "/properties", label: "Properties", icon: Building2, tone: "from-rose-500 to-pink-600" },
+  { to: "/auto", label: "Auto", icon: Car, tone: "from-slate-600 to-slate-800" },
+  { to: "/car-rentals", label: "Car rentals", icon: Car, tone: "from-cyan-500 to-blue-600" },
+  { to: "/finance", label: "Finance", icon: Landmark, tone: "from-amber-500 to-yellow-600" },
+  { to: "/industrial", label: "Industrial", icon: Factory, tone: "from-zinc-600 to-zinc-800" },
+  { to: "/logistics", label: "Logistics", icon: Truck, tone: "from-lime-500 to-green-600" },
+  { to: "/stays", label: "Stays", icon: Hotel, tone: "from-pink-500 to-rose-600" },
+  { to: "/news", label: "News", icon: Newspaper, tone: "from-neutral-600 to-neutral-800" },
+];
+
+function RailDrawer() {
+  const [open, setOpen] = useState(false);
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <button
+          aria-label="Open menu"
+          className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition"
+        >
+          <Menu className="w-[18px] h-[18px]" strokeWidth={2.4} />
+        </button>
+      </SheetTrigger>
+      <SheetContent
+        side="left"
+        className="w-[86vw] max-w-sm p-0 border-r border-border/60 bg-background flex flex-col"
+      >
+        {/* Brand header */}
+        <div className="relative px-5 pt-6 pb-5 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent border-b border-border/50">
+          <button
+            onClick={() => setOpen(false)}
+            aria-label="Close"
+            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-background/80 backdrop-blur flex items-center justify-center active:scale-90 transition"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-background shadow-pop flex items-center justify-center">
+              <img src={logo} alt="PUBSTORE" className="w-9 h-9" />
+            </div>
+            <div>
+              <p className="font-brand text-2xl tracking-wide leading-none">PUBSTORE</p>
+              <p className="text-[11px] text-muted-foreground mt-1">Everything. One app.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Rails grid */}
+        <div className="flex-1 overflow-y-auto px-4 py-5">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3 px-1">
+            Explore
+          </p>
+          <div className="grid grid-cols-3 gap-2.5">
+            {RAIL_ITEMS.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setOpen(false)}
+                  className="group flex flex-col items-center justify-center gap-2 p-3 rounded-2xl bg-muted/50 hover:bg-muted active:scale-95 transition border border-border/40"
+                >
+                  <span
+                    className={`w-11 h-11 rounded-xl bg-gradient-to-br ${item.tone} flex items-center justify-center shadow-pop`}
+                  >
+                    <Icon className="w-5 h-5 text-white" strokeWidth={2.2} />
+                  </span>
+                  <span className="text-[11px] font-semibold text-center leading-tight">
+                    {item.label}
+                  </span>
+                </NavLink>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Signature footer */}
+        <div className="border-t border-border/50 px-5 py-4 bg-muted/30">
+          <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground text-center">
+            A signature creation by
+          </p>
+          <p className="font-brand text-base tracking-wide text-center mt-1 bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent">
+            KUKISTACKSGROUP
+          </p>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
