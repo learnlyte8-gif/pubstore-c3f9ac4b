@@ -29,12 +29,12 @@ async function pickSuggestion(): Promise<Suggestion | null> {
   try {
     if (kind === "product") {
       const { data } = await supabase
-        .from("products").select("id,title,price,currency,image_urls,images")
+        .from("products").select("id,title,price,image,gallery")
         .eq("active", true).limit(40);
       if (!data?.length) return null;
       const p: any = data[Math.floor(Math.random() * data.length)];
-      const img = (p.image_urls?.[0]) || (Array.isArray(p.images) ? p.images[0] : null);
-      return { kind, title: p.title, subtitle: `${p.currency || "$"}${Number(p.price).toFixed(2)}`, image: img, link: `/product/${p.id}`, badge: "Trending" };
+      const img = p.image || (Array.isArray(p.gallery) ? p.gallery[0] : null);
+      return { kind, title: p.title, subtitle: `$${Number(p.price).toFixed(2)}`, image: img, link: `/product/${p.id}`, badge: "Trending" };
     }
     if (kind === "stay") {
       const { data } = await supabase
