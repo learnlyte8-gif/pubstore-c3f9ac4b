@@ -817,16 +817,19 @@ function ProductsView() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              {cats.map((c: any) => (
-                <button
-                  key={c.slug}
-                  onClick={() => bulkAssignCategory(c.slug)}
-                  disabled={working}
-                  className="h-12 rounded-xl border bg-background hover:bg-primary/10 hover:border-primary text-sm font-bold transition disabled:opacity-50 truncate px-3"
-                >
-                  {c.name}
-                </button>
-              ))}
+              {cats.map((c: any) => {
+                const slug = c.slug ?? c.id;
+                return (
+                  <button
+                    key={slug}
+                    onClick={() => bulkAssignCategory(slug)}
+                    disabled={working}
+                    className="h-12 rounded-xl border bg-background hover:bg-primary/10 hover:border-primary text-sm font-bold transition disabled:opacity-50 truncate px-3"
+                  >
+                    {c.name}
+                  </button>
+                );
+              })}
             </div>
             <Button variant="outline" className="w-full h-11 mt-4" onClick={() => setShowCatPicker(false)}>Cancel</Button>
           </div>
