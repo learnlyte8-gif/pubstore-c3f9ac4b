@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { resolveMasterSupplierId } from "@/data/products";
 import SupplierStories from "@/components/marketplace/SupplierStories";
 import { useUnreadChats, markConversationRead } from "@/hooks/useUnreadChats";
+import AttachmentCard, { type ChatAttachment } from "@/components/chat/AttachmentCard";
 
 type Conversation = {
   id: string;
