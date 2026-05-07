@@ -297,12 +297,29 @@
   animation: gradient-shift 8s ease infinite;
 }
 
-@keyframes bubble-pop {
-  0%   { opacity: 0; transform: translateY(6px) scale(0.92); }
-  60%  { opacity: 1; transform: translateY(-1px) scale(1.02); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
+/* iMessage / Instagram-style bubble entry — no overshoot, no horizontal shake */
+@keyframes bubble-in {
+  0%   { opacity: 0; transform: translate3d(0, 4px, 0) scale(0.98); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
 }
-.animate-bubble-pop { animation: bubble-pop 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-bubble-pop {
+  animation: bubble-in 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
+  transform-origin: bottom center;
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translate3d(0, 24px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+.animate-slide-up { animation: slide-up 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Native scroll feel inside chat threads */
+.chat-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+}
 
 @keyframes shimmer {
   0%   { background-position: -200% 0; }
