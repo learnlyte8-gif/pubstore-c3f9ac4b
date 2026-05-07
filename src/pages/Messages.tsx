@@ -21,6 +21,7 @@ type Message = {
   sender_id: string;
   body: string;
   created_at: string;
+  attachment?: ChatAttachment | null;
 };
 
 const fmtTime = (iso: string | null) => {
