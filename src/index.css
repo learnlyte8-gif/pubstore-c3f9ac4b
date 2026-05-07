@@ -236,6 +236,39 @@
   .scrollbar-none::-webkit-scrollbar {
     display: none;
   }
+
+  /* Futuristic button — shimmer sweep + glow ring */
+  .btn-futuristic {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .btn-futuristic::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 35%, hsl(0 0% 100% / 0.35) 50%, transparent 65%);
+    transform: translateX(-120%);
+    transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .btn-futuristic:hover::before {
+    transform: translateX(120%);
+  }
+  .btn-futuristic::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.18), inset 0 -1px 0 hsl(0 0% 0% / 0.18);
+    pointer-events: none;
+    z-index: 2;
+  }
+  .btn-futuristic > * {
+    position: relative;
+    z-index: 3;
+  }
 }
 
 @keyframes splash-pulse {
