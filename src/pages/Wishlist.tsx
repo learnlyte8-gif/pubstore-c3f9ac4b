@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Heart, Trash2, ShoppingCart } from "lucide-react";
+import { Heart, Trash2, ShoppingCart, Send } from "lucide-react";
 import { toast } from "sonner";
 import { useShop } from "@/store/shop";
 import { discountPct } from "@/data/products";
@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { mapProduct, type Product } from "@/data/products";
+import ShareToChatSheet from "@/components/chat/ShareToChatSheet";
+import type { ChatAttachment } from "@/components/chat/AttachmentCard";
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
 
