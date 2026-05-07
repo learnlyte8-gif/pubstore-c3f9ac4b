@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Heart, Trash2, ShoppingCart } from "lucide-react";
+import { Heart, Trash2, ShoppingCart, Send } from "lucide-react";
 import { toast } from "sonner";
 import { useShop } from "@/store/shop";
 import { discountPct } from "@/data/products";
@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { mapProduct, type Product } from "@/data/products";
+import ShareToChatSheet from "@/components/chat/ShareToChatSheet";
+import type { ChatAttachment } from "@/components/chat/AttachmentCard";
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
 
@@ -14,6 +16,7 @@ export default function Wishlist() {
   const { wishlist, toggleWishlist, addToCart } = useShop();
   const [items, setItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -56,8 +59,30 @@ export default function Wishlist() {
     <div className="px-4 py-4 pb-8">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold">Wishlist</h1>
-        <span className="text-xs text-muted-foreground">{items.length} item{items.length === 1 ? "" : "s"}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">{items.length} item{items.length === 1 ? "" : "s"}</span>
+          <button
+            type="button"
+            onClick={() => setShareOpen(true)}
+            className="h-8 px-3 rounded-full bg-ig-gradient text-white text-xs font-bold inline-flex items-center gap-1 shadow-pop active:scale-95 transition"
+            aria-label="Share wishlist"
+          >
+            <Send className="w-3.5 h-3.5" /> Share
+          </button>
+        </div>
       </div>
+
+      <ShareToChatSheet
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        attachment={{
+          kind: "wishlist",
+          count: items.length,
+          items: items.slice(0, 4).map((p) => ({
+            id: p.id, title: p.title, image: p.image, price: p.price,
+          })),
+        } as ChatAttachment}
+      />
 
       <ul className="space-y-3">
         {items.map((p) => {

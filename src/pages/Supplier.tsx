@@ -8,6 +8,8 @@ import ProductCard from "@/components/marketplace/ProductCard";
 import SupplierLocationMap from "@/components/SupplierLocationMap";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import ShareToChatSheet from "@/components/chat/ShareToChatSheet";
+import type { ChatAttachment } from "@/components/chat/AttachmentCard";
 
 export default function Supplier() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +21,8 @@ export default function Supplier() {
   const [followerCount, setFollowerCount] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
   const [supplierOwner, setSupplierOwner] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareKind, setShareKind] = useState<"supplier" | "catalog">("supplier");
 
   useEffect(() => {
     if (!id) return;
@@ -88,8 +92,19 @@ export default function Supplier() {
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div className="flex gap-2">
-            <button aria-label="Share" className="w-9 h-9 rounded-full bg-background/85 backdrop-blur flex items-center justify-center shadow-card">
+            <button
+              aria-label="Share supplier"
+              onClick={() => { setShareKind("supplier"); setShareOpen(true); }}
+              className="w-9 h-9 rounded-full bg-background/85 backdrop-blur flex items-center justify-center shadow-card"
+            >
               <Share2 className="w-4 h-4" />
+            </button>
+            <button
+              aria-label="Share catalog"
+              onClick={() => { setShareKind("catalog"); setShareOpen(true); }}
+              className="h-9 px-3 rounded-full bg-ig-gradient text-white text-[11px] font-bold inline-flex items-center gap-1 shadow-pop"
+            >
+              <Package className="w-3.5 h-3.5" /> Catalog
             </button>
             <button onClick={toggleFollow} aria-label={following ? "Unfollow" : "Follow"} className="w-9 h-9 rounded-full bg-background/85 backdrop-blur flex items-center justify-center shadow-card">
               <Heart className={`w-4 h-4 ${following ? "fill-destructive text-destructive" : ""}`} />
@@ -190,6 +205,33 @@ export default function Supplier() {
         <div className="px-4 mt-4 space-y-2">
           <p className="text-sm text-muted-foreground text-center py-8">Certifications coming soon.</p>
         </div>
+      )}
+
+      {supplier && (
+        <ShareToChatSheet
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          attachment={
+            shareKind === "supplier"
+              ? ({
+                  kind: "supplier",
+                  id: supplier.id,
+                  name: supplier.name,
+                  logo: supplier.logo,
+                  verified: supplier.verified,
+                  tagline: supplier.country ?? undefined,
+                } as ChatAttachment)
+              : ({
+                  kind: "catalog",
+                  supplierId: supplier.id,
+                  supplierName: supplier.name,
+                  count: products.length,
+                  items: products.slice(0, 4).map((p) => ({
+                    id: p.id, title: p.title, image: p.image, price: p.price,
+                  })),
+                } as ChatAttachment)
+          }
+        />
       )}
     </div>
   );
