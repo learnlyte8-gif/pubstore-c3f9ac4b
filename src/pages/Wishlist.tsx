@@ -16,6 +16,7 @@ export default function Wishlist() {
   const { wishlist, toggleWishlist, addToCart } = useShop();
   const [items, setItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
