@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import ProductGallery from "@/components/marketplace/ProductGallery";
 import SupplierCard from "@/components/marketplace/SupplierCard";
 import ProductCard from "@/components/marketplace/ProductCard";
+import ShareToChatSheet from "@/components/chat/ShareToChatSheet";
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
 
