@@ -294,7 +294,11 @@ export default function Messages() {
         </div>
 
         {/* Thread */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-1.5">
+        <div
+          ref={scrollRef}
+          onScroll={onThreadScroll}
+          className="chat-scroll flex-1 overflow-y-auto px-4 py-4 space-y-1.5"
+        >
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-6 text-center animate-fade-in">
               <div className="relative w-20 h-20 mb-4">
@@ -329,6 +333,9 @@ export default function Messages() {
               const sameAsPrev = prev && prev.sender_id === m.sender_id && !showDay;
               const sameAsNext = next && next.sender_id === m.sender_id && dayKey(next.created_at) === dayKey(m.created_at);
               const showTail = !sameAsNext;
+              const isLast = i === messages.length - 1;
+              const att = m.attachment ?? null;
+              const hasBody = m.body && m.body.trim().length > 0;
               return (
                 <div key={m.id}>
                   {showDay && (
@@ -339,23 +346,43 @@ export default function Messages() {
                     </div>
                   )}
                   <div className={`flex ${mine ? "justify-end" : "justify-start"} ${sameAsPrev ? "mt-0.5" : "mt-2"}`}>
-                    <div
-                      className={`relative max-w-[78%] px-3.5 py-2 text-sm animate-bubble-pop ${
-                        mine
-                          ? `bubble-mine rounded-2xl ${showTail ? "rounded-br-md bubble-tail-mine" : "rounded-br-2xl"}`
-                          : `bg-card text-foreground border border-border/50 shadow-soft rounded-2xl ${showTail ? "rounded-bl-md bubble-tail-theirs" : "rounded-bl-2xl"}`
-                      }`}
-                    >
-                      {!mine && isHost && showTail && (
-                        <span className="inline-flex items-center gap-1 mb-1 px-1.5 py-0.5 rounded-full bg-ig-gradient text-white text-[9px] font-bold uppercase tracking-wide">
-                          <Sparkles className="w-2.5 h-2.5" /> Host
-                        </span>
-                      )}
-                      <p className="whitespace-pre-wrap break-words leading-snug">{m.body}</p>
-                      <p className={`text-[10px] mt-1 ${mine ? "text-primary-foreground/75" : "text-muted-foreground"} text-right`}>
-                        {fmtTime(m.created_at)}
-                      </p>
-                    </div>
+                    {att ? (
+                      <div className={`max-w-[80%] flex flex-col ${mine ? "items-end" : "items-start"} gap-1 ${isLast ? "animate-bubble-pop" : ""}`}>
+                        {hasBody && (
+                          <div
+                            className={`relative px-3.5 py-2 text-sm rounded-2xl ${
+                              mine
+                                ? "bubble-mine rounded-br-md"
+                                : "bg-card text-foreground border border-border/50 shadow-soft rounded-bl-md"
+                            }`}
+                          >
+                            <p className="whitespace-pre-wrap break-words leading-snug">{m.body}</p>
+                          </div>
+                        )}
+                        <AttachmentCard attachment={att} mine={mine} />
+                        <p className={`text-[10px] ${mine ? "text-muted-foreground" : "text-muted-foreground"} px-1`}>
+                          {fmtTime(m.created_at)}
+                        </p>
+                      </div>
+                    ) : (
+                      <div
+                        className={`relative max-w-[78%] px-3.5 py-2 text-sm ${isLast ? "animate-bubble-pop" : ""} ${
+                          mine
+                            ? `bubble-mine rounded-2xl ${showTail ? "rounded-br-md bubble-tail-mine" : "rounded-br-2xl"}`
+                            : `bg-card text-foreground border border-border/50 shadow-soft rounded-2xl ${showTail ? "rounded-bl-md bubble-tail-theirs" : "rounded-bl-2xl"}`
+                        }`}
+                      >
+                        {!mine && isHost && showTail && (
+                          <span className="inline-flex items-center gap-1 mb-1 px-1.5 py-0.5 rounded-full bg-ig-gradient text-white text-[9px] font-bold uppercase tracking-wide">
+                            <Sparkles className="w-2.5 h-2.5" /> Host
+                          </span>
+                        )}
+                        <p className="whitespace-pre-wrap break-words leading-snug">{m.body}</p>
+                        <p className={`text-[10px] mt-1 ${mine ? "text-primary-foreground/75" : "text-muted-foreground"} text-right`}>
+                          {fmtTime(m.created_at)}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
