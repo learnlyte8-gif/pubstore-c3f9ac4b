@@ -206,6 +206,33 @@ export default function Supplier() {
           <p className="text-sm text-muted-foreground text-center py-8">Certifications coming soon.</p>
         </div>
       )}
+
+      {supplier && (
+        <ShareToChatSheet
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          attachment={
+            shareKind === "supplier"
+              ? ({
+                  kind: "supplier",
+                  id: supplier.id,
+                  name: supplier.name,
+                  logo: supplier.logo,
+                  verified: supplier.verified,
+                  tagline: supplier.country ?? undefined,
+                } as ChatAttachment)
+              : ({
+                  kind: "catalog",
+                  supplierId: supplier.id,
+                  supplierName: supplier.name,
+                  count: products.length,
+                  items: products.slice(0, 4).map((p) => ({
+                    id: p.id, title: p.title, image: p.image, price: p.price,
+                  })),
+                } as ChatAttachment)
+          }
+        />
+      )}
     </div>
   );
 }
