@@ -8,6 +8,8 @@ import ProductCard from "@/components/marketplace/ProductCard";
 import SupplierLocationMap from "@/components/SupplierLocationMap";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import ShareToChatSheet from "@/components/chat/ShareToChatSheet";
+import type { ChatAttachment } from "@/components/chat/AttachmentCard";
 
 export default function Supplier() {
   const { id } = useParams<{ id: string }>();
