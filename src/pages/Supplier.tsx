@@ -21,6 +21,8 @@ export default function Supplier() {
   const [followerCount, setFollowerCount] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
   const [supplierOwner, setSupplierOwner] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareKind, setShareKind] = useState<"supplier" | "catalog">("supplier");
 
   useEffect(() => {
     if (!id) return;
