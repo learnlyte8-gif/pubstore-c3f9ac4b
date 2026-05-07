@@ -206,10 +206,29 @@ export default function Messages() {
     if (!draft.trim() || !activeId || !userId) return;
     const body = draft.trim();
     setDraft("");
-    const { error } = await supabase
+    // Optimistic insert so the bubble appears instantly with no layout shift
+    const tempId = `temp:${Date.now()}`;
+    const nowIso = new Date().toISOString();
+    stickRef.current = true;
+    setMessages((prev) => [
+      ...prev,
+      { id: tempId, conversation_id: activeId, sender_id: userId, body, created_at: nowIso },
+    ]);
+    const { data: inserted, error } = await supabase
       .from("messages")
-      .insert({ conversation_id: activeId, sender_id: userId, body });
-    if (error) return;
+      .insert({ conversation_id: activeId, sender_id: userId, body })
+      .select("*")
+      .single();
+    if (error) {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      return;
+    }
+    setMessages((prev) =>
+      prev.map((m) => (m.id === tempId ? (inserted as Message) : m)).filter(
+        // de-dupe in case realtime already delivered
+        (m, i, arr) => arr.findIndex((x) => x.id === m.id) === i,
+      ),
+    );
     await supabase
       .from("conversations")
       .update({ last_message: body, last_message_at: new Date().toISOString() })
