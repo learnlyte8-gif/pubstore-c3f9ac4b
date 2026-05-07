@@ -92,8 +92,19 @@ export default function Supplier() {
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div className="flex gap-2">
-            <button aria-label="Share" className="w-9 h-9 rounded-full bg-background/85 backdrop-blur flex items-center justify-center shadow-card">
+            <button
+              aria-label="Share supplier"
+              onClick={() => { setShareKind("supplier"); setShareOpen(true); }}
+              className="w-9 h-9 rounded-full bg-background/85 backdrop-blur flex items-center justify-center shadow-card"
+            >
               <Share2 className="w-4 h-4" />
+            </button>
+            <button
+              aria-label="Share catalog"
+              onClick={() => { setShareKind("catalog"); setShareOpen(true); }}
+              className="h-9 px-3 rounded-full bg-ig-gradient text-white text-[11px] font-bold inline-flex items-center gap-1 shadow-pop"
+            >
+              <Package className="w-3.5 h-3.5" /> Catalog
             </button>
             <button onClick={toggleFollow} aria-label={following ? "Unfollow" : "Follow"} className="w-9 h-9 rounded-full bg-background/85 backdrop-blur flex items-center justify-center shadow-card">
               <Heart className={`w-4 h-4 ${following ? "fill-destructive text-destructive" : ""}`} />
