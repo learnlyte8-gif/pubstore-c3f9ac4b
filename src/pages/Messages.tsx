@@ -187,9 +187,19 @@ export default function Messages() {
     return () => { supabase.removeChannel(ch); };
   }, [userId, loadConversations]);
 
-  // Auto-scroll to latest message
+  // Native auto-scroll: only stick to bottom if user is already near bottom.
+  // Use 'auto' (instant) so incoming messages never trigger a smooth-scroll "shake".
+  const stickRef = useRef(true);
+  const onThreadScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    stickRef.current = distance < 80;
+  };
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    const el = scrollRef.current;
+    if (!el) return;
+    if (stickRef.current) el.scrollTop = el.scrollHeight;
   }, [messages.length]);
 
   const send = async () => {
