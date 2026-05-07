@@ -32,6 +32,7 @@ export default function ProductDetail() {
 
   const [qty, setQty] = useState<number>(1);
   const [tab, setTab] = useState<"specs" | "description" | "reviews">("specs");
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => { if (product) setQty(product.moq); }, [product?.id, product?.moq]);
 
