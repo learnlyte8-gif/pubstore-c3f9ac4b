@@ -97,19 +97,20 @@ export default function AppShell() {
         <Outlet />
       </main>
 
-      {/* Bottom tab bar — solid, fixed, no blur, 3D icons */}
+      {/* Bottom tab bar — iOS liquid glass */}
       <nav
-        className="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-background border-t border-border/70 safe-bottom shadow-[0_-6px_18px_-8px_hsl(0_0%_0%/0.18)]"
+        className="fixed bottom-0 inset-x-0 z-40 lg:hidden pointer-events-none safe-bottom"
         aria-label="Primary"
       >
-        <ul className="max-w-2xl mx-auto h-[60px] px-1 flex items-stretch justify-around">
-          <TabItem to="/home" icon={Home} label="Home" />
-          <TabItem to="/categories" icon={LayoutGrid} label="Shop" />
-          <TabItem to="/rides" icon={Navigation} label="Rides" />
-          <TabItem to="/messages" icon={MessageCircle} label="Chat" badge={chatsWithUnread} />
-          <TabItem to="/wishlist" icon={Heart} label="Saved" badge={wishlist.length} />
-          <TabItem to="/profile" icon={User} label="You" />
-        </ul>
+        <div className="pointer-events-auto mx-auto mb-2 max-w-[calc(100%-1rem)] sm:max-w-md ios-liquid-bar">
+          <ul className="relative h-[58px] px-1.5 flex items-stretch justify-around">
+            <TabItem to="/home" icon={House} label="Home" />
+            <TabItem to="/categories" icon={ShoppingBag} label="Shop" />
+            <TabItem to="/messages" icon={MessageCircle} label="Chats" badge={chatsWithUnread} />
+            <TabItem to="/wishlist" icon={Heart} label="Saved" badge={wishlist.length} />
+            <TabItem to="/profile" icon={CircleUser} label="You" />
+          </ul>
+        </div>
       </nav>
 
       <LiveActivityToaster />
