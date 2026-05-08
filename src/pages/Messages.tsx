@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
-import { Search, Send, ShieldCheck, ArrowLeft, MessageCircle, Smile, Paperclip, Sparkles } from "lucide-react";
+import { Search, Send, ShieldCheck, ArrowLeft, MessageCircle, Smile, Paperclip, Sparkles, Image as ImageIcon, Heart, Phone, Video, Info, Mic, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { resolveMasterSupplierId } from "@/data/products";
+import { resolveMasterSupplierId, fetchProducts, type Product } from "@/data/products";
 import SupplierStories from "@/components/marketplace/SupplierStories";
 import { useUnreadChats, markConversationRead } from "@/hooks/useUnreadChats";
 import AttachmentCard, { type ChatAttachment } from "@/components/chat/AttachmentCard";
@@ -248,6 +248,70 @@ export default function Messages() {
     }
   };
 
+  const sendAttachment = async (attachment: ChatAttachment) => {
+    if (!activeId || !userId) return;
+    const previewLabel =
+      attachment.kind === "product" ? `📦 ${attachment.title}`
+      : attachment.kind === "supplier" ? `🏬 ${attachment.name}`
+      : attachment.kind === "wishlist" ? `❤️ Wishlist · ${attachment.count} items`
+      : `🗂 Catalog · ${attachment.count} items`;
+    const tempId = `temp:${Date.now()}`;
+    stickRef.current = true;
+    setMessages((prev) => [
+      ...prev,
+      { id: tempId, conversation_id: activeId, sender_id: userId, body: previewLabel, created_at: new Date().toISOString(), attachment },
+    ]);
+    const { data: inserted } = await supabase
+      .from("messages")
+      .insert({ conversation_id: activeId, sender_id: userId, body: previewLabel, attachment: attachment as any })
+      .select("*").single();
+    if (inserted) {
+      setMessages((prev) => prev.map((m) => (m.id === tempId ? (inserted as Message) : m)));
+    }
+    await supabase.from("conversations")
+      .update({ last_message: previewLabel, last_message_at: new Date().toISOString() })
+      .eq("id", activeId);
+  };
+
+  // Double-tap a bubble to send ❤️ — Instagram style
+  const lastTapRef = useRef<{ id: string; t: number } | null>(null);
+  const sendHeartReply = async () => {
+    if (!activeId || !userId) return;
+    const tempId = `temp:${Date.now()}`;
+    stickRef.current = true;
+    setMessages((prev) => [...prev, { id: tempId, conversation_id: activeId, sender_id: userId, body: "❤️", created_at: new Date().toISOString() }]);
+    const { data: inserted } = await supabase.from("messages")
+      .insert({ conversation_id: activeId, sender_id: userId, body: "❤️" })
+      .select("*").single();
+    if (inserted) setMessages((prev) => prev.map((m) => (m.id === tempId ? (inserted as Message) : m)));
+    await supabase.from("conversations").update({ last_message: "❤️", last_message_at: new Date().toISOString() }).eq("id", activeId);
+  };
+  const onBubbleTap = (mid: string) => {
+    const now = Date.now();
+    const last = lastTapRef.current;
+    if (last && last.id === mid && now - last.t < 350) {
+      lastTapRef.current = null;
+      sendHeartReply();
+    } else {
+      lastTapRef.current = { id: mid, t: now };
+    }
+  };
+
+  // Product picker for in-chat sharing
+  const [productPickerOpen, setProductPickerOpen] = useState(false);
+  const [productQuery, setProductQuery] = useState("");
+  const [productResults, setProductResults] = useState<Product[]>([]);
+  const [productLoading, setProductLoading] = useState(false);
+  useEffect(() => {
+    if (!productPickerOpen) return;
+    let alive = true;
+    setProductLoading(true);
+    fetchProducts({ limit: 24, search: productQuery || undefined }).then((r) => {
+      if (alive) { setProductResults(r); setProductLoading(false); }
+    }).catch(() => alive && setProductLoading(false));
+    return () => { alive = false; };
+  }, [productPickerOpen, productQuery]);
+
   const filtered = useMemo(
     () => conversations.filter((c) => (c.supplier?.name ?? "").toLowerCase().includes(search.toLowerCase())),
     [conversations, search],
@@ -258,9 +322,9 @@ export default function Messages() {
   if (active) {
     const supplierOwnerId = active.supplier?.owner_id;
     return (
-      <div className="flex flex-col h-[calc(100dvh-3.5rem-4rem)] lg:h-[calc(100dvh-3.5rem)] bg-gradient-to-b from-background via-background to-muted/30">
+      <div className="fixed inset-0 z-[60] flex flex-col bg-background animate-fade-in">
         {/* Header */}
-        <div className="px-3 py-2.5 border-b border-border/60 glass-strong shadow-soft flex items-center gap-2.5 z-10">
+        <div className="px-2 py-2 border-b border-border/60 glass-strong shadow-soft flex items-center gap-2 z-10 safe-top">
           <button
             onClick={() => setActiveId(null)}
             aria-label="Back"
@@ -290,6 +354,15 @@ export default function Messages() {
               {active.supplier?.response_time ? `Responds ${active.supplier.response_time}` : "Active now"}
               {active.supplier?.response_rate ? ` · ${active.supplier.response_rate}%` : ""}
             </p>
+          </div>
+          <div className="flex items-center gap-0.5 shrink-0">
+            <button aria-label="Call" className="p-2 rounded-full hover:bg-muted active:scale-90 transition"><Phone className="w-5 h-5" strokeWidth={1.9} /></button>
+            <button aria-label="Video" className="p-2 rounded-full hover:bg-muted active:scale-90 transition"><Video className="w-5 h-5" strokeWidth={1.9} /></button>
+            {active.supplier && (
+              <Link to={`/supplier/${active.supplier.id}`} aria-label="Info" className="p-2 rounded-full hover:bg-muted active:scale-90 transition">
+                <Info className="w-5 h-5" strokeWidth={1.9} />
+              </Link>
+            )}
           </div>
         </div>
 
@@ -345,7 +418,7 @@ export default function Messages() {
                       </span>
                     </div>
                   )}
-                  <div className={`flex ${mine ? "justify-end" : "justify-start"} ${sameAsPrev ? "mt-0.5" : "mt-2"}`}>
+                  <div onClick={() => onBubbleTap(m.id)} className={`flex ${mine ? "justify-end" : "justify-start"} ${sameAsPrev ? "mt-0.5" : "mt-2"} cursor-pointer select-none`}>
                     {att ? (
                       <div className={`max-w-[80%] flex flex-col ${mine ? "items-end" : "items-start"} gap-1 ${isLast ? "animate-bubble-pop" : ""}`}>
                         {hasBody && (
@@ -391,35 +464,85 @@ export default function Messages() {
         </div>
 
         {/* Composer */}
-        <div className="px-3 py-2.5 border-t border-border/60 glass-strong shadow-elevated flex items-center gap-2 safe-bottom">
-          <button aria-label="Attach" className="w-9 h-9 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground transition active:scale-95">
-            <Paperclip className="w-4 h-4" />
+        <div className="px-2 py-2 border-t border-border/60 glass-strong shadow-elevated flex items-center gap-1.5 safe-bottom">
+          <button onClick={() => setProductPickerOpen(true)} aria-label="Share product" className="w-9 h-9 rounded-full bg-ig-gradient text-white flex items-center justify-center active:scale-90 transition shadow-soft">
+            <Camera className="w-4 h-4" />
           </button>
-          <div className="flex-1 relative">
+          <div className="flex-1 relative flex items-center bg-muted rounded-full pr-1">
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && send()}
               placeholder="Message..."
-              className="w-full h-10 pl-4 pr-10 rounded-full bg-muted text-sm outline-none focus:ring-2 focus:ring-primary/40 transition"
+              className="flex-1 h-10 pl-4 pr-2 bg-transparent text-sm outline-none"
             />
-            <button aria-label="Emoji" className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full hover:bg-background/80 flex items-center justify-center text-muted-foreground transition">
-              <Smile className="w-4 h-4" />
-            </button>
+            {!draft.trim() && (
+              <>
+                <button aria-label="Mic" className="w-8 h-8 rounded-full hover:bg-background/60 flex items-center justify-center text-foreground/70"><Mic className="w-4 h-4" /></button>
+                <button onClick={() => setProductPickerOpen(true)} aria-label="Gallery" className="w-8 h-8 rounded-full hover:bg-background/60 flex items-center justify-center text-foreground/70"><ImageIcon className="w-4 h-4" /></button>
+                <button onClick={sendHeartReply} aria-label="Heart" className="w-8 h-8 rounded-full hover:bg-background/60 flex items-center justify-center text-foreground/70"><Heart className="w-4 h-4" /></button>
+              </>
+            )}
           </div>
-          <button
-            onClick={send}
-            disabled={!draft.trim()}
-            aria-label="Send"
-            className={`w-10 h-10 rounded-full flex items-center justify-center shadow-pop transition-all duration-200 ${
-              draft.trim()
-                ? "bg-ig-gradient text-white scale-100 hover:scale-105 active:scale-95"
-                : "bg-muted text-muted-foreground scale-90"
-            }`}
-          >
-            <Send className="w-4 h-4" />
-          </button>
+          {draft.trim() && (
+            <button
+              onClick={send}
+              aria-label="Send"
+              className="w-10 h-10 rounded-full flex items-center justify-center bg-ig-gradient text-white shadow-pop active:scale-90 transition"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          )}
         </div>
+
+        {/* Product picker overlay */}
+        {productPickerOpen && (
+          <div className="absolute inset-0 z-[70] bg-background/95 backdrop-blur-sm flex flex-col animate-fade-in">
+            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/60 safe-top">
+              <button onClick={() => setProductPickerOpen(false)} aria-label="Close" className="p-2 rounded-full hover:bg-muted active:scale-90 transition">
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <p className="font-bold text-sm">Share a product</p>
+            </div>
+            <div className="px-3 py-2 border-b border-border/60">
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={productQuery}
+                  onChange={(e) => setProductQuery(e.target.value)}
+                  placeholder="Search products"
+                  className="w-full h-10 pl-9 pr-3 rounded-full bg-muted text-sm outline-none focus:ring-2 focus:ring-primary/40"
+                />
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3">
+              {productLoading ? (
+                <p className="text-center text-xs text-muted-foreground py-10">Loading…</p>
+              ) : productResults.length === 0 ? (
+                <p className="text-center text-xs text-muted-foreground py-10">No products found</p>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {productResults.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={async () => {
+                        await sendAttachment({ kind: "product", id: p.id, title: p.title, image: p.image, price: p.price });
+                        setProductPickerOpen(false);
+                      }}
+                      className="text-left active:scale-95 transition"
+                    >
+                      <div className="aspect-square rounded-lg overflow-hidden bg-muted">
+                        <img src={p.image} alt={p.title} loading="lazy" className="w-full h-full object-cover" />
+                      </div>
+                      <p className="text-[11px] font-semibold line-clamp-2 leading-snug mt-1">{p.title}</p>
+                      <p className="text-[10px] font-bold text-destructive">${p.price.toFixed(2)}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
   }

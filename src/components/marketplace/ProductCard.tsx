@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Heart, Star, Plus, Truck, ShieldCheck, Award, Timer, Package, MapPin, Map as MapIcon, CreditCard, Smartphone, Wallet, Banknote } from "lucide-react";
+import { Heart, Star, Plus, Truck, ShieldCheck, Award, Timer, Package, MapPin, Map as MapIcon, CreditCard, Smartphone, Wallet, Banknote, Send } from "lucide-react";
 import { toast } from "sonner";
 import { type Product, discountPct } from "@/data/products";
 import { useShop } from "@/store/shop";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserLocation, distanceKm, formatDistance } from "@/hooks/useUserLocation";
 import { logProductClick } from "@/hooks/usePersonalizationLog";
+import ShareToChatSheet from "@/components/chat/ShareToChatSheet";
+import type { ChatAttachment } from "@/components/chat/AttachmentCard";
 
 const fmtPrice = (n: number) => `$${n.toFixed(2)}`;
 const fmtSold = (n: number) =>
@@ -68,6 +70,21 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
   const off = discountPct(product);
   const countdown = useDealCountdown(product.dealEndsAt);
   const userLoc = useUserLocation();
+  const [shareOpen, setShareOpen] = useState(false);
+
+  const shareAttachment: ChatAttachment = {
+    kind: "product",
+    id: product.id,
+    title: product.title,
+    image: product.image,
+    price: product.price,
+  };
+
+  const handleShare = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShareOpen(true);
+  };
   // Hide internal "Imported · …" badges from public product cards.
   const displayBadge =
     product.badge && !/^imported/i.test(product.badge) ? product.badge : null;
@@ -120,6 +137,7 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
 
   if (variant === "compact") {
     return (
+      <>
       <Link to={`/product/${product.id}`} onClick={() => logProductClick(product, "card-compact")} className="shrink-0 w-36 group block">
         <div className="relative aspect-square rounded-xl overflow-hidden bg-muted shadow-card group-hover:shadow-elevated transition">
           <img
@@ -139,13 +157,22 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
               MOQ {product.moq}
             </span>
           )}
-          <button
-            onClick={handleLike}
-            aria-label="Wishlist"
-            className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-background/80 backdrop-blur flex items-center justify-center"
-          >
-            <Heart className={`w-3.5 h-3.5 ${liked ? "fill-destructive text-destructive" : "text-foreground"}`} />
-          </button>
+          <div className="absolute top-1.5 right-1.5 flex items-center gap-1">
+            <button
+              onClick={handleShare}
+              aria-label="Share"
+              className="w-7 h-7 rounded-full bg-background/80 backdrop-blur flex items-center justify-center active:scale-90 transition"
+            >
+              <Send className="w-3.5 h-3.5 text-foreground" />
+            </button>
+            <button
+              onClick={handleLike}
+              aria-label="Wishlist"
+              className="w-7 h-7 rounded-full bg-background/80 backdrop-blur flex items-center justify-center active:scale-90 transition"
+            >
+              <Heart className={`w-3.5 h-3.5 ${liked ? "fill-destructive text-destructive" : "text-foreground"}`} />
+            </button>
+          </div>
           {countdown && (
             <span className={`absolute bottom-1.5 left-1.5 right-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center justify-center gap-0.5 tabular-nums ${countdown.urgent ? "bg-destructive text-destructive-foreground animate-pulse" : "bg-foreground/85 text-background"}`}>
               <Timer className="w-3 h-3" />
@@ -176,10 +203,13 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
           )}
         </div>
       </Link>
+      <ShareToChatSheet open={shareOpen} onClose={() => setShareOpen(false)} attachment={shareAttachment} />
+      </>
     );
   }
 
   return (
+    <>
     <Link
       to={`/product/${product.id}`}
       onClick={() => logProductClick(product, "card")}
@@ -208,13 +238,22 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
             MOQ {product.moq}{product.unit ? ` ${product.unit}` : ""}
           </span>
         )}
-        <button
-          onClick={handleLike}
-          aria-label="Wishlist"
-          className="absolute top-2 right-2 w-8 h-8 rounded-full bg-background/85 backdrop-blur flex items-center justify-center"
-        >
-          <Heart className={`w-4 h-4 ${liked ? "fill-destructive text-destructive" : "text-foreground"}`} />
-        </button>
+        <div className="absolute top-2 right-2 flex items-center gap-1.5">
+          <button
+            onClick={handleShare}
+            aria-label="Share"
+            className="w-8 h-8 rounded-full bg-background/85 backdrop-blur flex items-center justify-center active:scale-90 transition shadow-soft"
+          >
+            <Send className="w-4 h-4 text-foreground" />
+          </button>
+          <button
+            onClick={handleLike}
+            aria-label="Wishlist"
+            className="w-8 h-8 rounded-full bg-background/85 backdrop-blur flex items-center justify-center active:scale-90 transition shadow-soft"
+          >
+            <Heart className={`w-4 h-4 ${liked ? "fill-destructive text-destructive" : "text-foreground"}`} />
+          </button>
+        </div>
         {countdown && (
           <span className={`absolute bottom-2 left-2 right-2 text-[10px] font-bold px-2 py-1 rounded flex items-center justify-center gap-1 tabular-nums ${countdown.urgent ? "bg-destructive text-destructive-foreground animate-pulse" : "bg-foreground/85 text-background"}`}>
             <Timer className="w-3 h-3" />
@@ -332,5 +371,7 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
         </button>
       </div>
     </Link>
+    <ShareToChatSheet open={shareOpen} onClose={() => setShareOpen(false)} attachment={shareAttachment} />
+    </>
   );
 }
