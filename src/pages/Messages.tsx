@@ -418,7 +418,7 @@ export default function Messages() {
                       </span>
                     </div>
                   )}
-                  <div className={`flex ${mine ? "justify-end" : "justify-start"} ${sameAsPrev ? "mt-0.5" : "mt-2"}`}>
+                  <div onClick={() => onBubbleTap(m.id)} className={`flex ${mine ? "justify-end" : "justify-start"} ${sameAsPrev ? "mt-0.5" : "mt-2"} cursor-pointer select-none`}>
                     {att ? (
                       <div className={`max-w-[80%] flex flex-col ${mine ? "items-end" : "items-start"} gap-1 ${isLast ? "animate-bubble-pop" : ""}`}>
                         {hasBody && (
