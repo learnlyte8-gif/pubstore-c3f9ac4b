@@ -157,13 +157,22 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
               MOQ {product.moq}
             </span>
           )}
-          <button
-            onClick={handleLike}
-            aria-label="Wishlist"
-            className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-background/80 backdrop-blur flex items-center justify-center"
-          >
-            <Heart className={`w-3.5 h-3.5 ${liked ? "fill-destructive text-destructive" : "text-foreground"}`} />
-          </button>
+          <div className="absolute top-1.5 right-1.5 flex items-center gap-1">
+            <button
+              onClick={handleShare}
+              aria-label="Share"
+              className="w-7 h-7 rounded-full bg-background/80 backdrop-blur flex items-center justify-center active:scale-90 transition"
+            >
+              <Send className="w-3.5 h-3.5 text-foreground" />
+            </button>
+            <button
+              onClick={handleLike}
+              aria-label="Wishlist"
+              className="w-7 h-7 rounded-full bg-background/80 backdrop-blur flex items-center justify-center active:scale-90 transition"
+            >
+              <Heart className={`w-3.5 h-3.5 ${liked ? "fill-destructive text-destructive" : "text-foreground"}`} />
+            </button>
+          </div>
           {countdown && (
             <span className={`absolute bottom-1.5 left-1.5 right-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center justify-center gap-0.5 tabular-nums ${countdown.urgent ? "bg-destructive text-destructive-foreground animate-pulse" : "bg-foreground/85 text-background"}`}>
               <Timer className="w-3 h-3" />
