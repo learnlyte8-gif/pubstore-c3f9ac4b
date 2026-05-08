@@ -137,6 +137,7 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
 
   if (variant === "compact") {
     return (
+      <>
       <Link to={`/product/${product.id}`} onClick={() => logProductClick(product, "card-compact")} className="shrink-0 w-36 group block">
         <div className="relative aspect-square rounded-xl overflow-hidden bg-muted shadow-card group-hover:shadow-elevated transition">
           <img
