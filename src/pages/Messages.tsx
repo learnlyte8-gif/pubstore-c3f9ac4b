@@ -322,9 +322,9 @@ export default function Messages() {
   if (active) {
     const supplierOwnerId = active.supplier?.owner_id;
     return (
-      <div className="flex flex-col h-[calc(100dvh-3.5rem-4rem)] lg:h-[calc(100dvh-3.5rem)] bg-gradient-to-b from-background via-background to-muted/30">
+      <div className="fixed inset-0 z-[60] flex flex-col bg-background animate-fade-in">
         {/* Header */}
-        <div className="px-3 py-2.5 border-b border-border/60 glass-strong shadow-soft flex items-center gap-2.5 z-10">
+        <div className="px-2 py-2 border-b border-border/60 glass-strong shadow-soft flex items-center gap-2 z-10 safe-top">
           <button
             onClick={() => setActiveId(null)}
             aria-label="Back"
