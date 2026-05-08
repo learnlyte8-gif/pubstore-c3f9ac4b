@@ -143,22 +143,21 @@ function TabItem({
         {({ isActive }) => (
           <>
             <span className="relative flex items-center justify-center h-7 w-7">
-              {/* 3D glow halo behind active icon */}
               {isActive && (
                 <span
                   aria-hidden
-                  className="absolute inset-[-6px] rounded-full bg-[radial-gradient(circle_at_50%_45%,hsl(var(--primary)/0.35)_0%,hsl(var(--primary)/0.12)_45%,transparent_70%)] blur-[2px]"
+                  className="absolute inset-[-8px] rounded-full bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary)/0.28)_0%,hsl(var(--primary)/0.10)_55%,transparent_75%)]"
                 />
               )}
               <Icon
-                className={`relative w-[24px] h-[24px] transition-all duration-200 ${
+                className={`relative w-[26px] h-[26px] transition-all duration-200 ${
                   isActive
-                    ? "text-primary -translate-y-[1px] [filter:drop-shadow(0_2px_0_hsl(var(--primary)/0.35))_drop-shadow(0_4px_8px_hsl(var(--primary)/0.45))]"
-                    : "text-muted-foreground [filter:drop-shadow(0_1px_0_hsl(0_0%_0%/0.18))]"
+                    ? "text-primary scale-[1.06]"
+                    : "text-foreground/60"
                 }`}
-                strokeWidth={isActive ? 2.6 : 2}
+                strokeWidth={isActive ? 2.2 : 1.9}
                 fill={isActive ? "currentColor" : "none"}
-                fillOpacity={isActive ? 0.18 : 0}
+                fillOpacity={isActive ? 0.16 : 0}
               />
               {badge !== undefined && badge > 0 && (
                 <span className="absolute -top-1 -right-1.5 min-w-[15px] h-[15px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-background shadow-[0_2px_4px_hsl(0_85%_55%/0.5)]">
@@ -168,17 +167,11 @@ function TabItem({
             </span>
             <span
               className={`text-[10px] leading-none tracking-tight transition-colors ${
-                isActive ? "text-primary font-semibold" : "text-muted-foreground font-medium"
+                isActive ? "text-primary font-semibold" : "text-foreground/60 font-medium"
               }`}
             >
               {label}
             </span>
-            {/* Active indicator dot */}
-            <span
-              className={`h-[3px] w-[3px] rounded-full transition-all duration-200 ${
-                isActive ? "bg-primary opacity-100 shadow-[0_0_6px_hsl(var(--primary))]" : "opacity-0"
-              }`}
-            />
           </>
         )}
       </NavLink>
