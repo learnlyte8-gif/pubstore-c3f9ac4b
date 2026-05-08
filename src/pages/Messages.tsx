@@ -355,6 +355,15 @@ export default function Messages() {
               {active.supplier?.response_rate ? ` · ${active.supplier.response_rate}%` : ""}
             </p>
           </div>
+          <div className="flex items-center gap-0.5 shrink-0">
+            <button aria-label="Call" className="p-2 rounded-full hover:bg-muted active:scale-90 transition"><Phone className="w-5 h-5" strokeWidth={1.9} /></button>
+            <button aria-label="Video" className="p-2 rounded-full hover:bg-muted active:scale-90 transition"><Video className="w-5 h-5" strokeWidth={1.9} /></button>
+            {active.supplier && (
+              <Link to={`/supplier/${active.supplier.id}`} aria-label="Info" className="p-2 rounded-full hover:bg-muted active:scale-90 transition">
+                <Info className="w-5 h-5" strokeWidth={1.9} />
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* Thread */}
