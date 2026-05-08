@@ -209,6 +209,7 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
   }
 
   return (
+    <>
     <Link
       to={`/product/${product.id}`}
       onClick={() => logProductClick(product, "card")}
