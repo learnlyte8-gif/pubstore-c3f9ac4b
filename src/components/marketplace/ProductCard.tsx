@@ -203,6 +203,8 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
           )}
         </div>
       </Link>
+      <ShareToChatSheet open={shareOpen} onClose={() => setShareOpen(false)} attachment={shareAttachment} />
+      </>
     );
   }
 
