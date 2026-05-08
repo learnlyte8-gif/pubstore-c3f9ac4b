@@ -147,7 +147,7 @@ function TabItem({
               {isActive && (
                 <span
                   aria-hidden
-                  className="absolute inset-[-8px] rounded-full bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary)/0.28)_0%,hsl(var(--primary)/0.10)_55%,transparent_75%)]"
+                  className="absolute inset-[-10px] rounded-full bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary)/0.45)_0%,hsl(var(--primary)/0.18)_45%,transparent_75%)] animate-tab-glow"
                 />
               )}
               <Icon
