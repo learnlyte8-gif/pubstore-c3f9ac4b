@@ -271,6 +271,51 @@
   }
 }
 
+  /* iOS 26 "Liquid Glass" floating tab bar — like WhatsApp/Apple */
+  .ios-liquid-bar {
+    position: relative;
+    border-radius: 28px;
+    background: hsl(var(--background) / 0.55);
+    backdrop-filter: saturate(180%) blur(28px);
+    -webkit-backdrop-filter: saturate(180%) blur(28px);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.35) inset,
+      0 -1px 0 hsl(0 0% 100% / 0.10) inset,
+      0 12px 36px -12px hsl(0 0% 0% / 0.35),
+      0 4px 12px -4px hsl(0 0% 0% / 0.18);
+    border: 1px solid hsl(var(--border) / 0.5);
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .dark .ios-liquid-bar {
+    background: hsl(0 0% 8% / 0.55);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.08) inset,
+      0 -1px 0 hsl(0 0% 0% / 0.4) inset,
+      0 12px 36px -12px hsl(0 0% 0% / 0.6),
+      0 4px 12px -4px hsl(0 0% 0% / 0.4);
+    border-color: hsl(0 0% 100% / 0.08);
+  }
+  .ios-liquid-bar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background:
+      radial-gradient(120% 80% at 50% 0%, hsl(0 0% 100% / 0.35) 0%, transparent 55%),
+      linear-gradient(180deg, hsl(0 0% 100% / 0.08) 0%, transparent 50%);
+    pointer-events: none;
+    mix-blend-mode: overlay;
+    z-index: 0;
+  }
+  .dark .ios-liquid-bar::before {
+    background:
+      radial-gradient(120% 80% at 50% 0%, hsl(0 0% 100% / 0.10) 0%, transparent 55%),
+      linear-gradient(180deg, hsl(0 0% 100% / 0.04) 0%, transparent 50%);
+  }
+  .ios-liquid-bar > * { position: relative; z-index: 1; }
+
+
 @keyframes splash-pulse {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.06); opacity: 0.92; }
