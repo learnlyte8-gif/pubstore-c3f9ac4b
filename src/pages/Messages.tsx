@@ -464,35 +464,85 @@ export default function Messages() {
         </div>
 
         {/* Composer */}
-        <div className="px-3 py-2.5 border-t border-border/60 glass-strong shadow-elevated flex items-center gap-2 safe-bottom">
-          <button aria-label="Attach" className="w-9 h-9 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground transition active:scale-95">
-            <Paperclip className="w-4 h-4" />
+        <div className="px-2 py-2 border-t border-border/60 glass-strong shadow-elevated flex items-center gap-1.5 safe-bottom">
+          <button onClick={() => setProductPickerOpen(true)} aria-label="Share product" className="w-9 h-9 rounded-full bg-ig-gradient text-white flex items-center justify-center active:scale-90 transition shadow-soft">
+            <Camera className="w-4 h-4" />
           </button>
-          <div className="flex-1 relative">
+          <div className="flex-1 relative flex items-center bg-muted rounded-full pr-1">
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && send()}
               placeholder="Message..."
-              className="w-full h-10 pl-4 pr-10 rounded-full bg-muted text-sm outline-none focus:ring-2 focus:ring-primary/40 transition"
+              className="flex-1 h-10 pl-4 pr-2 bg-transparent text-sm outline-none"
             />
-            <button aria-label="Emoji" className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full hover:bg-background/80 flex items-center justify-center text-muted-foreground transition">
-              <Smile className="w-4 h-4" />
-            </button>
+            {!draft.trim() && (
+              <>
+                <button aria-label="Mic" className="w-8 h-8 rounded-full hover:bg-background/60 flex items-center justify-center text-foreground/70"><Mic className="w-4 h-4" /></button>
+                <button onClick={() => setProductPickerOpen(true)} aria-label="Gallery" className="w-8 h-8 rounded-full hover:bg-background/60 flex items-center justify-center text-foreground/70"><ImageIcon className="w-4 h-4" /></button>
+                <button onClick={sendHeartReply} aria-label="Heart" className="w-8 h-8 rounded-full hover:bg-background/60 flex items-center justify-center text-foreground/70"><Heart className="w-4 h-4" /></button>
+              </>
+            )}
           </div>
-          <button
-            onClick={send}
-            disabled={!draft.trim()}
-            aria-label="Send"
-            className={`w-10 h-10 rounded-full flex items-center justify-center shadow-pop transition-all duration-200 ${
-              draft.trim()
-                ? "bg-ig-gradient text-white scale-100 hover:scale-105 active:scale-95"
-                : "bg-muted text-muted-foreground scale-90"
-            }`}
-          >
-            <Send className="w-4 h-4" />
-          </button>
+          {draft.trim() && (
+            <button
+              onClick={send}
+              aria-label="Send"
+              className="w-10 h-10 rounded-full flex items-center justify-center bg-ig-gradient text-white shadow-pop active:scale-90 transition"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          )}
         </div>
+
+        {/* Product picker overlay */}
+        {productPickerOpen && (
+          <div className="absolute inset-0 z-[70] bg-background/95 backdrop-blur-sm flex flex-col animate-fade-in">
+            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/60 safe-top">
+              <button onClick={() => setProductPickerOpen(false)} aria-label="Close" className="p-2 rounded-full hover:bg-muted active:scale-90 transition">
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <p className="font-bold text-sm">Share a product</p>
+            </div>
+            <div className="px-3 py-2 border-b border-border/60">
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={productQuery}
+                  onChange={(e) => setProductQuery(e.target.value)}
+                  placeholder="Search products"
+                  className="w-full h-10 pl-9 pr-3 rounded-full bg-muted text-sm outline-none focus:ring-2 focus:ring-primary/40"
+                />
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3">
+              {productLoading ? (
+                <p className="text-center text-xs text-muted-foreground py-10">Loading…</p>
+              ) : productResults.length === 0 ? (
+                <p className="text-center text-xs text-muted-foreground py-10">No products found</p>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {productResults.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={async () => {
+                        await sendAttachment({ kind: "product", id: p.id, title: p.title, image: p.image, price: p.price });
+                        setProductPickerOpen(false);
+                      }}
+                      className="text-left active:scale-95 transition"
+                    >
+                      <div className="aspect-square rounded-lg overflow-hidden bg-muted">
+                        <img src={p.image} alt={p.title} loading="lazy" className="w-full h-full object-cover" />
+                      </div>
+                      <p className="text-[11px] font-semibold line-clamp-2 leading-snug mt-1">{p.title}</p>
+                      <p className="text-[10px] font-bold text-destructive">${p.price.toFixed(2)}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
