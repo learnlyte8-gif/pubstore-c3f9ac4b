@@ -70,6 +70,21 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
   const off = discountPct(product);
   const countdown = useDealCountdown(product.dealEndsAt);
   const userLoc = useUserLocation();
+  const [shareOpen, setShareOpen] = useState(false);
+
+  const shareAttachment: ChatAttachment = {
+    kind: "product",
+    id: product.id,
+    title: product.title,
+    image: product.image,
+    price: product.price,
+  };
+
+  const handleShare = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShareOpen(true);
+  };
   // Hide internal "Imported · …" badges from public product cards.
   const displayBadge =
     product.badge && !/^imported/i.test(product.badge) ? product.badge : null;
