@@ -312,7 +312,7 @@ export default function Messages() {
     return () => { alive = false; };
   }, [productPickerOpen, productQuery]);
 
-
+  const filtered = useMemo(
     () => conversations.filter((c) => (c.supplier?.name ?? "").toLowerCase().includes(search.toLowerCase())),
     [conversations, search],
   );
