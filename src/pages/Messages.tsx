@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
-import { Search, Send, ShieldCheck, ArrowLeft, MessageCircle, Smile, Paperclip, Sparkles } from "lucide-react";
+import { Search, Send, ShieldCheck, ArrowLeft, MessageCircle, Smile, Paperclip, Sparkles, Image as ImageIcon, Heart, Phone, Video, Info, Mic, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { resolveMasterSupplierId } from "@/data/products";
+import { resolveMasterSupplierId, fetchProducts, type Product } from "@/data/products";
 import SupplierStories from "@/components/marketplace/SupplierStories";
 import { useUnreadChats, markConversationRead } from "@/hooks/useUnreadChats";
 import AttachmentCard, { type ChatAttachment } from "@/components/chat/AttachmentCard";
