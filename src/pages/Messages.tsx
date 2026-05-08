@@ -248,7 +248,71 @@ export default function Messages() {
     }
   };
 
-  const filtered = useMemo(
+  const sendAttachment = async (attachment: ChatAttachment) => {
+    if (!activeId || !userId) return;
+    const previewLabel =
+      attachment.kind === "product" ? `📦 ${attachment.title}`
+      : attachment.kind === "supplier" ? `🏬 ${attachment.name}`
+      : attachment.kind === "wishlist" ? `❤️ Wishlist · ${attachment.count} items`
+      : `🗂 Catalog · ${attachment.count} items`;
+    const tempId = `temp:${Date.now()}`;
+    stickRef.current = true;
+    setMessages((prev) => [
+      ...prev,
+      { id: tempId, conversation_id: activeId, sender_id: userId, body: previewLabel, created_at: new Date().toISOString(), attachment },
+    ]);
+    const { data: inserted } = await supabase
+      .from("messages")
+      .insert({ conversation_id: activeId, sender_id: userId, body: previewLabel, attachment: attachment as any })
+      .select("*").single();
+    if (inserted) {
+      setMessages((prev) => prev.map((m) => (m.id === tempId ? (inserted as Message) : m)));
+    }
+    await supabase.from("conversations")
+      .update({ last_message: previewLabel, last_message_at: new Date().toISOString() })
+      .eq("id", activeId);
+  };
+
+  // Double-tap a bubble to send ❤️ — Instagram style
+  const lastTapRef = useRef<{ id: string; t: number } | null>(null);
+  const sendHeartReply = async () => {
+    if (!activeId || !userId) return;
+    const tempId = `temp:${Date.now()}`;
+    stickRef.current = true;
+    setMessages((prev) => [...prev, { id: tempId, conversation_id: activeId, sender_id: userId, body: "❤️", created_at: new Date().toISOString() }]);
+    const { data: inserted } = await supabase.from("messages")
+      .insert({ conversation_id: activeId, sender_id: userId, body: "❤️" })
+      .select("*").single();
+    if (inserted) setMessages((prev) => prev.map((m) => (m.id === tempId ? (inserted as Message) : m)));
+    await supabase.from("conversations").update({ last_message: "❤️", last_message_at: new Date().toISOString() }).eq("id", activeId);
+  };
+  const onBubbleTap = (mid: string) => {
+    const now = Date.now();
+    const last = lastTapRef.current;
+    if (last && last.id === mid && now - last.t < 350) {
+      lastTapRef.current = null;
+      sendHeartReply();
+    } else {
+      lastTapRef.current = { id: mid, t: now };
+    }
+  };
+
+  // Product picker for in-chat sharing
+  const [productPickerOpen, setProductPickerOpen] = useState(false);
+  const [productQuery, setProductQuery] = useState("");
+  const [productResults, setProductResults] = useState<Product[]>([]);
+  const [productLoading, setProductLoading] = useState(false);
+  useEffect(() => {
+    if (!productPickerOpen) return;
+    let alive = true;
+    setProductLoading(true);
+    fetchProducts({ limit: 24, search: productQuery || undefined }).then((r) => {
+      if (alive) { setProductResults(r); setProductLoading(false); }
+    }).catch(() => alive && setProductLoading(false));
+    return () => { alive = false; };
+  }, [productPickerOpen, productQuery]);
+
+
     () => conversations.filter((c) => (c.supplier?.name ?? "").toLowerCase().includes(search.toLowerCase())),
     [conversations, search],
   );
