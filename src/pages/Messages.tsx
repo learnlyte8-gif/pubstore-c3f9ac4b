@@ -99,13 +99,56 @@ export default function Messages() {
       });
     const supplierIds = Array.from(new Set(merged.map((c) => c.supplier_id)));
     if (supplierIds.length) {
-      const { data: sups } = await supabase
-        .from("suppliers")
-        .select("id,name,logo,verified,response_time,response_rate,owner_id")
-        .in("id", supplierIds);
-      const map = new Map((sups ?? []).map((s) => [s.id, s as Conversation["supplier"]]));
+      const supBatches = await Promise.all(
+        chunk(supplierIds, 50).map(async (group) => {
+          const { data } = await supabase
+            .from("suppliers")
+            .select("id,name,logo,verified,response_time,response_rate,owner_id")
+            .in("id", group);
+          return data ?? [];
+        }),
+      );
+      const sups = supBatches.flat();
+      const map = new Map(sups.map((s) => [s.id, s as Conversation["supplier"]]));
       merged.forEach((c) => { c.supplier = map.get(c.supplier_id); });
     }
+    // Resolve peer (the "other" party in each conversation) for display
+    const buyerIdsToFetch = Array.from(
+      new Set(
+        merged
+          .filter((c) => c.supplier?.owner_id === uid && c.buyer_id !== uid)
+          .map((c) => c.buyer_id),
+      ),
+    );
+    let profileMap = new Map<string, { display_name: string | null; username: string | null; avatar_url: string | null }>();
+    if (buyerIdsToFetch.length) {
+      const profBatches = await Promise.all(
+        chunk(buyerIdsToFetch, 50).map(async (group) => {
+          const { data } = await supabase
+            .from("profiles")
+            .select("user_id, display_name, username, avatar_url")
+            .in("user_id", group);
+          return data ?? [];
+        }),
+      );
+      profileMap = new Map(profBatches.flat().map((p: any) => [p.user_id, p]));
+    }
+    merged.forEach((c) => {
+      const userIsOwner = c.supplier?.owner_id === uid;
+      if (userIsOwner) {
+        const p = profileMap.get(c.buyer_id);
+        const name = p?.display_name || p?.username || "Customer";
+        c.peer = { name, logo: p?.avatar_url ?? null, verified: false, subtitle: p?.username ? `@${p.username}` : "Customer", supplierId: c.supplier?.id };
+      } else if (c.supplier) {
+        c.peer = {
+          name: c.supplier.name,
+          logo: c.supplier.logo,
+          verified: c.supplier.verified,
+          subtitle: c.supplier.response_time ? `Responds ${c.supplier.response_time}` : "Active now",
+          supplierId: c.supplier.id,
+        };
+      }
+    });
     setConversations(merged);
     setLoading(false);
   }, []);
