@@ -692,11 +692,11 @@ export default function Messages() {
               >
                 <div className="relative shrink-0">
                   <div className="ring-gradient rounded-full p-[2px]" style={{ width: 52, height: 52 }}>
-                    {c.supplier?.logo ? (
-                      <img src={c.supplier.logo} alt="" className="w-full h-full rounded-full object-cover bg-card" />
+                    {c.peer?.logo ? (
+                      <img src={c.peer.logo} alt="" className="w-full h-full rounded-full object-cover bg-card" />
                     ) : (
                       <div className="w-full h-full rounded-full bg-muted flex items-center justify-center text-sm font-bold">
-                        {(c.supplier?.name ?? "S")[0]}
+                        {(c.peer?.name ?? c.supplier?.name ?? "S")[0]}
                       </div>
                     )}
                   </div>
@@ -705,8 +705,8 @@ export default function Messages() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <p className={`text-sm truncate flex items-center gap-1 ${unread > 0 ? "font-extrabold" : "font-bold"}`}>
-                      {c.supplier?.name ?? "Supplier"}
-                      {c.supplier?.verified && <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0 fill-primary/20" />}
+                      {c.peer?.name ?? c.supplier?.name ?? "Conversation"}
+                      {c.peer?.verified && <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0 fill-primary/20" />}
                     </p>
                     <span className={`text-[10px] shrink-0 ${unread > 0 ? "text-primary font-bold" : "text-muted-foreground"}`}>
                       {fmtTime(c.last_message_at)}
