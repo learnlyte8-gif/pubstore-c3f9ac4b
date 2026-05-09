@@ -20,6 +20,7 @@ type Conversation = {
   last_message: string | null;
   last_message_at: string | null;
   supplier?: { id: string; name: string; logo: string | null; verified: boolean | null; response_time: string | null; response_rate: number | null; owner_id: string };
+  peer?: { name: string; logo: string | null; verified: boolean | null; subtitle: string | null; supplierId?: string };
 };
 
 type Message = {
@@ -98,13 +99,56 @@ export default function Messages() {
       });
     const supplierIds = Array.from(new Set(merged.map((c) => c.supplier_id)));
     if (supplierIds.length) {
-      const { data: sups } = await supabase
-        .from("suppliers")
-        .select("id,name,logo,verified,response_time,response_rate,owner_id")
-        .in("id", supplierIds);
-      const map = new Map((sups ?? []).map((s) => [s.id, s as Conversation["supplier"]]));
+      const supBatches = await Promise.all(
+        chunk(supplierIds, 50).map(async (group) => {
+          const { data } = await supabase
+            .from("suppliers")
+            .select("id,name,logo,verified,response_time,response_rate,owner_id")
+            .in("id", group);
+          return data ?? [];
+        }),
+      );
+      const sups = supBatches.flat();
+      const map = new Map(sups.map((s) => [s.id, s as Conversation["supplier"]]));
       merged.forEach((c) => { c.supplier = map.get(c.supplier_id); });
     }
+    // Resolve peer (the "other" party in each conversation) for display
+    const buyerIdsToFetch = Array.from(
+      new Set(
+        merged
+          .filter((c) => c.supplier?.owner_id === uid && c.buyer_id !== uid)
+          .map((c) => c.buyer_id),
+      ),
+    );
+    let profileMap = new Map<string, { display_name: string | null; username: string | null; avatar_url: string | null }>();
+    if (buyerIdsToFetch.length) {
+      const profBatches = await Promise.all(
+        chunk(buyerIdsToFetch, 50).map(async (group) => {
+          const { data } = await supabase
+            .from("profiles")
+            .select("user_id, display_name, username, avatar_url")
+            .in("user_id", group);
+          return data ?? [];
+        }),
+      );
+      profileMap = new Map(profBatches.flat().map((p: any) => [p.user_id, p]));
+    }
+    merged.forEach((c) => {
+      const userIsOwner = c.supplier?.owner_id === uid;
+      if (userIsOwner) {
+        const p = profileMap.get(c.buyer_id);
+        const name = p?.display_name || p?.username || "Customer";
+        c.peer = { name, logo: p?.avatar_url ?? null, verified: false, subtitle: p?.username ? `@${p.username}` : "Customer", supplierId: c.supplier?.id };
+      } else if (c.supplier) {
+        c.peer = {
+          name: c.supplier.name,
+          logo: c.supplier.logo,
+          verified: c.supplier.verified,
+          subtitle: c.supplier.response_time ? `Responds ${c.supplier.response_time}` : "Active now",
+          supplierId: c.supplier.id,
+        };
+      }
+    });
     setConversations(merged);
     setLoading(false);
   }, []);
@@ -348,7 +392,7 @@ export default function Messages() {
   }, [productPickerOpen, productQuery]);
 
   const filtered = useMemo(
-    () => conversations.filter((c) => (c.supplier?.name ?? "").toLowerCase().includes(search.toLowerCase())),
+    () => conversations.filter((c) => (c.peer?.name ?? c.supplier?.name ?? "").toLowerCase().includes(search.toLowerCase())),
     [conversations, search],
   );
 
@@ -369,11 +413,11 @@ export default function Messages() {
           </button>
           <div className="relative shrink-0">
             <div className="ring-gradient w-11 h-11 rounded-full p-[2px]">
-              {active.supplier?.logo ? (
-                <img src={active.supplier.logo} alt="" className="w-full h-full rounded-full object-cover bg-card" />
+              {active.peer?.logo ? (
+                <img src={active.peer.logo} alt="" className="w-full h-full rounded-full object-cover bg-card" />
               ) : (
                 <div className="w-full h-full rounded-full bg-muted flex items-center justify-center text-xs font-bold">
-                  {active.supplier?.name?.[0] ?? "S"}
+                  {active.peer?.name?.[0] ?? active.supplier?.name?.[0] ?? "S"}
                 </div>
               )}
             </div>
@@ -381,13 +425,12 @@ export default function Messages() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-bold text-sm truncate flex items-center gap-1">
-              {active.supplier?.name}
-              {active.supplier?.verified && <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0 fill-primary/20" />}
+              {active.peer?.name ?? active.supplier?.name}
+              {active.peer?.verified && <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0 fill-primary/20" />}
             </p>
             <p className="text-[11px] text-muted-foreground flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              {active.supplier?.response_time ? `Responds ${active.supplier.response_time}` : "Active now"}
-              {active.supplier?.response_rate ? ` · ${active.supplier.response_rate}%` : ""}
+              {active.peer?.subtitle ?? "Active now"}
             </p>
           </div>
           <div className="flex items-center gap-0.5 shrink-0">
@@ -649,11 +692,11 @@ export default function Messages() {
               >
                 <div className="relative shrink-0">
                   <div className="ring-gradient rounded-full p-[2px]" style={{ width: 52, height: 52 }}>
-                    {c.supplier?.logo ? (
-                      <img src={c.supplier.logo} alt="" className="w-full h-full rounded-full object-cover bg-card" />
+                    {c.peer?.logo ? (
+                      <img src={c.peer.logo} alt="" className="w-full h-full rounded-full object-cover bg-card" />
                     ) : (
                       <div className="w-full h-full rounded-full bg-muted flex items-center justify-center text-sm font-bold">
-                        {(c.supplier?.name ?? "S")[0]}
+                        {(c.peer?.name ?? c.supplier?.name ?? "S")[0]}
                       </div>
                     )}
                   </div>
@@ -662,8 +705,8 @@ export default function Messages() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <p className={`text-sm truncate flex items-center gap-1 ${unread > 0 ? "font-extrabold" : "font-bold"}`}>
-                      {c.supplier?.name ?? "Supplier"}
-                      {c.supplier?.verified && <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0 fill-primary/20" />}
+                      {c.peer?.name ?? c.supplier?.name ?? "Conversation"}
+                      {c.peer?.verified && <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0 fill-primary/20" />}
                     </p>
                     <span className={`text-[10px] shrink-0 ${unread > 0 ? "text-primary font-bold" : "text-muted-foreground"}`}>
                       {fmtTime(c.last_message_at)}
