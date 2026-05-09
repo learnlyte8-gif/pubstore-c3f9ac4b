@@ -1,6 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+const chunk = <T,>(items: T[], size: number) => {
+  const batches: T[][] = [];
+  for (let i = 0; i < items.length; i += size) batches.push(items.slice(i, i + size));
+  return batches;
+};
+
 const STORAGE_KEY = "pubstore:chat-last-read";
 
 type LastReadMap = Record<string, string>;
@@ -54,13 +60,19 @@ export function useUnreadChats() {
     const { data: mySup } = await supabase.from("suppliers").select("id").eq("owner_id", uid);
     let supConvs: { id: string; last_message_at: string | null }[] = [];
     if (mySup?.length) {
-      const { data } = await supabase
-        .from("conversations")
-        .select("id, last_message_at")
-        .in("supplier_id", mySup.map((s) => s.id));
-      supConvs = data ?? [];
+      const ids = mySup.map((s) => s.id);
+      const batches = await Promise.all(
+        chunk(ids, 50).map(async (group) => {
+          const { data } = await supabase
+            .from("conversations")
+            .select("id, last_message_at")
+            .in("supplier_id", group);
+          return data ?? [];
+        }),
+      );
+      supConvs = batches.flat();
     }
-    const all = [...(buyerConvs ?? []), ...supConvs];
+    const all = [...(buyerConvs ?? []), ...supConvs].filter((c, i, arr) => arr.findIndex((x) => x.id === c.id) === i);
     if (all.length === 0) {
       setPerConversation({});
       setChatsWithUnread(0);
