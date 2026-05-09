@@ -413,11 +413,11 @@ export default function Messages() {
           </button>
           <div className="relative shrink-0">
             <div className="ring-gradient w-11 h-11 rounded-full p-[2px]">
-              {active.supplier?.logo ? (
-                <img src={active.supplier.logo} alt="" className="w-full h-full rounded-full object-cover bg-card" />
+              {active.peer?.logo ? (
+                <img src={active.peer.logo} alt="" className="w-full h-full rounded-full object-cover bg-card" />
               ) : (
                 <div className="w-full h-full rounded-full bg-muted flex items-center justify-center text-xs font-bold">
-                  {active.supplier?.name?.[0] ?? "S"}
+                  {active.peer?.name?.[0] ?? active.supplier?.name?.[0] ?? "S"}
                 </div>
               )}
             </div>
@@ -425,13 +425,12 @@ export default function Messages() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-bold text-sm truncate flex items-center gap-1">
-              {active.supplier?.name}
-              {active.supplier?.verified && <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0 fill-primary/20" />}
+              {active.peer?.name ?? active.supplier?.name}
+              {active.peer?.verified && <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0 fill-primary/20" />}
             </p>
             <p className="text-[11px] text-muted-foreground flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              {active.supplier?.response_time ? `Responds ${active.supplier.response_time}` : "Active now"}
-              {active.supplier?.response_rate ? ` · ${active.supplier.response_rate}%` : ""}
+              {active.peer?.subtitle ?? "Active now"}
             </p>
           </div>
           <div className="flex items-center gap-0.5 shrink-0">
