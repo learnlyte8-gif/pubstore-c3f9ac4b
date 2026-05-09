@@ -173,18 +173,36 @@ export default function Messages() {
     };
   }, [activeId]);
 
-  // Realtime: refresh conversation list on new conversations or message previews
+  // Realtime: refresh conversation list on new conversations or messages.
+  // Also refresh on tab focus / visibility so chats started from another
+  // account/device show up immediately even if a realtime event was missed.
   useEffect(() => {
     if (!userId) return;
     const ch = supabase
-      .channel(`conv-list:${userId}`)
+      .channel(`conv-list:${userId}:${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "conversations" },
         () => loadConversations(userId),
       )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        () => loadConversations(userId),
+      )
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+
+    const refresh = () => { if (document.visibilityState === "visible") loadConversations(userId); };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    const poll = window.setInterval(refresh, 15000);
+
+    return () => {
+      supabase.removeChannel(ch);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+      window.clearInterval(poll);
+    };
   }, [userId, loadConversations]);
 
   // Native auto-scroll: only stick to bottom if user is already near bottom.
