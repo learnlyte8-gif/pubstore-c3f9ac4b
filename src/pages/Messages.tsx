@@ -392,7 +392,7 @@ export default function Messages() {
   }, [productPickerOpen, productQuery]);
 
   const filtered = useMemo(
-    () => conversations.filter((c) => (c.supplier?.name ?? "").toLowerCase().includes(search.toLowerCase())),
+    () => conversations.filter((c) => (c.peer?.name ?? c.supplier?.name ?? "").toLowerCase().includes(search.toLowerCase())),
     [conversations, search],
   );
 
