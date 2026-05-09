@@ -7,6 +7,12 @@ import SupplierStories from "@/components/marketplace/SupplierStories";
 import { useUnreadChats, markConversationRead } from "@/hooks/useUnreadChats";
 import AttachmentCard, { type ChatAttachment } from "@/components/chat/AttachmentCard";
 
+const chunk = <T,>(items: T[], size: number) => {
+  const batches: T[][] = [];
+  for (let i = 0; i < items.length; i += size) batches.push(items.slice(i, i + size));
+  return batches;
+};
+
 type Conversation = {
   id: string;
   buyer_id: string;
@@ -71,14 +77,25 @@ export default function Messages() {
     let supConvs: Conversation[] = [];
     if (mySup?.length) {
       const ids = mySup.map((s) => s.id);
-      const { data } = await supabase
-        .from("conversations")
-        .select("*")
-        .in("supplier_id", ids)
-        .order("last_message_at", { ascending: false, nullsFirst: false });
-      supConvs = (data ?? []) as Conversation[];
+      const batches = await Promise.all(
+        chunk(ids, 50).map(async (group) => {
+          const { data } = await supabase
+            .from("conversations")
+            .select("*")
+            .in("supplier_id", group)
+            .order("last_message_at", { ascending: false, nullsFirst: false });
+          return (data ?? []) as Conversation[];
+        }),
+      );
+      supConvs = batches.flat();
     }
-    const merged = [...((convs ?? []) as Conversation[]), ...supConvs];
+    const merged = [...((convs ?? []) as Conversation[]), ...supConvs]
+      .filter((c, i, arr) => arr.findIndex((x) => x.id === c.id) === i)
+      .sort((a, b) => {
+        const aTime = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
+        const bTime = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
+        return bTime - aTime;
+      });
     const supplierIds = Array.from(new Set(merged.map((c) => c.supplier_id)));
     if (supplierIds.length) {
       const { data: sups } = await supabase
