@@ -191,6 +191,13 @@ const Home = () => {
                 </section>
               )}
 
+              <JobsRail />
+
+              <FreelanceGigsRail />
+
+              <LogisticsRail />
+
+
               {suppliers.length > 0 && (
                 <section className="px-4 mt-6">
                   <SectionHeader icon={Building2} title="Top suppliers" subtitle="Verified stores ready to ship" />
