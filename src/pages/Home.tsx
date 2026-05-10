@@ -30,6 +30,9 @@ import ServicesRail from "@/components/marketplace/ServicesRail";
 import PropertiesRail from "@/components/marketplace/PropertiesRail";
 import FinanceRail from "@/components/marketplace/FinanceRail";
 import CarRentalsRail from "@/components/marketplace/CarRentalsRail";
+import JobsRail from "@/components/marketplace/JobsRail";
+import LogisticsRail from "@/components/marketplace/LogisticsRail";
+import FreelanceGigsRail from "@/components/marketplace/FreelanceGigsRail";
 import TapsonAssistant from "@/components/TapsonAssistant";
 import EmptyState from "@/components/EmptyState";
 import SupplierCard from "@/components/marketplace/SupplierCard";
@@ -187,6 +190,13 @@ const Home = () => {
                   </div>
                 </section>
               )}
+
+              <JobsRail />
+
+              <FreelanceGigsRail />
+
+              <LogisticsRail />
+
 
               {suppliers.length > 0 && (
                 <section className="px-4 mt-6">
