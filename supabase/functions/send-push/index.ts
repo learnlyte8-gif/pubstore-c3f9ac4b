@@ -16,7 +16,9 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const VAPID_PUBLIC = Deno.env.get("VAPID_PUBLIC_KEY")!;
+// Public key is shipped to clients too — safe to hardcode here.
+const VAPID_PUBLIC =
+  "BM2jhYequ4m17iXGvIwWan_q_unCX4HRRsm2na7ATM24dRfXxfPFaSqeTm1baEHl0QqIXBTQJ8_6jXVWHIrHnlQ";
 const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY")!;
 const VAPID_SUBJECT =
   Deno.env.get("VAPID_SUBJECT") ?? "mailto:hello@pubstore.world";

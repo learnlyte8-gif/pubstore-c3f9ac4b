@@ -14,6 +14,21 @@ export type Database = {
   }
   public: {
     Tables: {
+      _push_test_state: {
+        Row: {
+          burst_started_at: string
+          id: number
+        }
+        Insert: {
+          burst_started_at?: string
+          id?: number
+        }
+        Update: {
+          burst_started_at?: string
+          id?: number
+        }
+        Relationships: []
+      }
       addresses: {
         Row: {
           city: string | null
@@ -3723,6 +3738,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _push_burst_tick: { Args: never; Returns: undefined }
+      _send_test_push: { Args: { _label: string }; Returns: undefined }
       apply_wallet_transaction: {
         Args: {
           _amount: number
