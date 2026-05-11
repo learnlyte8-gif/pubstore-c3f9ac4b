@@ -18,7 +18,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 // Public key is shipped to clients too — safe to hardcode here.
 const VAPID_PUBLIC =
-  "BM2jhYequ4m17iXGvIwWan_q_unCX4HRRsm2na7ATM24dRfXxfPFaSqeTm1baEHl0QqIXBTQJ8_6jXVWHIrHnlQ";
+  "BI1sNRQWMdr3EkAdRFLkwF8orl0LaIPZ8ACaVFI4Z8fLGrzdmyuKiS46wl9przAzK8xE156g6aKnxGl8j0hYtw0";
 const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY")!;
 const VAPID_SUBJECT =
   Deno.env.get("VAPID_SUBJECT") ?? "mailto:hello@pubstore.world";
@@ -111,22 +111,26 @@ Deno.serve(async (req) => {
     // Clean up dead subscriptions (404/410)
     const dead: string[] = [];
     let okCount = 0;
+    const errors: Array<{ endpoint: string; status?: number; message?: string; body?: string }> = [];
     results.forEach((r, i) => {
       if (r.status === "fulfilled") {
         okCount++;
       } else {
-        const err = r.reason as { statusCode?: number };
+        const err = r.reason as { statusCode?: number; body?: string; message?: string };
+        const endpoint = (subs as SubRow[])[i].endpoint;
+        errors.push({ endpoint: endpoint.slice(0, 60), status: err?.statusCode, message: err?.message, body: err?.body });
         if (err?.statusCode === 404 || err?.statusCode === 410) {
-          dead.push((subs as SubRow[])[i].endpoint);
+          dead.push(endpoint);
         }
       }
     });
+    if (errors.length) console.error("push failures", JSON.stringify(errors));
     if (dead.length) {
       await supabase.from("push_subscriptions").delete().in("endpoint", dead);
     }
 
     return new Response(
-      JSON.stringify({ sent: okCount, total: subs.length, cleaned: dead.length }),
+      JSON.stringify({ sent: okCount, total: subs.length, cleaned: dead.length, errors }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
