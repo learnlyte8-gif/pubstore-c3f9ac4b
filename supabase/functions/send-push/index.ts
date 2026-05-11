@@ -18,7 +18,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 // Public key is shipped to clients too — safe to hardcode here.
 const VAPID_PUBLIC =
-  "BM2jhYequ4m17iXGvIwWan_q_unCX4HRRsm2na7ATM24dRfXxfPFaSqeTm1baEHl0QqIXBTQJ8_6jXVWHIrHnlQ";
+  "BI1sNRQWMdr3EkAdRFLkwF8orl0LaIPZ8ACaVFI4Z8fLGrzdmyuKiS46wl9przAzK8xE156g6aKnxGl8j0hYtw0";
 const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY")!;
 const VAPID_SUBJECT =
   Deno.env.get("VAPID_SUBJECT") ?? "mailto:hello@pubstore.world";
