@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 // Public VAPID key — safe to ship in the frontend.
 const VAPID_PUBLIC_KEY =
-  "BM2jhYequ4m17iXGvIwWan_q_unCX4HRRsm2na7ATM24dRfXxfPFaSqeTm1baEHl0QqIXBTQJ8_6jXVWHIrHnlQ";
+  "BI1sNRQWMdr3EkAdRFLkwF8orl0LaIPZ8ACaVFI4Z8fLGrzdmyuKiS46wl9przAzK8xE156g6aKnxGl8j0hYtw0";
 
 export const isPushSupported = () =>
   typeof window !== "undefined" &&
