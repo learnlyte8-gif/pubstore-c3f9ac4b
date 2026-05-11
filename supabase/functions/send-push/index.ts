@@ -111,16 +111,20 @@ Deno.serve(async (req) => {
     // Clean up dead subscriptions (404/410)
     const dead: string[] = [];
     let okCount = 0;
+    const errors: Array<{ endpoint: string; status?: number; message?: string; body?: string }> = [];
     results.forEach((r, i) => {
       if (r.status === "fulfilled") {
         okCount++;
       } else {
-        const err = r.reason as { statusCode?: number };
+        const err = r.reason as { statusCode?: number; body?: string; message?: string };
+        const endpoint = (subs as SubRow[])[i].endpoint;
+        errors.push({ endpoint: endpoint.slice(0, 60), status: err?.statusCode, message: err?.message, body: err?.body });
         if (err?.statusCode === 404 || err?.statusCode === 410) {
-          dead.push((subs as SubRow[])[i].endpoint);
+          dead.push(endpoint);
         }
       }
     });
+    if (errors.length) console.error("push failures", JSON.stringify(errors));
     if (dead.length) {
       await supabase.from("push_subscriptions").delete().in("endpoint", dead);
     }
