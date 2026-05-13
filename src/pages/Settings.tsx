@@ -1,17 +1,19 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Bell, Globe, Moon, Sun, Monitor, DollarSign, Languages, Smartphone, Palette, ChevronRight, Sparkles, Check } from "lucide-react";
+import { ArrowLeft, Bell, Globe, Moon, Sun, Monitor, DollarSign, Languages, Smartphone, Palette, ChevronRight, Sparkles, Check, Send } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { INTERESTS } from "@/data/interests";
 import { useMyInterests } from "@/hooks/useInterests";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Settings() {
   const { theme, setTheme } = useTheme();
   const [currency, setCurrency] = useState("USD");
   const [language, setLanguage] = useState("English");
   const { interests, save: saveInterests, userId } = useMyInterests();
+  const [testingPush, setTestingPush] = useState(false);
 
   const toggleInterest = async (item: string) => {
     if (!userId) {
@@ -26,6 +28,35 @@ export default function Settings() {
     const next = has ? interests.filter((x) => x !== item) : [...interests, item];
     await saveInterests(next);
     toast.success(has ? "Removed from interests" : "Added to interests");
+  };
+
+  const sendTestNotification = async () => {
+    if (!userId) {
+      toast.error("Sign in to send a test notification");
+      return;
+    }
+    setTestingPush(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-push", {
+        body: {
+          user_id: userId,
+          title: "PUBSTORE test push",
+          body: "This is a manual test notification",
+          url: "/settings",
+          type: "test",
+        },
+      });
+      if (error) throw error;
+      toast.success("Test notification sent", {
+        description: data?.sent ? `Delivered to ${data.sent} device(s)` : "Sent to backend",
+      });
+    } catch (e) {
+      toast.error("Failed to send test", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
+    } finally {
+      setTestingPush(false);
+    }
   };
 
   return (
@@ -97,6 +128,18 @@ export default function Settings() {
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </Link>
+          <button onClick={sendTestNotification} disabled={testingPush} className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-muted/40 disabled:opacity-50 text-left">
+            <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center"><Send className="w-4.5 h-4.5" /></span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">Send test notification</p>
+              <p className="text-[11px] text-muted-foreground">Fire a push to this device instantly</p>
+            </div>
+            {testingPush ? (
+              <span className="text-[10px] text-muted-foreground">sending…</span>
+            ) : (
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            )}
+          </button>
         </Section>
 
         <Section title="Region">
