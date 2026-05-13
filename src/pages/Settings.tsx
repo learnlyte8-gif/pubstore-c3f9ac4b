@@ -30,6 +30,35 @@ export default function Settings() {
     toast.success(has ? "Removed from interests" : "Added to interests");
   };
 
+  const sendTestNotification = async () => {
+    if (!userId) {
+      toast.error("Sign in to send a test notification");
+      return;
+    }
+    setTestingPush(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-push", {
+        body: {
+          user_id: userId,
+          title: "PUBSTORE test push",
+          body: "This is a manual test notification",
+          url: "/settings",
+          type: "test",
+        },
+      });
+      if (error) throw error;
+      toast.success("Test notification sent", {
+        description: data?.sent ? `Delivered to ${data.sent} device(s)` : "Sent to backend",
+      });
+    } catch (e) {
+      toast.error("Failed to send test", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
+    } finally {
+      setTestingPush(false);
+    }
+  };
+
   return (
     <div className="pb-24">
       <header className="sticky top-0 z-20 bg-background/90 backdrop-blur border-b px-3 py-3 flex items-center gap-2">
