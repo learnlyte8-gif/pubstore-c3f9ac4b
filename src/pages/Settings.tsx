@@ -13,6 +13,7 @@ export default function Settings() {
   const [currency, setCurrency] = useState("USD");
   const [language, setLanguage] = useState("English");
   const { interests, save: saveInterests, userId } = useMyInterests();
+  const [testingPush, setTestingPush] = useState(false);
 
   const toggleInterest = async (item: string) => {
     if (!userId) {
