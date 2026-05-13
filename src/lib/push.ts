@@ -1,9 +1,7 @@
 // Web Push subscription helpers.
 import { supabase } from "@/integrations/supabase/client";
 
-// Public VAPID key — safe to ship in the frontend.
-const VAPID_PUBLIC_KEY =
-  "BI1sNRQWMdr3EkAdRFLkwF8orl0LaIPZ8ACaVFI4Z8fLGrzdmyuKiS46wl9przAzK8xE156g6aKnxGl8j0hYtw0";
+let vapidPublicKeyPromise: Promise<string> | null = null;
 
 export const isPushSupported = () =>
   typeof window !== "undefined" &&
@@ -26,6 +24,20 @@ function arrayBufferToBase64Url(buffer: ArrayBuffer | null): string {
   let bin = "";
   for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function getVapidPublicKey(): Promise<string> {
+  if (!vapidPublicKeyPromise) {
+    vapidPublicKeyPromise = supabase.functions
+      .invoke("send-push", { method: "GET" })
+      .then(({ data, error }) => {
+        if (error) throw error;
+        const key = data?.vapidPublicKey;
+        if (!key || typeof key !== "string") throw new Error("Missing VAPID public key");
+        return key;
+      });
+  }
+  return vapidPublicKeyPromise;
 }
 
 async function ensureRegistration(): Promise<ServiceWorkerRegistration> {
@@ -66,12 +78,23 @@ export async function subscribeToPush(): Promise<{ ok: boolean; reason?: string 
   if (permission !== "granted") return { ok: false, reason: "Permission denied" };
 
   const reg = await ensureRegistration();
+  const vapidPublicKey = await getVapidPublicKey();
+  const desiredKey = vapidPublicKey;
   let sub = await reg.pushManager.getSubscription();
+
+  if (sub) {
+    const currentKey = arrayBufferToBase64Url(sub.getKey("p256dh"));
+    if (!currentKey) {
+      await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+      await sub.unsubscribe().catch(() => {});
+      sub = null;
+    }
+  }
+
   if (!sub) {
     sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      // Cast to BufferSource — TS lib types are stricter than the runtime spec.
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as unknown as BufferSource,
+      applicationServerKey: urlBase64ToUint8Array(desiredKey) as unknown as BufferSource,
     });
   }
 
