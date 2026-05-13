@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { INTERESTS } from "@/data/interests";
 import { useMyInterests } from "@/hooks/useInterests";
 import { supabase } from "@/integrations/supabase/client";
+import { getPushState, subscribeToPush } from "@/lib/push";
 
 export default function Settings() {
   const { theme, setTheme } = useTheme();
@@ -37,6 +38,14 @@ export default function Settings() {
     }
     setTestingPush(true);
     try {
+      const pushState = await getPushState();
+      if (pushState.supported) {
+        const subscribed = await subscribeToPush();
+        if (!subscribed.ok) {
+          throw new Error(subscribed.reason || "This device is not subscribed for push yet.");
+        }
+      }
+
       const { data, error } = await supabase.functions.invoke("send-push", {
         body: {
           user_id: userId,
@@ -47,8 +56,11 @@ export default function Settings() {
         },
       });
       if (error) throw error;
+      if (data?.sent < 1) {
+        throw new Error(data?.errors?.[0]?.body || data?.reason || "No device accepted the notification.");
+      }
       toast.success("Test notification sent", {
-        description: data?.sent ? `Delivered to ${data.sent} device(s)` : "Sent to backend",
+        description: `Delivered to ${data.sent} device(s)`,
       });
     } catch (e) {
       toast.error("Failed to send test", {
