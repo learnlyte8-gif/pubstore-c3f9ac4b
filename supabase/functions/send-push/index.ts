@@ -6,6 +6,8 @@
 // on locked devices and when the browser is fully closed.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { Buffer } from "node:buffer";
+import { createECDH } from "node:crypto";
 import webpush from "npm:web-push@3.6.7";
 
 const corsHeaders = {
@@ -16,12 +18,31 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-// Public key is shipped to clients too — safe to hardcode here.
-const VAPID_PUBLIC =
-  "BI1sNRQWMdr3EkAdRFLkwF8orl0LaIPZ8ACaVFI4Z8fLGrzdmyuKiS46wl9przAzK8xE156g6aKnxGl8j0hYtw0";
 const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY")!;
 const VAPID_SUBJECT =
   Deno.env.get("VAPID_SUBJECT") ?? "mailto:hello@pubstore.world";
+
+function base64UrlToBuffer(value: string) {
+  const padding = "=".repeat((4 - (value.length % 4)) % 4);
+  const base64 = (value + padding).replace(/-/g, "+").replace(/_/g, "/");
+  return Buffer.from(base64, "base64");
+}
+
+function bufferToBase64Url(value: Uint8Array) {
+  return Buffer.from(value)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+function deriveVapidPublicKey(privateKey: string) {
+  const ecdh = createECDH("prime256v1");
+  ecdh.setPrivateKey(base64UrlToBuffer(privateKey));
+  return bufferToBase64Url(ecdh.getPublicKey());
+}
+
+const VAPID_PUBLIC = deriveVapidPublicKey(VAPID_PRIVATE);
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
 
@@ -41,6 +62,12 @@ interface SubRow {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "GET") {
+    return new Response(JSON.stringify({ vapidPublicKey: VAPID_PUBLIC }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   try {
     const body = await req.json().catch(() => ({}));
