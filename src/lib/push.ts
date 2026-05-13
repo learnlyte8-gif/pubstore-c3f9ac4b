@@ -83,8 +83,8 @@ export async function subscribeToPush(): Promise<{ ok: boolean; reason?: string 
   let sub = await reg.pushManager.getSubscription();
 
   if (sub) {
-    const currentKey = arrayBufferToBase64Url(sub.getKey("p256dh"));
-    if (!currentKey) {
+    const currentKey = arrayBufferToBase64Url(sub.options?.applicationServerKey ?? null);
+    if (!currentKey || currentKey !== desiredKey) {
       await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
       await sub.unsubscribe().catch(() => {});
       sub = null;
