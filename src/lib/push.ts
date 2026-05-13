@@ -58,10 +58,12 @@ export async function getPushState(): Promise<{
   try {
     const reg = await ensureRegistration();
     const sub = await reg.pushManager.getSubscription();
+    const vapidPublicKey = await getVapidPublicKey().catch(() => null);
+    const currentKey = arrayBufferToBase64Url(sub?.options?.applicationServerKey ?? null);
     return {
       supported: true,
       permission: Notification.permission,
-      subscribed: !!sub,
+      subscribed: !!sub && (!vapidPublicKey || currentKey === vapidPublicKey),
     };
   } catch {
     return { supported: true, permission: Notification.permission, subscribed: false };
