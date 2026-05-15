@@ -230,6 +230,27 @@ export default function SearchPage() {
             </div>
           )}
         </div>
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          aria-label="Search by image"
+          disabled={imgLoading}
+          className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shadow-soft disabled:opacity-50"
+        >
+          {imgLoading ? <CircleSpinner size={16} /> : <Camera className="w-4 h-4" />}
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onPickImage(f);
+            e.target.value = "";
+          }}
+        />
         <button type="button" onClick={() => setShowFilters((v) => !v)} aria-label="Filters"
           className={`w-10 h-10 rounded-full flex items-center justify-center shadow-soft ${showFilters ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
           <SlidersHorizontal className="w-4 h-4" />
