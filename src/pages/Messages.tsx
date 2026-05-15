@@ -315,6 +315,7 @@ export default function Messages() {
       if (error || !data) return;
       await loadConversations(userId);
       setActiveId(data.id);
+      if (initialPrefill) setDraft(initialPrefill);
       setParams({}, { replace: true });
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
