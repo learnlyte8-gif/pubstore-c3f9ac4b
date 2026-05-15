@@ -307,7 +307,11 @@ export default function Messages() {
     (async () => {
       const targetSupplierId = await resolveMasterSupplierId(initialSupplierId);
       const existing = conversations.find((c) => c.supplier_id === targetSupplierId && c.buyer_id === userId);
-      if (existing) { setActiveId(existing.id); return; }
+      if (existing) {
+        setActiveId(existing.id);
+        if (initialPrefill) setDraft(initialPrefill);
+        return;
+      }
       const { data, error } = await supabase
         .from("conversations")
         .insert({ buyer_id: userId, supplier_id: targetSupplierId })
