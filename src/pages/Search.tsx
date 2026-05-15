@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
-import { Search as SearchIcon, SlidersHorizontal, X, Star, Truck, Sparkles, ArrowRight, History, TrendingUp, Package, Wrench, Home as HomeIcon, Banknote, Car, BedDouble, Factory, Newspaper, Store as StoreIcon, Navigation } from "lucide-react";
+import { Search as SearchIcon, SlidersHorizontal, X, Star, Truck, Sparkles, ArrowRight, History, TrendingUp, Package, Wrench, Home as HomeIcon, Banknote, Car, BedDouble, Factory, Newspaper, Store as StoreIcon, Navigation, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLiveHints } from "@/components/RotatingHint";
 import { Link } from "react-router-dom";
@@ -8,6 +8,7 @@ import { useCategories } from "@/hooks/useCatalog";
 import EmptyState from "@/components/EmptyState";
 import { suggestCompletions, tokenize } from "@/lib/search";
 import { useUniversalPool, searchUniversal, type UniversalHit } from "@/hooks/useUniversalSearch";
+import { toast } from "sonner";
 
 const SORTS = [
   { id: "relevance", label: "Relevance" },
@@ -43,7 +44,8 @@ export default function SearchPage() {
   const [showSuggest, setShowSuggest] = useState(false);
   const [recent, setRecent] = useState<string[]>(() => loadRecent());
   const aiCtrl = useRef<AbortController | null>(null);
-
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [imgLoading, setImgLoading] = useState(false);
   const HINTS = useLiveHints();
   const { data: cats = [] } = useCategories();
 
@@ -144,6 +146,38 @@ export default function SearchPage() {
   const onSubmit = (e: React.FormEvent) => { e.preventDefault(); submit(query); };
   const reset = () => { setCategory(null); setMinRating(0); setMaxPrice(1000); setFreeShipOnly(false); setSort("relevance"); };
 
+  const onPickImage = async (file: File) => {
+    if (!file.type.startsWith("image/")) return toast.error("Pick an image file");
+    if (file.size > 6 * 1024 * 1024) return toast.error("Image too large (max 6 MB)");
+    setImgLoading(true);
+    try {
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result as string);
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-search`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ image: dataUrl }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j?.error || "Image search failed");
+      const kw: string = (j?.keywords || "").trim();
+      if (!kw) throw new Error("Couldn't recognize the product");
+      toast.success("Searching by image", { description: kw });
+      submit(kw);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Image search failed");
+    } finally {
+      setImgLoading(false);
+    }
+  };
   return (
     <div className="pb-8">
       <form onSubmit={onSubmit} className="sticky top-14 z-20 bg-background/95 backdrop-blur border-b px-4 py-3 flex items-center gap-2 shadow-soft">
@@ -196,6 +230,27 @@ export default function SearchPage() {
             </div>
           )}
         </div>
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          aria-label="Search by image"
+          disabled={imgLoading}
+          className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shadow-soft disabled:opacity-50"
+        >
+          {imgLoading ? <CircleSpinner size={16} /> : <Camera className="w-4 h-4" />}
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onPickImage(f);
+            e.target.value = "";
+          }}
+        />
         <button type="button" onClick={() => setShowFilters((v) => !v)} aria-label="Filters"
           className={`w-10 h-10 rounded-full flex items-center justify-center shadow-soft ${showFilters ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
           <SlidersHorizontal className="w-4 h-4" />

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft, Heart, Share2, Star, Truck, ShieldCheck, Minus, Plus, MessageCircle, ShoppingCart, Store, Globe,
+  ArrowLeft, Heart, Share2, Star, Truck, ShieldCheck, Minus, Plus, MessageCircle, ShoppingCart, Store, Globe, Package,
 } from "lucide-react";
 import { toast } from "sonner";
 import { tierPriceFor, discountPct, type Product } from "@/data/products";
@@ -154,6 +154,22 @@ export default function ProductDetail() {
         <Trust icon={Truck} title="Lead time" desc={product.leadTime} />
         <Trust icon={Globe} title="Ships from" desc={product.shipFrom} />
       </section>
+
+      {supplier && (
+        <section className="px-4 mt-3">
+          <Link
+            to={`/messages?supplier=${supplier.id}&prefill=${encodeURIComponent(
+              `Hi, I'd like to order a sample of "${product.title}" before placing a bulk order. What is the sample price and lead time? Thanks.`
+            )}`}
+            className="flex items-center justify-between rounded-xl bg-muted/50 hover:bg-muted px-3 py-2.5 transition"
+          >
+            <span className="flex items-center gap-2 text-sm font-semibold">
+              <Package className="w-4 h-4 text-primary" /> Request a sample
+            </span>
+            <span className="text-[11px] text-muted-foreground">Test before bulk order →</span>
+          </Link>
+        </section>
+      )}
 
       {supplier && <SupplierCard supplier={supplier} />}
 

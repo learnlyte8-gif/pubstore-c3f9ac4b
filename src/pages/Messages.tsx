@@ -186,6 +186,7 @@ function SwipeBubble({
 export default function Messages() {
   const [params, setParams] = useSearchParams();
   const initialSupplierId = params.get("supplier");
+  const initialPrefill = params.get("prefill");
   const [userId, setUserId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -306,7 +307,11 @@ export default function Messages() {
     (async () => {
       const targetSupplierId = await resolveMasterSupplierId(initialSupplierId);
       const existing = conversations.find((c) => c.supplier_id === targetSupplierId && c.buyer_id === userId);
-      if (existing) { setActiveId(existing.id); return; }
+      if (existing) {
+        setActiveId(existing.id);
+        if (initialPrefill) setDraft(initialPrefill);
+        return;
+      }
       const { data, error } = await supabase
         .from("conversations")
         .insert({ buyer_id: userId, supplier_id: targetSupplierId })
@@ -314,6 +319,7 @@ export default function Messages() {
       if (error || !data) return;
       await loadConversations(userId);
       setActiveId(data.id);
+      if (initialPrefill) setDraft(initialPrefill);
       setParams({}, { replace: true });
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
