@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
-import { Search as SearchIcon, SlidersHorizontal, X, Star, Truck, Sparkles, ArrowRight, History, TrendingUp, Package, Wrench, Home as HomeIcon, Banknote, Car, BedDouble, Factory, Newspaper, Store as StoreIcon, Navigation } from "lucide-react";
+import { Search as SearchIcon, SlidersHorizontal, X, Star, Truck, Sparkles, ArrowRight, History, TrendingUp, Package, Wrench, Home as HomeIcon, Banknote, Car, BedDouble, Factory, Newspaper, Store as StoreIcon, Navigation, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLiveHints } from "@/components/RotatingHint";
 import { Link } from "react-router-dom";
@@ -8,6 +8,7 @@ import { useCategories } from "@/hooks/useCatalog";
 import EmptyState from "@/components/EmptyState";
 import { suggestCompletions, tokenize } from "@/lib/search";
 import { useUniversalPool, searchUniversal, type UniversalHit } from "@/hooks/useUniversalSearch";
+import { toast } from "sonner";
 
 const SORTS = [
   { id: "relevance", label: "Relevance" },
