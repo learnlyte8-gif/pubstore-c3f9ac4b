@@ -146,6 +146,38 @@ export default function SearchPage() {
   const onSubmit = (e: React.FormEvent) => { e.preventDefault(); submit(query); };
   const reset = () => { setCategory(null); setMinRating(0); setMaxPrice(1000); setFreeShipOnly(false); setSort("relevance"); };
 
+  const onPickImage = async (file: File) => {
+    if (!file.type.startsWith("image/")) return toast.error("Pick an image file");
+    if (file.size > 6 * 1024 * 1024) return toast.error("Image too large (max 6 MB)");
+    setImgLoading(true);
+    try {
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result as string);
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-search`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ image: dataUrl }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j?.error || "Image search failed");
+      const kw: string = (j?.keywords || "").trim();
+      if (!kw) throw new Error("Couldn't recognize the product");
+      toast.success("Searching by image", { description: kw });
+      submit(kw);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Image search failed");
+    } finally {
+      setImgLoading(false);
+    }
+  };
   return (
     <div className="pb-8">
       <form onSubmit={onSubmit} className="sticky top-14 z-20 bg-background/95 backdrop-blur border-b px-4 py-3 flex items-center gap-2 shadow-soft">
