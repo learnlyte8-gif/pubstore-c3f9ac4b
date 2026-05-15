@@ -44,7 +44,8 @@ export default function SearchPage() {
   const [showSuggest, setShowSuggest] = useState(false);
   const [recent, setRecent] = useState<string[]>(() => loadRecent());
   const aiCtrl = useRef<AbortController | null>(null);
-
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [imgLoading, setImgLoading] = useState(false);
   const HINTS = useLiveHints();
   const { data: cats = [] } = useCategories();
 
