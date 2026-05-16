@@ -121,9 +121,18 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
     if (mapsUrl) window.open(mapsUrl, "_blank", "noopener,noreferrer");
   };
 
-  const handleAdd = (e: React.MouseEvent) => {
+  const handleAdd = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!buyerId) {
+      setInquiryOpen(true);
+      return;
+    }
+    const status = await getInquiryStatus(buyerId, product.id);
+    if (status !== "approved") {
+      setInquiryOpen(true);
+      return;
+    }
     addToCart(product.id, 1);
     toast.success("Added to cart", { description: product.title });
   };
