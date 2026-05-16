@@ -9,6 +9,8 @@ import { useUserLocation, distanceKm, formatDistance } from "@/hooks/useUserLoca
 import { logProductClick } from "@/hooks/usePersonalizationLog";
 import ShareToChatSheet from "@/components/chat/ShareToChatSheet";
 import type { ChatAttachment } from "@/components/chat/AttachmentCard";
+import InquiryGateDialog from "@/components/marketplace/InquiryGateDialog";
+import { getInquiryStatus } from "@/lib/inquiryGate";
 
 const fmtPrice = (n: number) => `$${n.toFixed(2)}`;
 const fmtSold = (n: number) =>
