@@ -10,6 +10,7 @@ import { resolveMasterSupplierId, fetchProducts, type Product } from "@/data/pro
 import SupplierStories from "@/components/marketplace/SupplierStories";
 import { useUnreadChats, markConversationRead } from "@/hooks/useUnreadChats";
 import AttachmentCard, { type ChatAttachment } from "@/components/chat/AttachmentCard";
+import InquiryApprovalPanel from "@/components/marketplace/InquiryApprovalPanel";
 import { toast } from "@/hooks/use-toast";
 
 const chunk = <T,>(items: T[], size: number) => {
@@ -569,6 +570,10 @@ export default function Messages() {
             )}
           </div>
         </div>
+
+        {supplierOwnerId === userId && active.supplier && userId && (
+          <InquiryApprovalPanel buyerId={active.buyer_id} supplierId={active.supplier.id} userId={userId} />
+        )}
 
         {/* Thread */}
         <div ref={scrollRef} onScroll={onThreadScroll} className="chat-scroll flex-1 overflow-y-auto px-3 py-4 space-y-1.5">

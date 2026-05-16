@@ -34,9 +34,9 @@ export default function InquiryGateDialog({
     if (!msg.trim()) return;
     setSending(true);
     try {
-      // Record the inquiry (unlocks add-to-cart)
+      // Record the inquiry (pending supplier approval)
       const { error: invErr } = await supabase.from("product_inquiries").upsert(
-        { buyer_id: buyerId, product_id: productId, supplier_id: supplierId, message: msg },
+        { buyer_id: buyerId, product_id: productId, supplier_id: supplierId, message: msg, product_title: productTitle, status: "pending", decided_at: null, decided_by: null },
         { onConflict: "buyer_id,product_id" }
       );
       if (invErr) throw invErr;
@@ -70,7 +70,7 @@ export default function InquiryGateDialog({
         body: msg,
       });
 
-      toast.success("Inquiry sent. You can now add to cart.");
+      toast.success("Inquiry sent. Waiting for supplier approval to unlock checkout.");
       onSent();
       onClose();
     } catch (e: any) {
@@ -88,8 +88,8 @@ export default function InquiryGateDialog({
             <ShieldCheck className="w-5 h-5 text-primary" /> Inquire before ordering
           </DialogTitle>
           <DialogDescription>
-            Trade Assurance requires confirming specs, MOQ, packaging and lead time with the supplier
-            before the first purchase. Send a quick inquiry to unlock checkout.
+            Trade Assurance requires the supplier to review and approve your request before you can
+            add this product to cart. They'll confirm specs, MOQ, packaging and lead time, then unlock checkout.
           </DialogDescription>
         </DialogHeader>
         <Textarea

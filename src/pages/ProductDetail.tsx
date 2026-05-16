@@ -51,14 +51,21 @@ export default function ProductDetail() {
       if (!uid || !product?.id) { setHasInquired(false); return; }
       const { data: inq } = await supabase
         .from("product_inquiries")
-        .select("id")
+        .select("id,status")
         .eq("buyer_id", uid)
         .eq("product_id", product.id)
         .maybeSingle();
-      if (!cancelled) setHasInquired(!!inq);
+      if (!cancelled) setHasInquired(inq?.status === "approved");
     })();
-    return () => { cancelled = true; };
-  }, [product?.id]);
+    // realtime: unlock as soon as supplier approves
+    const ch = supabase
+      .channel(`inq:${product?.id}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "product_inquiries", filter: `product_id=eq.${product?.id}` }, (payload: any) => {
+        if (payload.new?.buyer_id === buyerId && payload.new?.status === "approved") setHasInquired(true);
+      })
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(ch); };
+  }, [product?.id, buyerId]);
 
   if (isLoading) return <p className="p-12 text-center text-sm text-muted-foreground">Loading…</p>;
   if (!product) {
@@ -272,7 +279,7 @@ export default function ProductDetail() {
         <div className="fixed bottom-[7.5rem] lg:bottom-[5rem] inset-x-0 z-30 px-3 pointer-events-none">
           <div className="max-w-2xl mx-auto rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 px-3 py-2 text-[11px] flex items-center gap-2 pointer-events-auto">
             <ShieldCheck className="w-4 h-4 shrink-0" />
-            <span>Trade Assurance: send a quick inquiry to confirm specs & MOQ before ordering.</span>
+            <span>Trade Assurance: the supplier must approve your inquiry before you can add this to cart. You'll be notified in chat.</span>
           </div>
         </div>
       )}
@@ -310,7 +317,7 @@ export default function ProductDetail() {
           productTitle={product.title}
           supplierId={supplier.id}
           buyerId={buyerId}
-          onSent={() => setHasInquired(true)}
+          onSent={() => setHasInquired(false)}
         />
       )}
     </div>
