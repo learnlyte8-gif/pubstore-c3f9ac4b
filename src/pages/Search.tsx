@@ -498,6 +498,21 @@ function UniversalResultCard({ hit }: { hit: UniversalHit }) {
               <Star className="w-3 h-3 fill-amber-500 text-amber-500" /> {hit.rating.toFixed(1)}
             </span>
           )}
+          {hit.moq != null && hit.moq > 1 && (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+              MOQ {hit.moq}
+            </span>
+          )}
+          {hit.readyToShip && (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+              Ready
+            </span>
+          )}
+          {hit.verified && hit.kind === "supplier" && (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300">
+              Verified
+            </span>
+          )}
           {(hit.city || hit.country) && (
             <span className="text-[10px] text-muted-foreground truncate">{[hit.city, hit.country].filter(Boolean).join(", ")}</span>
           )}
