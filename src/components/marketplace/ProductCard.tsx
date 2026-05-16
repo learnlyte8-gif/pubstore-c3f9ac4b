@@ -220,6 +220,15 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
         </div>
       </Link>
       <ShareToChatSheet open={shareOpen} onClose={() => setShareOpen(false)} attachment={shareAttachment} />
+      <InquiryGateDialog
+        open={inquiryOpen}
+        onClose={() => setInquiryOpen(false)}
+        productId={product.id}
+        productTitle={product.title}
+        supplierId={product.supplierId}
+        buyerId={buyerId}
+        onSent={() => {}}
+      />
       </>
     );
   }
