@@ -339,6 +339,20 @@ function RFQDetail({ rfq, userId, mySupplierId, onBack, onChanged }: { rfq: RFQ;
             <Detail label="Category" value={rfq.category ?? "—"} />
           </div>
           {rfq.details && <p className="mt-3 text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">{rfq.details}</p>}
+          {rfq.attachments && rfq.attachments.length > 0 && (
+            <div className="mt-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5 flex items-center gap-1"><Paperclip className="w-3 h-3" /> Attachments</p>
+              <div className="flex flex-wrap gap-2">
+                {rfq.attachments.map((u) => (
+                  <a key={u} href={u} target="_blank" rel="noreferrer" className="block w-16 h-16 rounded-lg overflow-hidden bg-muted border border-border">
+                    {/\.(png|jpe?g|webp|gif)$/i.test(u)
+                      ? <img src={u} alt="" className="w-full h-full object-cover" />
+                      : <div className="w-full h-full flex items-center justify-center"><Paperclip className="w-4 h-4 text-muted-foreground" /></div>}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {canQuote && <QuoteForm rfqId={rfq.id} supplierId={mySupplierId!} buyerId={rfq.buyer_id} onPosted={onChanged} />}
