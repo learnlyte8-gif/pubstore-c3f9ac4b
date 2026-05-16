@@ -201,12 +201,31 @@ export default function Supplier() {
               <Row label="Followers" value={`${followerCount}`} />
             </ul>
           </div>
+          {supplier.exportCountries && supplier.exportCountries.length > 0 && (
+            <div className="rounded-2xl bg-card border border-border shadow-card p-4">
+              <h3 className="text-sm font-bold mb-2 flex items-center gap-1.5"><Globe className="w-4 h-4 text-primary" /> Export countries</h3>
+              <div className="flex flex-wrap gap-1.5">
+                {supplier.exportCountries.map((c) => (
+                  <span key={c} className="text-[11px] font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary">{c}</span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {tab === "certs" && supplier && (
         <div className="px-4 mt-4">
           <SupplierCertifications
+            supplierId={supplier.id}
+            canManage={!!userId && !!supplierOwner && userId === supplierOwner}
+          />
+        </div>
+      )}
+
+      {tab === "inspections" && supplier && (
+        <div className="px-4 mt-4">
+          <SupplierInspectionReports
             supplierId={supplier.id}
             canManage={!!userId && !!supplierOwner && userId === supplierOwner}
           />
