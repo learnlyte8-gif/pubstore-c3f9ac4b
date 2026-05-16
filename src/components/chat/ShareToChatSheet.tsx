@@ -97,6 +97,7 @@ export default function ShareToChatSheet({
           attachment.kind === "product" ? `📦 ${attachment.title}`
           : attachment.kind === "supplier" ? `🏬 ${attachment.name}`
           : attachment.kind === "wishlist" ? `❤️ Wishlist · ${attachment.count} items`
+          : attachment.kind === "cart-unlock" ? `✅ Cart unlocked · ${attachment.title}`
           : `🗂 Catalog · ${attachment.count} items`;
 
         if (note.trim()) {

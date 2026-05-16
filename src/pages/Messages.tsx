@@ -11,6 +11,7 @@ import SupplierStories from "@/components/marketplace/SupplierStories";
 import { useUnreadChats, markConversationRead } from "@/hooks/useUnreadChats";
 import AttachmentCard, { type ChatAttachment } from "@/components/chat/AttachmentCard";
 import InquiryApprovalPanel from "@/components/marketplace/InquiryApprovalPanel";
+import PendingInquiriesInbox from "@/components/marketplace/PendingInquiriesInbox";
 import { toast } from "@/hooks/use-toast";
 
 const chunk = <T,>(items: T[], size: number) => {
@@ -461,6 +462,7 @@ export default function Messages() {
       attachment.kind === "product" ? `📦 ${attachment.title}`
       : attachment.kind === "supplier" ? `🏬 ${attachment.name}`
       : attachment.kind === "wishlist" ? `❤️ Wishlist · ${attachment.count} items`
+      : attachment.kind === "cart-unlock" ? `✅ Cart unlocked · ${attachment.title}`
       : `🗂 Catalog · ${attachment.count} items`;
     await insertMessage(activeId, { body: previewLabel, attachment, reply_to_id: replyTo?.id ?? null });
     setReplyTo(null);
@@ -806,6 +808,8 @@ export default function Messages() {
       </div>
 
       <div className="border-b border-border/60"><SupplierStories /></div>
+
+      {userId && <PendingInquiriesInbox userId={userId} />}
 
       {loading ? (
         <div className="px-4 pt-4 space-y-3">

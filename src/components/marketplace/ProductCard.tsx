@@ -9,6 +9,8 @@ import { useUserLocation, distanceKm, formatDistance } from "@/hooks/useUserLoca
 import { logProductClick } from "@/hooks/usePersonalizationLog";
 import ShareToChatSheet from "@/components/chat/ShareToChatSheet";
 import type { ChatAttachment } from "@/components/chat/AttachmentCard";
+import InquiryGateDialog from "@/components/marketplace/InquiryGateDialog";
+import { getInquiryStatus } from "@/lib/inquiryGate";
 
 const fmtPrice = (n: number) => `$${n.toFixed(2)}`;
 const fmtSold = (n: number) =>
@@ -71,6 +73,11 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
   const countdown = useDealCountdown(product.dealEndsAt);
   const userLoc = useUserLocation();
   const [shareOpen, setShareOpen] = useState(false);
+  const [inquiryOpen, setInquiryOpen] = useState(false);
+  const [buyerId, setBuyerId] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setBuyerId(data.user?.id ?? null));
+  }, []);
 
   const shareAttachment: ChatAttachment = {
     kind: "product",
@@ -114,9 +121,18 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
     if (mapsUrl) window.open(mapsUrl, "_blank", "noopener,noreferrer");
   };
 
-  const handleAdd = (e: React.MouseEvent) => {
+  const handleAdd = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!buyerId) {
+      setInquiryOpen(true);
+      return;
+    }
+    const status = await getInquiryStatus(buyerId, product.id);
+    if (status !== "approved") {
+      setInquiryOpen(true);
+      return;
+    }
     addToCart(product.id, 1);
     toast.success("Added to cart", { description: product.title });
   };
@@ -204,6 +220,15 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
         </div>
       </Link>
       <ShareToChatSheet open={shareOpen} onClose={() => setShareOpen(false)} attachment={shareAttachment} />
+      <InquiryGateDialog
+        open={inquiryOpen}
+        onClose={() => setInquiryOpen(false)}
+        productId={product.id}
+        productTitle={product.title}
+        supplierId={product.supplierId}
+        buyerId={buyerId}
+        onSent={() => {}}
+      />
       </>
     );
   }
@@ -372,6 +397,15 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
       </div>
     </Link>
     <ShareToChatSheet open={shareOpen} onClose={() => setShareOpen(false)} attachment={shareAttachment} />
+    <InquiryGateDialog
+      open={inquiryOpen}
+      onClose={() => setInquiryOpen(false)}
+      productId={product.id}
+      productTitle={product.title}
+      supplierId={product.supplierId}
+      buyerId={buyerId}
+      onSent={() => {}}
+    />
     </>
   );
 }
