@@ -408,7 +408,7 @@ export default function SearchPage() {
                   onClick={() => setVerifiedOnly((v) => !v)}
                   className={`px-3 h-7 rounded-full text-[11px] font-bold border transition flex items-center gap-1 ${verifiedOnly ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border"}`}
                 >
-                  <ShieldCheckChip /> Verified
+                  <Sparkles className="w-3 h-3" /> Verified
                 </button>
                 <button
                   onClick={() => setReadyToShipOnly((v) => !v)}
