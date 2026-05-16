@@ -1,15 +1,29 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { ChatAttachment } from "@/components/chat/AttachmentCard";
 
-// Inquiry status helper — returns "approved" | "pending" | "none"
-export async function getInquiryStatus(buyerId: string, productId: string) {
+// Approvals expire after this window — buyer must re-inquire and get re-approval.
+export const INQUIRY_APPROVAL_TTL_DAYS = 30;
+export const INQUIRY_APPROVAL_TTL_MS = INQUIRY_APPROVAL_TTL_DAYS * 24 * 60 * 60 * 1000;
+
+export type InquiryGateStatus = "approved" | "pending" | "declined" | "expired" | "none";
+
+export function isApprovalExpired(decidedAt?: string | null) {
+  if (!decidedAt) return false;
+  return Date.now() - new Date(decidedAt).getTime() > INQUIRY_APPROVAL_TTL_MS;
+}
+
+// Inquiry status helper — "approved" only when decided within the TTL window.
+export async function getInquiryStatus(buyerId: string, productId: string): Promise<InquiryGateStatus> {
   const { data } = await supabase
     .from("product_inquiries")
-    .select("status")
+    .select("status, decided_at")
     .eq("buyer_id", buyerId)
     .eq("product_id", productId)
     .maybeSingle();
-  return (data?.status as "approved" | "pending" | "declined" | undefined) ?? "none";
+  const status = data?.status as "approved" | "pending" | "declined" | undefined;
+  if (!status) return "none";
+  if (status === "approved" && isApprovalExpired((data as any)?.decided_at)) return "expired";
+  return status;
 }
 
 // Send a cart-unlock attachment card to the buyer in chat after the supplier approves.
