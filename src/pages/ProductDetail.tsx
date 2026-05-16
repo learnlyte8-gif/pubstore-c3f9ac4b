@@ -317,7 +317,7 @@ export default function ProductDetail() {
           productTitle={product.title}
           supplierId={supplier.id}
           buyerId={buyerId}
-          onSent={() => setHasInquired(true)}
+          onSent={() => setHasInquired(false)}
         />
       )}
     </div>
