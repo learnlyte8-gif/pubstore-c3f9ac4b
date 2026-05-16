@@ -11,6 +11,7 @@ import SupplierStories from "@/components/marketplace/SupplierStories";
 import { useUnreadChats, markConversationRead } from "@/hooks/useUnreadChats";
 import AttachmentCard, { type ChatAttachment } from "@/components/chat/AttachmentCard";
 import InquiryApprovalPanel from "@/components/marketplace/InquiryApprovalPanel";
+import PendingInquiriesInbox from "@/components/marketplace/PendingInquiriesInbox";
 import { toast } from "@/hooks/use-toast";
 
 const chunk = <T,>(items: T[], size: number) => {
