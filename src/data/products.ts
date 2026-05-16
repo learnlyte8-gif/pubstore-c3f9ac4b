@@ -54,6 +54,7 @@ export type Supplier = {
   categories: string[];
   onboardingCompletedAt: string | null;
   tradeType: "retail" | "wholesale" | "both";
+  exportCountries: string[];
 };
 
 export type Review = {
