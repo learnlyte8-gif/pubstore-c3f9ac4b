@@ -34,9 +34,9 @@ export default function InquiryGateDialog({
     if (!msg.trim()) return;
     setSending(true);
     try {
-      // Record the inquiry (unlocks add-to-cart)
+      // Record the inquiry (pending supplier approval)
       const { error: invErr } = await supabase.from("product_inquiries").upsert(
-        { buyer_id: buyerId, product_id: productId, supplier_id: supplierId, message: msg },
+        { buyer_id: buyerId, product_id: productId, supplier_id: supplierId, message: msg, product_title: productTitle, status: "pending", decided_at: null, decided_by: null },
         { onConflict: "buyer_id,product_id" }
       );
       if (invErr) throw invErr;
