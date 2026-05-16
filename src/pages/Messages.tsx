@@ -461,6 +461,7 @@ export default function Messages() {
       attachment.kind === "product" ? `📦 ${attachment.title}`
       : attachment.kind === "supplier" ? `🏬 ${attachment.name}`
       : attachment.kind === "wishlist" ? `❤️ Wishlist · ${attachment.count} items`
+      : attachment.kind === "cart-unlock" ? `✅ Cart unlocked · ${attachment.title}`
       : `🗂 Catalog · ${attachment.count} items`;
     await insertMessage(activeId, { body: previewLabel, attachment, reply_to_id: replyTo?.id ?? null });
     setReplyTo(null);
