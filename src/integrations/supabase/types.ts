@@ -2261,6 +2261,33 @@ export type Database = {
         }
         Relationships: []
       }
+      product_inquiries: {
+        Row: {
+          buyer_id: string
+          created_at: string
+          id: string
+          message: string | null
+          product_id: string
+          supplier_id: string
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          product_id: string
+          supplier_id: string
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          product_id?: string
+          supplier_id?: string
+        }
+        Relationships: []
+      }
       product_tier_prices: {
         Row: {
           id: string
