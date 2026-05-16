@@ -13,6 +13,7 @@ import SupplierCard from "@/components/marketplace/SupplierCard";
 import ProductCard from "@/components/marketplace/ProductCard";
 import ShareToChatSheet from "@/components/chat/ShareToChatSheet";
 import InquiryGateDialog from "@/components/marketplace/InquiryGateDialog";
+import { isApprovalExpired } from "@/lib/inquiryGate";
 import { supabase } from "@/integrations/supabase/client";
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
