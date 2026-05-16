@@ -48,12 +48,18 @@ export default function InquiryApprovalPanel({ buyerId, supplierId, userId }: Pr
 
   const decide = async (id: string, status: "approved" | "declined") => {
     setBusy(id);
+    const item = items.find((x) => x.id === id);
     const { error } = await supabase
       .from("product_inquiries")
       .update({ status, decided_at: new Date().toISOString(), decided_by: userId })
       .eq("id", id);
     setBusy(null);
     if (error) { toast.error(error.message); return; }
+    if (status === "approved" && item) {
+      await sendCartUnlockMessage({
+        buyerId, supplierId, supplierOwnerId: userId, productId: item.product_id,
+      });
+    }
     toast.success(status === "approved" ? "Buyer can now add to cart" : "Inquiry declined");
     setItems((prev) => prev.filter((x) => x.id !== id));
   };
