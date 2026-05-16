@@ -51,11 +51,12 @@ export default function ProductDetail() {
       if (!uid || !product?.id) { setHasInquired(false); return; }
       const { data: inq } = await supabase
         .from("product_inquiries")
-        .select("id,status")
+        .select("id,status,decided_at")
         .eq("buyer_id", uid)
         .eq("product_id", product.id)
         .maybeSingle();
-      if (!cancelled) setHasInquired(inq?.status === "approved");
+      const approved = inq?.status === "approved" && !isApprovalExpired((inq as any)?.decided_at);
+      if (!cancelled) setHasInquired(approved);
     })();
     // realtime: unlock as soon as supplier approves
     const ch = supabase
