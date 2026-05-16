@@ -207,7 +207,7 @@ function RFQForm({
   const [details, setDetails] = useState("");
   const [attachments, setAttachments] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
-  const fileRef = useState<HTMLInputElement | null>(null);
+  
 
   useEffect(() => { if (!category && categories[0]) setCategory(categories[0].id); }, [categories, category]);
 
