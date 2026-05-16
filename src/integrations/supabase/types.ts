@@ -2274,10 +2274,12 @@ export type Database = {
           id: string
           image: string | null
           lead_time: string | null
+          lead_time_days: number | null
           moq: number | null
           original_price: number | null
           price: number
           rating: number | null
+          ready_to_ship: boolean
           reel_url: string | null
           review_count: number | null
           ship_from: string | null
@@ -2301,10 +2303,12 @@ export type Database = {
           id?: string
           image?: string | null
           lead_time?: string | null
+          lead_time_days?: number | null
           moq?: number | null
           original_price?: number | null
           price?: number
           rating?: number | null
+          ready_to_ship?: boolean
           reel_url?: string | null
           review_count?: number | null
           ship_from?: string | null
@@ -2328,10 +2332,12 @@ export type Database = {
           id?: string
           image?: string | null
           lead_time?: string | null
+          lead_time_days?: number | null
           moq?: number | null
           original_price?: number | null
           price?: number
           rating?: number | null
+          ready_to_ship?: boolean
           reel_url?: string | null
           review_count?: number | null
           ship_from?: string | null
@@ -3261,6 +3267,56 @@ export type Database = {
           },
         ]
       }
+      supplier_certifications: {
+        Row: {
+          created_at: string
+          document_url: string | null
+          expires_at: string | null
+          id: string
+          issued_at: string | null
+          issuer: string | null
+          sort_order: number
+          supplier_id: string
+          title: string
+          updated_at: string
+          verified: boolean
+        }
+        Insert: {
+          created_at?: string
+          document_url?: string | null
+          expires_at?: string | null
+          id?: string
+          issued_at?: string | null
+          issuer?: string | null
+          sort_order?: number
+          supplier_id: string
+          title: string
+          updated_at?: string
+          verified?: boolean
+        }
+        Update: {
+          created_at?: string
+          document_url?: string | null
+          expires_at?: string | null
+          id?: string
+          issued_at?: string | null
+          issuer?: string | null
+          sort_order?: number
+          supplier_id?: string
+          title?: string
+          updated_at?: string
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_certifications_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           about: string | null
@@ -3271,6 +3327,7 @@ export type Database = {
           country_code: string | null
           created_at: string
           email: string | null
+          export_countries: string[]
           gold: boolean | null
           id: string
           latitude: number | null
@@ -3303,6 +3360,7 @@ export type Database = {
           country_code?: string | null
           created_at?: string
           email?: string | null
+          export_countries?: string[]
           gold?: boolean | null
           id?: string
           latitude?: number | null
@@ -3335,6 +3393,7 @@ export type Database = {
           country_code?: string | null
           created_at?: string
           email?: string | null
+          export_countries?: string[]
           gold?: boolean | null
           id?: string
           latitude?: number | null
