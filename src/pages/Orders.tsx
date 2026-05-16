@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Package, Truck, CheckCircle2, Clock, RotateCcw, MessageCircle,
-  ChevronRight, XCircle, FileText, MapPin, Star, X,
+  ChevronRight, XCircle, FileText, MapPin, Star, X, ShieldCheck, AlertTriangle, Lock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShop } from "@/store/shop";
