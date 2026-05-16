@@ -31,6 +31,7 @@ type RFQ = {
   details: string | null;
   status: "open" | "closed";
   created_at: string;
+  attachments: string[] | null;
   quotes: Quote[];
 };
 
