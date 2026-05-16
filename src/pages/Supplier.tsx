@@ -18,7 +18,7 @@ export default function Supplier() {
   const navigate = useNavigate();
   const { data: supplier, isLoading } = useSupplier(id);
   const { data: products = [] } = useProducts({ supplierId: id });
-  const [tab, setTab] = useState<"products" | "about" | "certs">("products");
+  const [tab, setTab] = useState<"products" | "about" | "certs" | "inspections">("products");
   const [following, setFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
