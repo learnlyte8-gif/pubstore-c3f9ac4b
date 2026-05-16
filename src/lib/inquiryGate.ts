@@ -24,7 +24,7 @@ export async function sendCartUnlockMessage(opts: {
   // Load product details
   const { data: p } = await supabase
     .from("products")
-    .select("id,title,image,price,currency,unit,moq")
+    .select("id,title,image,price,unit,moq")
     .eq("id", productId)
     .maybeSingle();
   if (!p) return;
