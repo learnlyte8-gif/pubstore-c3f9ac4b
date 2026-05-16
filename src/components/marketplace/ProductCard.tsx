@@ -73,6 +73,11 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
   const countdown = useDealCountdown(product.dealEndsAt);
   const userLoc = useUserLocation();
   const [shareOpen, setShareOpen] = useState(false);
+  const [inquiryOpen, setInquiryOpen] = useState(false);
+  const [buyerId, setBuyerId] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setBuyerId(data.user?.id ?? null));
+  }, []);
 
   const shareAttachment: ChatAttachment = {
     kind: "product",
