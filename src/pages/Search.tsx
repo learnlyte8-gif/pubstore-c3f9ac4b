@@ -310,10 +310,32 @@ export default function SearchPage() {
           <input type="range" min={0} max={5} step={0.5} value={minRating} onChange={(e) => setMinRating(+e.target.value)} className="w-full mb-4" />
           <p className="text-xs font-medium mb-2">Max price: ${maxPrice}</p>
           <input type="range" min={5} max={1000} step={5} value={maxPrice} onChange={(e) => setMaxPrice(+e.target.value)} className="w-full mb-4" />
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={freeShipOnly} onChange={(e) => setFreeShipOnly(e.target.checked)} />
-            <Truck className="w-4 h-4 text-primary" /> Free shipping
-          </label>
+          <p className="text-xs font-medium mb-2">
+            Max MOQ: {maxMoq === 0 ? "Any" : `≤ ${maxMoq} units`}
+          </p>
+          <input type="range" min={0} max={500} step={5} value={maxMoq} onChange={(e) => setMaxMoq(+e.target.value)} className="w-full mb-4" />
+          <p className="text-xs font-medium mb-2">Country / region</p>
+          <input
+            type="text"
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            placeholder="e.g. China, Kenya, Zimbabwe"
+            className="w-full h-9 px-3 mb-4 rounded-md border border-border bg-background text-sm"
+          />
+          <div className="grid grid-cols-1 gap-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={freeShipOnly} onChange={(e) => setFreeShipOnly(e.target.checked)} />
+              <Truck className="w-4 h-4 text-primary" /> Free shipping
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={readyToShipOnly} onChange={(e) => setReadyToShipOnly(e.target.checked)} />
+              <Package className="w-4 h-4 text-primary" /> Ready to ship
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={verifiedOnly} onChange={(e) => setVerifiedOnly(e.target.checked)} />
+              <Sparkles className="w-4 h-4 text-primary" /> Verified suppliers only
+            </label>
+          </div>
         </div>
       )}
 
