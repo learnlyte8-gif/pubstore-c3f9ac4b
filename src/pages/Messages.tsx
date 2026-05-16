@@ -809,6 +809,8 @@ export default function Messages() {
 
       <div className="border-b border-border/60"><SupplierStories /></div>
 
+      {userId && <PendingInquiriesInbox userId={userId} />}
+
       {loading ? (
         <div className="px-4 pt-4 space-y-3">
           {[0, 1, 2, 3].map((i) => (
