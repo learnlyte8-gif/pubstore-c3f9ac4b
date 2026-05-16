@@ -268,6 +268,15 @@ export default function ProductDetail() {
         </section>
       )}
 
+      {gated && supplier && (
+        <div className="fixed bottom-[7.5rem] lg:bottom-[5rem] inset-x-0 z-30 px-3 pointer-events-none">
+          <div className="max-w-2xl mx-auto rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 px-3 py-2 text-[11px] flex items-center gap-2 pointer-events-auto">
+            <ShieldCheck className="w-4 h-4 shrink-0" />
+            <span>Trade Assurance: send a quick inquiry to confirm specs & MOQ before ordering.</span>
+          </div>
+        </div>
+      )}
+
       <div className="fixed bottom-14 lg:bottom-0 inset-x-0 z-30 bg-background border-t safe-bottom">
         <div className="max-w-2xl mx-auto px-3 py-2.5 flex items-center gap-2">
           {supplier && (
@@ -278,12 +287,32 @@ export default function ProductDetail() {
           <Link to="/messages" className="flex flex-col items-center justify-center w-12 h-12 text-[10px] text-muted-foreground hover:text-foreground">
             <MessageCircle className="w-5 h-5" /><span>Chat</span>
           </Link>
-          <Button onClick={handleAdd} variant="outline" className="flex-1 h-12 rounded-full font-semibold gap-1.5">
-            <ShoppingCart className="w-4 h-4" /> Add
-          </Button>
-          <Button onClick={handleBuy} className="flex-1 h-12 rounded-full font-semibold">Buy now</Button>
+          {gated ? (
+            <Button onClick={() => setInquiryOpen(true)} className="flex-1 h-12 rounded-full font-semibold gap-1.5">
+              <ShieldCheck className="w-4 h-4" /> Inquire to unlock checkout
+            </Button>
+          ) : (
+            <>
+              <Button onClick={handleAdd} variant="outline" className="flex-1 h-12 rounded-full font-semibold gap-1.5">
+                <ShoppingCart className="w-4 h-4" /> Add
+              </Button>
+              <Button onClick={handleBuy} className="flex-1 h-12 rounded-full font-semibold">Buy now</Button>
+            </>
+          )}
         </div>
       </div>
+
+      {supplier && (
+        <InquiryGateDialog
+          open={inquiryOpen}
+          onClose={() => setInquiryOpen(false)}
+          productId={product.id}
+          productTitle={product.title}
+          supplierId={supplier.id}
+          buyerId={buyerId}
+          onSent={() => setHasInquired(true)}
+        />
+      )}
     </div>
   );
 }
