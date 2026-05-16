@@ -70,7 +70,7 @@ export default function InquiryGateDialog({
         body: msg,
       });
 
-      toast.success("Inquiry sent. You can now add to cart.");
+      toast.success("Inquiry sent. Waiting for supplier approval to unlock checkout.");
       onSent();
       onClose();
     } catch (e: any) {
