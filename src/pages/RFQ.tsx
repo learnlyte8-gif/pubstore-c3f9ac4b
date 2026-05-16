@@ -6,6 +6,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCategories, useMySupplier } from "@/hooks/useCatalog";
+import QuoteNegotiation from "@/components/marketplace/QuoteNegotiation";
 
 type Quote = {
   id: string;
