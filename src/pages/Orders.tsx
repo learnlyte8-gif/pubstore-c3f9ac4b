@@ -293,6 +293,10 @@ function OrderDetail({
           </div>
         )}
 
+        {order.escrow_status && order.escrow_status !== "none" && (
+          <EscrowCard order={order} onUpdated={onUpdated} />
+        )}
+
         <div className="rounded-2xl bg-card border border-border shadow-card p-4 mt-3">
           <p className="text-xs font-bold mb-2">Items ({order.items.length})</p>
           <div className="space-y-2.5">
