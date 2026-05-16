@@ -1,5 +1,8 @@
 import { Link } from "react-router-dom";
-import { Heart, Store, ShieldCheck, Package, ShoppingBag } from "lucide-react";
+import { Heart, Store, ShieldCheck, Package, ShoppingBag, ShoppingCart, Check } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { useShop } from "@/store/shop";
 
 export type ChatAttachment =
   | {
@@ -31,6 +34,16 @@ export type ChatAttachment =
       supplierName: string;
       count: number;
       items: { id: string; title: string; image: string; price?: number }[];
+    }
+  | {
+      kind: "cart-unlock";
+      productId: string;
+      title: string;
+      image: string;
+      price?: number;
+      currency?: string;
+      unit?: string;
+      moq?: number;
     };
 
 const fmt = (n?: number, c = "USD") =>
