@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Package, Truck, CheckCircle2, Clock, RotateCcw, MessageCircle,
-  ChevronRight, XCircle, FileText, MapPin, Star, X,
+  ChevronRight, XCircle, FileText, MapPin, Star, X, ShieldCheck, AlertTriangle, Lock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useShop } from "@/store/shop";
@@ -34,6 +34,11 @@ type Order = {
   coupon_code?: string | null;
   total: number;
   supplier_id: string;
+  escrow_status?: "none" | "held" | "released" | "refunded" | "disputed";
+  escrow_amount?: number;
+  escrow_released_at?: string | null;
+  dispute_opened_at?: string | null;
+  dispute_reason?: string | null;
   supplier?: { id: string; name: string; logo: string | null; country: string | null };
   items: Item[];
 };
@@ -288,6 +293,10 @@ function OrderDetail({
           </div>
         )}
 
+        {order.escrow_status && order.escrow_status !== "none" && (
+          <EscrowCard order={order} onUpdated={onUpdated} />
+        )}
+
         <div className="rounded-2xl bg-card border border-border shadow-card p-4 mt-3">
           <p className="text-xs font-bold mb-2">Items ({order.items.length})</p>
           <div className="space-y-2.5">
@@ -428,6 +437,77 @@ function ReviewModal({ item, onClose, onDone }: { item: Item; onClose: () => voi
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function EscrowCard({ order, onUpdated }: { order: Order; onUpdated: (o: Order) => void }) {
+  const status = order.escrow_status ?? "none";
+  const amount = Number(order.escrow_amount ?? order.total ?? 0);
+
+  const update = async (patch: Partial<Order>) => {
+    const { error } = await supabase.from("orders").update(patch as any).eq("id", order.id);
+    if (error) return toast.error(error.message);
+    onUpdated({ ...order, ...patch });
+  };
+
+  const release = async () => {
+    await update({ escrow_status: "released", escrow_released_at: new Date().toISOString() });
+    toast.success("Funds released to supplier");
+  };
+
+  const dispute = async () => {
+    const reason = prompt("Briefly describe the issue (item not received, damaged, wrong product…)");
+    if (!reason) return;
+    await update({ escrow_status: "disputed", dispute_opened_at: new Date().toISOString(), dispute_reason: reason });
+    toast.success("Dispute opened — our team will mediate");
+  };
+
+  const tone = status === "held" ? "bg-amber-500/10 border-amber-500/30"
+    : status === "released" ? "bg-emerald-500/10 border-emerald-500/30"
+    : status === "disputed" ? "bg-destructive/10 border-destructive/30"
+    : "bg-muted border-border";
+
+  const Icon = status === "released" ? CheckCircle2 : status === "disputed" ? AlertTriangle : Lock;
+  const label = status === "held" ? "Funds held in escrow"
+    : status === "released" ? "Funds released"
+    : status === "disputed" ? "Dispute open"
+    : status === "refunded" ? "Refunded" : "Trade Assurance";
+
+  return (
+    <div className={`rounded-2xl border shadow-card p-4 mt-3 ${tone}`}>
+      <div className="flex items-center gap-2">
+        <ShieldCheck className="w-5 h-5 text-primary" />
+        <p className="text-xs font-bold flex-1">Trade Assurance</p>
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-background border border-border inline-flex items-center gap-1">
+          <Icon className="w-3 h-3" /> {label}
+        </span>
+      </div>
+      <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">
+        ${amount.toFixed(2)} {status === "held" && "is securely held until you confirm delivery."}
+        {status === "released" && order.escrow_released_at && `released on ${new Date(order.escrow_released_at).toLocaleDateString()}.`}
+        {status === "disputed" && "Our trade team is reviewing this case."}
+      </p>
+      {order.dispute_reason && (
+        <p className="text-[11px] mt-1 px-2 py-1 rounded-md bg-destructive/10 text-destructive">
+          Reason: {order.dispute_reason}
+        </p>
+      )}
+      {status === "held" && (
+        <div className="grid grid-cols-2 gap-2 mt-3">
+          <button onClick={release} disabled={order.status !== "delivered"}
+            className="h-9 rounded-full bg-emerald-600 text-white text-xs font-semibold flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+            <CheckCircle2 className="w-3.5 h-3.5" /> Release funds
+          </button>
+          <button onClick={dispute}
+            className="h-9 rounded-full bg-destructive/10 text-destructive text-xs font-semibold flex items-center justify-center gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5" /> Open dispute
+          </button>
+        </div>
+      )}
+      {status === "held" && order.status !== "delivered" && (
+        <p className="text-[10px] text-muted-foreground mt-1 text-center">You can release funds once the order is delivered.</p>
+      )}
     </div>
   );
 }

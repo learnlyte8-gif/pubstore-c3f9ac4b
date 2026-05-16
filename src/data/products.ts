@@ -54,6 +54,7 @@ export type Supplier = {
   categories: string[];
   onboardingCompletedAt: string | null;
   tradeType: "retail" | "wholesale" | "both";
+  exportCountries: string[];
 };
 
 export type Review = {
@@ -163,6 +164,7 @@ type DbSupplier = {
   categories?: string[] | null;
   onboarding_completed_at?: string | null;
   trade_type?: string | null;
+  export_countries?: string[] | null;
 };
 
 type DbProduct = {
@@ -217,6 +219,7 @@ export const mapSupplier = (s: DbSupplier): Supplier => ({
   categories: (s.categories ?? []) as string[],
   onboardingCompletedAt: s.onboarding_completed_at ?? null,
   tradeType: ((s.trade_type as Supplier["tradeType"]) ?? "both"),
+  exportCountries: (s.export_countries ?? []) as string[],
 });
 
 type DbProductWithSupplier = DbProduct & {

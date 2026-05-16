@@ -938,6 +938,56 @@ export type Database = {
           },
         ]
       }
+      inspection_reports: {
+        Row: {
+          cover_url: string | null
+          created_at: string
+          document_url: string | null
+          id: string
+          inspector: string | null
+          report_date: string | null
+          summary: string | null
+          supplier_id: string
+          title: string
+          updated_at: string
+          verified: boolean
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string
+          document_url?: string | null
+          id?: string
+          inspector?: string | null
+          report_date?: string | null
+          summary?: string | null
+          supplier_id: string
+          title: string
+          updated_at?: string
+          verified?: boolean
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string
+          document_url?: string | null
+          id?: string
+          inspector?: string | null
+          report_date?: string | null
+          summary?: string | null
+          supplier_id?: string
+          title?: string
+          updated_at?: string
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_reports_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_applications: {
         Row: {
           applicant_email: string | null
@@ -2051,6 +2101,11 @@ export type Database = {
           coupon_code: string | null
           created_at: string
           discount: number
+          dispute_opened_at: string | null
+          dispute_reason: string | null
+          escrow_amount: number
+          escrow_released_at: string | null
+          escrow_status: string
           eta: string | null
           id: string
           payment_method: string | null
@@ -2072,6 +2127,11 @@ export type Database = {
           coupon_code?: string | null
           created_at?: string
           discount?: number
+          dispute_opened_at?: string | null
+          dispute_reason?: string | null
+          escrow_amount?: number
+          escrow_released_at?: string | null
+          escrow_status?: string
           eta?: string | null
           id?: string
           payment_method?: string | null
@@ -2093,6 +2153,11 @@ export type Database = {
           coupon_code?: string | null
           created_at?: string
           discount?: number
+          dispute_opened_at?: string | null
+          dispute_reason?: string | null
+          escrow_amount?: number
+          escrow_released_at?: string | null
+          escrow_status?: string
           eta?: string | null
           id?: string
           payment_method?: string | null
@@ -2577,36 +2642,92 @@ export type Database = {
         }
         Relationships: []
       }
+      quote_messages: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          proposed_lead_time: string | null
+          proposed_moq: number | null
+          proposed_packaging: string | null
+          proposed_price: number | null
+          quote_id: string
+          sender_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          proposed_lead_time?: string | null
+          proposed_moq?: number | null
+          proposed_packaging?: string | null
+          proposed_price?: number | null
+          quote_id: string
+          sender_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          proposed_lead_time?: string | null
+          proposed_moq?: number | null
+          proposed_packaging?: string | null
+          proposed_price?: number | null
+          quote_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_messages_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quotes: {
         Row: {
           created_at: string
+          currency: string | null
           id: string
           lead_time: string | null
           moq: number | null
           notes: string | null
+          packaging: string | null
           price_per_unit: number
           rfq_id: string
+          status: string
           supplier_id: string
+          valid_until: string | null
         }
         Insert: {
           created_at?: string
+          currency?: string | null
           id?: string
           lead_time?: string | null
           moq?: number | null
           notes?: string | null
+          packaging?: string | null
           price_per_unit: number
           rfq_id: string
+          status?: string
           supplier_id: string
+          valid_until?: string | null
         }
         Update: {
           created_at?: string
+          currency?: string | null
           id?: string
           lead_time?: string | null
           moq?: number | null
           notes?: string | null
+          packaging?: string | null
           price_per_unit?: number
           rfq_id?: string
+          status?: string
           supplier_id?: string
+          valid_until?: string | null
         }
         Relationships: [
           {

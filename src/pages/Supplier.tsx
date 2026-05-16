@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, ShieldCheck, Award, MessageCircle, Clock, Truck, Star, MapPin, Calendar, Package, FileText, Share2, Heart,
+  ArrowLeft, ShieldCheck, Award, MessageCircle, Clock, Truck, Star, MapPin, Calendar, Package, FileText, Share2, Heart, Globe, ClipboardCheck,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSupplier, useProducts } from "@/hooks/useCatalog";
@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ShareToChatSheet from "@/components/chat/ShareToChatSheet";
 import SupplierCertifications from "@/components/marketplace/SupplierCertifications";
+import SupplierInspectionReports from "@/components/marketplace/SupplierInspectionReports";
 import type { ChatAttachment } from "@/components/chat/AttachmentCard";
 
 export default function Supplier() {
@@ -17,7 +18,7 @@ export default function Supplier() {
   const navigate = useNavigate();
   const { data: supplier, isLoading } = useSupplier(id);
   const { data: products = [] } = useProducts({ supplierId: id });
-  const [tab, setTab] = useState<"products" | "about" | "certs">("products");
+  const [tab, setTab] = useState<"products" | "about" | "certs" | "inspections">("products");
   const [following, setFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
@@ -153,11 +154,12 @@ export default function Supplier() {
         </div>
       </div>
 
-      <div className="mt-5 px-4 border-b border-border">
-        <div className="flex gap-1">
+      <div className="mt-5 px-4 border-b border-border overflow-x-auto">
+        <div className="flex gap-1 min-w-max">
           <TabBtn active={tab === "products"} onClick={() => setTab("products")}>Products ({products.length})</TabBtn>
           <TabBtn active={tab === "about"} onClick={() => setTab("about")}>About</TabBtn>
           <TabBtn active={tab === "certs"} onClick={() => setTab("certs")}>Certifications</TabBtn>
+          <TabBtn active={tab === "inspections"} onClick={() => setTab("inspections")}>Inspections</TabBtn>
         </div>
       </div>
 
@@ -199,12 +201,31 @@ export default function Supplier() {
               <Row label="Followers" value={`${followerCount}`} />
             </ul>
           </div>
+          {supplier.exportCountries && supplier.exportCountries.length > 0 && (
+            <div className="rounded-2xl bg-card border border-border shadow-card p-4">
+              <h3 className="text-sm font-bold mb-2 flex items-center gap-1.5"><Globe className="w-4 h-4 text-primary" /> Export countries</h3>
+              <div className="flex flex-wrap gap-1.5">
+                {supplier.exportCountries.map((c) => (
+                  <span key={c} className="text-[11px] font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary">{c}</span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {tab === "certs" && supplier && (
         <div className="px-4 mt-4">
           <SupplierCertifications
+            supplierId={supplier.id}
+            canManage={!!userId && !!supplierOwner && userId === supplierOwner}
+          />
+        </div>
+      )}
+
+      {tab === "inspections" && supplier && (
+        <div className="px-4 mt-4">
+          <SupplierInspectionReports
             supplierId={supplier.id}
             canManage={!!userId && !!supplierOwner && userId === supplierOwner}
           />
