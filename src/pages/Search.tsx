@@ -403,6 +403,26 @@ export default function SearchPage() {
           ) : (
             <>
               <KindFilterChips value={kindFilter} onChange={setKindFilter} pool={ranked.map((r) => r.item)} />
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                <button
+                  onClick={() => setVerifiedOnly((v) => !v)}
+                  className={`px-3 h-7 rounded-full text-[11px] font-bold border transition flex items-center gap-1 ${verifiedOnly ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border"}`}
+                >
+                  <Sparkles className="w-3 h-3" /> Verified
+                </button>
+                <button
+                  onClick={() => setReadyToShipOnly((v) => !v)}
+                  className={`px-3 h-7 rounded-full text-[11px] font-bold border transition flex items-center gap-1 ${readyToShipOnly ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border"}`}
+                >
+                  <Package className="w-3 h-3" /> Ready to ship
+                </button>
+                <button
+                  onClick={() => setFreeShipOnly((v) => !v)}
+                  className={`px-3 h-7 rounded-full text-[11px] font-bold border transition flex items-center gap-1 ${freeShipOnly ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border"}`}
+                >
+                  <Truck className="w-3 h-3" /> Free shipping
+                </button>
+              </div>
               <p className="text-sm text-muted-foreground mb-3">{ranked.length} result{ranked.length === 1 ? "" : "s"} for "{submitted}"</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {ranked.slice(0, 80).map(({ item }) => (<UniversalResultCard key={item.id} hit={item} />))}

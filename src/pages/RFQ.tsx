@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  FileText, Plus, Send, ShieldCheck, Clock, Inbox, Star, Package, Globe2, X, CheckCircle2,
+  FileText, Plus, Send, ShieldCheck, Clock, Inbox, Star, Package, Globe2, X, CheckCircle2, Paperclip, ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +31,7 @@ type RFQ = {
   details: string | null;
   status: "open" | "closed";
   created_at: string;
+  attachments: string[] | null;
   quotes: Quote[];
 };
 
@@ -97,7 +98,7 @@ export default function RFQ() {
   const open = openId ? [...rfqs, ...browseRfqs].find((r) => r.id === openId) : null;
   if (open) return <RFQDetail rfq={open} userId={userId} mySupplierId={mySupplier?.id ?? null} onBack={() => setOpenId(null)} onChanged={load} />;
 
-  const handleSubmit = async (payload: Pick<RFQ, "title" | "category" | "qty" | "unit" | "target_price" | "ship_to" | "details">) => {
+  const handleSubmit = async (payload: Pick<RFQ, "title" | "category" | "qty" | "unit" | "target_price" | "ship_to" | "details" | "attachments">) => {
     if (!userId) return;
     const { error } = await supabase.from("rfqs").insert({ ...payload, buyer_id: userId });
     if (error) return toast.error("Could not post RFQ", { description: error.message });
@@ -193,7 +194,7 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
 function RFQForm({
   onSubmit, onCancel,
 }: {
-  onSubmit: (rfq: { title: string; category: string; qty: number; unit: string; target_price: number; ship_to: string; details: string }) => void;
+  onSubmit: (rfq: { title: string; category: string; qty: number; unit: string; target_price: number; ship_to: string; details: string; attachments: string[] }) => void;
   onCancel: () => void;
 }) {
   const { data: categories = [] } = useCategories();
@@ -204,13 +205,34 @@ function RFQForm({
   const [targetPrice, setTargetPrice] = useState(0);
   const [shipTo, setShipTo] = useState("");
   const [details, setDetails] = useState("");
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  
 
   useEffect(() => { if (!category && categories[0]) setCategory(categories[0].id); }, [categories, category]);
+
+  const uploadFiles = async (files: FileList) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return toast.error("Sign in to attach files");
+    setUploading(true);
+    const urls: string[] = [];
+    for (const file of Array.from(files)) {
+      if (file.size > 8 * 1024 * 1024) { toast.error(`${file.name} is over 8 MB`); continue; }
+      const ext = file.name.split(".").pop() || "bin";
+      const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error } = await supabase.storage.from("rfq-attachments").upload(path, file, { upsert: false });
+      if (error) { toast.error("Upload failed", { description: error.message }); continue; }
+      const { data: pub } = supabase.storage.from("rfq-attachments").getPublicUrl(path);
+      urls.push(pub.publicUrl);
+    }
+    setAttachments((a) => [...a, ...urls]);
+    setUploading(false);
+  };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !shipTo || qty < 1) return toast.error("Fill product, quantity and shipping destination.");
-    onSubmit({ title, category, qty, unit, target_price: targetPrice, ship_to: shipTo, details });
+    onSubmit({ title, category, qty, unit, target_price: targetPrice, ship_to: shipTo, details, attachments });
   };
 
   return (
@@ -234,9 +256,40 @@ function RFQForm({
       </div>
       <Field label="Ship to *"><input value={shipTo} onChange={(e) => setShipTo(e.target.value)} placeholder="City, Country" className="w-full h-10 px-3 rounded-lg bg-muted text-sm" /></Field>
       <Field label="Details"><textarea value={details} onChange={(e) => setDetails(e.target.value)} rows={4} placeholder="Materials, packaging, certifications…" className="w-full p-3 rounded-lg bg-muted text-sm resize-none" /></Field>
+
+      <Field label="Reference photos / spec sheets">
+        <div className="space-y-2">
+          {attachments.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {attachments.map((u, i) => (
+                <div key={u} className="relative w-16 h-16 rounded-lg overflow-hidden bg-muted border border-border">
+                  {/\.(png|jpe?g|webp|gif)$/i.test(u)
+                    ? <img src={u} alt="" className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center"><Paperclip className="w-4 h-4 text-muted-foreground" /></div>}
+                  <button type="button" aria-label="Remove"
+                    onClick={() => setAttachments((a) => a.filter((_, j) => j !== i))}
+                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">×</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <label className="inline-flex items-center gap-1.5 px-3 h-9 rounded-full bg-muted text-xs font-semibold cursor-pointer hover:bg-muted/70">
+            <ImageIcon className="w-3.5 h-3.5" /> {uploading ? "Uploading…" : "Add files"}
+            <input
+              type="file"
+              multiple
+              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+              className="hidden"
+              disabled={uploading}
+              onChange={(e) => { if (e.target.files?.length) uploadFiles(e.target.files); e.target.value = ""; }}
+            />
+          </label>
+        </div>
+      </Field>
+
       <div className="flex gap-2 pt-2">
         <button type="button" onClick={onCancel} className="flex-1 h-11 rounded-full bg-muted text-foreground text-sm font-semibold">Cancel</button>
-        <button type="submit" className="flex-1 h-11 rounded-full bg-primary text-primary-foreground text-sm font-semibold shadow-pop flex items-center justify-center gap-1.5">
+        <button type="submit" disabled={uploading} className="flex-1 h-11 rounded-full bg-primary text-primary-foreground text-sm font-semibold shadow-pop flex items-center justify-center gap-1.5 disabled:opacity-50">
           <Send className="w-4 h-4" /> Post RFQ
         </button>
       </div>
@@ -286,6 +339,20 @@ function RFQDetail({ rfq, userId, mySupplierId, onBack, onChanged }: { rfq: RFQ;
             <Detail label="Category" value={rfq.category ?? "—"} />
           </div>
           {rfq.details && <p className="mt-3 text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">{rfq.details}</p>}
+          {rfq.attachments && rfq.attachments.length > 0 && (
+            <div className="mt-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5 flex items-center gap-1"><Paperclip className="w-3 h-3" /> Attachments</p>
+              <div className="flex flex-wrap gap-2">
+                {rfq.attachments.map((u) => (
+                  <a key={u} href={u} target="_blank" rel="noreferrer" className="block w-16 h-16 rounded-lg overflow-hidden bg-muted border border-border">
+                    {/\.(png|jpe?g|webp|gif)$/i.test(u)
+                      ? <img src={u} alt="" className="w-full h-full object-cover" />
+                      : <div className="w-full h-full flex items-center justify-center"><Paperclip className="w-4 h-4 text-muted-foreground" /></div>}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {canQuote && <QuoteForm rfqId={rfq.id} supplierId={mySupplierId!} buyerId={rfq.buyer_id} onPosted={onChanged} />}
