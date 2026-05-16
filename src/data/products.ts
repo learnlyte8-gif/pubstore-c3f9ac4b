@@ -164,6 +164,7 @@ type DbSupplier = {
   categories?: string[] | null;
   onboarding_completed_at?: string | null;
   trade_type?: string | null;
+  export_countries?: string[] | null;
 };
 
 type DbProduct = {
