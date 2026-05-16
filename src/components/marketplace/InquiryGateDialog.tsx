@@ -88,8 +88,8 @@ export default function InquiryGateDialog({
             <ShieldCheck className="w-5 h-5 text-primary" /> Inquire before ordering
           </DialogTitle>
           <DialogDescription>
-            Trade Assurance requires confirming specs, MOQ, packaging and lead time with the supplier
-            before the first purchase. Send a quick inquiry to unlock checkout.
+            Trade Assurance requires the supplier to review and approve your request before you can
+            add this product to cart. They'll confirm specs, MOQ, packaging and lead time, then unlock checkout.
           </DialogDescription>
         </DialogHeader>
         <Textarea
