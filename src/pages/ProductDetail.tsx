@@ -51,14 +51,21 @@ export default function ProductDetail() {
       if (!uid || !product?.id) { setHasInquired(false); return; }
       const { data: inq } = await supabase
         .from("product_inquiries")
-        .select("id")
+        .select("id,status")
         .eq("buyer_id", uid)
         .eq("product_id", product.id)
         .maybeSingle();
-      if (!cancelled) setHasInquired(!!inq);
+      if (!cancelled) setHasInquired(inq?.status === "approved");
     })();
-    return () => { cancelled = true; };
-  }, [product?.id]);
+    // realtime: unlock as soon as supplier approves
+    const ch = supabase
+      .channel(`inq:${product?.id}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "product_inquiries", filter: `product_id=eq.${product?.id}` }, (payload: any) => {
+        if (payload.new?.buyer_id === buyerId && payload.new?.status === "approved") setHasInquired(true);
+      })
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(ch); };
+  }, [product?.id, buyerId]);
 
   if (isLoading) return <p className="p-12 text-center text-sm text-muted-foreground">Loading…</p>;
   if (!product) {
