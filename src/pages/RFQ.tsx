@@ -98,7 +98,7 @@ export default function RFQ() {
   const open = openId ? [...rfqs, ...browseRfqs].find((r) => r.id === openId) : null;
   if (open) return <RFQDetail rfq={open} userId={userId} mySupplierId={mySupplier?.id ?? null} onBack={() => setOpenId(null)} onChanged={load} />;
 
-  const handleSubmit = async (payload: Pick<RFQ, "title" | "category" | "qty" | "unit" | "target_price" | "ship_to" | "details">) => {
+  const handleSubmit = async (payload: Pick<RFQ, "title" | "category" | "qty" | "unit" | "target_price" | "ship_to" | "details" | "attachments">) => {
     if (!userId) return;
     const { error } = await supabase.from("rfqs").insert({ ...payload, buyer_id: userId });
     if (error) return toast.error("Could not post RFQ", { description: error.message });
