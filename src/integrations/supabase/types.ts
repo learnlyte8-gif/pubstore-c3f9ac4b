@@ -2668,6 +2668,7 @@ export type Database = {
       }
       rfqs: {
         Row: {
+          attachments: string[]
           buyer_id: string
           category: string | null
           created_at: string
@@ -2682,6 +2683,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attachments?: string[]
           buyer_id: string
           category?: string | null
           created_at?: string
@@ -2696,6 +2698,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attachments?: string[]
           buyer_id?: string
           category?: string | null
           created_at?: string
