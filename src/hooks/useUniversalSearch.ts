@@ -26,6 +26,10 @@ export type UniversalHit = Searchable & {
   currency?: string | null;
   city?: string | null;
   country?: string | null;
+  moq?: number | null;
+  leadTime?: string | null;
+  readyToShip?: boolean;
+  verified?: boolean;
 };
 
 const empty = <T,>(arr: T[] | null | undefined): T[] => arr ?? [];
@@ -42,9 +46,9 @@ async function loadUniversalPool(): Promise<UniversalHit[]> {
     logistics, vehicles, stays, industrial, news,
   ] = await Promise.all([
     supabase.from("products")
-      .select("id,title,description,category_slug,badge,price,image,rating,review_count,sold,free_shipping,deal_ends_at,supplier_id")
+      .select("id,title,description,category_slug,badge,price,image,rating,review_count,sold,free_shipping,deal_ends_at,supplier_id,moq,lead_time")
       .eq("active", true).limit(400),
-    supabase.from("suppliers").select("id,name,about,country,logo,verified,rating").is("mirror_of", null).limit(120),
+    supabase.from("suppliers").select("id,name,about,country,logo,verified,rating").is("mirror_of", null).limit(200),
     supabase.from("service_providers").select("id,display_name,bio,category,subcategory,skills,city,country,cover,rating,jobs_completed,hourly_rate,currency").eq("active", true).limit(200),
     supabase.from("properties").select("id,title,description,property_kind,listing_type,city,country,price,currency,cover,bedrooms,baths,featured,views").eq("active", true).limit(200),
     supabase.from("finance_products").select("id,title,kind,description,provider_name,country,city,cover,min_amount,max_amount,interest_rate,currency,featured").eq("active", true).limit(120),
@@ -57,7 +61,14 @@ async function loadUniversalPool(): Promise<UniversalHit[]> {
 
   const hits: UniversalHit[] = [];
 
+  const supplierIndex = new Map<string, { country: string | null; verified: boolean }>();
+  for (const s of empty(suppliers.data as any[])) {
+    supplierIndex.set(s.id, { country: s.country ?? null, verified: !!s.verified });
+  }
+
   for (const p of empty(products.data as any[])) {
+    const sup = supplierIndex.get(p.supplier_id);
+    const moq = p.moq == null ? null : Number(p.moq);
     hits.push({
       id: `p:${p.id}`, kind: "product",
       title: p.title, category: p.category_slug ?? "products", badge: p.badge,
@@ -66,6 +77,10 @@ async function loadUniversalPool(): Promise<UniversalHit[]> {
       price: Number(p.price ?? 0), rating: Number(p.rating ?? 0),
       reviews: p.review_count ?? 0, sold: p.sold ?? 0,
       freeShipping: !!p.free_shipping, dealEndsAt: p.deal_ends_at,
+      moq, leadTime: p.lead_time ?? null,
+      readyToShip: (moq != null && moq <= 1) || /ready|in[- ]?stock|stock/i.test(p.lead_time ?? ""),
+      country: sup?.country ?? null,
+      verified: sup?.verified ?? false,
     });
   }
 
@@ -78,6 +93,7 @@ async function loadUniversalPool(): Promise<UniversalHit[]> {
       image: s.logo, href: `/supplier/${s.id}`,
       rating: Number(s.rating ?? 0), reviews: 0, sold: 0,
       country: s.country,
+      verified: !!s.verified,
     });
   }
 
