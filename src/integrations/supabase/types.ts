@@ -2265,25 +2265,37 @@ export type Database = {
         Row: {
           buyer_id: string
           created_at: string
+          decided_at: string | null
+          decided_by: string | null
           id: string
           message: string | null
           product_id: string
+          product_title: string | null
+          status: string
           supplier_id: string
         }
         Insert: {
           buyer_id: string
           created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
           id?: string
           message?: string | null
           product_id: string
+          product_title?: string | null
+          status?: string
           supplier_id: string
         }
         Update: {
           buyer_id?: string
           created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
           id?: string
           message?: string | null
           product_id?: string
+          product_title?: string | null
+          status?: string
           supplier_id?: string
         }
         Relationships: []
