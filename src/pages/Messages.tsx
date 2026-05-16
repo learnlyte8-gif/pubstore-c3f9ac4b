@@ -571,6 +571,10 @@ export default function Messages() {
           </div>
         </div>
 
+        {supplierOwnerId === userId && active.supplier && userId && (
+          <InquiryApprovalPanel buyerId={active.buyer_id} supplierId={active.supplier.id} userId={userId} />
+        )}
+
         {/* Thread */}
         <div ref={scrollRef} onScroll={onThreadScroll} className="chat-scroll flex-1 overflow-y-auto px-3 py-4 space-y-1.5">
           {messages.length === 0 ? (
