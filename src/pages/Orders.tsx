@@ -34,6 +34,11 @@ type Order = {
   coupon_code?: string | null;
   total: number;
   supplier_id: string;
+  escrow_status?: "none" | "held" | "released" | "refunded" | "disputed";
+  escrow_amount?: number;
+  escrow_released_at?: string | null;
+  dispute_opened_at?: string | null;
+  dispute_reason?: string | null;
   supplier?: { id: string; name: string; logo: string | null; country: string | null };
   items: Item[];
 };
