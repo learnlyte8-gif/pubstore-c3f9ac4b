@@ -154,11 +154,12 @@ export default function Supplier() {
         </div>
       </div>
 
-      <div className="mt-5 px-4 border-b border-border">
-        <div className="flex gap-1">
+      <div className="mt-5 px-4 border-b border-border overflow-x-auto">
+        <div className="flex gap-1 min-w-max">
           <TabBtn active={tab === "products"} onClick={() => setTab("products")}>Products ({products.length})</TabBtn>
           <TabBtn active={tab === "about"} onClick={() => setTab("about")}>About</TabBtn>
           <TabBtn active={tab === "certs"} onClick={() => setTab("certs")}>Certifications</TabBtn>
+          <TabBtn active={tab === "inspections"} onClick={() => setTab("inspections")}>Inspections</TabBtn>
         </div>
       </div>
 
