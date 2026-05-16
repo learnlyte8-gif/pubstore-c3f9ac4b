@@ -46,7 +46,7 @@ async function loadUniversalPool(): Promise<UniversalHit[]> {
     logistics, vehicles, stays, industrial, news,
   ] = await Promise.all([
     supabase.from("products")
-      .select("id,title,description,category_slug,badge,price,image,rating,review_count,sold,free_shipping,deal_ends_at,supplier_id,moq,lead_time")
+      .select("id,title,description,category_slug,badge,price,image,rating,review_count,sold,free_shipping,deal_ends_at,supplier_id,moq,lead_time,lead_time_days,ready_to_ship")
       .eq("active", true).limit(400),
     supabase.from("suppliers").select("id,name,about,country,logo,verified,rating").is("mirror_of", null).limit(200),
     supabase.from("service_providers").select("id,display_name,bio,category,subcategory,skills,city,country,cover,rating,jobs_completed,hourly_rate,currency").eq("active", true).limit(200),
@@ -77,8 +77,8 @@ async function loadUniversalPool(): Promise<UniversalHit[]> {
       price: Number(p.price ?? 0), rating: Number(p.rating ?? 0),
       reviews: p.review_count ?? 0, sold: p.sold ?? 0,
       freeShipping: !!p.free_shipping, dealEndsAt: p.deal_ends_at,
-      moq, leadTime: p.lead_time ?? null,
-      readyToShip: (moq != null && moq <= 1) || /ready|in[- ]?stock|stock/i.test(p.lead_time ?? ""),
+      moq, leadTime: p.lead_time ?? (p.lead_time_days ? `${p.lead_time_days} days` : null),
+      readyToShip: !!p.ready_to_ship || (moq != null && moq <= 1 && /ready|in[- ]?stock|stock/i.test(p.lead_time ?? "")),
       country: sup?.country ?? null,
       verified: sup?.verified ?? false,
     });
