@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, ShieldCheck, Award, MessageCircle, Clock, Truck, Star, MapPin, Calendar, Package, FileText, Share2, Heart,
+  ArrowLeft, ShieldCheck, Award, MessageCircle, Clock, Truck, Star, MapPin, Calendar, Package, FileText, Share2, Heart, Globe, ClipboardCheck,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSupplier, useProducts } from "@/hooks/useCatalog";
@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ShareToChatSheet from "@/components/chat/ShareToChatSheet";
 import SupplierCertifications from "@/components/marketplace/SupplierCertifications";
+import SupplierInspectionReports from "@/components/marketplace/SupplierInspectionReports";
 import type { ChatAttachment } from "@/components/chat/AttachmentCard";
 
 export default function Supplier() {
