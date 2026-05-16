@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  FileText, Plus, Send, ShieldCheck, Clock, Inbox, Star, Package, Globe2, X, CheckCircle2,
+  FileText, Plus, Send, ShieldCheck, Clock, Inbox, Star, Package, Globe2, X, CheckCircle2, Paperclip, ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
