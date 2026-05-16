@@ -37,6 +37,10 @@ export default function SearchPage() {
   const [minRating, setMinRating] = useState(0);
   const [maxPrice, setMaxPrice] = useState(1000);
   const [freeShipOnly, setFreeShipOnly] = useState(false);
+  const [maxMoq, setMaxMoq] = useState(0); // 0 = any
+  const [country, setCountry] = useState<string>("");
+  const [readyToShipOnly, setReadyToShipOnly] = useState(false);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [sort, setSort] = useState("relevance");
   const [aiInsight, setAiInsight] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
@@ -80,6 +84,14 @@ export default function SearchPage() {
       if (p.rating < minRating) return false;
       if (p.price != null && p.price > maxPrice) return false;
       if (freeShipOnly && !p.freeShipping) return false;
+      if (maxMoq > 0 && p.moq != null && p.moq > maxMoq) return false;
+      if (readyToShipOnly && !p.readyToShip && p.kind === "product") return false;
+      if (verifiedOnly && p.kind === "supplier" && !p.verified) return false;
+      if (verifiedOnly && p.kind === "product" && !p.verified) return false;
+      if (country.trim()) {
+        const c = country.trim().toLowerCase();
+        if (!(p.country ?? "").toLowerCase().includes(c)) return false;
+      }
       return true;
     });
 
@@ -92,7 +104,7 @@ export default function SearchPage() {
       if (sort === "sold") scored = [...scored].sort((a, b) => b.item.sold - a.item.sold);
     }
     return scored;
-  }, [pool, submitted, sort, minRating, maxPrice, freeShipOnly, kindFilter]);
+  }, [pool, submitted, sort, minRating, maxPrice, freeShipOnly, maxMoq, country, readyToShipOnly, verifiedOnly, kindFilter]);
 
   const askTapson = async (q: string) => {
     if (!q.trim()) return;
@@ -144,7 +156,7 @@ export default function SearchPage() {
   };
 
   const onSubmit = (e: React.FormEvent) => { e.preventDefault(); submit(query); };
-  const reset = () => { setCategory(null); setMinRating(0); setMaxPrice(1000); setFreeShipOnly(false); setSort("relevance"); };
+  const reset = () => { setCategory(null); setMinRating(0); setMaxPrice(1000); setFreeShipOnly(false); setMaxMoq(0); setCountry(""); setReadyToShipOnly(false); setVerifiedOnly(false); setSort("relevance"); };
 
   const onPickImage = async (file: File) => {
     if (!file.type.startsWith("image/")) return toast.error("Pick an image file");
