@@ -9,6 +9,7 @@ import SupplierLocationMap from "@/components/SupplierLocationMap";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ShareToChatSheet from "@/components/chat/ShareToChatSheet";
+import SupplierCertifications from "@/components/marketplace/SupplierCertifications";
 import type { ChatAttachment } from "@/components/chat/AttachmentCard";
 
 export default function Supplier() {
@@ -201,9 +202,12 @@ export default function Supplier() {
         </div>
       )}
 
-      {tab === "certs" && (
-        <div className="px-4 mt-4 space-y-2">
-          <p className="text-sm text-muted-foreground text-center py-8">Certifications coming soon.</p>
+      {tab === "certs" && supplier && (
+        <div className="px-4 mt-4">
+          <SupplierCertifications
+            supplierId={supplier.id}
+            canManage={!!userId && !!supplierOwner && userId === supplierOwner}
+          />
         </div>
       )}
 
