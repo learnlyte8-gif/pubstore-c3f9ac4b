@@ -35,8 +35,30 @@ export default function ProductDetail() {
   const [qty, setQty] = useState<number>(1);
   const [tab, setTab] = useState<"specs" | "description" | "reviews">("specs");
   const [shareOpen, setShareOpen] = useState(false);
+  const [inquiryOpen, setInquiryOpen] = useState(false);
+  const [buyerId, setBuyerId] = useState<string | null>(null);
+  const [hasInquired, setHasInquired] = useState<boolean | null>(null);
 
   useEffect(() => { if (product) setQty(product.moq); }, [product?.id, product?.moq]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      const uid = data.user?.id ?? null;
+      if (cancelled) return;
+      setBuyerId(uid);
+      if (!uid || !product?.id) { setHasInquired(false); return; }
+      const { data: inq } = await supabase
+        .from("product_inquiries")
+        .select("id")
+        .eq("buyer_id", uid)
+        .eq("product_id", product.id)
+        .maybeSingle();
+      if (!cancelled) setHasInquired(!!inq);
+    })();
+    return () => { cancelled = true; };
+  }, [product?.id]);
 
   if (isLoading) return <p className="p-12 text-center text-sm text-muted-foreground">Loading…</p>;
   if (!product) {
