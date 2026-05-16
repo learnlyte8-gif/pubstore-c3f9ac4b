@@ -76,11 +76,16 @@ export default function ProductDetail() {
   const total = unitPrice * qty;
   const related = relatedAll.filter((r) => r.id !== product.id).slice(0, 6);
 
+  const gated = hasInquired === false;
   const handleAdd = () => {
+    if (gated) { setInquiryOpen(true); return; }
     addToCart(product.id, qty);
     toast.success(`Added ${qty} ${product.unit}`, { description: product.title });
   };
-  const handleBuy = () => { addToCart(product.id, qty); navigate("/cart"); };
+  const handleBuy = () => {
+    if (gated) { setInquiryOpen(true); return; }
+    addToCart(product.id, qty); navigate("/cart");
+  };
 
   return (
     <div className="pb-32 -mt-px">
