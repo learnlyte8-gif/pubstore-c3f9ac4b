@@ -123,6 +123,10 @@ export default function AttachmentCard({
     );
   }
 
+  if (attachment.kind === "cart-unlock") {
+    return <CartUnlockCard attachment={attachment} mine={mine} />;
+  }
+
   // wishlist & catalog share the multi-item layout
   const isWishlist = attachment.kind === "wishlist";
   const items = attachment.items.slice(0, 4);
