@@ -53,7 +53,7 @@ export async function sendCartUnlockMessage(opts: {
     title: (p as any).title ?? "Product",
     image: (p as any).image ?? "",
     price: (p as any).price ?? undefined,
-    currency: (p as any).currency ?? "USD",
+    currency: "USD",
     unit: (p as any).unit ?? undefined,
     moq: (p as any).moq ?? 1,
   };
