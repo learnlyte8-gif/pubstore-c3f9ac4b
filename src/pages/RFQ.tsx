@@ -409,19 +409,22 @@ function RFQDetail({ rfq, userId, mySupplierId, onBack, onChanged }: { rfq: RFQ;
                 )}
                 {q.notes && <p className="px-3 pb-2 text-[11px] text-muted-foreground leading-relaxed">{q.notes}</p>}
                 {sup && (
-                  <div className="grid grid-cols-2 gap-2 p-3 border-t border-border bg-muted/20">
-                    <Link to={`/messages?supplier=${sup.id}`} className="h-9 rounded-full bg-card border border-border text-xs font-semibold flex items-center justify-center">Message</Link>
-                    <button
-                      onClick={async () => {
-                        if (!isOwner) return toast.error("Only the RFQ owner can accept");
-                        await supabase.from("rfqs").update({ status: "closed" }).eq("id", rfq.id);
-                        toast.success("Quote accepted · RFQ closed");
-                        onChanged();
-                      }}
-                      className="h-9 rounded-full bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center"
-                    >
-                      Accept quote
-                    </button>
+                  <div className="p-3 border-t border-border bg-muted/20 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Link to={`/messages?supplier=${sup.id}`} className="h-9 rounded-full bg-card border border-border text-xs font-semibold flex items-center justify-center">Message</Link>
+                      <button
+                        onClick={async () => {
+                          if (!isOwner) return toast.error("Only the RFQ owner can accept");
+                          await supabase.from("rfqs").update({ status: "closed" }).eq("id", rfq.id);
+                          toast.success("Quote accepted · RFQ closed");
+                          onChanged();
+                        }}
+                        className="h-9 rounded-full bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center"
+                      >
+                        Accept quote
+                      </button>
+                    </div>
+                    <QuoteNegotiation quoteId={q.id} currentUserId={userId} />
                   </div>
                 )}
               </li>
