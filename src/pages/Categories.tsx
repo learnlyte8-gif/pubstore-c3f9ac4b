@@ -4,6 +4,8 @@ import ProductCard from "@/components/marketplace/ProductCard";
 import EmptyState from "@/components/EmptyState";
 import TradeModeSwitch from "@/components/marketplace/TradeModeSwitch";
 import { useCategories, useProducts } from "@/hooks/useCatalog";
+import SubcategoryChips from "@/components/marketplace/SubcategoryChips";
+import { deriveSubcategories, filterBySubcategory } from "@/lib/subcategories";
 import {
   useMyInterests,
   useWishlistInterestSlugs,
