@@ -116,7 +116,9 @@ export default function AppShell() {
       </header>
 
       <main className="flex-1 max-w-2xl w-full mx-auto pb-[calc(env(safe-area-inset-bottom)+76px)] lg:pb-4">
-        <Outlet />
+        <div key={location.pathname} className="page-transition">
+          <Outlet />
+        </div>
       </main>
 
       {/* Bottom tab bar — iOS liquid glass */}
