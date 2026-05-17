@@ -177,9 +177,10 @@ function TabItem({
                 />
               )}
               <Icon
+                key={isActive ? "active" : "idle"}
                 className={`relative w-[26px] h-[26px] transition-all duration-200 ${
                   isActive
-                    ? "text-primary scale-[1.06]"
+                    ? "text-primary scale-[1.06] animate-tab-pop"
                     : "text-foreground/60"
                 }`}
                 strokeWidth={isActive ? 2.2 : 1.9}
