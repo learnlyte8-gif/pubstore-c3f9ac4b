@@ -4,6 +4,8 @@ import ProductCard from "@/components/marketplace/ProductCard";
 import EmptyState from "@/components/EmptyState";
 import TradeModeSwitch from "@/components/marketplace/TradeModeSwitch";
 import { useCategories, useProducts } from "@/hooks/useCatalog";
+import SubcategoryChips from "@/components/marketplace/SubcategoryChips";
+import { deriveSubcategories, filterBySubcategory } from "@/lib/subcategories";
 import {
   useMyInterests,
   useWishlistInterestSlugs,
@@ -18,6 +20,7 @@ const ALL_ID = "__all__";
 export default function Categories() {
   const { data: cats = [] } = useCategories();
   const [active, setActive] = useState<string>(ALL_ID);
+  const [activeSub, setActiveSub] = useState<string | null>(null);
   const isAll = active === ALL_ID;
 
   const { interests } = useMyInterests();
@@ -34,6 +37,10 @@ export default function Categories() {
     (acc, s) => { acc[s] = (acc[s] ?? 0) + 1; return acc; }, {},
   );
   const ordered = isAll ? rankByAffinity(products, priorityCounts, searchTokens) : products;
+
+  const subs = isAll ? [] : deriveSubcategories(active, ordered);
+  const activeSubObj = subs.find((s) => s.id === activeSub) ?? null;
+  const visible = filterBySubcategory(ordered, activeSubObj);
 
   const ActiveCat = cats.find((c) => c.id === active);
   const ActiveIcon = ActiveCat?.icon;
@@ -55,6 +62,7 @@ export default function Categories() {
 
   const handleSelect = (id: string) => {
     setActive(id);
+    setActiveSub(null);
     setCollapsed(false);
     bumpActivity();
   };
@@ -123,7 +131,8 @@ export default function Categories() {
               {isAll ? "All products" : ActiveCat?.name}
             </h2>
             <p className="text-xs text-muted-foreground truncate">
-              {ordered.length} products
+              {visible.length} products
+              {activeSubObj ? ` · ${activeSubObj.label}` : ""}
               {tradeMode !== "all" ? ` · ${tradeMode}` : ""}
               {isAll && interests.length > 0 ? " · personalized" : ""}
             </p>
@@ -133,13 +142,17 @@ export default function Categories() {
           <TradeModeSwitch />
         </div>
 
+        {!isAll && subs.length > 0 && (
+          <SubcategoryChips subs={subs} active={activeSub} onChange={setActiveSub} />
+        )}
+
         {isLoading ? (
           <p className="text-center py-12 text-sm text-muted-foreground">Loading…</p>
-        ) : ordered.length === 0 ? (
+        ) : visible.length === 0 ? (
           <EmptyState title="No products yet" description="Be the first supplier to list in this category." />
         ) : (
           <div className="grid grid-cols-2 gap-3 p-3">
-            {ordered.map((p) => (<ProductCard key={p.id} product={p} />))}
+            {visible.map((p) => (<ProductCard key={p.id} product={p} />))}
           </div>
         )}
       </div>
