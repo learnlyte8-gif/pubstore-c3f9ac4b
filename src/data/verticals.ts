@@ -142,3 +142,46 @@ export async function fetchIndustrialItem(id: string): Promise<IndustrialListing
   const { data } = await supabase.from("industrial_listings").select("*").eq("id", id).maybeSingle();
   return (data as IndustrialListing) ?? null;
 }
+
+// =================== AGRO ===================
+export type AgroListing = {
+  id: string;
+  title: string;
+  kind: string; // produce | equipment | inputs | livestock | services | project
+  subcategory: string | null;
+  cover: string | null;
+  gallery: string[];
+  description: string | null;
+  spec: Record<string, string>;
+  moq: number | null;
+  unit: string | null;
+  price: number | null;
+  currency: string;
+  harvest_season: string | null;
+  lead_time: string | null;
+  capacity: string | null;
+  certifications: string[];
+  organic: boolean;
+  ship_from: string | null;
+  country: string | null;
+  region: string | null;
+  funding_goal: number | null;
+  funding_raised: number | null;
+  project_status: string | null;
+  featured: boolean;
+};
+
+export async function fetchAgro(opts: { kind?: string; limit?: number } = {}): Promise<AgroListing[]> {
+  let q = supabase.from("agro_listings").select("*").eq("active", true)
+    .order("featured", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (opts.kind) q = q.eq("kind", opts.kind);
+  if (opts.limit) q = q.limit(opts.limit);
+  const { data } = await q;
+  return (data ?? []) as unknown as AgroListing[];
+}
+
+export async function fetchAgroItem(id: string): Promise<AgroListing | null> {
+  const { data } = await supabase.from("agro_listings").select("*").eq("id", id).maybeSingle();
+  return (data as unknown as AgroListing) ?? null;
+}

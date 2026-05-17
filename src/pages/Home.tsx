@@ -26,6 +26,7 @@ import NewsRail from "@/components/marketplace/NewsRail";
 import StaysRail from "@/components/marketplace/StaysRail";
 import AutoRail from "@/components/marketplace/AutoRail";
 import IndustrialRail from "@/components/marketplace/IndustrialRail";
+import AgroRail from "@/components/marketplace/AgroRail";
 import ServicesRail from "@/components/marketplace/ServicesRail";
 import PropertiesRail from "@/components/marketplace/PropertiesRail";
 import FinanceRail from "@/components/marketplace/FinanceRail";
@@ -244,6 +245,8 @@ const Home = () => {
               <FinanceRail />
 
               <IndustrialRail />
+
+              <AgroRail />
 
               <section className="px-4 mt-6">
                 <SectionHeader icon={LayoutGrid} title="Explore catalog" subtitle="Mixed picks, ads & ideas" />

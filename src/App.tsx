@@ -41,6 +41,7 @@ import News from "./pages/News.tsx";
 import Stays from "./pages/Stays.tsx";
 import Auto from "./pages/Auto.tsx";
 import Industrial from "./pages/Industrial.tsx";
+import Agro from "./pages/Agro.tsx";
 import Rides from "./pages/Rides.tsx";
 import Driver from "./pages/Driver.tsx";
 import Services from "./pages/Services.tsx";
@@ -130,6 +131,8 @@ const App = () => (
                 <Route path="/auto/:id" element={<Auto />} />
                 <Route path="/industrial" element={<Industrial />} />
                 <Route path="/industrial/:id" element={<Industrial />} />
+                <Route path="/agro" element={<Agro />} />
+                <Route path="/agro/:id" element={<Agro />} />
                 <Route path="/rides" element={<Rides />} />
                 <Route path="/rides/:id" element={<Rides />} />
                 <Route path="/driver" element={<Driver />} />
