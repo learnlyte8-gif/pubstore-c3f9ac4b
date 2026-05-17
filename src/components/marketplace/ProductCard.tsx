@@ -197,9 +197,9 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
           )}
         </div>
         <div className="mt-1.5">
-          <p className="text-[11px] font-bold text-destructive">
+          <p className="price text-[12px] text-destructive">
             {fmtPrice(product.price)}
-            <span className="text-muted-foreground font-medium">/{product.unit || "unit"}</span>
+            <span className="text-muted-foreground font-semibold">/{product.unit || "unit"}</span>
           </p>
           <p className="text-xs font-bold tracking-tight line-clamp-2 leading-snug mt-0.5">{product.title}</p>
           {(() => {
