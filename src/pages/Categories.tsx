@@ -20,6 +20,7 @@ const ALL_ID = "__all__";
 export default function Categories() {
   const { data: cats = [] } = useCategories();
   const [active, setActive] = useState<string>(ALL_ID);
+  const [activeSub, setActiveSub] = useState<string | null>(null);
   const isAll = active === ALL_ID;
 
   const { interests } = useMyInterests();
