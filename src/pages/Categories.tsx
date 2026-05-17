@@ -38,6 +38,10 @@ export default function Categories() {
   );
   const ordered = isAll ? rankByAffinity(products, priorityCounts, searchTokens) : products;
 
+  const subs = isAll ? [] : deriveSubcategories(active, ordered);
+  const activeSubObj = subs.find((s) => s.id === activeSub) ?? null;
+  const visible = filterBySubcategory(ordered, activeSubObj);
+
   const ActiveCat = cats.find((c) => c.id === active);
   const ActiveIcon = ActiveCat?.icon;
 
