@@ -127,6 +127,7 @@ export default function AppShell() {
         </div>
       </nav>
 
+      <TapsonAssistant />
       <LiveActivityToaster />
       <NativeSuggestionToaster />
       <BannerAd />
