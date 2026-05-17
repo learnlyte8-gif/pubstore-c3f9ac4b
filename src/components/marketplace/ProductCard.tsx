@@ -197,9 +197,9 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
           )}
         </div>
         <div className="mt-1.5">
-          <p className="text-[11px] font-bold text-destructive">
+          <p className="price text-[12px] text-destructive">
             {fmtPrice(product.price)}
-            <span className="text-muted-foreground font-medium">/{product.unit || "unit"}</span>
+            <span className="text-muted-foreground font-semibold">/{product.unit || "unit"}</span>
           </p>
           <p className="text-xs font-bold tracking-tight line-clamp-2 leading-snug mt-0.5">{product.title}</p>
           {(() => {
@@ -296,8 +296,8 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
         )}
 
         <div className="flex items-baseline gap-1.5 mt-1.5">
-          <span className="text-base font-bold text-destructive">{fmtPrice(product.price)}</span>
-          <span className="text-[10px] text-muted-foreground font-medium">/{product.unit || "unit"}</span>
+          <span className="price text-base text-destructive">{fmtPrice(product.price)}</span>
+          <span className="text-[10px] text-muted-foreground font-semibold">/{product.unit || "unit"}</span>
           {product.originalPrice && (
             <span className="text-[11px] text-muted-foreground line-through">
               {fmtPrice(product.originalPrice)}
