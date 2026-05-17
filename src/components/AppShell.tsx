@@ -73,6 +73,17 @@ export default function AppShell() {
             </Link>
           </div>
 
+          <button
+            onClick={() => window.dispatchEvent(new Event("tapson:open"))}
+            aria-label="Ask Tapson"
+            className="shrink-0 flex items-center gap-1 h-8 pl-1.5 pr-2.5 rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-pop active:scale-95 transition"
+          >
+            <span className="w-5 h-5 rounded-full bg-background/25 backdrop-blur flex items-center justify-center">
+              <Sparkles className="w-3 h-3" strokeWidth={2.6} />
+            </span>
+            <span className="text-[11px] font-bold tracking-tight">Tapson</span>
+          </button>
+
           <div className="flex items-center gap-0.5 shrink-0">
             <Link to="/notifications" aria-label="Notifications" className="relative p-2 rounded-full active:scale-90 active:bg-muted transition">
               <Bell className="w-[22px] h-[22px]" strokeWidth={1.8} />
