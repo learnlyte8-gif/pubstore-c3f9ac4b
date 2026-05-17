@@ -130,11 +130,11 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', system-ui, Roboto, 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-weight: 400;
-    font-feature-settings: "kern", "liga", "calt", "ss01";
+    font-weight: 600;
+    font-feature-settings: "kern", "liga", "calt", "ss01", "tnum";
     font-synthesis: none;
     text-rendering: optimizeLegibility;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.012em;
     -webkit-tap-highlight-color: transparent;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -142,10 +142,18 @@
     touch-action: manipulation;
   }
 
-  /* Native typographic scale — let Tailwind weight utilities do their job */
-  h1, h2, h3, h4, h5, h6 { letter-spacing: -0.022em; font-weight: 700; }
-  h1 { letter-spacing: -0.028em; }
-  strong, b { font-weight: 600; }
+  /* Native typographic scale — confident, bold native feel */
+  p, span, a, li, label, div { font-weight: inherit; }
+  h1, h2, h3, h4, h5, h6 { letter-spacing: -0.024em; font-weight: 800; }
+  h1 { letter-spacing: -0.03em; font-weight: 900; }
+  strong, b { font-weight: 800; }
+
+  /* Prices — extra bold, tabular numerals */
+  [data-price], .price, .product-price {
+    font-weight: 900 !important;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
 
   button, a, [role="button"] {
     -webkit-tap-highlight-color: transparent;
