@@ -103,7 +103,7 @@ function AgroIndex() {
       </div>
 
       <FilterBar
-        tone="default"
+        tone="light"
         search={values.q}
         onSearchChange={(q) => update({ q })}
         searchPlaceholder="Search crop, breed, region, certification…"
