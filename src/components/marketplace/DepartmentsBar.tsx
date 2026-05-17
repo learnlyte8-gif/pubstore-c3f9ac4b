@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Store, Newspaper, BedDouble, Car, Factory, Navigation, Wrench, Home as HomeIcon, Truck, Banknote, Briefcase, type LucideIcon } from "lucide-react";
+import { Store, Newspaper, BedDouble, Car, Factory, Navigation, Wrench, Home as HomeIcon, Truck, Banknote, Briefcase, Sprout, type LucideIcon } from "lucide-react";
 
 const DEPTS: { to: string; label: string; icon: LucideIcon; tone: string }[] = [
   { to: "/home",       label: "Market",     icon: Store,      tone: "from-primary to-primary/70" },
@@ -13,6 +13,7 @@ const DEPTS: { to: string; label: string; icon: LucideIcon; tone: string }[] = [
   { to: "/stays",      label: "Stays",      icon: BedDouble,  tone: "from-amber-500 to-yellow-300" },
   { to: "/auto",       label: "Auto",       icon: Car,        tone: "from-zinc-900 to-zinc-600" },
   { to: "/industrial", label: "Industrial", icon: Factory,    tone: "from-sky-700 to-sky-400" },
+  { to: "/agro",       label: "Agro",       icon: Sprout,     tone: "from-emerald-700 to-lime-500" },
 ];
 
 export default function DepartmentsBar() {
