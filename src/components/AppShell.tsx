@@ -61,15 +61,29 @@ export default function AppShell() {
             <span className="font-brand text-lg tracking-wide hidden sm:inline">PUBSTORE</span>
           </Link>
 
-          <div className="flex-1 flex items-center gap-1.5 min-w-0 h-8 rounded-full bg-muted/70 pr-3.5">
+          <div className="flex-1 flex items-center gap-1 min-w-0 h-9 rounded-lg bg-background border-2 border-[hsl(24_100%_56%)] pl-1 pr-1 shadow-[0_1px_0_hsl(24_100%_56%/0.15)]">
             <RailDrawer />
             <Link
               to="/search"
-              className="flex-1 flex items-center gap-2 min-w-0 active:opacity-70 transition"
+              className="flex-1 flex items-center gap-1.5 min-w-0 active:opacity-70 transition"
               aria-label="Search products"
             >
-              <span className="text-xs shrink-0 text-muted-foreground">Try</span>
-              <RotatingHint className="text-xs font-medium text-foreground/80 truncate" />
+              <Search className="w-4 h-4 shrink-0 text-[hsl(24_100%_56%)]" strokeWidth={2.6} />
+              <RotatingHint className="text-[12px] font-semibold text-foreground/70 truncate" />
+            </Link>
+            <Link
+              to="/search?mode=image"
+              aria-label="Search by image"
+              className="shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-90 transition border-l border-border/60"
+            >
+              <Camera className="w-[18px] h-[18px]" strokeWidth={2.2} />
+            </Link>
+            <Link
+              to="/search"
+              aria-label="Search"
+              className="shrink-0 h-7 px-3 rounded-md bg-[hsl(24_100%_56%)] text-white text-[11px] font-bold flex items-center active:scale-95 transition"
+            >
+              Search
             </Link>
           </div>
 
