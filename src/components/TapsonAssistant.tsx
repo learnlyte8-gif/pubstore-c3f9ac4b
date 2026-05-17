@@ -200,20 +200,7 @@ export default function TapsonAssistant() {
 
   return (
     <>
-      {/* Floating button */}
-      <button
-        onClick={() => setOpen(true)}
-        aria-label="Ask Tapson"
-        className="fixed bottom-20 right-4 z-40 lg:bottom-6 group"
-      >
-        <span className="absolute inset-0 rounded-full bg-primary/40 animate-ping" />
-        <span className="relative flex items-center gap-2 h-12 pl-3 pr-4 rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-elevated hover:shadow-pop transition-all hover:scale-105">
-          <span className="w-7 h-7 rounded-full bg-background/25 flex items-center justify-center backdrop-blur">
-            <Sparkles className="w-4 h-4" strokeWidth={2.4} />
-          </span>
-          <span className="text-sm font-bold tracking-tight">Ask Tapson</span>
-        </span>
-      </button>
+      {/* Floating FAB removed — trigger now lives in the top bar */}
 
       {/* Drawer */}
       {open && (
