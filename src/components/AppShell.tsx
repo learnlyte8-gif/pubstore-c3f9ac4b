@@ -56,11 +56,6 @@ export default function AppShell() {
       {/* Top bar — compact, frosted */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/60 safe-top">
         <div className="max-w-2xl mx-auto h-12 px-3 flex items-center gap-2">
-          <Link to="/home" className="flex items-center gap-2 shrink-0 active:scale-95 transition-transform">
-            <img src={logo} alt="" width={26} height={26} className="w-[26px] h-[26px]" />
-            <span className="font-brand text-lg tracking-wide hidden sm:inline">PUBSTORE</span>
-          </Link>
-
           <div className="flex-1 flex items-center gap-1 min-w-0 h-9 rounded-lg bg-background border-2 border-[hsl(24_100%_56%)] pl-1 pr-1 shadow-[0_1px_0_hsl(24_100%_56%/0.15)]">
             <RailDrawer />
             <Link
