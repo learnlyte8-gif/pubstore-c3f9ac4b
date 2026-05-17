@@ -155,7 +155,7 @@ const Home = () => {
               </span>
             </Link>
           )}
-          <LiveStatsBanner />
+          
           <div className="px-4"><QuickActions /></div>
 
 
