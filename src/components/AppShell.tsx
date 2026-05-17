@@ -97,12 +97,12 @@ export default function AppShell() {
         <Outlet />
       </main>
 
-      {/* Bottom tab bar — iOS liquid glass */}
+      {/* Bottom tab bar — iOS liquid glass, flush to bottom */}
       <nav
-        className="fixed bottom-0 inset-x-0 z-40 lg:hidden pointer-events-none pb-[env(safe-area-inset-bottom)]"
+        className="fixed bottom-0 inset-x-0 z-40 lg:hidden pointer-events-none"
         aria-label="Primary"
       >
-        <div className="pointer-events-auto mx-auto mb-0.5 max-w-[calc(100%-1rem)] sm:max-w-md ios-liquid-bar">
+        <div className="pointer-events-auto mx-auto max-w-[calc(100%-1rem)] sm:max-w-md ios-liquid-bar pb-[env(safe-area-inset-bottom)]">
           <span aria-hidden className="ios-liquid-shimmer" />
           <ul className="relative h-[58px] px-1.5 flex items-stretch justify-around">
             <TabItem to="/home" icon={House} label="Home" />
