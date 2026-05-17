@@ -138,8 +138,8 @@ const Home = () => {
 
       {tab === "home" && (
         <div className="animate-fade-in">
-          <DepartmentsBar />
           <PromoBanner />
+          <DepartmentsBar />
           {walletUserId && (
             <Link to="/wallet" className="mx-4 mt-3 flex items-center gap-3 rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/70 text-primary-foreground p-3.5 shadow-elevated relative overflow-hidden">
               <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-primary-foreground/10 blur-2xl" />
