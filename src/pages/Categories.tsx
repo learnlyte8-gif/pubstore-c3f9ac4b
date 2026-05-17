@@ -62,6 +62,7 @@ export default function Categories() {
 
   const handleSelect = (id: string) => {
     setActive(id);
+    setActiveSub(null);
     setCollapsed(false);
     bumpActivity();
   };
