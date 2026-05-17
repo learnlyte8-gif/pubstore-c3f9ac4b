@@ -131,7 +131,8 @@ export default function Categories() {
               {isAll ? "All products" : ActiveCat?.name}
             </h2>
             <p className="text-xs text-muted-foreground truncate">
-              {ordered.length} products
+              {visible.length} products
+              {activeSubObj ? ` · ${activeSubObj.label}` : ""}
               {tradeMode !== "all" ? ` · ${tradeMode}` : ""}
               {isAll && interests.length > 0 ? " · personalized" : ""}
             </p>
@@ -141,13 +142,17 @@ export default function Categories() {
           <TradeModeSwitch />
         </div>
 
+        {!isAll && subs.length > 0 && (
+          <SubcategoryChips subs={subs} active={activeSub} onChange={setActiveSub} />
+        )}
+
         {isLoading ? (
           <p className="text-center py-12 text-sm text-muted-foreground">Loading…</p>
-        ) : ordered.length === 0 ? (
+        ) : visible.length === 0 ? (
           <EmptyState title="No products yet" description="Be the first supplier to list in this category." />
         ) : (
           <div className="grid grid-cols-2 gap-3 p-3">
-            {ordered.map((p) => (<ProductCard key={p.id} product={p} />))}
+            {visible.map((p) => (<ProductCard key={p.id} product={p} />))}
           </div>
         )}
       </div>
