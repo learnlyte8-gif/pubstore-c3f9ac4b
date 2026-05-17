@@ -3203,6 +3203,42 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_items: {
+        Row: {
+          created_at: string
+          href: string | null
+          id: string
+          image: string | null
+          item_id: string
+          item_kind: string
+          meta: Json
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          href?: string | null
+          id?: string
+          image?: string | null
+          item_id: string
+          item_kind: string
+          meta?: Json
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          href?: string | null
+          id?: string
+          image?: string | null
+          item_id?: string
+          item_kind?: string
+          meta?: Json
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       service_bids: {
         Row: {
           created_at: string
