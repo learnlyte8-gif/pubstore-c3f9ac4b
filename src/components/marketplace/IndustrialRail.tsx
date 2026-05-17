@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchIndustrial } from "@/data/verticals";
 import { Factory, ShieldCheck, Truck, Boxes } from "lucide-react";
+import SaveHeart from "./SaveHeart";
 
 const ICONS: Record<string, typeof Factory> = {
   machinery: Factory, materials: Boxes, logistics: Truck, finance: ShieldCheck, services: ShieldCheck, equipment: Factory,
@@ -48,6 +49,12 @@ export default function IndustrialRail() {
                 <span className="absolute top-1.5 left-1.5 w-6 h-6 rounded-md bg-sky-950 text-sky-50 flex items-center justify-center">
                   <Icon className="w-3 h-3" />
                 </span>
+                <SaveHeart
+                  kind="industrial"
+                  itemId={it.id}
+                  snapshot={{ title: it.title, image: it.cover, href: `/industrial/${it.id}` }}
+                  className="absolute top-1 right-1 w-7 h-7"
+                />
                 {it.certifications.length > 0 && (
                   <span className="absolute bottom-1.5 left-1.5 right-1.5 flex flex-wrap gap-1">
                     {it.certifications.slice(0, 2).map((c) => (

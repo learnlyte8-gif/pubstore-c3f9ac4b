@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Sparkles, Star, Clock } from "lucide-react";
+import SaveHeart from "./SaveHeart";
 
 const MOCK = [
   { id: "g1", title: "I will design a stunning brand logo in 24h", seller: "Tendai M.", rating: 4.9, reviews: 312, price: "$45", cover: "https://images.unsplash.com/photo-1561070791-2526d30994b8?w=600&q=70", level: "Top Rated" },
@@ -29,6 +30,12 @@ export default function FreelanceGigsRail() {
             <div className="relative aspect-square bg-muted">
               <img src={g.cover} alt={g.title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
               <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-full bg-background/90 backdrop-blur text-[9px] font-bold">{g.level}</span>
+              <SaveHeart
+                kind="freelance"
+                itemId={g.id}
+                snapshot={{ title: g.title, image: g.cover, href: "/services" }}
+                className="absolute top-1.5 right-1.5 w-7 h-7"
+              />
             </div>
             <div className="p-2.5">
               <p className="text-[11px] text-muted-foreground font-medium truncate">{g.seller}</p>
