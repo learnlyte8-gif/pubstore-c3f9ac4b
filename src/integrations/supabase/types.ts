@@ -80,6 +80,110 @@ export type Database = {
         }
         Relationships: []
       }
+      agro_listings: {
+        Row: {
+          active: boolean
+          capacity: string | null
+          certifications: string[]
+          country: string | null
+          cover: string | null
+          created_at: string
+          currency: string
+          description: string | null
+          featured: boolean
+          funding_goal: number | null
+          funding_raised: number | null
+          gallery: string[]
+          harvest_season: string | null
+          id: string
+          kind: string
+          lead_time: string | null
+          moq: number | null
+          organic: boolean
+          price: number | null
+          project_status: string | null
+          region: string | null
+          ship_from: string | null
+          slug: string | null
+          spec: Json
+          subcategory: string | null
+          supplier_id: string | null
+          title: string
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          capacity?: string | null
+          certifications?: string[]
+          country?: string | null
+          cover?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          featured?: boolean
+          funding_goal?: number | null
+          funding_raised?: number | null
+          gallery?: string[]
+          harvest_season?: string | null
+          id?: string
+          kind?: string
+          lead_time?: string | null
+          moq?: number | null
+          organic?: boolean
+          price?: number | null
+          project_status?: string | null
+          region?: string | null
+          ship_from?: string | null
+          slug?: string | null
+          spec?: Json
+          subcategory?: string | null
+          supplier_id?: string | null
+          title: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          capacity?: string | null
+          certifications?: string[]
+          country?: string | null
+          cover?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          featured?: boolean
+          funding_goal?: number | null
+          funding_raised?: number | null
+          gallery?: string[]
+          harvest_season?: string | null
+          id?: string
+          kind?: string
+          lead_time?: string | null
+          moq?: number | null
+          organic?: boolean
+          price?: number | null
+          project_status?: string | null
+          region?: string | null
+          ship_from?: string | null
+          slug?: string | null
+          spec?: Json
+          subcategory?: string | null
+          supplier_id?: string | null
+          title?: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agro_listings_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       car_rental_bookings: {
         Row: {
           created_at: string
