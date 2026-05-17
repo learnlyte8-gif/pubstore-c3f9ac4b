@@ -273,7 +273,7 @@ const Home = () => {
         </div>
       )}
 
-      <TapsonAssistant />
+      
     </div>
   );
 };
