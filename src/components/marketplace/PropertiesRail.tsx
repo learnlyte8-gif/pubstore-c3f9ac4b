@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchProperties } from "@/data/newVerticals";
 import { Home, MapPin, Bed, Bath, Sparkles } from "lucide-react";
+import SaveHeart from "./SaveHeart";
 
 export default function PropertiesRail() {
   const { data: properties = [] } = useQuery({ queryKey: ["home-properties"], queryFn: () => fetchProperties({ limit: 8 }) });
@@ -26,6 +27,12 @@ export default function PropertiesRail() {
             <div className="relative aspect-[16/10] bg-muted">
               {p.cover && <img src={p.cover} alt={p.title} className="w-full h-full object-cover" />}
               <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-background/95 backdrop-blur text-[9px] font-bold uppercase capitalize">{p.listing_type}</span>
+              <SaveHeart
+                kind="property"
+                itemId={p.id}
+                snapshot={{ title: p.title, image: p.cover, href: "/properties" }}
+                className="absolute top-2 right-2 w-7 h-7"
+              />
               <span className="absolute bottom-2 right-2 px-2 py-1 rounded-full bg-background/95 backdrop-blur text-xs font-bold">
                 ${Number(p.price).toLocaleString()}{(p.listing_type === "rent" || p.listing_type === "shared") && <span className="text-[9px] text-muted-foreground">/{p.price_period}</span>}
               </span>

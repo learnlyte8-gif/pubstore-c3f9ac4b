@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchServiceProviders } from "@/data/newVerticals";
 import { Wrench, Star, MapPin, Sparkles } from "lucide-react";
+import SaveHeart from "./SaveHeart";
 
 export default function ServicesRail() {
   const { data: providers = [] } = useQuery({ queryKey: ["home-services"], queryFn: () => fetchServiceProviders({ limit: 8 }) });
@@ -22,9 +23,15 @@ export default function ServicesRail() {
 
       <div className="mt-3 -mx-1 px-1 pb-2 flex gap-3 overflow-x-auto scrollbar-none snap-x snap-mandatory">
         {providers.map((p) => (
-          <div key={p.id} className="shrink-0 w-44 snap-start bg-card border rounded-2xl shadow-card overflow-hidden">
-            <div className="aspect-[4/3] bg-muted">
+          <div key={p.id} className="shrink-0 w-44 snap-start bg-card border rounded-2xl shadow-card overflow-hidden relative">
+            <div className="relative aspect-[4/3] bg-muted">
               {p.cover && <img src={p.cover} alt={p.display_name} className="w-full h-full object-cover" />}
+              <SaveHeart
+                kind="service"
+                itemId={p.id}
+                snapshot={{ title: p.display_name, image: p.cover, href: "/services" }}
+                className="absolute top-1.5 right-1.5 w-7 h-7"
+              />
             </div>
             <div className="p-2.5">
               <p className="font-bold text-xs leading-tight truncate">{p.display_name}</p>

@@ -7,6 +7,7 @@ import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { FilterBar, FilterField, SortPills } from "@/components/marketplace/FilterBar";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
+import SaveHeart from "@/components/marketplace/SaveHeart";
 
 const KINDS = [
   { id: "all", label: "All", icon: Sprout },
@@ -208,10 +209,16 @@ function AgroIndex() {
                   {it.kind}{it.subcategory ? ` · ${it.subcategory}` : ""}
                 </span>
                 {it.organic && (
-                  <span className="absolute top-2 right-2 px-2 py-0.5 rounded-sm bg-lime-400 text-emerald-950 text-[9px] font-mono font-bold uppercase">
+                  <span className="absolute top-2 right-10 px-2 py-0.5 rounded-sm bg-lime-400 text-emerald-950 text-[9px] font-mono font-bold uppercase">
                     Organic
                   </span>
                 )}
+                <SaveHeart
+                  kind="agro"
+                  itemId={it.id}
+                  snapshot={{ title: it.title, image: it.cover, href: `/agro/${it.id}` }}
+                  className="absolute top-1.5 right-1.5 w-7 h-7"
+                />
               </div>
               <div className="p-3">
                 <p className="text-[13px] font-bold leading-tight line-clamp-2">{it.title}</p>
@@ -265,9 +272,16 @@ function AgroDetail({ id }: { id: string }) {
         <button onClick={() => navigate(-1)} className="absolute top-3 left-3 w-9 h-9 rounded-full bg-background/90 backdrop-blur flex items-center justify-center shadow">
           <ArrowLeft className="w-4 h-4" />
         </button>
-        <span className="absolute top-3 right-3 px-2 py-1 rounded-sm bg-emerald-900 text-emerald-50 text-[10px] font-mono uppercase tracking-wider">
+        <span className="absolute top-3 right-14 px-2 py-1 rounded-sm bg-emerald-900 text-emerald-50 text-[10px] font-mono uppercase tracking-wider">
           {it.kind}
         </span>
+        <SaveHeart
+          kind="agro"
+          itemId={it.id}
+          snapshot={{ title: it.title, image: it.cover, href: `/agro/${it.id}` }}
+          className="absolute top-3 right-3 w-9 h-9"
+          size={16}
+        />
         {it.organic && (
           <span className="absolute bottom-3 right-3 px-2 py-1 rounded-sm bg-lime-400 text-emerald-950 text-[10px] font-mono font-bold uppercase">
             Organic

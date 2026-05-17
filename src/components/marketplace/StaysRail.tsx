@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchStays } from "@/data/verticals";
 import { BedDouble, Star, MapPin, Sparkles } from "lucide-react";
+import SaveHeart from "./SaveHeart";
 
 const KIND_LABEL: Record<string, string> = {
   "b&b": "B&B", hotel: "Hotel", factory_tour: "Factory tour", apartment: "Apartment", retreat: "Retreat",
@@ -35,10 +36,16 @@ export default function StaysRail() {
                   Superhost
                 </span>
               )}
-              <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full bg-background/90 backdrop-blur text-[10px] font-bold flex items-center gap-1">
+              <span className="absolute top-2 right-10 px-1.5 py-0.5 rounded-full bg-background/90 backdrop-blur text-[10px] font-bold flex items-center gap-1">
                 <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                 {s.rating.toFixed(2)}
               </span>
+              <SaveHeart
+                kind="stay"
+                itemId={s.id}
+                snapshot={{ title: s.title, image: s.cover, href: `/stays/${s.id}` }}
+                className="absolute top-2 right-2 w-7 h-7"
+              />
               <div className="absolute bottom-2 inset-x-2 text-background">
                 <p className="text-[9px] font-bold uppercase tracking-wider opacity-90">{KIND_LABEL[s.kind] ?? s.kind}</p>
                 <p className="text-sm font-bold leading-tight line-clamp-2 drop-shadow">{s.title}</p>

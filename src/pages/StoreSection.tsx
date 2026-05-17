@@ -35,6 +35,7 @@ const titles: Record<string, { title: string; sub: string }> = {
   "services/logistics": { title: "Courier mode", sub: "Bid on delivery requests" },
   "services/finance": { title: "Finance products", sub: "Loans, insurance, financing" },
   "services/car-rentals": { title: "Car rentals", sub: "Self-drive listings, rules & penalties" },
+  "services/agro": { title: "Agro listings", sub: "Produce, machinery, inputs, livestock, projects" },
 };
 
 export default function StoreSection() {
@@ -75,6 +76,7 @@ export default function StoreSection() {
       {key === "services/logistics" && <CourierServiceView />}
       {key === "services/finance" && <FinanceServiceView />}
       {key === "services/car-rentals" && <CarRentalServiceView />}
+      {key === "services/agro" && <AgroServiceView />}
     </div>
   );
 }
@@ -3340,5 +3342,184 @@ function ToggleField({ label, value, onChange }: { label: string; value: boolean
       <span className="text-sm font-medium">{label}</span>
       <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} className="w-4 h-4" />
     </label>
+  );
+}
+
+/* ---------------- Agro ---------------- */
+function AgroServiceView() {
+  const qc = useQueryClient();
+  const { data: supplier } = useQuery({ queryKey: ["my-supplier"], queryFn: fetchMySupplier });
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ["my-agro", supplier?.id],
+    enabled: !!supplier,
+    queryFn: async () => {
+      const { data } = await supabase.from("agro_listings").select("*").eq("supplier_id", supplier!.id).order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+  const remove = async (id: string) => {
+    if (!confirm("Delete this listing?")) return;
+    const { error } = await supabase.from("agro_listings").delete().eq("id", id);
+    if (error) toast.error(error.message); else { toast.success("Removed"); qc.invalidateQueries({ queryKey: ["my-agro"] }); qc.invalidateQueries({ queryKey: ["agro"] }); qc.invalidateQueries({ queryKey: ["home-agro"] }); }
+  };
+  if (!supplier) return <div className="p-6"><EmptyState title="Create your store first" action={<Button asChild><Link to="/become-supplier">Open store</Link></Button>} /></div>;
+  return (
+    <>
+      <ServiceShell
+        title={`${items.length} agro listings`}
+        items={items}
+        isLoading={isLoading}
+        emptyHint="List produce, machinery, inputs, livestock, agri-services or open a co-investment project."
+        onAdd={() => { setEditing(null); setOpen(true); }}
+        renderItem={(it) => (
+          <div key={it.id} className="bg-card border rounded-2xl shadow-card flex gap-3 p-3">
+            <div className="w-20 h-20 rounded-xl bg-muted overflow-hidden flex-shrink-0">{it.cover && <img src={it.cover} alt="" className="w-full h-full object-cover" />}</div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm truncate">{it.title}</p>
+              <p className="text-[11px] text-muted-foreground truncate capitalize">{it.kind}{it.subcategory ? ` · ${it.subcategory}` : ""}{it.organic ? " · organic" : ""}</p>
+              <p className="text-xs font-bold mt-1">
+                {it.kind === "project"
+                  ? `Goal $${Number(it.funding_goal || 0).toLocaleString()} · ${Math.round(((it.funding_raised || 0) / (it.funding_goal || 1)) * 100)}% funded`
+                  : `${it.price ? `$${Number(it.price).toLocaleString()}` : "Quote"}${it.unit ? ` / ${it.unit}` : ""}`}
+              </p>
+            </div>
+            <div className="flex flex-col gap-1">
+              <button onClick={() => { setEditing(it); setOpen(true); }} className="w-8 h-8 rounded-full hover:bg-muted flex items-center justify-center"><Pencil className="w-3.5 h-3.5" /></button>
+              <button onClick={() => remove(it.id)} className="w-8 h-8 rounded-full hover:bg-destructive/10 text-destructive flex items-center justify-center"><Trash2 className="w-3.5 h-3.5" /></button>
+            </div>
+          </div>
+        )}
+      />
+      {open && (
+        <AgroFormDialog
+          supplierId={supplier.id} initial={editing} onClose={() => setOpen(false)}
+          onSaved={() => { setOpen(false); qc.invalidateQueries({ queryKey: ["my-agro"] }); qc.invalidateQueries({ queryKey: ["agro"] }); qc.invalidateQueries({ queryKey: ["home-agro"] }); }}
+        />
+      )}
+    </>
+  );
+}
+
+function AgroFormDialog({ supplierId, initial, onClose, onSaved }: { supplierId: string; initial: any | null; onClose: () => void; onSaved: () => void }) {
+  const [form, setForm] = useState({
+    title: initial?.title ?? "",
+    kind: initial?.kind ?? "produce",
+    subcategory: initial?.subcategory ?? "",
+    cover: initial?.cover ?? "",
+    description: initial?.description ?? "",
+    moq: initial?.moq ?? 1,
+    unit: initial?.unit ?? "kg",
+    price: initial?.price ?? 0,
+    harvest_season: initial?.harvest_season ?? "",
+    lead_time: initial?.lead_time ?? "",
+    capacity: initial?.capacity ?? "",
+    ship_from: initial?.ship_from ?? "",
+    country: initial?.country ?? "",
+    region: initial?.region ?? "",
+    organic: initial?.organic ?? false,
+    certifications: (initial?.certifications ?? []).join(", "),
+    funding_goal: initial?.funding_goal ?? 0,
+    funding_raised: initial?.funding_raised ?? 0,
+    project_status: initial?.project_status ?? "open",
+  });
+  const [busy, setBusy] = useState(false);
+  const isProject = form.kind === "project";
+  const save = async () => {
+    if (!form.title.trim()) { toast.error("Title required"); return; }
+    setBusy(true);
+    const payload: any = {
+      supplier_id: supplierId,
+      title: form.title,
+      kind: form.kind,
+      subcategory: form.subcategory || null,
+      cover: form.cover || null,
+      description: form.description || null,
+      moq: Number(form.moq) || null,
+      unit: form.unit || null,
+      price: isProject ? null : (Number(form.price) || null),
+      harvest_season: form.harvest_season || null,
+      lead_time: form.lead_time || null,
+      capacity: form.capacity || null,
+      ship_from: form.ship_from || null,
+      country: form.country || null,
+      region: form.region || null,
+      organic: !!form.organic,
+      certifications: String(form.certifications).split(",").map((s) => s.trim()).filter(Boolean),
+      funding_goal: isProject ? (Number(form.funding_goal) || null) : null,
+      funding_raised: isProject ? (Number(form.funding_raised) || 0) : 0,
+      project_status: isProject ? (form.project_status || "open") : null,
+    };
+    const { error } = initial
+      ? await supabase.from("agro_listings").update(payload).eq("id", initial.id)
+      : await supabase.from("agro_listings").insert(payload);
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(initial ? "Updated" : "Listed 🌱");
+    onSaved();
+  };
+  return (
+    <FormSheet onClose={onClose} title={initial ? "Edit agro listing" : "New agro listing"}>
+      <LabeledInput label="Title" value={form.title} onChange={(v) => setForm({ ...form, title: v })} />
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Kind</label>
+          <select value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value })} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1">
+            {["produce","equipment","inputs","livestock","services","project"].map((k) => <option key={k} value={k}>{k}</option>)}
+          </select>
+        </div>
+        <LabeledInput label="Subcategory" value={form.subcategory} onChange={(v) => setForm({ ...form, subcategory: v })} />
+      </div>
+      <ImageUpload
+        label="Cover photo"
+        value={form.cover}
+        onChange={(v) => setForm({ ...form, cover: v })}
+        folder="agro"
+        aspect="aspect-video"
+        hint="Field, harvest, equipment or project visual"
+      />
+      {!isProject && (
+        <div className="grid grid-cols-3 gap-2">
+          <LabeledInput label="MOQ" type="number" value={form.moq} onChange={(v) => setForm({ ...form, moq: Number(v) || 1 })} />
+          <LabeledInput label="Unit" value={form.unit} onChange={(v) => setForm({ ...form, unit: v })} />
+          <LabeledInput label="Price ($)" type="number" value={form.price} onChange={(v) => setForm({ ...form, price: Number(v) || 0 })} />
+        </div>
+      )}
+      {isProject && (
+        <div className="grid grid-cols-3 gap-2">
+          <LabeledInput label="Funding goal ($)" type="number" value={form.funding_goal} onChange={(v) => setForm({ ...form, funding_goal: Number(v) || 0 })} />
+          <LabeledInput label="Raised ($)" type="number" value={form.funding_raised} onChange={(v) => setForm({ ...form, funding_raised: Number(v) || 0 })} />
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Status</label>
+            <select value={form.project_status} onChange={(e) => setForm({ ...form, project_status: e.target.value })} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1">
+              {["open","funded","in_progress","closed"].map((k) => <option key={k} value={k}>{k}</option>)}
+            </select>
+          </div>
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Harvest season" value={form.harvest_season} onChange={(v) => setForm({ ...form, harvest_season: v })} />
+        <LabeledInput label="Lead time" value={form.lead_time} onChange={(v) => setForm({ ...form, lead_time: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Capacity" value={form.capacity} onChange={(v) => setForm({ ...form, capacity: v })} />
+        <LabeledInput label="Ship from" value={form.ship_from} onChange={(v) => setForm({ ...form, ship_from: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Country" value={form.country} onChange={(v) => setForm({ ...form, country: v })} />
+        <LabeledInput label="Region" value={form.region} onChange={(v) => setForm({ ...form, region: v })} />
+      </div>
+      <LabeledInput label="Certifications (comma-separated)" value={form.certifications} onChange={(v) => setForm({ ...form, certifications: v })} />
+      <label className="flex items-center justify-between gap-2 py-2">
+        <span className="text-sm font-medium">Organic</span>
+        <input type="checkbox" checked={!!form.organic} onChange={(e) => setForm({ ...form, organic: e.target.checked })} className="w-4 h-4" />
+      </label>
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Description</label>
+        <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4} className="w-full rounded-xl border bg-background p-3 text-sm mt-1" />
+      </div>
+      <Button onClick={save} disabled={busy} className="w-full h-12">{busy ? "Saving…" : initial ? "Save changes" : "Publish listing"}</Button>
+    </FormSheet>
   );
 }

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAgro } from "@/data/verticals";
 import { Sprout, Tractor, Droplets, Egg, Leaf, TrendingUp, type LucideIcon } from "lucide-react";
+import SaveHeart from "./SaveHeart";
 
 const ICONS: Record<string, LucideIcon> = {
   produce: Leaf,
@@ -58,10 +59,17 @@ export default function AgroRail() {
                   <Icon className="w-3 h-3" />
                 </span>
                 {it.organic && (
-                  <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-lime-400 text-emerald-950 text-[8px] font-mono font-bold uppercase">
+                  <span className="absolute top-1.5 right-9 px-1.5 py-0.5 rounded bg-lime-400 text-emerald-950 text-[8px] font-mono font-bold uppercase">
                     Organic
                   </span>
                 )}
+                <SaveHeart
+                  kind="agro"
+                  itemId={it.id}
+                  snapshot={{ title: it.title, image: it.cover, href: `/agro/${it.id}` }}
+                  className="absolute top-1 right-1 w-7 h-7"
+                />
+
                 {it.certifications.length > 0 && !it.organic && (
                   <span className="absolute bottom-1.5 left-1.5 right-1.5 flex flex-wrap gap-1">
                     {it.certifications.slice(0, 2).map((c) => (

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useNavigate } from "react-router-dom";
-import { Store, Package, BarChart3, Megaphone, Truck, Star, Plus, ShoppingBag, Video, MessageCircle, Settings, ChevronRight, ImagePlus, Radio, StopCircle, Loader2, Download, BedDouble, Car, Factory, Newspaper, Sparkles, Navigation, Wrench, Home as HomeIcon, Banknote, Lock } from "lucide-react";
+import { Store, Package, BarChart3, Megaphone, Truck, Star, Plus, ShoppingBag, Video, MessageCircle, Settings, ChevronRight, ImagePlus, Radio, StopCircle, Loader2, Download, BedDouble, Car, Factory, Newspaper, Sparkles, Navigation, Wrench, Home as HomeIcon, Banknote, Lock, Sprout } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -229,6 +229,7 @@ export default function MyStore() {
         </Section>
 
         <Section title="Services & verticals">
+          <Row icon={Sprout} label="Agro listings" hint="Produce, machinery, inputs, livestock, projects" to="/store/services/agro" />
           <Row icon={BedDouble} label="Stays & B&B" hint="List rooms, hotels, factory tours" to="/store/services/stays" />
           <Row icon={Car} label="Vehicles" hint="Cars, EVs, trucks, bikes, parts" to="/store/services/vehicles" />
           <Row icon={Factory} label="Industrial listings" hint="Machinery, materials, capacity" to="/store/services/industrial" />

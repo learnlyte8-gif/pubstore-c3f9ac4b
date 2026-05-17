@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCarRentals } from "@/data/newVerticals";
 import { Car, Star, Gauge, Users, Cog, ShieldCheck, MapPin, Infinity as InfinityIcon, Key } from "lucide-react";
+import SaveHeart from "./SaveHeart";
 
 export default function CarRentalsRail() {
   const { data: rentals = [] } = useQuery({
@@ -61,10 +62,16 @@ export default function CarRentalsRail() {
               </span>
               {/* Top-right verified */}
               {r.verified && (
-                <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded-sm bg-emerald-500 text-white text-[9px] font-bold uppercase tracking-wider inline-flex items-center gap-1">
+                <span className="absolute top-2 right-10 px-1.5 py-0.5 rounded-sm bg-emerald-500 text-white text-[9px] font-bold uppercase tracking-wider inline-flex items-center gap-1">
                   <ShieldCheck className="w-2.5 h-2.5" /> Verified
                 </span>
               )}
+              <SaveHeart
+                kind="car-rental"
+                itemId={r.id}
+                snapshot={{ title: r.title, image: r.cover, href: `/car-rentals/${r.id}` }}
+                className="absolute top-2 right-2 w-7 h-7"
+              />
               {/* Bottom price overlay */}
               <div className="absolute left-2 right-2 bottom-2 flex items-end justify-between">
                 <div className="bg-zinc-900/85 backdrop-blur px-2 py-1 rounded-md">
