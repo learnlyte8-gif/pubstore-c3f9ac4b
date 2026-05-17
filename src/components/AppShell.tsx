@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, Link } from "react-router-dom";
+import { NavLink, Outlet, Link, useLocation } from "react-router-dom";
 import { House, Search, LayoutGrid, Heart, CircleUser, ShoppingBag, ShoppingCart, Bell, MessageCircle, Navigation, Menu, Store, Briefcase, Wrench, Building2, Car, Landmark, Factory, Newspaper, Hotel, Truck, X, Home, Sparkles, Camera } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import type { Session } from "@supabase/supabase-js";
@@ -20,6 +20,7 @@ export default function AppShell() {
   const [unreadNotifs, setUnreadNotifs] = useState(0);
   const { cartCount, wishlist } = useShop();
   const { chatsWithUnread } = useUnreadChats();
+  const location = useLocation();
 
   useEffect(() => {
     if (!session?.user?.id) {
@@ -115,7 +116,9 @@ export default function AppShell() {
       </header>
 
       <main className="flex-1 max-w-2xl w-full mx-auto pb-[calc(env(safe-area-inset-bottom)+76px)] lg:pb-4">
-        <Outlet />
+        <div key={location.pathname} className="page-transition">
+          <Outlet />
+        </div>
       </main>
 
       {/* Bottom tab bar — iOS liquid glass */}
@@ -174,9 +177,10 @@ function TabItem({
                 />
               )}
               <Icon
+                key={isActive ? "active" : "idle"}
                 className={`relative w-[26px] h-[26px] transition-all duration-200 ${
                   isActive
-                    ? "text-primary scale-[1.06]"
+                    ? "text-primary scale-[1.06] animate-tab-pop"
                     : "text-foreground/60"
                 }`}
                 strokeWidth={isActive ? 2.2 : 1.9}
