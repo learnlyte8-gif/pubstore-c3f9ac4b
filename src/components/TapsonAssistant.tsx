@@ -96,6 +96,12 @@ export default function TapsonAssistant() {
   }, [messages]);
 
   useEffect(() => {
+    const openHandler = () => setOpen(true);
+    window.addEventListener("tapson:open", openHandler);
+    return () => window.removeEventListener("tapson:open", openHandler);
+  }, []);
+
+  useEffect(() => {
     if (open) {
       setTimeout(() => scrollRef.current?.scrollTo({ top: 9e9, behavior: "smooth" }), 50);
     }
