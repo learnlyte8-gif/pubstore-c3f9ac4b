@@ -203,19 +203,40 @@ function TabItem({
   );
 }
 
-const RAIL_ITEMS: { to: string; label: string; icon: typeof Home; tone: string }[] = [
-  { to: "/categories", label: "Marketplace", icon: Store, tone: "from-blue-500 to-indigo-600" },
-  { to: "/jobs", label: "Jobs", icon: Briefcase, tone: "from-emerald-500 to-teal-600" },
-  { to: "/rides", label: "Rides", icon: Navigation, tone: "from-orange-500 to-red-600" },
-  { to: "/services", label: "Services", icon: Wrench, tone: "from-purple-500 to-fuchsia-600" },
-  { to: "/properties", label: "Properties", icon: Building2, tone: "from-rose-500 to-pink-600" },
-  { to: "/auto", label: "Auto", icon: Car, tone: "from-slate-600 to-slate-800" },
-  { to: "/car-rentals", label: "Car rentals", icon: Car, tone: "from-cyan-500 to-blue-600" },
-  { to: "/finance", label: "Finance", icon: Landmark, tone: "from-amber-500 to-yellow-600" },
-  { to: "/industrial", label: "Industrial", icon: Factory, tone: "from-zinc-600 to-zinc-800" },
-  { to: "/logistics", label: "Logistics", icon: Truck, tone: "from-lime-500 to-green-600" },
-  { to: "/stays", label: "Stays", icon: Hotel, tone: "from-pink-500 to-rose-600" },
-  { to: "/news", label: "News", icon: Newspaper, tone: "from-neutral-600 to-neutral-800" },
+type RailItem = { to: string; label: string; icon: typeof Home; hint: string };
+const RAIL_SECTIONS: { title: string; items: RailItem[] }[] = [
+  {
+    title: "Commerce",
+    items: [
+      { to: "/categories", label: "Marketplace", icon: Store, hint: "Shop everything" },
+      { to: "/industrial", label: "Industrial", icon: Factory, hint: "B2B & wholesale" },
+      { to: "/logistics", label: "Logistics", icon: Truck, hint: "Ship & deliver" },
+    ],
+  },
+  {
+    title: "Mobility",
+    items: [
+      { to: "/rides", label: "Rides", icon: Navigation, hint: "Book a trip" },
+      { to: "/auto", label: "Auto", icon: Car, hint: "Buy vehicles" },
+      { to: "/car-rentals", label: "Car Rentals", icon: Car, hint: "Rent by the day" },
+    ],
+  },
+  {
+    title: "Living",
+    items: [
+      { to: "/properties", label: "Properties", icon: Building2, hint: "Buy & let" },
+      { to: "/stays", label: "Stays", icon: Hotel, hint: "Hotels & rentals" },
+      { to: "/services", label: "Services", icon: Wrench, hint: "Hire a pro" },
+    ],
+  },
+  {
+    title: "Work & Money",
+    items: [
+      { to: "/jobs", label: "Jobs", icon: Briefcase, hint: "Find work" },
+      { to: "/finance", label: "Finance", icon: Landmark, hint: "Loans & wallet" },
+      { to: "/news", label: "News", icon: Newspaper, hint: "Today's stories" },
+    ],
+  },
 ];
 
 function RailDrawer() {
@@ -232,63 +253,100 @@ function RailDrawer() {
       </SheetTrigger>
       <SheetContent
         side="left"
-        className="w-[86vw] max-w-sm p-0 border-r border-border/60 bg-background flex flex-col"
+        className="w-[88vw] max-w-sm p-0 border-r border-border/60 bg-background flex flex-col"
       >
-        {/* Brand header */}
-        <div className="relative px-5 pt-6 pb-5 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent border-b border-border/50">
+        {/* Editorial brand header */}
+        <div className="relative px-6 pt-7 pb-6 border-b border-border/60 bg-[linear-gradient(180deg,hsl(var(--muted)/0.4),transparent)]">
           <button
             onClick={() => setOpen(false)}
             aria-label="Close"
-            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-background/80 backdrop-blur flex items-center justify-center active:scale-90 transition"
+            className="absolute top-3 right-3 w-8 h-8 rounded-full hover:bg-muted flex items-center justify-center active:scale-90 transition"
           >
             <X className="w-4 h-4" />
           </button>
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-background shadow-pop flex items-center justify-center">
-              <img src={logo} alt="PUBSTORE" className="w-9 h-9" />
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-xl bg-background ring-1 ring-border/80 shadow-sm flex items-center justify-center">
+              <img src={logo} alt="PUBSTORE" className="w-8 h-8" />
             </div>
-            <div>
-              <p className="font-brand text-2xl tracking-wide leading-none">PUBSTORE</p>
-              <p className="text-[11px] text-muted-foreground mt-1">Everything. One app.</p>
+            <div className="min-w-0">
+              <p className="font-brand text-[22px] tracking-[0.02em] leading-none">PUBSTORE</p>
+              <p className="text-[11px] text-muted-foreground mt-1.5 tracking-wide">
+                The everything marketplace
+              </p>
             </div>
           </div>
+          <p className="mt-5 text-[10px] uppercase tracking-[0.22em] text-muted-foreground/80">
+            Directory
+          </p>
         </div>
 
-        {/* Rails grid */}
-        <div className="flex-1 overflow-y-auto px-4 py-5">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3 px-1">
-            Explore
-          </p>
-          <div className="grid grid-cols-3 gap-2.5">
-            {RAIL_ITEMS.map((item) => {
-              const Icon = item.icon;
-              return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  onClick={() => setOpen(false)}
-                  className="group flex flex-col items-center justify-center gap-2 p-3 rounded-2xl bg-muted/50 hover:bg-muted active:scale-95 transition border border-border/40"
-                >
-                  <span
-                    className={`w-11 h-11 rounded-xl bg-gradient-to-br ${item.tone} flex items-center justify-center shadow-pop`}
-                  >
-                    <Icon className="w-5 h-5 text-white" strokeWidth={2.2} />
-                  </span>
-                  <span className="text-[11px] font-semibold text-center leading-tight">
-                    {item.label}
-                  </span>
-                </NavLink>
-              );
-            })}
-          </div>
+        {/* Sectioned list */}
+        <div className="flex-1 overflow-y-auto px-2 py-3">
+          {RAIL_SECTIONS.map((section) => (
+            <div key={section.title} className="mb-4 last:mb-2">
+              <p className="px-5 pt-2 pb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/90">
+                {section.title}
+              </p>
+              <ul className="px-2">
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <li key={item.to}>
+                      <NavLink
+                        to={item.to}
+                        onClick={() => setOpen(false)}
+                        className={({ isActive }) =>
+                          `group relative flex items-center gap-3.5 px-3 py-2.5 rounded-xl transition active:scale-[0.99] ${
+                            isActive
+                              ? "bg-primary/10 text-foreground"
+                              : "hover:bg-muted/70"
+                          }`
+                        }
+                      >
+                        {({ isActive }) => (
+                          <>
+                            <span
+                              className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ring-1 transition ${
+                                isActive
+                                  ? "bg-primary text-primary-foreground ring-primary/40 shadow-[0_4px_12px_-4px_hsl(var(--primary)/0.6)]"
+                                  : "bg-muted/60 text-foreground/80 ring-border/60 group-hover:bg-background"
+                              }`}
+                            >
+                              <Icon className="w-[18px] h-[18px]" strokeWidth={2} />
+                            </span>
+                            <span className="flex-1 min-w-0">
+                              <span className="block text-[14px] font-semibold tracking-tight leading-tight">
+                                {item.label}
+                              </span>
+                              <span className="block text-[11px] text-muted-foreground leading-tight mt-0.5">
+                                {item.hint}
+                              </span>
+                            </span>
+                            <span
+                              aria-hidden
+                              className={`text-muted-foreground/50 text-lg leading-none transition ${
+                                isActive ? "text-primary translate-x-0.5" : "group-hover:translate-x-0.5"
+                              }`}
+                            >
+                              ›
+                            </span>
+                          </>
+                        )}
+                      </NavLink>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
         </div>
 
         {/* Signature footer */}
-        <div className="border-t border-border/50 px-5 py-4 bg-muted/30">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground text-center">
+        <div className="border-t border-border/60 px-6 py-4 bg-muted/20">
+          <p className="text-[9px] uppercase tracking-[0.24em] text-muted-foreground/80 text-center">
             A signature creation by
           </p>
-          <p className="font-brand text-base tracking-wide text-center mt-1 bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent">
+          <p className="font-brand text-[15px] tracking-[0.14em] text-center mt-1.5 bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent">
             KUKISTACKSGROUP
           </p>
         </div>
