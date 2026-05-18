@@ -158,6 +158,21 @@ export default function ProductDetail() {
           <span>·</span><span>{product.sold.toLocaleString()} sold</span>
           {product.freeShipping && (<><span>·</span><span className="text-primary font-medium inline-flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> Free shipping</span></>)}
         </div>
+        <div className="mt-3 flex items-center justify-between">
+          <SocialActions
+            target="product"
+            id={product.id}
+            shareTitle={product.title}
+            onShareToChat={() => setShareOpen(true)}
+            onGroupBuy={() => setGroupBuyOpen(true)}
+          />
+          <button
+            onClick={() => setGroupBuyOpen(true)}
+            className="h-9 px-3 rounded-full bg-primary/10 text-primary text-xs font-bold inline-flex items-center gap-1.5"
+          >
+            Buy together
+          </button>
+        </div>
       </section>
 
       {tierPrices.length > 0 && (
