@@ -53,7 +53,7 @@ export default function AppShell() {
   }, []);
 
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground flex flex-col overflow-x-hidden">
+    <div className="min-h-[100dvh] bg-background text-foreground flex flex-col overflow-x-clip">
       {/* Top bar — compact, frosted */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/60 safe-top">
         <div className="max-w-2xl mx-auto h-12 px-3 flex items-center gap-2">
