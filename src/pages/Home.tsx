@@ -77,6 +77,7 @@ const Home = () => {
   const { data: trending = [] } = useProducts({ sortBy: "sold", limit: 6, tradeMode });
   const { data: dealPool = [] } = useProducts({ sortBy: "newest", limit: 50, tradeMode });
   const { data: suppliers = [] } = useSuppliers({ limit: 6 });
+  const { data: forYouProducts = [] } = usePersonalizedFeed(12);
 
   // Personalized ordering: rank by affinity (interests + wishlist + searches + clicks).
   // The `seed` reshuffles ties when the user taps "Refresh my feed".
