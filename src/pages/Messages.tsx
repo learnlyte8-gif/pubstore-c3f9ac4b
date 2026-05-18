@@ -530,10 +530,19 @@ export default function Messages() {
     return () => { alive = false; };
   }, [productPickerOpen, productQuery]);
 
-  const filtered = useMemo(
-    () => conversations.filter((c) => (c.peer?.name ?? c.supplier?.name ?? "").toLowerCase().includes(search.toLowerCase())),
-    [conversations, search],
-  );
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return conversations.filter((c) => {
+      const name = (c.title ?? c.peer?.name ?? c.supplier?.name ?? "").toLowerCase();
+      if (q && !name.includes(q)) return false;
+      const k = c.kind ?? "buyer_supplier";
+      if (tab === "unread") return (perConversation[c.id] ?? 0) > 0;
+      if (tab === "suppliers") return k === "buyer_supplier";
+      if (tab === "people") return k === "dm";
+      if (tab === "groups") return k === "group_buy";
+      return true;
+    });
+  }, [conversations, search, tab, perConversation]);
 
   const active = conversations.find((c) => c.id === activeId);
   const messageMap = useMemo(() => new Map(messages.map((m) => [m.id, m])), [messages]);
