@@ -13,6 +13,7 @@ import BannerAd from "@/components/marketplace/BannerAd";
 import ImportProgressBanner from "@/components/ImportProgressBanner";
 import TapsonAssistant from "@/components/TapsonAssistant";
 import { useUnreadChats } from "@/hooks/useUnreadChats";
+import { useChatNotifications } from "@/hooks/useChatNotifications";
 import logo from "@/assets/pubstore-logo.png";
 
 export default function AppShell() {
@@ -21,6 +22,7 @@ export default function AppShell() {
   const { cartCount, wishlist } = useShop();
   const { chatsWithUnread } = useUnreadChats();
   const location = useLocation();
+  useChatNotifications();
 
   useEffect(() => {
     if (!session?.user?.id) {

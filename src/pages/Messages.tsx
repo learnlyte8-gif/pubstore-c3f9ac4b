@@ -14,6 +14,7 @@ import AttachmentCard, { type ChatAttachment } from "@/components/chat/Attachmen
 import InquiryApprovalPanel from "@/components/marketplace/InquiryApprovalPanel";
 import PendingInquiriesInbox from "@/components/marketplace/PendingInquiriesInbox";
 import { toast } from "@/hooks/use-toast";
+import DiscoverPeople from "@/components/social/DiscoverPeople";
 
 const chunk = <T,>(items: T[], size: number) => {
   const batches: T[][] = [];
@@ -34,7 +35,7 @@ type Conversation = {
   peer?: { name: string; logo: string | null; verified: boolean | null; subtitle: string | null; supplierId?: string };
 };
 
-type TabKey = "unread" | "suppliers" | "people" | "groups";
+type TabKey = "unread" | "suppliers" | "people" | "groups" | "discover";
 
 type Reactions = Record<string, string[]>; // emoji -> userIds
 
@@ -863,7 +864,7 @@ export default function Messages() {
         </div>
         <div className="mt-3 flex items-center gap-1 overflow-x-auto no-scrollbar">
           {([
-            ["unread", "Unread"], ["suppliers", "Suppliers"], ["people", "People"], ["groups", "Groups"],
+            ["unread", "Unread"], ["suppliers", "Suppliers"], ["people", "People"], ["groups", "Groups"], ["discover", "Discover"],
           ] as const).map(([k, label]) => {
             const active = tab === k;
             const count = k === "unread"
@@ -892,7 +893,15 @@ export default function Messages() {
 
       {userId && <PendingInquiriesInbox userId={userId} />}
 
-      {loading ? (
+      {tab === "discover" ? (
+        <DiscoverPeople
+          currentUserId={userId}
+          onOpenConversation={async (id) => {
+            if (userId) await loadConversations(userId);
+            setActiveId(id);
+          }}
+        />
+      ) : loading ? (
         <div className="px-4 pt-4 space-y-3">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="flex items-center gap-3 animate-pulse">
