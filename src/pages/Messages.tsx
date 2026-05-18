@@ -893,7 +893,9 @@ export default function Messages() {
 
       {userId && <PendingInquiriesInbox userId={userId} />}
 
-      {loading ? (
+      {tab === "discover" ? (
+        <DiscoverPeople currentUserId={userId} onOpenConversation={(id) => setActiveId(id)} />
+      ) : loading ? (
         <div className="px-4 pt-4 space-y-3">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="flex items-center gap-3 animate-pulse">
