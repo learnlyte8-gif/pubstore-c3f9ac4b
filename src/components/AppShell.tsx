@@ -190,38 +190,25 @@ function TabItem({
     <li className="flex-1 min-w-0">
       <NavLink
         to={to}
-        className="group flex flex-col items-center justify-center gap-[3px] h-full select-none active:scale-[0.9] transition-transform duration-150 will-change-transform"
+        className="flex flex-col items-center justify-center gap-1 h-full select-none"
         aria-label={label}
       >
         {({ isActive }) => (
           <>
-            <span className="relative flex items-center justify-center h-7 w-7">
-              {isActive && (
-                <span
-                  aria-hidden
-                  className="absolute inset-[-10px] rounded-full bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary)/0.45)_0%,hsl(var(--primary)/0.18)_45%,transparent_75%)] animate-tab-glow"
-                />
-              )}
+            <span className="relative flex items-center justify-center h-6 w-6">
               <Icon
-                key={isActive ? "active" : "idle"}
-                className={`relative w-[26px] h-[26px] transition-all duration-200 ${
-                  isActive
-                    ? "text-primary scale-[1.06] animate-tab-pop"
-                    : "text-foreground/60"
-                }`}
-                strokeWidth={isActive ? 2.2 : 1.9}
-                fill={isActive ? "currentColor" : "none"}
-                fillOpacity={isActive ? 0.16 : 0}
+                className={`w-[22px] h-[22px] ${isActive ? "text-[hsl(24_100%_56%)]" : "text-foreground/60"}`}
+                strokeWidth={isActive ? 2.4 : 2}
               />
               {badge !== undefined && badge > 0 && (
-                <span className="absolute -top-1 -right-1.5 min-w-[15px] h-[15px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-background shadow-[0_2px_4px_hsl(0_85%_55%/0.5)]">
+                <span className="absolute -top-1 -right-2 min-w-[15px] h-[15px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-background">
                   {badge > 99 ? "99+" : badge}
                 </span>
               )}
             </span>
             <span
-              className={`text-[10px] leading-none tracking-tight transition-colors ${
-                isActive ? "text-primary font-semibold" : "text-foreground/60 font-medium"
+              className={`text-[10px] leading-none tracking-tight ${
+                isActive ? "text-[hsl(24_100%_56%)] font-semibold" : "text-foreground/60 font-medium"
               }`}
             >
               {label}
