@@ -12,6 +12,8 @@ import ProductGallery from "@/components/marketplace/ProductGallery";
 import SupplierCard from "@/components/marketplace/SupplierCard";
 import ProductCard from "@/components/marketplace/ProductCard";
 import ShareToChatSheet from "@/components/chat/ShareToChatSheet";
+import GroupBuyStartSheet from "@/components/social/GroupBuyStartSheet";
+import SocialActions from "@/components/social/SocialActions";
 import InquiryGateDialog from "@/components/marketplace/InquiryGateDialog";
 import { isApprovalExpired } from "@/lib/inquiryGate";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +38,7 @@ export default function ProductDetail() {
   const [qty, setQty] = useState<number>(1);
   const [tab, setTab] = useState<"specs" | "description" | "reviews">("specs");
   const [shareOpen, setShareOpen] = useState(false);
+  const [groupBuyOpen, setGroupBuyOpen] = useState(false);
   const [inquiryOpen, setInquiryOpen] = useState(false);
   const [buyerId, setBuyerId] = useState<string | null>(null);
   const [hasInquired, setHasInquired] = useState<boolean | null>(null);
@@ -122,6 +125,15 @@ export default function ProductDetail() {
           unit: product.unit,
         }}
       />
+      {supplier && (
+        <GroupBuyStartSheet
+          open={groupBuyOpen}
+          onClose={() => setGroupBuyOpen(false)}
+          productId={product.id}
+          productTitle={product.title}
+          supplierId={supplier.id}
+        />
+      )}
 
       <ProductGallery images={product.gallery ?? [product.image]} alt={product.title} />
 
@@ -145,6 +157,21 @@ export default function ProductDetail() {
           </span>
           <span>·</span><span>{product.sold.toLocaleString()} sold</span>
           {product.freeShipping && (<><span>·</span><span className="text-primary font-medium inline-flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> Free shipping</span></>)}
+        </div>
+        <div className="mt-3 flex items-center justify-between">
+          <SocialActions
+            target="product"
+            id={product.id}
+            shareTitle={product.title}
+            onShareToChat={() => setShareOpen(true)}
+            onGroupBuy={() => setGroupBuyOpen(true)}
+          />
+          <button
+            onClick={() => setGroupBuyOpen(true)}
+            className="h-9 px-3 rounded-full bg-primary/10 text-primary text-xs font-bold inline-flex items-center gap-1.5"
+          >
+            Buy together
+          </button>
         </div>
       </section>
 

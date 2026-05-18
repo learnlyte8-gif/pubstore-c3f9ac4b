@@ -1,86 +1,76 @@
-## Goal
-Remove every reference to `src/data/*` mock files across the app, replace with live Supabase queries to the existing tables, and show a friendly empty state when there is no data. No DB seeding — production-ready shells.
+# Social layer — full build
 
-## Scope (full sweep)
-~50 files import from `@/data/*`. Every vertical already has a real table, so each rail/page can be wired to Supabase 1:1.
+Turn the marketplace into a social commerce app: users follow users + suppliers, like and share products/catalogs/suppliers, chat 1:1 and in private group-buy rooms, with a personalized "For You" feed and a tabbed Messages inbox.
 
-## Approach
+## 1. Database (one migration)
 
-### 1. Create reusable primitives (new)
-- `src/components/common/EmptyState.tsx` — icon + title + subtitle + optional CTA. Used everywhere a list/rail is empty.
-- `src/hooks/useSupabaseList.ts` — small wrapper that returns `{ data, loading, error }` for a table query, so rails don't each reimplement loading.
+New tables, all with RLS:
 
-### 2. Home rails — convert from static arrays to live queries
-For each rail under `src/components/marketplace/`, replace mock import with a Supabase query, render skeletons while loading, render `EmptyState` (or hide) when empty:
-- `FlashDeals`, `NewArrivals`, `DealOfTheDay` → `products` (filters: discount, created_at, featured)
-- `TopSuppliers` → `suppliers` order by rating
-- `CategoryStrip` → `categories`
-- `JobsRail` → `job_postings`
-- `PropertiesRail` → `properties`
-- `StaysRail` → `stays`
-- `CarRentalsRail` → `car_rentals`
-- `AutoRail` → `vehicles`
-- `FinanceRail` → `finance_products`
-- `NewsRail` → `news_articles`
-- `ServicesRail` → `service_providers`
-- `IndustrialRail` → `industrial_listings`
-- `AgroRail` → `agro_listings`
-- `PromoTile` → keep as static marketing (no mock data dependency) or hide if it references mock
-- `VerticalFeed` → live feed from `live_streams`
+- **`user_follows`** — `follower_id`, `followee_id` (both → auth.users). Unique pair. Users can follow/unfollow themselves; everyone can read.
+- **`post_likes`** — generic likes: `user_id`, `target_type` (`product` | `supplier` | `catalog` | `post`), `target_id`. Unique per (user, target). Public read.
+- **`shares`** — log of shares: `user_id`, `target_type`, `target_id`, `channel` (`chat` | `external` | `copy`), optional `conversation_id`. Used for ranking signal.
+- **`group_buys`** — `id`, `owner_id`, `product_id`, `supplier_id`, `title`, `target_qty`, `deadline`, `status` (`open` | `locked` | `fulfilled` | `cancelled`), `conversation_id` (the group chat).
+- **`group_buy_members`** — `group_id`, `user_id`, `qty`, `role` (`owner` | `member` | `invited`), `joined_at`. RLS: members see their groups; owner can invite/remove.
+- **`group_buy_invites`** — `group_id`, `inviter_id`, `invitee_id`, `status` (`pending` | `accepted` | `declined`). Notifies invitee.
 
-### 3. Vertical pages — convert each list page
-- `Jobs.tsx`, `JobsFeed.tsx`, `JobsNetwork.tsx`, `JobsProfile.tsx` → `job_postings`, `job_posts`, `job_connections`, `job_seeker_profiles`
-- `Properties.tsx` → `properties`
-- `Stays.tsx` → `stays`
-- `CarRentals.tsx` → `car_rentals`
-- `Auto.tsx` → `vehicles`
-- `Finance.tsx` → `finance_products` / `finance_applications`
-- `News.tsx` → `news_articles`
-- `Services.tsx` → `service_providers` / `service_requests`
-- `Logistics.tsx` → `logistics_requests` / `logistics_bids`
-- `Industrial.tsx` → `industrial_listings`
-- `Agro.tsx` → `agro_listings`
-- `Live.tsx` → `live_streams`
-- `Messages.tsx` → already partially live; remove any remaining mock fallbacks
-- `ProductDetail.tsx`, `Wishlist.tsx`, `Compare.tsx`, `MyStore.tsx`, `StoreSection.tsx` → use existing `products` queries via shop store
+Extend existing `conversations`:
+- Add `kind` (`buyer_supplier` | `dm` | `group_buy`), `peer_user_id` (for DMs), `group_buy_id` nullable.
+- Add `members` join table `conversation_members(conversation_id, user_id)` for group chats (RLS: members read/write).
 
-### 4. Core store + hooks
-- `src/store/shop.tsx`, `src/store/importJob.tsx`, `src/hooks/useCatalog.ts`, `src/hooks/useFollowing.ts` → drop mock imports, fetch from Supabase only. Keep cart/wishlist/follow mutations as-is (they already write to DB).
-- `src/lib/subcategories.ts` → if it only enumerates categories from mock data, replace with categories table.
-- `src/components/RotatingHint.tsx`, `SupplierOnboarding.tsx`, `TapsonAssistant.tsx`, `ProductCard.tsx`, `SupplierCard.tsx`, `VehicleInquiryDialog.tsx`, `StayBookingDialog.tsx` → strip any `import … from "@/data/…"`. If they only used a type, move the type into `src/types/` instead.
+Triggers:
+- Notify followee on new follow.
+- Notify product owner on like (rate-limited; skip self-likes).
+- Notify invitee on group-buy invite, owner on accept, supplier when `target_qty` reached → flip status to `locked`.
+- Auto-create group-chat conversation when a `group_buys` row is inserted.
 
-### 5. Types
-Extract the TypeScript interfaces currently exported from `src/data/products.ts` etc. into `src/types/marketplace.ts` so components keep their type safety after we delete the data files.
+## 2. Feed ranking ("For You")
 
-### 6. Delete mock files (last step, after nothing imports them)
-- `src/data/products.ts`
-- `src/data/jobs.ts`
-- `src/data/verticals.ts`
-- `src/data/newVerticals.ts`
-- `src/data/interests.ts`
+Pure SQL view + client blend, no ML. Score per product:
 
-### 7. Auth gating
-Protected pages (Cart, Orders, Messages, Wishlist, Account, MyStore, Wallet, NotificationPreferences, Verification) — if not logged in, `navigate('/auth')`. Most already do; verify and add where missing.
+```text
+score =
+    0.45 * recency_decay(created_at, half_life=72h)
+  + 0.20 * interest_match(user_interests, product.category)
+  + 0.15 * follow_boost(is_following_supplier_or_owner)
+  + 0.10 * social_proof(log(likes + 2*shares + 3*orders))
+  + 0.10 * personal_affinity(past_likes/views in same category)
+```
 
-## Technical details
-- Queries use `supabase.from('table').select('...').limit(N)` with appropriate filters. Rails: limit 8–12.
-- All queries wrapped in try/catch; on error log + show empty state.
-- Loading state = 3–4 skeleton cards using existing skeleton patterns.
-- Empty state copy is contextual ("No properties listed yet — be the first to list one.") with a CTA where it makes sense ("List a property", "Post a job", etc.).
-- RLS already in place on all tables; public read where appropriate.
-- No business-logic changes to checkout, payments, auth, or chat.
+Implemented as a `personalized_feed(user_id, limit)` SQL function returning ranked product IDs. `Home.tsx` For-You rail calls it; falls back to recency when signed-out. `Following` rail stays as-is but now includes followed users' liked/shared items too.
 
-## Out of scope
-- Building "create listing" forms that don't already exist
-- Modifying RLS policies
-- Seeding any starter content
-- Visual redesigns
+## 3. UI surfaces
 
-## Deliverable
-After this passes:
-- `rg "from ['\"]@/data/" src/` returns zero matches
-- `src/data/` directory is deleted
-- Every page either shows real DB data, a skeleton while loading, or a friendly empty state
-- App is safe to ship to production users
+- **Product card / supplier card / catalog card**: add Like (heart, optimistic), Share-to-chat button → opens existing `ShareToChatSheet` extended with friend list + group list.
+- **User profile page** `/u/:userId`: avatar, bio, follow button, follower/following counts, tabs (Likes, Shares, Groups public-only).
+- **Follow button** component (works for users and suppliers via a single hook `useFollow(targetType, targetId)`).
+- **Group-buy entry point** on `ProductDetail`: "Buy together" → opens a sheet to set target qty + deadline, pick invitees from followed users, creates `group_buys` row + chat.
+- **Group-buy chat**: standard messages thread, plus pinned header showing pooled qty / target / deadline / status, "Invite more" and "Leave" actions.
+- **Messages page**: tab bar `Unread | Suppliers | People | Groups`. Filter conversations by `kind` and unread count from `useUnreadChats`. Unread tab badges in nav.
 
-This is a large change touching ~50 files. Reply "go" to proceed, or tell me to narrow the scope (e.g. "core commerce first, verticals later").
+## 4. Sharing
+
+Extend `ShareToChatSheet`:
+- Recipient picker: followed users + existing chats + group-buy rooms.
+- Payload supports product / supplier / catalog / group-buy invite via `AttachmentCard`.
+- Records a `shares` row for ranking.
+
+## 5. Notifications
+
+New types wired into existing `notifications` table + push:
+`user_followed_you`, `post_liked`, `share_received`, `group_buy_invite`, `group_buy_joined`, `group_buy_locked`.
+
+## Technical notes
+
+- All new tables use `auth.uid()` RLS; group-chat membership checked via `conversation_members` with a `SECURITY DEFINER` `is_conversation_member(uid, cid)` to avoid recursion.
+- Realtime: add `user_follows`, `post_likes`, `group_buys`, `group_buy_members`, `conversation_members` to `supabase_realtime`.
+- Client hooks: `useFollow`, `useLike`, `useShare`, `useGroupBuy(id)`, `useGroupBuyInbox`, `usePersonalizedFeed`.
+- `LiveActivityToaster` gets two new toasts: someone followed you / invited you to a group buy.
+- Unread tab counts reuse `useUnreadChats`; per-tab unread derived by joining `perConversation` with conversation `kind`.
+
+## Out of scope (call out before building)
+
+- No public group-buy pools (you picked invite-only).
+- No comments under products yet — likes + share + chat only.
+- No stories/posts entity beyond what the catalog already provides.
+
+Ship in this order: migration → hooks → like/share/follow buttons everywhere → user profile page → group-buy flow → Messages tabs → personalized feed swap-in.

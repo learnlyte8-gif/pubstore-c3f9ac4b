@@ -24,12 +24,17 @@ const chunk = <T,>(items: T[], size: number) => {
 type Conversation = {
   id: string;
   buyer_id: string;
-  supplier_id: string;
+  supplier_id: string | null;
+  peer_user_id?: string | null;
+  kind?: "buyer_supplier" | "dm" | "group_buy" | null;
+  title?: string | null;
   last_message: string | null;
   last_message_at: string | null;
   supplier?: { id: string; name: string; logo: string | null; verified: boolean | null; response_time: string | null; response_rate: number | null; owner_id: string };
   peer?: { name: string; logo: string | null; verified: boolean | null; subtitle: string | null; supplierId?: string };
 };
+
+type TabKey = "unread" | "suppliers" | "people" | "groups";
 
 type Reactions = Record<string, string[]>; // emoji -> userIds
 
@@ -202,6 +207,7 @@ export default function Messages() {
   const [forwardMsg, setForwardMsg] = useState<Message | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { perConversation } = useUnreadChats();
+  const [tab, setTab] = useState<TabKey>("suppliers");
 
   const loadConversations = useCallback(async (uid: string) => {
     const { data: convs } = await supabase
@@ -524,10 +530,19 @@ export default function Messages() {
     return () => { alive = false; };
   }, [productPickerOpen, productQuery]);
 
-  const filtered = useMemo(
-    () => conversations.filter((c) => (c.peer?.name ?? c.supplier?.name ?? "").toLowerCase().includes(search.toLowerCase())),
-    [conversations, search],
-  );
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return conversations.filter((c) => {
+      const name = (c.title ?? c.peer?.name ?? c.supplier?.name ?? "").toLowerCase();
+      if (q && !name.includes(q)) return false;
+      const k = c.kind ?? "buyer_supplier";
+      if (tab === "unread") return (perConversation[c.id] ?? 0) > 0;
+      if (tab === "suppliers") return k === "buyer_supplier";
+      if (tab === "people") return k === "dm";
+      if (tab === "groups") return k === "group_buy";
+      return true;
+    });
+  }, [conversations, search, tab, perConversation]);
 
   const active = conversations.find((c) => c.id === activeId);
   const messageMap = useMemo(() => new Map(messages.map((m) => [m.id, m])), [messages]);
@@ -806,6 +821,31 @@ export default function Messages() {
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search conversations" className="w-full h-10 pl-9 pr-3 rounded-full bg-muted text-sm outline-none focus:ring-2 focus:ring-primary/40" />
+        </div>
+        <div className="mt-3 flex items-center gap-1 overflow-x-auto no-scrollbar">
+          {([
+            ["unread", "Unread"], ["suppliers", "Suppliers"], ["people", "People"], ["groups", "Groups"],
+          ] as const).map(([k, label]) => {
+            const active = tab === k;
+            const count = k === "unread"
+              ? Object.values(perConversation).filter((n) => n > 0).length
+              : conversations.filter((c) => {
+                  const ck = c.kind ?? "buyer_supplier";
+                  if (k === "suppliers") return ck === "buyer_supplier";
+                  if (k === "people") return ck === "dm";
+                  if (k === "groups") return ck === "group_buy";
+                  return false;
+                }).length;
+            return (
+              <button
+                key={k}
+                onClick={() => setTab(k)}
+                className={`h-8 px-3 rounded-full text-xs font-bold whitespace-nowrap transition ${active ? "bg-foreground text-background" : "bg-muted text-muted-foreground"}`}
+              >
+                {label}{count > 0 && <span className={`ml-1.5 ${active ? "opacity-80" : ""}`}>{count}</span>}
+              </button>
+            );
+          })}
         </div>
       </div>
 
