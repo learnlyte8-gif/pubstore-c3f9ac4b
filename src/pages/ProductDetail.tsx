@@ -38,6 +38,7 @@ export default function ProductDetail() {
   const [qty, setQty] = useState<number>(1);
   const [tab, setTab] = useState<"specs" | "description" | "reviews">("specs");
   const [shareOpen, setShareOpen] = useState(false);
+  const [groupBuyOpen, setGroupBuyOpen] = useState(false);
   const [inquiryOpen, setInquiryOpen] = useState(false);
   const [buyerId, setBuyerId] = useState<string | null>(null);
   const [hasInquired, setHasInquired] = useState<boolean | null>(null);
