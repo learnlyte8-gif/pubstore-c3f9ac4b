@@ -864,7 +864,7 @@ export default function Messages() {
         </div>
         <div className="mt-3 flex items-center gap-1 overflow-x-auto no-scrollbar">
           {([
-            ["unread", "Unread"], ["suppliers", "Suppliers"], ["people", "People"], ["groups", "Groups"],
+            ["unread", "Unread"], ["suppliers", "Suppliers"], ["people", "People"], ["groups", "Groups"], ["discover", "Discover"],
           ] as const).map(([k, label]) => {
             const active = tab === k;
             const count = k === "unread"
