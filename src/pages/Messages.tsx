@@ -232,14 +232,36 @@ export default function Messages() {
       );
       supConvs = batches.flat();
     }
-    const merged = [...((convs ?? []) as Conversation[]), ...supConvs]
+
+    // Membership-based: DMs and group_buy chats where the user is a participant
+    // but not the buyer or supplier owner.
+    const { data: memberRows } = await supabase
+      .from("conversation_members")
+      .select("conversation_id")
+      .eq("user_id", uid);
+    const memberIds = (memberRows ?? []).map((r: any) => r.conversation_id);
+    let memberConvs: Conversation[] = [];
+    if (memberIds.length) {
+      const batches = await Promise.all(
+        chunk(memberIds, 50).map(async (group) => {
+          const { data } = await supabase
+            .from("conversations")
+            .select("*")
+            .in("id", group);
+          return (data ?? []) as Conversation[];
+        }),
+      );
+      memberConvs = batches.flat();
+    }
+
+    const merged = [...((convs ?? []) as Conversation[]), ...supConvs, ...memberConvs]
       .filter((c, i, arr) => arr.findIndex((x) => x.id === c.id) === i)
       .sort((a, b) => {
         const aTime = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
         const bTime = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
         return bTime - aTime;
       });
-    const supplierIds = Array.from(new Set(merged.map((c) => c.supplier_id)));
+    const supplierIds = Array.from(new Set(merged.map((c) => c.supplier_id).filter(Boolean))) as string[];
     if (supplierIds.length) {
       const supBatches = await Promise.all(
         chunk(supplierIds, 50).map(async (group) => {
@@ -252,17 +274,22 @@ export default function Messages() {
       );
       const sups = supBatches.flat();
       const map = new Map(sups.map((s) => [s.id, s as Conversation["supplier"]]));
-      merged.forEach((c) => { c.supplier = map.get(c.supplier_id); });
+      merged.forEach((c) => { if (c.supplier_id) c.supplier = map.get(c.supplier_id); });
     }
-    const buyerIdsToFetch = Array.from(
-      new Set(
-        merged.filter((c) => c.supplier?.owner_id === uid && c.buyer_id !== uid).map((c) => c.buyer_id),
-      ),
-    );
+
+    // Profiles for owner-side buyer rows and DM peers
+    const profileIds = new Set<string>();
+    merged.forEach((c) => {
+      if (c.supplier?.owner_id === uid && c.buyer_id !== uid) profileIds.add(c.buyer_id);
+      if ((c.kind ?? "buyer_supplier") === "dm") {
+        const peer = c.peer_user_id ?? (c.buyer_id === uid ? null : c.buyer_id);
+        if (peer && peer !== uid) profileIds.add(peer);
+      }
+    });
     let profileMap = new Map<string, { display_name: string | null; username: string | null; avatar_url: string | null }>();
-    if (buyerIdsToFetch.length) {
+    if (profileIds.size) {
       const profBatches = await Promise.all(
-        chunk(buyerIdsToFetch, 50).map(async (group) => {
+        chunk(Array.from(profileIds), 50).map(async (group) => {
           const { data } = await supabase
             .from("profiles")
             .select("user_id, display_name, username, avatar_url")
@@ -273,6 +300,18 @@ export default function Messages() {
       profileMap = new Map(profBatches.flat().map((p: any) => [p.user_id, p]));
     }
     merged.forEach((c) => {
+      const kind = c.kind ?? "buyer_supplier";
+      if (kind === "group_buy") {
+        c.peer = { name: c.title ?? "Group buy", logo: null, verified: false, subtitle: "Group chat" };
+        return;
+      }
+      if (kind === "dm") {
+        const peerId = c.peer_user_id ?? (c.buyer_id === uid ? null : c.buyer_id);
+        const p = peerId ? profileMap.get(peerId) : null;
+        const name = p?.display_name || p?.username || "Direct message";
+        c.peer = { name, logo: p?.avatar_url ?? null, verified: false, subtitle: p?.username ? `@${p.username}` : "Direct message" };
+        return;
+      }
       const userIsOwner = c.supplier?.owner_id === uid;
       if (userIsOwner) {
         const p = profileMap.get(c.buyer_id);
