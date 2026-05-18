@@ -192,10 +192,6 @@ const Home = () => {
 
               <JobsRail />
 
-              <FreelanceGigsRail />
-
-              <LogisticsRail />
-
 
               {suppliers.length > 0 && (
                 <section className="px-4 mt-6">
