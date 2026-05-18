@@ -34,7 +34,7 @@ type Conversation = {
   peer?: { name: string; logo: string | null; verified: boolean | null; subtitle: string | null; supplierId?: string };
 };
 
-type TabKey = "unread" | "suppliers" | "people" | "groups";
+type TabKey = "unread" | "suppliers" | "people" | "groups" | "discover";
 
 type Reactions = Record<string, string[]>; // emoji -> userIds
 
