@@ -485,3 +485,16 @@
     animation: none !important;
   }
 }
+
+/* Samsung One UI bubble spinner */
+@keyframes samsung-bubble-spin {
+  to { transform: rotate(360deg); }
+}
+.samsung-bubble-spin { animation: samsung-bubble-spin 1.1s linear infinite; transform-origin: 50% 50%; }
+@keyframes samsung-bubble-pulse {
+  0%, 100% { transform: scale(0.55); opacity: 0.35; }
+  50%      { transform: scale(1.15); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .samsung-bubble-spin { animation: samsung-bubble-spin 2.2s linear infinite; }
+}
