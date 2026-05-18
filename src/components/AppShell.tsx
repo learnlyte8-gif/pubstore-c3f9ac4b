@@ -115,7 +115,7 @@ export default function AppShell() {
           </div>
         </div>
         <ScrollProgress />
-      </header>
+      </header>}
 
       <main className="flex-1 max-w-2xl w-full mx-auto pb-[calc(env(safe-area-inset-bottom)+76px)] lg:pb-4">
         <div key={location.pathname} className="page-transition">
