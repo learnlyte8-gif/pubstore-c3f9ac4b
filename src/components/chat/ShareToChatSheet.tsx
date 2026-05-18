@@ -252,9 +252,9 @@ export default function ShareToChatSheet({
 
         // Log share for ranking
         const sharedKind = attachment.kind;
-        if (sharedKind === "product") await logShare({ target: "product", id: attachment.id, channel: "chat", conversationId: convId });
-        else if (sharedKind === "supplier") await logShare({ target: "supplier", id: attachment.id, channel: "chat", conversationId: convId });
-        else if (sharedKind === "catalog") await logShare({ target: "catalog", id: attachment.id, channel: "chat", conversationId: convId });
+        if (sharedKind === "product") await logShare({ target: "product", id: (attachment as any).id, channel: "chat", conversationId: convId });
+        else if (sharedKind === "supplier") await logShare({ target: "supplier", id: (attachment as any).id, channel: "chat", conversationId: convId });
+        else if (sharedKind === "catalog") await logShare({ target: "catalog", id: (attachment as any).supplierId, channel: "chat", conversationId: convId });
       }
 
       toast.success(`Sent to ${targetConvIds.length} chat${targetConvIds.length === 1 ? "" : "s"}`);
