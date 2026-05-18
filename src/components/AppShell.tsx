@@ -138,7 +138,7 @@ export default function AppShell() {
             <TabItem to="/profile" icon={CircleUser} label="You" />
           </ul>
         </div>
-      </nav>}
+      </nav>
 
       <TapsonAssistant />
       <LiveActivityToaster />
