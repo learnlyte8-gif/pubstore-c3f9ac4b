@@ -22,6 +22,7 @@ export default function AppShell() {
   const { cartCount, wishlist } = useShop();
   const { chatsWithUnread } = useUnreadChats();
   const location = useLocation();
+  useChatNotifications();
 
   useEffect(() => {
     if (!session?.user?.id) {
