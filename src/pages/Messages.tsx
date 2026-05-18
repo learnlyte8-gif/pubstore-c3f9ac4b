@@ -822,6 +822,31 @@ export default function Messages() {
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search conversations" className="w-full h-10 pl-9 pr-3 rounded-full bg-muted text-sm outline-none focus:ring-2 focus:ring-primary/40" />
         </div>
+        <div className="mt-3 flex items-center gap-1 overflow-x-auto no-scrollbar">
+          {([
+            ["unread", "Unread"], ["suppliers", "Suppliers"], ["people", "People"], ["groups", "Groups"],
+          ] as const).map(([k, label]) => {
+            const active = tab === k;
+            const count = k === "unread"
+              ? Object.values(perConversation).filter((n) => n > 0).length
+              : conversations.filter((c) => {
+                  const ck = c.kind ?? "buyer_supplier";
+                  if (k === "suppliers") return ck === "buyer_supplier";
+                  if (k === "people") return ck === "dm";
+                  if (k === "groups") return ck === "group_buy";
+                  return false;
+                }).length;
+            return (
+              <button
+                key={k}
+                onClick={() => setTab(k)}
+                className={`h-8 px-3 rounded-full text-xs font-bold whitespace-nowrap transition ${active ? "bg-foreground text-background" : "bg-muted text-muted-foreground"}`}
+              >
+                {label}{count > 0 && <span className={`ml-1.5 ${active ? "opacity-80" : ""}`}>{count}</span>}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="border-b border-border/60"><SupplierStories /></div>
