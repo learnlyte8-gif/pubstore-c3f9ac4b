@@ -150,6 +150,32 @@ export default function AppShell() {
   );
 }
 
+function ScrollProgress() {
+  const [pct, setPct] = useState(0);
+  useEffect(() => {
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      setPct(max > 0 ? Math.min(100, Math.max(0, (h.scrollTop / max) * 100)) : 0);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
+  return (
+    <div className="h-[2px] w-full bg-transparent overflow-hidden" aria-hidden>
+      <div
+        className="h-full bg-gradient-to-r from-[hsl(24_100%_56%)] via-primary to-[hsl(24_100%_56%)] transition-[width] duration-75 ease-out"
+        style={{ width: `${pct}%` }}
+      />
+    </div>
+  );
+}
+
 function TabItem({
   to,
   icon: Icon,
