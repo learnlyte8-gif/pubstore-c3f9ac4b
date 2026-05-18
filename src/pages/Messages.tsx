@@ -789,7 +789,8 @@ export default function Messages() {
             </div>
           </div>
         )}
-      </div>
+      </div>,
+      document.body,
     );
   }
 
