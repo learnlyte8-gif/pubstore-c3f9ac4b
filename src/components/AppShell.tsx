@@ -124,7 +124,7 @@ export default function AppShell() {
       </main>
 
       {/* Bottom tab bar — iOS liquid glass */}
-      <nav
+      {!isChat && <nav
         className="fixed bottom-0 inset-x-0 z-40 lg:hidden pointer-events-none"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         aria-label="Primary"
