@@ -114,7 +114,7 @@ export default function AppShell() {
           </div>
         </div>
         <ScrollProgress />
-      </header>}
+      </header>
 
       <main className={`flex-1 w-full mx-auto ${isChat ? "max-w-none pb-0" : "max-w-2xl pb-[calc(env(safe-area-inset-bottom)+76px)] lg:pb-4"}`}>
         <div key={location.pathname} className="page-transition">
