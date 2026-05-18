@@ -12,6 +12,8 @@ import ProductGallery from "@/components/marketplace/ProductGallery";
 import SupplierCard from "@/components/marketplace/SupplierCard";
 import ProductCard from "@/components/marketplace/ProductCard";
 import ShareToChatSheet from "@/components/chat/ShareToChatSheet";
+import GroupBuyStartSheet from "@/components/social/GroupBuyStartSheet";
+import SocialActions from "@/components/social/SocialActions";
 import InquiryGateDialog from "@/components/marketplace/InquiryGateDialog";
 import { isApprovalExpired } from "@/lib/inquiryGate";
 import { supabase } from "@/integrations/supabase/client";
