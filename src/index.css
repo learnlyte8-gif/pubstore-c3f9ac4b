@@ -2,6 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   Native app feel — disable browser long-press menus, callouts,
+   text selection, tap highlights, and overscroll bounce.
+   Inputs/textareas/contenteditable remain fully interactive.
+   ============================================================ */
+@layer base {
+  html, body {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    overscroll-behavior-y: none;
+    touch-action: manipulation;
+  }
+  * {
+    -webkit-touch-callout: none;
+    -webkit-user-drag: none;
+  }
+  *:not(input):not(textarea):not([contenteditable="true"]):not([contenteditable=""]) {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  input, textarea, [contenteditable="true"], [contenteditable=""] {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+  }
+  img, video {
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
+    pointer-events: auto;
+  }
+  /* Allow selection where explicitly opted in */
+  .select-text, .select-text * {
+    -webkit-user-select: text !important;
+    user-select: text !important;
+    -webkit-touch-callout: default !important;
+  }
+}
+
 /* PUBSTORE — Instagram-inspired design system
    All colors MUST be HSL.
 */
