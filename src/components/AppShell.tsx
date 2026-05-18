@@ -122,13 +122,13 @@ export default function AppShell() {
         </div>
       </main>
 
-      {/* Bottom tab bar — solid, elevated */}
+      {/* Bottom tab bar — normal full-width docked */}
       <nav
         className="fixed bottom-0 inset-x-0 z-40 lg:hidden pointer-events-none"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         aria-label="Primary"
       >
-        <div className="pointer-events-auto mx-auto mb-0 max-w-[calc(100%-1rem)] sm:max-w-md rounded-[28px] bg-background shadow-[0_-8px_32px_-8px_hsl(0_0%_0%_/_0.18),0_-2px_8px_-2px_hsl(0_0%_0%_/_0.10)] border border-border/60">
+        <div className="pointer-events-auto w-full bg-background border-t border-border/60 shadow-[0_-4px_20px_-4px_hsl(0_0%_0%_/_0.12)]">
           <ul className="relative h-[58px] px-1.5 flex items-stretch justify-around">
             <TabItem to="/home" icon={House} label="Home" />
             <TabItem to="/categories" icon={ShoppingBag} label="Shop" />
