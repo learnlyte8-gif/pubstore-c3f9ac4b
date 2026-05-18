@@ -233,10 +233,10 @@ export default function MyStore() {
           <Row icon={BedDouble} label="Stays & B&B" hint="List rooms, hotels, factory tours" to="/store/services/stays" />
           <Row icon={Car} label="Vehicles" hint="Cars, EVs, trucks, bikes, parts" to="/store/services/vehicles" />
           <Row icon={Factory} label="Industrial listings" hint="Machinery, materials, capacity" to="/store/services/industrial" />
-          <Row icon={Navigation} label="Driver mode" hint="Earn driving riders · register your car" to="/store/services/driver" />
+          <Row icon={Navigation} label="Ride driver" hint="Register your car · earn driving passengers" to="/store/services/driver" />
           <Row icon={Wrench} label="Local services" hint="Plumbing, electrical, tutoring, freelance" to="/store/services/pros" />
           <Row icon={HomeIcon} label="Real estate" hint="Rent or sell apartments, houses, land" to="/store/services/properties" />
-          <Row icon={Truck} label="Delivery / courier" hint="Take last-mile, freight bids" to="/store/services/logistics" />
+          <Row icon={Truck} label="Courier / logistics" hint="Deliveries, freight, partner with suppliers" to="/store/services/logistics" />
           <Row icon={Banknote} label="Finance products" hint="Loans, vehicle financing, insurance" to="/store/services/finance" />
           <Row icon={Car} label="Car rentals" hint="Self-drive listings, mileage, rules & penalties" to="/store/services/car-rentals" />
           {canImport && <Row icon={Newspaper} label="News & editorial" hint="Publish articles · admin" to="/store/services/news" />}

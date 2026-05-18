@@ -29,10 +29,10 @@ const titles: Record<string, { title: string; sub: string }> = {
   "services/vehicles": { title: "My vehicles", sub: "Cars, EVs, trucks, bikes" },
   "services/industrial": { title: "My industrial listings", sub: "Machinery, materials, capacity" },
   "services/news": { title: "News & editorial", sub: "Publish articles" },
-  "services/driver": { title: "Driver mode", sub: "Register as a PUBSTORE driver" },
+  "services/driver": { title: "Ride driver", sub: "Register your car for ride-hailing only" },
   "services/pros": { title: "Service provider", sub: "List your skills as a local pro" },
   "services/properties": { title: "My properties", sub: "Real estate listings" },
-  "services/logistics": { title: "Courier mode", sub: "Bid on delivery requests" },
+  "services/logistics": { title: "Courier / logistics", sub: "Register as a courier · partner with suppliers" },
   "services/finance": { title: "Finance products", sub: "Loans, insurance, financing" },
   "services/car-rentals": { title: "Car rentals", sub: "Self-drive listings, rules & penalties" },
   "services/agro": { title: "Agro listings", sub: "Produce, machinery, inputs, livestock, projects" },
@@ -2867,16 +2867,280 @@ function PropertyFormDialog({ userId, initial, onClose, onSaved }: { userId: str
 
 /* ---------------- Courier (logistics driver) ---------------- */
 function CourierServiceView() {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) { navigate("/auth"); return; }
+      setUserId(session.user.id);
+    });
+  }, [navigate]);
+
+  const { data: profile, isLoading } = useQuery({
+    queryKey: ["my-courier-profile", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await supabase.from("courier_profiles" as any).select("*").eq("user_id", userId!).maybeSingle();
+      return data as any;
+    },
+  });
+
+  const [form, setForm] = useState({
+    display_name: "",
+    company_name: "",
+    phone: "",
+    whatsapp: "",
+    email: "",
+    vehicle_type: "bike",
+    vehicle_make: "",
+    vehicle_model: "",
+    vehicle_plate: "",
+    max_weight_kg: "",
+    max_volume_m3: "",
+    service_areas: "",
+    city: "",
+    country: "",
+    base_fee: "",
+    per_km_fee: "",
+    vehicle_photo: "",
+    plate_photo: "",
+    selfie_photo: "",
+    license_photo: "",
+    insurance_photo: "",
+    bio: "",
+    offers_supplier_partnerships: true,
+    active: true,
+  });
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    if (profile && !hydrated) {
+      setForm({
+        display_name: profile.display_name ?? "",
+        company_name: profile.company_name ?? "",
+        phone: profile.phone ?? "",
+        whatsapp: profile.whatsapp ?? "",
+        email: profile.email ?? "",
+        vehicle_type: profile.vehicle_type ?? "bike",
+        vehicle_make: profile.vehicle_make ?? "",
+        vehicle_model: profile.vehicle_model ?? "",
+        vehicle_plate: profile.vehicle_plate ?? "",
+        max_weight_kg: profile.max_weight_kg ?? "",
+        max_volume_m3: profile.max_volume_m3 ?? "",
+        service_areas: (profile.service_areas ?? []).join(", "),
+        city: profile.city ?? "",
+        country: profile.country ?? "",
+        base_fee: profile.base_fee ?? "",
+        per_km_fee: profile.per_km_fee ?? "",
+        vehicle_photo: profile.vehicle_photo ?? "",
+        plate_photo: profile.plate_photo ?? "",
+        selfie_photo: profile.selfie_photo ?? "",
+        license_photo: profile.license_photo ?? "",
+        insurance_photo: profile.insurance_photo ?? "",
+        bio: profile.bio ?? "",
+        offers_supplier_partnerships: profile.offers_supplier_partnerships ?? true,
+        active: profile.active ?? true,
+      });
+      setHydrated(true);
+    }
+  }, [profile, hydrated]);
+
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    if (!userId) return;
+    if (!form.phone.trim()) { toast.error("Phone is required"); return; }
+    if (!form.vehicle_photo) { toast.error("Add a photo of your vehicle"); return; }
+    setBusy(true);
+    const payload: any = {
+      user_id: userId,
+      display_name: form.display_name || null,
+      company_name: form.company_name || null,
+      phone: form.phone,
+      whatsapp: form.whatsapp || null,
+      email: form.email || null,
+      vehicle_type: form.vehicle_type,
+      vehicle_make: form.vehicle_make || null,
+      vehicle_model: form.vehicle_model || null,
+      vehicle_plate: form.vehicle_plate || null,
+      max_weight_kg: form.max_weight_kg ? Number(form.max_weight_kg) : null,
+      max_volume_m3: form.max_volume_m3 ? Number(form.max_volume_m3) : null,
+      service_areas: form.service_areas ? form.service_areas.split(",").map((s) => s.trim()).filter(Boolean) : [],
+      city: form.city || null,
+      country: form.country || null,
+      base_fee: form.base_fee ? Number(form.base_fee) : null,
+      per_km_fee: form.per_km_fee ? Number(form.per_km_fee) : null,
+      vehicle_photo: form.vehicle_photo || null,
+      plate_photo: form.plate_photo || null,
+      selfie_photo: form.selfie_photo || null,
+      license_photo: form.license_photo || null,
+      insurance_photo: form.insurance_photo || null,
+      bio: form.bio || null,
+      offers_supplier_partnerships: form.offers_supplier_partnerships,
+      active: form.active,
+    };
+    const { error } = profile
+      ? await supabase.from("courier_profiles" as any).update(payload).eq("user_id", userId)
+      : await supabase.from("courier_profiles" as any).insert(payload);
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(profile ? "Courier profile updated" : "You're registered as a courier 📦");
+    qc.invalidateQueries({ queryKey: ["my-courier-profile"] });
+  };
+
+  // Partnerships inbox (this user is the courier)
+  const { data: partnerships = [] } = useQuery({
+    queryKey: ["my-courier-partnerships", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("supplier_courier_partnerships" as any)
+        .select("*, suppliers(name, logo)")
+        .eq("courier_user_id", userId!)
+        .order("created_at", { ascending: false });
+      return (data ?? []) as any[];
+    },
+  });
+
+  const updatePartnership = async (id: string, status: string) => {
+    const { error } = await supabase.from("supplier_courier_partnerships" as any).update({ status }).eq("id", id);
+    if (error) toast.error(error.message);
+    else { toast.success("Updated"); qc.invalidateQueries({ queryKey: ["my-courier-partnerships"] }); }
+  };
+
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+
   return (
-    <div className="px-4 py-6 space-y-3">
-      <div className="bg-card border rounded-2xl p-4 shadow-card">
-        <p className="font-bold text-sm">Courier mode</p>
-        <p className="text-xs text-muted-foreground mt-1">Browse open delivery requests and submit your bid. Make sure you've registered your vehicle in Driver mode first.</p>
-        <div className="flex gap-2 mt-3">
-          <Button asChild className="flex-1"><Link to="/store/services/driver">Register vehicle</Link></Button>
-          <Button asChild variant="outline" className="flex-1"><Link to="/logistics">Open requests</Link></Button>
+    <div className="px-4 py-4 space-y-4">
+      <div className="rounded-2xl bg-gradient-to-br from-orange-500/15 via-rose-500/10 to-transparent border border-orange-500/20 p-4">
+        <div className="flex items-center gap-3">
+          <span className="w-11 h-11 rounded-xl bg-gradient-to-br from-orange-500 to-rose-500 text-white flex items-center justify-center shadow-soft">
+            <Truck className="w-5 h-5" />
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm">{profile ? "Your courier profile" : "Become a courier"}</p>
+            <p className="text-[11px] text-muted-foreground">
+              {profile
+                ? `Active · ${profile.deliveries_completed ?? 0} deliveries · ★ ${Number(profile.rating ?? 5).toFixed(1)}`
+                : "Take last-mile, freight, and supplier delivery contracts — separate from ride-hailing"}
+            </p>
+          </div>
+          {profile && (
+            <Link to="/logistics" className="h-9 px-3 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center gap-1 shadow-card">
+              Open requests
+            </Link>
+          )}
         </div>
       </div>
+
+      <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Contact</p>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Display name" value={form.display_name} onChange={(v) => setForm({ ...form, display_name: v })} />
+        <LabeledInput label="Company (optional)" value={form.company_name} onChange={(v) => setForm({ ...form, company_name: v })} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Phone *" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
+        <LabeledInput label="WhatsApp" value={form.whatsapp} onChange={(v) => setForm({ ...form, whatsapp: v })} />
+      </div>
+      <LabeledInput label="Email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="City" value={form.city} onChange={(v) => setForm({ ...form, city: v })} />
+        <LabeledInput label="Country" value={form.country} onChange={(v) => setForm({ ...form, country: v })} />
+      </div>
+      <LabeledInput label="Service areas (comma separated)" value={form.service_areas} onChange={(v) => setForm({ ...form, service_areas: v })} />
+
+      <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground pt-2">Vehicle & capacity</p>
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Vehicle type</label>
+        <select value={form.vehicle_type} onChange={(e) => setForm({ ...form, vehicle_type: e.target.value })} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1">
+          {["bike","car","van","truck","refrigerated_truck"].map((k) => <option key={k} value={k}>{k.replace("_"," ")}</option>)}
+        </select>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Make" value={form.vehicle_make} onChange={(v) => setForm({ ...form, vehicle_make: v })} />
+        <LabeledInput label="Model" value={form.vehicle_model} onChange={(v) => setForm({ ...form, vehicle_model: v })} />
+      </div>
+      <LabeledInput label="Number plate" value={form.vehicle_plate} onChange={(v) => setForm({ ...form, vehicle_plate: v.toUpperCase() })} />
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Max weight (kg)" type="number" value={form.max_weight_kg} onChange={(v) => setForm({ ...form, max_weight_kg: v })} />
+        <LabeledInput label="Max volume (m³)" type="number" value={form.max_volume_m3} onChange={(v) => setForm({ ...form, max_volume_m3: v })} />
+      </div>
+
+      <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground pt-2">Pricing</p>
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledInput label="Base fee ($)" type="number" value={form.base_fee} onChange={(v) => setForm({ ...form, base_fee: v })} />
+        <LabeledInput label="Per km ($)" type="number" value={form.per_km_fee} onChange={(v) => setForm({ ...form, per_km_fee: v })} />
+      </div>
+
+      <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground pt-2">Photos · vehicle required</p>
+      <div className="grid grid-cols-2 gap-3">
+        <ImageUpload label="Vehicle photo *" value={form.vehicle_photo} onChange={(v) => setForm({ ...form, vehicle_photo: v })} folder="courier" aspect="aspect-square" />
+        <ImageUpload label="Number plate" value={form.plate_photo} onChange={(v) => setForm({ ...form, plate_photo: v })} folder="courier" aspect="aspect-square" />
+        <ImageUpload label="Selfie" value={form.selfie_photo} onChange={(v) => setForm({ ...form, selfie_photo: v })} folder="courier" aspect="aspect-square" />
+        <ImageUpload label="License" value={form.license_photo} onChange={(v) => setForm({ ...form, license_photo: v })} folder="courier" aspect="aspect-square" />
+        <ImageUpload label="Insurance" value={form.insurance_photo} onChange={(v) => setForm({ ...form, insurance_photo: v })} folder="courier" aspect="aspect-square" />
+      </div>
+
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Short bio</label>
+        <textarea value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} rows={3} className="w-full rounded-xl border bg-background p-3 text-sm mt-1" placeholder="Tell suppliers and buyers about your service" />
+      </div>
+
+      <label className="flex items-center gap-2 text-sm rounded-xl border bg-muted/30 p-3">
+        <input type="checkbox" checked={form.offers_supplier_partnerships} onChange={(e) => setForm({ ...form, offers_supplier_partnerships: e.target.checked })} className="w-4 h-4" />
+        <span className="flex-1">
+          <p className="font-bold">Open to supplier partnerships</p>
+          <p className="text-[11px] text-muted-foreground">Suppliers can invite you as their dedicated delivery partner for goods.</p>
+        </span>
+      </label>
+
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="w-4 h-4" />
+        Active — show me to buyers and suppliers
+      </label>
+
+      <Button onClick={save} disabled={busy} className="w-full h-12">
+        {busy ? "Saving…" : profile ? "Save courier profile" : "Register as a courier"}
+      </Button>
+
+      {profile && (
+        <div className="pt-4">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Supplier partnerships</p>
+          {partnerships.length === 0 ? (
+            <div className="rounded-2xl border border-dashed p-4 text-xs text-center text-muted-foreground">
+              No partnership requests yet. Suppliers who want a dedicated courier will reach out here.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {partnerships.map((p: any) => (
+                <div key={p.id} className="bg-card border rounded-2xl p-3 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-muted overflow-hidden shrink-0">
+                    {p.suppliers?.logo && <img src={p.suppliers.logo} alt="" className="w-full h-full object-cover" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm truncate">{p.suppliers?.name ?? "Supplier"}</p>
+                    <p className="text-[11px] text-muted-foreground capitalize">{p.status} · {p.initiated_by === "supplier" ? "invited you" : "you requested"}</p>
+                    {p.agreed_rate && <p className="text-[11px] mt-0.5">{p.currency} {p.agreed_rate}</p>}
+                  </div>
+                  {p.status === "pending" && p.initiated_by === "supplier" && (
+                    <div className="flex gap-1">
+                      <button onClick={() => updatePartnership(p.id, "active")} className="h-8 px-3 rounded-full bg-emerald-500 text-white text-xs font-bold">Accept</button>
+                      <button onClick={() => updatePartnership(p.id, "declined")} className="h-8 px-3 rounded-full bg-muted text-xs font-bold">Decline</button>
+                    </div>
+                  )}
+                  {p.status === "active" && (
+                    <button onClick={() => updatePartnership(p.id, "paused")} className="h-8 px-3 rounded-full bg-muted text-xs font-bold">Pause</button>
+                  )}
+                  {p.status === "paused" && (
+                    <button onClick={() => updatePartnership(p.id, "active")} className="h-8 px-3 rounded-full bg-emerald-500 text-white text-xs font-bold">Resume</button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

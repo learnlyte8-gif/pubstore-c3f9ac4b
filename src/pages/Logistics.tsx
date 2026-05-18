@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Truck, Package, MapPin, Clock, Plus, ArrowRight, DollarSign } from "lucide-react";
+import { Truck, Package, Plus, Star, Handshake, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fetchLogisticsRequests } from "@/data/newVerticals";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +16,7 @@ const VEHICLE_TYPES = [
 ];
 
 export default function Logistics() {
-  const [tab, setTab] = useState<"browse" | "request">("browse");
+  const [tab, setTab] = useState<"browse" | "request" | "couriers">("browse");
   const { data: requests = [] } = useQuery({
     queryKey: ["logistics-requests"],
     queryFn: () => fetchLogisticsRequests({ status: "open", limit: 30 }),
@@ -30,17 +31,17 @@ export default function Logistics() {
           </span>
           <div>
             <h1 className="text-xl font-bold leading-tight">Logistics & delivery</h1>
-            <p className="text-[11px] opacity-90">Last-mile, courier, freight — drivers bid on your delivery.</p>
+            <p className="text-[11px] opacity-90">Couriers, freight & supplier delivery partners — separate from rides.</p>
           </div>
         </div>
 
         <div className="mt-3 flex bg-white/15 backdrop-blur rounded-full p-1">
-          {(["browse", "request"] as const).map((t) => (
+          {(["browse", "request", "couriers"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`flex-1 h-9 rounded-full text-xs font-bold transition ${tab === t ? "bg-white text-foreground" : "text-white/90"}`}
-            >{t === "browse" ? "Open requests" : "Request delivery"}</button>
+              className={`flex-1 h-9 rounded-full text-[11px] font-bold transition ${tab === t ? "bg-white text-foreground" : "text-white/90"}`}
+            >{t === "browse" ? "Open requests" : t === "request" ? "Request delivery" : "Couriers"}</button>
           ))}
         </div>
       </header>
@@ -82,6 +83,114 @@ export default function Logistics() {
       )}
 
       {tab === "request" && <DeliveryRequestForm onPosted={() => setTab("browse")} />}
+      {tab === "couriers" && <CouriersDirectory />}
+    </div>
+  );
+}
+
+function CouriersDirectory() {
+  const qc = useQueryClient();
+  const [userId, setUserId] = useState<string | null>(null);
+  const [mySupplierId, setMySupplierId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      setUserId(user?.id ?? null);
+      if (user) {
+        const { data } = await supabase.from("suppliers").select("id").eq("owner_id", user.id).maybeSingle();
+        setMySupplierId(data?.id ?? null);
+      }
+    });
+  }, []);
+
+  const { data: couriers = [] } = useQuery({
+    queryKey: ["couriers-directory"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("courier_profiles" as any)
+        .select("*")
+        .eq("active", true)
+        .eq("offers_supplier_partnerships", true)
+        .order("rating", { ascending: false })
+        .limit(40);
+      return (data ?? []) as any[];
+    },
+  });
+
+  const { data: myPartnerships = [] } = useQuery({
+    queryKey: ["my-supplier-partnerships", mySupplierId],
+    enabled: !!mySupplierId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("supplier_courier_partnerships" as any)
+        .select("courier_user_id, status")
+        .eq("supplier_id", mySupplierId!);
+      return (data ?? []) as any[];
+    },
+  });
+
+  const invite = async (courierUserId: string) => {
+    if (!userId) { toast.error("Sign in first"); return; }
+    if (!mySupplierId) { toast.error("Set up your supplier store first"); return; }
+    const { error } = await supabase.from("supplier_courier_partnerships" as any).insert({
+      supplier_id: mySupplierId,
+      courier_user_id: courierUserId,
+      initiated_by: "supplier",
+      message: "We'd like to partner with you for our deliveries.",
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Invitation sent");
+    qc.invalidateQueries({ queryKey: ["my-supplier-partnerships"] });
+  };
+
+  return (
+    <div className="px-4 mt-4 space-y-3">
+      <div className="rounded-2xl bg-card border p-3">
+        <div className="flex items-center gap-2">
+          <Handshake className="w-4 h-4 text-orange-500" />
+          <p className="font-bold text-sm">Supplier ↔ courier partnerships</p>
+        </div>
+        <p className="text-[11px] text-muted-foreground mt-1">
+          Suppliers can invite a courier as their dedicated delivery partner for goods. Couriers must register and opt in from{" "}
+          <Link to="/store/services/logistics" className="text-orange-500 font-bold">courier mode</Link>.
+        </p>
+      </div>
+
+      {couriers.length === 0 ? (
+        <EmptyState title="No couriers yet" description="Couriers open to supplier partnerships will appear here." />
+      ) : (
+        <div className="space-y-2">
+          {couriers.map((c: any) => {
+            const existing = myPartnerships.find((p) => p.courier_user_id === c.user_id);
+            return (
+              <div key={c.id} className="bg-card border rounded-2xl p-3 flex gap-3 shadow-card">
+                <div className="w-14 h-14 rounded-xl bg-muted overflow-hidden shrink-0">
+                  {c.vehicle_photo && <img src={c.vehicle_photo} alt="" className="w-full h-full object-cover" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm truncate">{c.company_name || c.display_name || "Courier"}</p>
+                  <p className="text-[11px] text-muted-foreground capitalize truncate">
+                    {c.vehicle_type?.replace("_", " ")} · up to {c.max_weight_kg ?? "—"}kg {c.city ? `· ${c.city}` : ""}
+                  </p>
+                  <div className="flex items-center gap-2 text-[11px] mt-1">
+                    <span className="flex items-center gap-0.5"><Star className="w-3 h-3 fill-amber-400 text-amber-400" />{Number(c.rating ?? 5).toFixed(1)}</span>
+                    <span className="text-muted-foreground">{c.deliveries_completed ?? 0} deliveries</span>
+                  </div>
+                </div>
+                <div className="shrink-0">
+                  {existing ? (
+                    <span className="px-3 h-8 rounded-full bg-muted text-[11px] font-bold flex items-center capitalize">{existing.status}</span>
+                  ) : mySupplierId ? (
+                    <Button size="sm" onClick={() => invite(c.user_id)} className="h-8 text-[11px]">Invite</Button>
+                  ) : (
+                    <Link to="/become-supplier" className="px-3 h-8 rounded-full bg-muted text-[11px] font-bold flex items-center">Become supplier</Link>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

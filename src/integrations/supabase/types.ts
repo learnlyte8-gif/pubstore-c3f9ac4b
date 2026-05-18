@@ -675,6 +675,111 @@ export type Database = {
           },
         ]
       }
+      courier_profiles: {
+        Row: {
+          active: boolean
+          base_fee: number | null
+          bio: string | null
+          city: string | null
+          company_name: string | null
+          country: string | null
+          cover_photo: string | null
+          created_at: string
+          deliveries_completed: number
+          display_name: string | null
+          email: string | null
+          id: string
+          insurance_photo: string | null
+          license_photo: string | null
+          max_volume_m3: number | null
+          max_weight_kg: number | null
+          offers_supplier_partnerships: boolean
+          per_km_fee: number | null
+          phone: string | null
+          plate_photo: string | null
+          rating: number
+          selfie_photo: string | null
+          service_areas: string[]
+          updated_at: string
+          user_id: string
+          vehicle_make: string | null
+          vehicle_model: string | null
+          vehicle_photo: string | null
+          vehicle_plate: string | null
+          vehicle_type: string
+          verified: boolean
+          whatsapp: string | null
+        }
+        Insert: {
+          active?: boolean
+          base_fee?: number | null
+          bio?: string | null
+          city?: string | null
+          company_name?: string | null
+          country?: string | null
+          cover_photo?: string | null
+          created_at?: string
+          deliveries_completed?: number
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          insurance_photo?: string | null
+          license_photo?: string | null
+          max_volume_m3?: number | null
+          max_weight_kg?: number | null
+          offers_supplier_partnerships?: boolean
+          per_km_fee?: number | null
+          phone?: string | null
+          plate_photo?: string | null
+          rating?: number
+          selfie_photo?: string | null
+          service_areas?: string[]
+          updated_at?: string
+          user_id: string
+          vehicle_make?: string | null
+          vehicle_model?: string | null
+          vehicle_photo?: string | null
+          vehicle_plate?: string | null
+          vehicle_type?: string
+          verified?: boolean
+          whatsapp?: string | null
+        }
+        Update: {
+          active?: boolean
+          base_fee?: number | null
+          bio?: string | null
+          city?: string | null
+          company_name?: string | null
+          country?: string | null
+          cover_photo?: string | null
+          created_at?: string
+          deliveries_completed?: number
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          insurance_photo?: string | null
+          license_photo?: string | null
+          max_volume_m3?: number | null
+          max_weight_kg?: number | null
+          offers_supplier_partnerships?: boolean
+          per_km_fee?: number | null
+          phone?: string | null
+          plate_photo?: string | null
+          rating?: number
+          selfie_photo?: string | null
+          service_areas?: string[]
+          updated_at?: string
+          user_id?: string
+          vehicle_make?: string | null
+          vehicle_model?: string | null
+          vehicle_photo?: string | null
+          vehicle_plate?: string | null
+          vehicle_type?: string
+          verified?: boolean
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       driver_locations: {
         Row: {
           display_name: string | null
@@ -3613,6 +3718,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "supplier_certifications_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_courier_partnerships: {
+        Row: {
+          agreed_rate: number | null
+          courier_user_id: string
+          created_at: string
+          currency: string
+          id: string
+          initiated_by: string
+          message: string | null
+          notes: string | null
+          service_areas: string[]
+          status: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          agreed_rate?: number | null
+          courier_user_id: string
+          created_at?: string
+          currency?: string
+          id?: string
+          initiated_by?: string
+          message?: string | null
+          notes?: string | null
+          service_areas?: string[]
+          status?: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          agreed_rate?: number | null
+          courier_user_id?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          initiated_by?: string
+          message?: string | null
+          notes?: string | null
+          service_areas?: string[]
+          status?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_courier_partnerships_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"

@@ -178,9 +178,9 @@ export default function Driver() {
           <span className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-400 text-white flex items-center justify-center shadow-elevated">
             <Navigation className="w-7 h-7" />
           </span>
-          <h2 className="mt-5 text-2xl font-black">Register as a PUBSTORE driver</h2>
+          <h2 className="mt-5 text-2xl font-black">Register as a ride driver</h2>
           <p className="mt-2 text-sm text-zinc-400">
-            Add your contact info, your car details, photos of your vehicle and number plate so riders know exactly who's picking them up.
+            This is for ride-hailing only — driving passengers. If you want to deliver goods or packages, register separately as a <Link to="/store/services/logistics" className="text-emerald-400 underline">courier</Link>.
           </p>
           <Link to="/store/services/driver" className="mt-6 h-12 px-6 rounded-full bg-emerald-400 text-zinc-950 text-sm font-bold flex items-center gap-2 shadow-elevated">
             <ShieldCheck className="w-4 h-4" /> Register now
