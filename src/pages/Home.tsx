@@ -38,6 +38,7 @@ import SupplierCard from "@/components/marketplace/SupplierCard";
 import { useProducts, useSuppliers } from "@/hooks/useCatalog";
 import { useFollowingFeed, useFollowingSupplierIds, useAuthUserId } from "@/hooks/useFollowing";
 import { useMyInterests, useWishlistInterestSlugs, interestsToSlugs, prioritizeByCategories, useRecentSearchSlugs, rankByAffinity } from "@/hooks/useInterests";
+import { usePersonalizedFeed } from "@/hooks/useSocial";
 import { useClickAffinity, useRefreshFeed } from "@/hooks/usePersonalizationLog";
 import { useTradeMode } from "@/hooks/useTradeMode";
 import TradeModeSwitch from "@/components/marketplace/TradeModeSwitch";
