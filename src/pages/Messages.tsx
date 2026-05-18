@@ -207,6 +207,7 @@ export default function Messages() {
   const [forwardMsg, setForwardMsg] = useState<Message | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { perConversation } = useUnreadChats();
+  const [tab, setTab] = useState<TabKey>("suppliers");
 
   const loadConversations = useCallback(async (uid: string) => {
     const { data: convs } = await supabase
