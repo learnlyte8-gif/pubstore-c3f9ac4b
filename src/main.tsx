@@ -5,6 +5,32 @@ import "./index.css";
 createRoot(document.getElementById("root")!).render(<App />);
 
 // ---------------------------------------------------------------------------
+// Native-app feel: suppress browser long-press / right-click menus globally,
+// except inside editable fields where the OS menu is expected.
+// ---------------------------------------------------------------------------
+const isEditable = (el: EventTarget | null) => {
+  if (!(el instanceof HTMLElement)) return false;
+  const tag = el.tagName;
+  return (
+    tag === "INPUT" ||
+    tag === "TEXTAREA" ||
+    tag === "SELECT" ||
+    el.isContentEditable ||
+    !!el.closest('input, textarea, select, [contenteditable="true"], [contenteditable=""], .select-text')
+  );
+};
+window.addEventListener("contextmenu", (e) => {
+  if (!isEditable(e.target)) e.preventDefault();
+});
+// Prevent iOS image/link callouts from drag-start
+window.addEventListener("dragstart", (e) => {
+  const t = e.target as HTMLElement | null;
+  if (t && (t.tagName === "IMG" || t.tagName === "A")) e.preventDefault();
+});
+// Prevent pinch-zoom gesture artifacts on iOS Safari
+document.addEventListener("gesturestart", (e) => e.preventDefault());
+
+// ---------------------------------------------------------------------------
 // Service Worker registration (push-only, no offline caching)
 // ---------------------------------------------------------------------------
 // Only register outside the Lovable preview iframe so we don't pollute the
