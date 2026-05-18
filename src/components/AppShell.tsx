@@ -54,8 +54,8 @@ export default function AppShell() {
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground flex flex-col overflow-x-clip">
-      {/* Top bar — compact, frosted */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/60 safe-top">
+      {/* Top bar — solid, elevated */}
+      <header className="sticky top-0 z-40 bg-background safe-top shadow-[0_8px_32px_-8px_hsl(0_0%_0%_/_0.18),0_2px_8px_-2px_hsl(0_0%_0%_/_0.10)]">
         <div className="max-w-2xl mx-auto h-12 px-3 flex items-center gap-2">
           <div className="flex-1 flex items-center gap-1 min-w-0 h-9 rounded-lg bg-background border-2 border-[hsl(24_100%_56%)] pl-1 pr-1 shadow-[0_1px_0_hsl(24_100%_56%/0.15)]">
             <RailDrawer />
@@ -122,14 +122,13 @@ export default function AppShell() {
         </div>
       </main>
 
-      {/* Bottom tab bar — iOS liquid glass */}
+      {/* Bottom tab bar — solid, elevated */}
       <nav
         className="fixed bottom-0 inset-x-0 z-40 lg:hidden pointer-events-none"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         aria-label="Primary"
       >
-        <div className="pointer-events-auto mx-auto mb-0 max-w-[calc(100%-1rem)] sm:max-w-md ios-liquid-bar">
-          <span aria-hidden className="ios-liquid-shimmer" />
+        <div className="pointer-events-auto mx-auto mb-0 max-w-[calc(100%-1rem)] sm:max-w-md rounded-[28px] bg-background shadow-[0_-8px_32px_-8px_hsl(0_0%_0%_/_0.18),0_-2px_8px_-2px_hsl(0_0%_0%_/_0.10)] border border-border/60">
           <ul className="relative h-[58px] px-1.5 flex items-stretch justify-around">
             <TabItem to="/home" icon={House} label="Home" />
             <TabItem to="/categories" icon={ShoppingBag} label="Shop" />
