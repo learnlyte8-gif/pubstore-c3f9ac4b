@@ -21,6 +21,7 @@ export default function AppShell() {
   const { cartCount, wishlist } = useShop();
   const { chatsWithUnread } = useUnreadChats();
   const location = useLocation();
+  const isChat = location.pathname.startsWith("/messages");
 
   useEffect(() => {
     if (!session?.user?.id) {
