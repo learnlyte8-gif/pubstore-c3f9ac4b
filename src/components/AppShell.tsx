@@ -109,10 +109,11 @@ export default function AppShell() {
                 <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-background">
                   {cartCount > 99 ? "99+" : cartCount}
                 </span>
-              )}
-            </Link>
+            )}
+          </Link>
           </div>
         </div>
+        <ScrollProgress />
       </header>
 
       <main className="flex-1 max-w-2xl w-full mx-auto pb-[calc(env(safe-area-inset-bottom)+76px)] lg:pb-4">
@@ -145,6 +146,32 @@ export default function AppShell() {
       <BannerAd />
       <ImportProgressBanner />
       <InstallPrompt />
+    </div>
+  );
+}
+
+function ScrollProgress() {
+  const [pct, setPct] = useState(0);
+  useEffect(() => {
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      setPct(max > 0 ? Math.min(100, Math.max(0, (h.scrollTop / max) * 100)) : 0);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
+  return (
+    <div className="h-[2px] w-full bg-transparent overflow-hidden" aria-hidden>
+      <div
+        className="h-full bg-gradient-to-r from-[hsl(24_100%_56%)] via-primary to-[hsl(24_100%_56%)] transition-[width] duration-75 ease-out"
+        style={{ width: `${pct}%` }}
+      />
     </div>
   );
 }
