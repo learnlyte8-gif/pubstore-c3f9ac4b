@@ -552,30 +552,68 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_members: {
+        Row: {
+          conversation_id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_members_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           buyer_id: string
           created_at: string
+          group_buy_id: string | null
           id: string
+          kind: Database["public"]["Enums"]["conversation_kind"]
           last_message: string | null
           last_message_at: string | null
-          supplier_id: string
+          peer_user_id: string | null
+          supplier_id: string | null
+          title: string | null
         }
         Insert: {
           buyer_id: string
           created_at?: string
+          group_buy_id?: string | null
           id?: string
+          kind?: Database["public"]["Enums"]["conversation_kind"]
           last_message?: string | null
           last_message_at?: string | null
-          supplier_id: string
+          peer_user_id?: string | null
+          supplier_id?: string | null
+          title?: string | null
         }
         Update: {
           buyer_id?: string
           created_at?: string
+          group_buy_id?: string | null
           id?: string
+          kind?: Database["public"]["Enums"]["conversation_kind"]
           last_message?: string | null
           last_message_at?: string | null
-          supplier_id?: string
+          peer_user_id?: string | null
+          supplier_id?: string | null
+          title?: string | null
         }
         Relationships: [
           {
@@ -1057,6 +1095,140 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "followers_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_buy_invites: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          invitee_id: string
+          inviter_id: string
+          responded_at: string | null
+          status: Database["public"]["Enums"]["invite_status"]
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          invitee_id: string
+          inviter_id: string
+          responded_at?: string | null
+          status?: Database["public"]["Enums"]["invite_status"]
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          invitee_id?: string
+          inviter_id?: string
+          responded_at?: string | null
+          status?: Database["public"]["Enums"]["invite_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_buy_invites_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "group_buys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_buy_members: {
+        Row: {
+          group_id: string
+          joined_at: string
+          qty: number
+          role: Database["public"]["Enums"]["group_buy_role"]
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          joined_at?: string
+          qty?: number
+          role?: Database["public"]["Enums"]["group_buy_role"]
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          joined_at?: string
+          qty?: number
+          role?: Database["public"]["Enums"]["group_buy_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_buy_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "group_buys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_buys: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          deadline: string | null
+          id: string
+          owner_id: string
+          product_id: string
+          status: Database["public"]["Enums"]["group_buy_status"]
+          supplier_id: string
+          target_qty: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          deadline?: string | null
+          id?: string
+          owner_id: string
+          product_id: string
+          status?: Database["public"]["Enums"]["group_buy_status"]
+          supplier_id: string
+          target_qty: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          deadline?: string | null
+          id?: string
+          owner_id?: string
+          product_id?: string
+          status?: Database["public"]["Enums"]["group_buy_status"]
+          supplier_id?: string
+          target_qty?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_buys_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_buys_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_buys_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
@@ -2470,6 +2642,30 @@ export type Database = {
         }
         Relationships: []
       }
+      post_likes: {
+        Row: {
+          created_at: string
+          id: string
+          target_id: string
+          target_type: Database["public"]["Enums"]["like_target"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          target_id: string
+          target_type: Database["public"]["Enums"]["like_target"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          target_id?: string
+          target_type?: Database["public"]["Enums"]["like_target"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       product_inquiries: {
         Row: {
           buyer_id: string
@@ -3521,6 +3717,44 @@ export type Database = {
         }
         Relationships: []
       }
+      shares: {
+        Row: {
+          channel: Database["public"]["Enums"]["share_channel"]
+          conversation_id: string | null
+          created_at: string
+          id: string
+          target_id: string
+          target_type: Database["public"]["Enums"]["like_target"]
+          user_id: string
+        }
+        Insert: {
+          channel: Database["public"]["Enums"]["share_channel"]
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          target_id: string
+          target_type: Database["public"]["Enums"]["like_target"]
+          user_id: string
+        }
+        Update: {
+          channel?: Database["public"]["Enums"]["share_channel"]
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          target_id?: string
+          target_type?: Database["public"]["Enums"]["like_target"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shares_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stay_bookings: {
         Row: {
           check_in: string
@@ -3887,6 +4121,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_follows: {
+        Row: {
+          created_at: string
+          followee_id: string
+          follower_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          followee_id: string
+          follower_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          followee_id?: string
+          follower_id?: string
+          id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
@@ -4293,6 +4548,18 @@ export type Database = {
         Returns: boolean
       }
       is_cod_verified: { Args: { _user_id: string }; Returns: boolean }
+      is_conversation_member: {
+        Args: { _cid: string; _uid: string }
+        Returns: boolean
+      }
+      is_group_buy_member: {
+        Args: { _gid: string; _uid: string }
+        Returns: boolean
+      }
+      is_group_buy_owner: {
+        Args: { _gid: string; _uid: string }
+        Returns: boolean
+      }
       pay_order_with_wallet: {
         Args: { _order_id: string }
         Returns: {
@@ -4350,6 +4617,13 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      personalized_feed: {
+        Args: { _limit?: number; _user_id: string }
+        Returns: {
+          product_id: string
+          score: number
+        }[]
+      }
       resolve_master_supplier: {
         Args: { _supplier_id: string }
         Returns: string
@@ -4357,6 +4631,11 @@ export type Database = {
     }
     Enums: {
       app_role: "supplier" | "buyer" | "admin"
+      conversation_kind: "buyer_supplier" | "dm" | "group_buy"
+      group_buy_role: "owner" | "member" | "invited"
+      group_buy_status: "open" | "locked" | "fulfilled" | "cancelled"
+      invite_status: "pending" | "accepted" | "declined"
+      like_target: "product" | "supplier" | "catalog" | "post"
       live_status: "scheduled" | "live" | "ended"
       order_status:
         | "awaiting_payment"
@@ -4366,6 +4645,7 @@ export type Database = {
         | "delivered"
         | "cancelled"
       rfq_status: "open" | "closed"
+      share_channel: "chat" | "external" | "copy"
       verification_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
@@ -4495,6 +4775,11 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["supplier", "buyer", "admin"],
+      conversation_kind: ["buyer_supplier", "dm", "group_buy"],
+      group_buy_role: ["owner", "member", "invited"],
+      group_buy_status: ["open", "locked", "fulfilled", "cancelled"],
+      invite_status: ["pending", "accepted", "declined"],
+      like_target: ["product", "supplier", "catalog", "post"],
       live_status: ["scheduled", "live", "ended"],
       order_status: [
         "awaiting_payment",
@@ -4505,6 +4790,7 @@ export const Constants = {
         "cancelled",
       ],
       rfq_status: ["open", "closed"],
+      share_channel: ["chat", "external", "copy"],
       verification_status: ["pending", "approved", "rejected"],
     },
   },
