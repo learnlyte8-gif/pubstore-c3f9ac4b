@@ -38,6 +38,7 @@ import SupplierCard from "@/components/marketplace/SupplierCard";
 import { useProducts, useSuppliers } from "@/hooks/useCatalog";
 import { useFollowingFeed, useFollowingSupplierIds, useAuthUserId } from "@/hooks/useFollowing";
 import { useMyInterests, useWishlistInterestSlugs, interestsToSlugs, prioritizeByCategories, useRecentSearchSlugs, rankByAffinity } from "@/hooks/useInterests";
+import { usePersonalizedFeed } from "@/hooks/useSocial";
 import { useClickAffinity, useRefreshFeed } from "@/hooks/usePersonalizationLog";
 import { useTradeMode } from "@/hooks/useTradeMode";
 import TradeModeSwitch from "@/components/marketplace/TradeModeSwitch";
@@ -76,6 +77,7 @@ const Home = () => {
   const { data: trending = [] } = useProducts({ sortBy: "sold", limit: 6, tradeMode });
   const { data: dealPool = [] } = useProducts({ sortBy: "newest", limit: 50, tradeMode });
   const { data: suppliers = [] } = useSuppliers({ limit: 6 });
+  const { data: forYouProducts = [] } = usePersonalizedFeed(12);
 
   // Personalized ordering: rank by affinity (interests + wishlist + searches + clicks).
   // The `seed` reshuffles ties when the user taps "Refresh my feed".
@@ -203,9 +205,16 @@ const Home = () => {
               <SuppliersNearMe />
 
               <section className="px-4 mt-6">
-                <SectionHeader icon={Sparkles} title="For you" subtitle="Picked from your interests" />
+                <SectionHeader icon={Sparkles} title="For you" subtitle="Ranked by your interests, follows & activity" />
                 <div className="grid grid-cols-2 gap-3 mt-3">
-                  {products.slice(0, 6).map((p) => (<ProductCard key={p.id} product={p} />))}
+                  {(() => {
+                    const rankedIds = (forYouProducts as any[]).map((p) => p.id);
+                    const byId = new Map(products.map((p) => [p.id, p]));
+                    const ranked = rankedIds.map((id) => byId.get(id)).filter(Boolean) as typeof products;
+                    const seen = new Set(ranked.map((p) => p.id));
+                    const tail = products.filter((p) => !seen.has(p.id));
+                    return [...ranked, ...tail].slice(0, 6).map((p) => (<ProductCard key={p.id} product={p} />));
+                  })()}
                 </div>
               </section>
 
