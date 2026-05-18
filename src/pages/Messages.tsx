@@ -894,7 +894,13 @@ export default function Messages() {
       {userId && <PendingInquiriesInbox userId={userId} />}
 
       {tab === "discover" ? (
-        <DiscoverPeople currentUserId={userId} onOpenConversation={(id) => setActiveId(id)} />
+        <DiscoverPeople
+          currentUserId={userId}
+          onOpenConversation={async (id) => {
+            if (userId) await loadConversations(userId);
+            setActiveId(id);
+          }}
+        />
       ) : loading ? (
         <div className="px-4 pt-4 space-y-3">
           {[0, 1, 2, 3].map((i) => (
