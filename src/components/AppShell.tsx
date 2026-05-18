@@ -21,7 +21,6 @@ export default function AppShell() {
   const { cartCount, wishlist } = useShop();
   const { chatsWithUnread } = useUnreadChats();
   const location = useLocation();
-  const isChat = location.pathname.startsWith("/messages");
 
   useEffect(() => {
     if (!session?.user?.id) {
@@ -56,7 +55,7 @@ export default function AppShell() {
   return (
     <div className="min-h-[100dvh] bg-background text-foreground flex flex-col overflow-x-clip">
       {/* Top bar — compact, frosted */}
-      {!isChat && <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/60 safe-top">
+      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/60 safe-top">
         <div className="max-w-2xl mx-auto h-12 px-3 flex items-center gap-2">
           <div className="flex-1 flex items-center gap-1 min-w-0 h-9 rounded-lg bg-background border-2 border-[hsl(24_100%_56%)] pl-1 pr-1 shadow-[0_1px_0_hsl(24_100%_56%/0.15)]">
             <RailDrawer />
@@ -115,16 +114,16 @@ export default function AppShell() {
           </div>
         </div>
         <ScrollProgress />
-      </header>}
+      </header>
 
-      <main className={`flex-1 w-full mx-auto ${isChat ? "max-w-none pb-0" : "max-w-2xl pb-[calc(env(safe-area-inset-bottom)+76px)] lg:pb-4"}`}>
+      <main className="flex-1 max-w-2xl w-full mx-auto pb-[calc(env(safe-area-inset-bottom)+76px)] lg:pb-4">
         <div key={location.pathname} className="page-transition">
           <Outlet />
         </div>
       </main>
 
       {/* Bottom tab bar — iOS liquid glass */}
-      {!isChat && <nav
+      <nav
         className="fixed bottom-0 inset-x-0 z-40 lg:hidden pointer-events-none"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         aria-label="Primary"
@@ -139,7 +138,7 @@ export default function AppShell() {
             <TabItem to="/profile" icon={CircleUser} label="You" />
           </ul>
         </div>
-      </nav>}
+      </nav>
 
       <TapsonAssistant />
       <LiveActivityToaster />
