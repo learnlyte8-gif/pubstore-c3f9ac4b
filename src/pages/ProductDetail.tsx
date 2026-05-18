@@ -125,6 +125,15 @@ export default function ProductDetail() {
           unit: product.unit,
         }}
       />
+      {supplier && (
+        <GroupBuyStartSheet
+          open={groupBuyOpen}
+          onClose={() => setGroupBuyOpen(false)}
+          productId={product.id}
+          productTitle={product.title}
+          supplierId={supplier.id}
+        />
+      )}
 
       <ProductGallery images={product.gallery ?? [product.image]} alt={product.title} />
 
