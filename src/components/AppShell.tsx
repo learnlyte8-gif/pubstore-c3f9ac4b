@@ -109,10 +109,11 @@ export default function AppShell() {
                 <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-background">
                   {cartCount > 99 ? "99+" : cartCount}
                 </span>
-              )}
-            </Link>
+            )}
+          </Link>
           </div>
         </div>
+        <ScrollProgress />
       </header>
 
       <main className="flex-1 max-w-2xl w-full mx-auto pb-[calc(env(safe-area-inset-bottom)+76px)] lg:pb-4">
