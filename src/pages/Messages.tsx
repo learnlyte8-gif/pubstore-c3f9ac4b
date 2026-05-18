@@ -24,12 +24,17 @@ const chunk = <T,>(items: T[], size: number) => {
 type Conversation = {
   id: string;
   buyer_id: string;
-  supplier_id: string;
+  supplier_id: string | null;
+  peer_user_id?: string | null;
+  kind?: "buyer_supplier" | "dm" | "group_buy" | null;
+  title?: string | null;
   last_message: string | null;
   last_message_at: string | null;
   supplier?: { id: string; name: string; logo: string | null; verified: boolean | null; response_time: string | null; response_rate: number | null; owner_id: string };
   peer?: { name: string; logo: string | null; verified: boolean | null; subtitle: string | null; supplierId?: string };
 };
+
+type TabKey = "unread" | "suppliers" | "people" | "groups";
 
 type Reactions = Record<string, string[]>; // emoji -> userIds
 
