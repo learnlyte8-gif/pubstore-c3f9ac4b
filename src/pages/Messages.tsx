@@ -14,6 +14,7 @@ import AttachmentCard, { type ChatAttachment } from "@/components/chat/Attachmen
 import InquiryApprovalPanel from "@/components/marketplace/InquiryApprovalPanel";
 import PendingInquiriesInbox from "@/components/marketplace/PendingInquiriesInbox";
 import { toast } from "@/hooks/use-toast";
+import DiscoverPeople from "@/components/social/DiscoverPeople";
 
 const chunk = <T,>(items: T[], size: number) => {
   const batches: T[][] = [];
