@@ -170,8 +170,6 @@ const Home = () => {
             </Link>
           )}
 
-          <LiveStreamsRail />
-
           {isLoading ? (
             <p className="px-4 py-8 text-center text-sm text-muted-foreground">Loading marketplace…</p>
           ) : products.length === 0 ? (
@@ -185,20 +183,50 @@ const Home = () => {
             </div>
           ) : (
             <>
-              {flashDeals.length > 0 && (
-                <section className="px-4 mt-6">
-                  <SectionHeader icon={Zap} title="Flash deals" subtitle="30%+ off · limited time" />
-                  <div className="flex gap-3 overflow-x-auto scrollbar-none mt-3 -mx-1 px-1 pb-1">
-                    {flashDeals.map((p) => (<ProductCard key={`fd-${p.id}`} product={p} variant="compact" />))}
-                  </div>
-                </section>
-              )}
-
               {trending.length > 0 && (
                 <section className="px-4 mt-6">
                   <SectionHeader icon={TrendingUp} title="Trending now" subtitle="Most ordered this week" />
                   <div className="flex gap-3 overflow-x-auto scrollbar-none mt-3 -mx-1 px-1 pb-1">
                     {trending.map((p) => (<ProductCard key={p.id} product={p} variant="compact" />))}
+                  </div>
+                </section>
+              )}
+
+              {(liveStreams.length > 0 || flashDeals.length > 0) && (
+                <section className="px-4 mt-6">
+                  <SectionHeader icon={Zap} title="Live now & flash deals" subtitle="Streaming suppliers · 30%+ off picks" />
+                  <div className="flex gap-3 overflow-x-auto scrollbar-none mt-3 -mx-1 px-1 pb-1">
+                    {liveStreams.map((s: any) => (
+                      <Link
+                        key={`live-${s.id}`}
+                        to={`/live/${s.id}`}
+                        className="relative shrink-0 w-32 aspect-[3/4] rounded-2xl overflow-hidden shadow-card"
+                      >
+                        {s.cover && (
+                          <img src={s.cover} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-foreground/85 via-transparent to-foreground/30" />
+                        <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold animate-pulse flex items-center gap-0.5">
+                          <Radio className="w-2.5 h-2.5" /> LIVE
+                        </span>
+                        <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full bg-foreground/50 text-background text-[9px] font-bold flex items-center gap-0.5">
+                          <Eye className="w-2.5 h-2.5" />
+                          {s.viewer_count > 1000 ? (s.viewer_count / 1000).toFixed(1) + "K" : s.viewer_count}
+                        </span>
+                        <div className="absolute bottom-2 inset-x-2 text-background">
+                          {s.suppliers?.name && (
+                            <div className="flex items-center gap-1.5 mb-1">
+                              {s.suppliers.logo && (
+                                <img src={s.suppliers.logo} alt="" className="w-5 h-5 rounded-full object-cover ring-2 ring-background" />
+                              )}
+                              <p className="text-[10px] font-bold truncate">{s.suppliers.name.split(" ")[0]}</p>
+                            </div>
+                          )}
+                          <p className="text-[10px] leading-snug font-semibold line-clamp-2">{s.title}</p>
+                        </div>
+                      </Link>
+                    ))}
+                    {flashDeals.map((p) => (<ProductCard key={`fd-${p.id}`} product={p} variant="compact" />))}
                   </div>
                 </section>
               )}
