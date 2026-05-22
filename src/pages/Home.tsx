@@ -80,6 +80,18 @@ const Home = () => {
   const { data: dealPool = [] } = useProducts({ sortBy: "newest", limit: 50, tradeMode });
   const { data: suppliers = [] } = useSuppliers({ limit: 6 });
   const { data: forYouProducts = [] } = usePersonalizedFeed(12);
+  const { data: liveStreams = [] } = useQuery({
+    queryKey: ["home-live-streams"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("live_streams")
+        .select("id,title,cover,viewer_count,supplier_id,suppliers(name,logo)")
+        .eq("status", "live")
+        .order("started_at", { ascending: false })
+        .limit(8);
+      return data ?? [];
+    },
+  });
 
   // Personalized ordering: rank by affinity (interests + wishlist + searches + clicks).
   // The `seed` reshuffles ties when the user taps "Refresh my feed".
