@@ -101,10 +101,11 @@ export function useChatNotifications() {
 
     let currentUid: string | null = null;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!alive || !user) return;
-      currentUid = user.id;
-      await subscribe(user.id);
+      // getSession reads from local storage — avoids the auth-token lock
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!alive || !session?.user) return;
+      currentUid = session.user.id;
+      await subscribe(session.user.id);
     })();
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
