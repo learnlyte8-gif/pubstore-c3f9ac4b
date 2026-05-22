@@ -468,4 +468,110 @@ function FollowingTab() {
   );
 }
 
+/* ── HomeMenuDrawer ─────────────────────────────────────────────
+   Replaces the inline DepartmentsBar (category rail) and
+   QuickActions (track-order rail) with a single slide-out drawer.
+   ────────────────────────────────────────────────────────────── */
+
+const DEPTS: { to: string; label: string; icon: LucideIcon; tone: string }[] = [
+  { to: "/home",       label: "Market",     icon: StoreIcon,  tone: "from-primary to-primary/70" },
+  { to: "/jobs",       label: "Jobs",       icon: Briefcase,  tone: "from-blue-700 to-indigo-500" },
+  { to: "/rides",      label: "Rides",      icon: Navigation, tone: "from-emerald-500 to-teal-400" },
+  { to: "/services",   label: "Services",   icon: Wrench,     tone: "from-violet-600 to-fuchsia-500" },
+  { to: "/properties", label: "Property",   icon: HomeIcon,   tone: "from-sky-700 to-blue-500" },
+  { to: "/logistics",  label: "Delivery",   icon: Truck,      tone: "from-orange-600 to-rose-500" },
+  { to: "/finance",    label: "Finance",    icon: Banknote,   tone: "from-emerald-700 to-cyan-600" },
+  { to: "/news",       label: "News",       icon: Newspaper,  tone: "from-rose-500 to-orange-400" },
+  { to: "/stays",      label: "Stays",      icon: BedDouble,  tone: "from-amber-500 to-yellow-300" },
+  { to: "/auto",       label: "Auto",       icon: Car,        tone: "from-zinc-900 to-zinc-600" },
+  { to: "/industrial", label: "Industrial", icon: Factory,    tone: "from-sky-700 to-sky-400" },
+  { to: "/agro",       label: "Agro",       icon: Sprout,     tone: "from-emerald-700 to-lime-500" },
+];
+
+const QUICK_ACTIONS = [
+  { icon: FileText, label: "Request quote", to: "/rfq", tone: "bg-primary/10 text-primary" },
+  { icon: Package, label: "Track order", to: "/orders", tone: "bg-amber-500/15 text-amber-600 dark:text-amber-400" },
+  { icon: GitCompare, label: "Compare", to: "/compare", tone: "bg-sky-500/15 text-sky-600 dark:text-sky-400" },
+  { icon: Truck, label: "Logistics", to: "/categories", tone: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" },
+  { icon: Wallet, label: "Trade Pay", to: "/account", tone: "bg-violet-500/15 text-violet-600 dark:text-violet-400" },
+  { icon: BadgePercent, label: "Coupons", to: "/account", tone: "bg-rose-500/15 text-rose-600 dark:text-rose-400" },
+];
+
+function HomeMenuDrawer() {
+  const [open, setOpen] = useState(false);
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <div className="px-4 mt-3">
+        <SheetTrigger asChild>
+          <button className="w-full flex items-center justify-between gap-3 h-11 px-4 rounded-2xl bg-card border border-border shadow-card active:scale-[0.99] transition">
+            <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <Menu className="w-4 h-4" strokeWidth={2.4} />
+              Browse categories &amp; quick actions
+            </span>
+            <span className="text-muted-foreground text-lg">›</span>
+          </button>
+        </SheetTrigger>
+      </div>
+      <SheetContent side="bottom" className="h-[82vh] rounded-t-3xl p-0 border-t border-border/60 bg-background flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-border/60">
+          <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Directory</p>
+          <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-full hover:bg-muted flex items-center justify-center active:scale-90 transition">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
+          {/* Categories */}
+          <section>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/90 mb-3">Categories</p>
+            <div className="grid grid-cols-4 gap-3">
+              {DEPTS.map((d) => {
+                const Icon = d.icon;
+                return (
+                  <Link
+                    key={d.to}
+                    to={d.to}
+                    onClick={() => setOpen(false)}
+                    className="group flex flex-col items-center gap-1.5 transition"
+                  >
+                    <span className={`relative w-12 h-12 rounded-2xl bg-gradient-to-br ${d.tone} flex items-center justify-center shadow-elevated`}>
+                      <span className="absolute inset-[2px] rounded-[14px] bg-background/15 backdrop-blur-sm" />
+                      <Icon className="relative z-10 w-5 h-5 text-white" strokeWidth={2.4} />
+                    </span>
+                    <span className="text-[10px] font-bold tracking-wide text-muted-foreground group-hover:text-foreground transition">{d.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* Quick Actions */}
+          <section>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/90 mb-3">Quick Actions</p>
+            <div className="grid grid-cols-3 gap-2">
+              {QUICK_ACTIONS.map((a) => {
+                const Icon = a.icon;
+                return (
+                  <Link
+                    to={a.to}
+                    key={a.label}
+                    onClick={() => setOpen(false)}
+                    className="flex flex-col items-center gap-1.5 py-3 rounded-xl bg-card border border-border/60 hover:bg-muted/50 active:scale-[0.98] transition"
+                  >
+                    <span className={`w-10 h-10 rounded-xl flex items-center justify-center ${a.tone}`}>
+                      <Icon className="w-4 h-4" strokeWidth={2} />
+                    </span>
+                    <span className="text-[10px] font-semibold leading-tight text-center">{a.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 export default Home;
