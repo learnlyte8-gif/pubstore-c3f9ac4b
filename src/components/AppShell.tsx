@@ -127,12 +127,6 @@ export default function AppShell() {
         </div>
       </main>
 
-      {/* Bottom tab bar — normal full-width docked */}
-      <nav
-        className="fixed bottom-0 inset-x-0 z-40 lg:hidden pointer-events-none"
-        aria-label="Primary"
-      >
-
       {/* Floating glass liquid nav — left edge, vertical */}
       <nav
         className="fixed left-2 top-1/2 -translate-y-1/2 z-40 lg:hidden pointer-events-none"
