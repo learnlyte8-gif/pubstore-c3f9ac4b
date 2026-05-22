@@ -191,7 +191,7 @@ const handleIncomingMessage = (uid: string, payload: { new: any }) => {
 
   setState({
     perConversation: nextPerConversation,
-    chatsWithUnread: Object.values(nextPerConversation).filter((count) => count > 0).length,
+    chatsWithUnread: Object.values(nextPerConversation).filter((count: number) => count > 0).length,
   });
 };
 
