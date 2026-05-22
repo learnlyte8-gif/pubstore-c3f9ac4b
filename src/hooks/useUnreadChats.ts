@@ -65,6 +65,7 @@ let stopTimer: number | null = null;
 let subscriberCount = 0;
 let started = false;
 let readListenerAttached = false;
+let startVersion = 0;
 
 const emit = () => {
   listeners.forEach((listener) => listener(state));
@@ -267,6 +268,7 @@ const handleAuthChange = async (uid: string | null) => {
 const startStore = async () => {
   if (started) return;
   started = true;
+  const version = ++startVersion;
 
   const { data } = supabase.auth.onAuthStateChange((_event, session) => {
     void handleAuthChange(session?.user?.id ?? null);
@@ -274,11 +276,13 @@ const startStore = async () => {
   authSubscription = data.subscription;
 
   const { data: sessionData } = await supabase.auth.getSession();
+  if (!started || version !== startVersion) return;
   await handleAuthChange(sessionData.session?.user?.id ?? null);
 };
 
 const stopStore = async () => {
   started = false;
+  startVersion += 1;
 
   authSubscription?.unsubscribe();
   authSubscription = null;
