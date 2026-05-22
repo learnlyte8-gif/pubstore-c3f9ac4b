@@ -121,20 +121,31 @@ export default function AppShell() {
         <ScrollProgress />
       </header>
 
-      <main className="flex-1 max-w-2xl w-full mx-auto pb-[calc(env(safe-area-inset-bottom)+76px)] lg:pb-4">
+      <main className="flex-1 max-w-2xl w-full mx-auto pb-[calc(env(safe-area-inset-bottom)+16px)] lg:pb-4">
         <div key={location.pathname} className="page-transition">
           <Outlet />
         </div>
       </main>
 
-      {/* Bottom tab bar — normal full-width docked */}
+      {/* Floating glass liquid nav — left edge, vertical */}
       <nav
-        className="fixed bottom-0 inset-x-0 z-40 lg:hidden pointer-events-none"
+        className="fixed left-2 top-1/2 -translate-y-1/2 z-40 lg:hidden pointer-events-none"
         aria-label="Primary"
+        style={{ paddingLeft: "env(safe-area-inset-left)" }}
       >
-
-        <div className="pointer-events-auto w-full bg-background border-t border-border/60 shadow-[0_-4px_20px_-4px_hsl(0_0%_0%_/_0.12)]">
-          <ul className="relative h-[58px] px-1.5 flex items-stretch justify-around">
+        <div
+          className="pointer-events-auto relative rounded-[28px] p-1.5
+                     bg-background/40 backdrop-blur-2xl backdrop-saturate-150
+                     border border-white/20 dark:border-white/10
+                     shadow-[0_20px_60px_-12px_hsl(0_0%_0%_/_0.35),0_8px_24px_-8px_hsl(0_0%_0%_/_0.25),inset_0_1px_0_hsl(0_0%_100%_/_0.4)]
+                     before:content-[''] before:absolute before:inset-0 before:rounded-[28px]
+                     before:bg-gradient-to-b before:from-white/30 before:via-transparent before:to-white/10
+                     before:pointer-events-none before:opacity-60
+                     after:content-[''] after:absolute after:-inset-px after:rounded-[28px]
+                     after:bg-gradient-to-br after:from-[hsl(24_100%_56%/0.25)] after:via-transparent after:to-primary/20
+                     after:blur-xl after:-z-10 after:pointer-events-none"
+        >
+          <ul className="relative flex flex-col items-stretch gap-0.5">
             <TabItem to="/home" icon={House} label="Home" />
             <TabItem to="/categories" icon={ShoppingBag} label="Shop" />
             <TabItem to="/messages" icon={MessageCircle} label="Chats" badge={chatsWithUnread} />

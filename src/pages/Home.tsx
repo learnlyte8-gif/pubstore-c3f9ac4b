@@ -46,6 +46,7 @@ import { useWallet } from "@/hooks/useWallet";
 import { Wallet as WalletIcon, Plus, RefreshCw, Radio, Eye } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Tab = "home" | "fyp" | "following";
 const TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
@@ -171,7 +172,7 @@ const Home = () => {
           )}
 
           {isLoading ? (
-            <p className="px-4 py-8 text-center text-sm text-muted-foreground">Loading marketplace…</p>
+            <HomeRailsSkeleton />
           ) : products.length === 0 ? (
             <div className="px-4 mt-4">
               <EmptyState
@@ -319,6 +320,52 @@ const Home = () => {
     </div>
   );
 };
+
+function HomeRailsSkeleton() {
+  return (
+    <div className="animate-fade-in">
+      {/* Trending now skeleton */}
+      <section className="px-4 mt-6">
+        <div className="flex items-end justify-between">
+          <div className="flex items-start gap-2.5">
+            <Skeleton className="w-8 h-8 rounded-xl" />
+            <div className="space-y-1.5">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-3 w-40" />
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-3 overflow-hidden mt-3 -mx-1 px-1 pb-1">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="shrink-0 w-32 space-y-2">
+              <Skeleton className="w-32 h-32 rounded-xl" />
+              <Skeleton className="h-3 w-28" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Live + Flash skeleton */}
+      <section className="px-4 mt-6">
+        <div className="flex items-end justify-between">
+          <div className="flex items-start gap-2.5">
+            <Skeleton className="w-8 h-8 rounded-xl" />
+            <div className="space-y-1.5">
+              <Skeleton className="h-4 w-44" />
+              <Skeleton className="h-3 w-52" />
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-3 overflow-hidden mt-3 -mx-1 px-1 pb-1">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="shrink-0 w-32 aspect-[3/4] rounded-2xl" />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
 
 function SectionHeader({ title, subtitle, icon: Icon }: { title: string; subtitle?: string; icon?: LucideIcon }) {
   return (
