@@ -2,18 +2,18 @@ import { useState } from "react";
 import { toast } from "sonner";
 import {
   TrendingUp, Sparkles, LayoutGrid, Building2, Compass, Users, Home as HomeIcon, Store as StoreIcon,
-  Globe2, Award, Newspaper, Zap, ShieldCheck, Truck, Flame,
+  Globe2, Award, Newspaper, Zap, ShieldCheck, Truck, Flame, Menu, X, FileText, Package, GitCompare, Wallet, BadgePercent,
   type LucideIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Promo3DCarousel from "@/components/marketplace/Promo3DCarousel";
 import ProductCard from "@/components/marketplace/ProductCard";
 import TopSuppliers from "@/components/marketplace/TopSuppliers";
 import VerticalFeed from "@/components/marketplace/VerticalFeed";
 import SuppliersNearMe from "@/components/marketplace/SuppliersNearMe";
 import LiveStatsBanner from "@/components/marketplace/LiveStatsBanner";
-import QuickActions from "@/components/marketplace/QuickActions";
 import BrandSpotlight from "@/components/marketplace/BrandSpotlight";
 import RegionSourcing from "@/components/marketplace/RegionSourcing";
 import LiveFeed from "@/components/marketplace/LiveFeed";
@@ -21,7 +21,6 @@ import LiveStreamsRail from "@/components/marketplace/LiveStreamsRail";
 import PromoTile from "@/components/marketplace/PromoTile";
 import CategoryCallout from "@/components/marketplace/CategoryCallout";
 import RecommendationStrip from "@/components/marketplace/RecommendationStrip";
-import DepartmentsBar from "@/components/marketplace/DepartmentsBar";
 import NewsRail from "@/components/marketplace/NewsRail";
 import StaysRail from "@/components/marketplace/StaysRail";
 import AutoRail from "@/components/marketplace/AutoRail";
