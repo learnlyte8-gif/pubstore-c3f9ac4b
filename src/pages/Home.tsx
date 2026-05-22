@@ -43,7 +43,9 @@ import { useClickAffinity, useRefreshFeed } from "@/hooks/usePersonalizationLog"
 import { useTradeMode } from "@/hooks/useTradeMode";
 import TradeModeSwitch from "@/components/marketplace/TradeModeSwitch";
 import { useWallet } from "@/hooks/useWallet";
-import { Wallet as WalletIcon, Plus, RefreshCw } from "lucide-react";
+import { Wallet as WalletIcon, Plus, RefreshCw, Radio, Eye } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 type Tab = "home" | "fyp" | "following";
 const TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
