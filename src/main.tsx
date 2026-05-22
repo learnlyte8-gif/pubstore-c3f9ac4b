@@ -31,6 +31,22 @@ window.addEventListener("dragstart", (e) => {
 document.addEventListener("gesturestart", (e) => e.preventDefault());
 
 // ---------------------------------------------------------------------------
+// Swallow Supabase auth-token lock contention errors. These happen when
+// multiple tabs / hooks race to refresh the session and the navigator.locks
+// mutex is "stolen" — the SDK still recovers on the next call, but the
+// AbortError otherwise surfaces as a noisy unhandled rejection that can
+// look like a network outage.
+// ---------------------------------------------------------------------------
+window.addEventListener("unhandledrejection", (e) => {
+  const msg = String((e.reason as { message?: string })?.message ?? e.reason ?? "");
+  if (
+    msg.includes("Lock") && (msg.includes("stolen") || msg.includes("steal") || msg.includes("released"))
+  ) {
+    e.preventDefault();
+  }
+});
+
+// ---------------------------------------------------------------------------
 // Service Worker registration (push-only, no offline caching)
 // ---------------------------------------------------------------------------
 // Only register outside the Lovable preview iframe so we don't pollute the
