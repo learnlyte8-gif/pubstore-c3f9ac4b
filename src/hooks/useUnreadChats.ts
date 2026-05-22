@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const chunk = <T,>(items: T[], size: number) => {
@@ -44,14 +44,19 @@ export type ConversationUnread = {
  * Tracks unread message counts per conversation for the current user.
  * "Unread" = messages from someone else, newer than the locally-stored
  * last-read timestamp for that conversation.
+ *
+ * Performance: avoids the auth-token lock (uses getSession), debounces
+ * realtime recomputes, and applies incremental updates from new-message
+ * payloads instead of refetching every conversation's count.
  */
 export function useUnreadChats() {
   const [userId, setUserId] = useState<string | null>(null);
   const [perConversation, setPerConversation] = useState<Record<string, number>>({});
   const [chatsWithUnread, setChatsWithUnread] = useState(0);
+  const convIdsRef = useRef<Set<string>>(new Set());
+  const debounceRef = useRef<number | null>(null);
 
   const recompute = useCallback(async (uid: string) => {
-    // Get all conversations the user participates in (buyer or supplier owner)
     const { data: buyerConvs } = await supabase
       .from("conversations")
       .select("id, last_message_at")
@@ -73,6 +78,7 @@ export function useUnreadChats() {
       supConvs = batches.flat();
     }
     const all = [...(buyerConvs ?? []), ...supConvs].filter((c, i, arr) => arr.findIndex((x) => x.id === c.id) === i);
+    convIdsRef.current = new Set(all.map((c) => c.id));
     if (all.length === 0) {
       setPerConversation({});
       setChatsWithUnread(0);
@@ -80,7 +86,6 @@ export function useUnreadChats() {
     }
 
     const lastRead = readMap();
-    // Fetch unread message counts in parallel
     const counts = await Promise.all(
       all.map(async (c) => {
         const since = lastRead[c.id] ?? "1970-01-01T00:00:00Z";
@@ -103,45 +108,74 @@ export function useUnreadChats() {
     setChatsWithUnread(chats);
   }, []);
 
+  const scheduleRecompute = useCallback((uid: string) => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      void recompute(uid);
+    }, 800);
+  }, [recompute]);
+
   useEffect(() => {
     let alive = true;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      // getSession reads from local storage — no auth-token lock contention
+      const { data: { session } } = await supabase.auth.getSession();
       if (!alive) return;
-      if (!user) {
+      const uid = session?.user?.id ?? null;
+      if (!uid) {
         setUserId(null);
         setPerConversation({});
         setChatsWithUnread(0);
         return;
       }
-      setUserId(user.id);
-      recompute(user.id);
+      setUserId(uid);
+      void recompute(uid);
     })();
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       if (!alive) return;
       const uid = s?.user?.id ?? null;
       setUserId(uid);
-      if (uid) recompute(uid);
+      if (uid) void recompute(uid);
       else { setPerConversation({}); setChatsWithUnread(0); }
     });
-    return () => { alive = false; sub.subscription.unsubscribe(); };
+    return () => {
+      alive = false;
+      sub.subscription.unsubscribe();
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    };
   }, [recompute]);
 
-  // Realtime: refresh on new messages or local read updates
+  // Realtime: incremental update on new messages; debounced full recompute
+  // on conversation list changes.
   useEffect(() => {
     if (!userId) return;
     const ch = supabase
-      .channel(`unread-chats:${userId}:${Math.random().toString(36).slice(2)}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, () => recompute(userId))
-      .on("postgres_changes", { event: "*", schema: "public", table: "conversations" }, () => recompute(userId))
+      .channel(`unread-chats:${userId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+        const m: any = payload.new;
+        if (!m || m.sender_id === userId) return;
+        // If we know this conversation, just bump its counter. Otherwise
+        // schedule a (debounced) full recompute to discover it.
+        if (convIdsRef.current.has(m.conversation_id)) {
+          setPerConversation((prev) => {
+            const next = { ...prev, [m.conversation_id]: (prev[m.conversation_id] ?? 0) + 1 };
+            const chats = Object.values(next).filter((n) => (n as number) > 0).length;
+            setChatsWithUnread(chats);
+            return next;
+          });
+        } else {
+          scheduleRecompute(userId);
+        }
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "conversations" }, () => scheduleRecompute(userId))
       .subscribe();
-    const onRead = () => recompute(userId);
+    const onRead = () => scheduleRecompute(userId);
     window.addEventListener("pubstore:chat-read", onRead);
     return () => {
       supabase.removeChannel(ch);
       window.removeEventListener("pubstore:chat-read", onRead);
     };
-  }, [userId, recompute]);
+  }, [userId, scheduleRecompute]);
 
   return { perConversation, chatsWithUnread };
 }
