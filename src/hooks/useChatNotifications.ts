@@ -21,17 +21,24 @@ export function useChatNotifications() {
     const recentToasts = new Map<string, number>();
 
     const loadConvIds = async (uid: string) => {
+      // Cap each source to the most recently active rooms — toasts only need
+      // to fire for live chats, not the full historical inbox.
       const [{ data: buyerC }, { data: mySup }, { data: memberC }] = await Promise.all([
-        supabase.from("conversations").select("id").eq("buyer_id", uid),
-        supabase.from("suppliers").select("id").eq("owner_id", uid),
-        supabase.from("conversation_members").select("conversation_id").eq("user_id", uid),
+        supabase.from("conversations").select("id").eq("buyer_id", uid)
+          .order("last_message_at", { ascending: false, nullsFirst: false }).limit(100),
+        supabase.from("suppliers").select("id").eq("owner_id", uid).limit(20),
+        supabase.from("conversation_members").select("conversation_id")
+          .eq("user_id", uid).limit(100),
       ]);
       convIds.clear();
       (buyerC ?? []).forEach((r: any) => convIds.add(r.id));
       (memberC ?? []).forEach((r: any) => convIds.add(r.conversation_id));
       if (mySup?.length) {
         const supIds = mySup.map((s: any) => s.id);
-        const { data: supC } = await supabase.from("conversations").select("id").in("supplier_id", supIds);
+        const { data: supC } = await supabase.from("conversations").select("id")
+          .in("supplier_id", supIds)
+          .order("last_message_at", { ascending: false, nullsFirst: false })
+          .limit(100);
         (supC ?? []).forEach((r: any) => convIds.add(r.id));
       }
     };
