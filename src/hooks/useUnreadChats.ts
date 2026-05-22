@@ -159,7 +159,7 @@ export function useUnreadChats() {
         if (convIdsRef.current.has(m.conversation_id)) {
           setPerConversation((prev) => {
             const next = { ...prev, [m.conversation_id]: (prev[m.conversation_id] ?? 0) + 1 };
-            const chats = Object.values(next).filter((n) => n > 0).length;
+            const chats = Object.values(next).filter((n) => (n as number) > 0).length;
             setChatsWithUnread(chats);
             return next;
           });
