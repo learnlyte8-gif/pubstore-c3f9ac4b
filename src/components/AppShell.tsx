@@ -13,7 +13,6 @@ import BannerAd from "@/components/marketplace/BannerAd";
 import ImportProgressBanner from "@/components/ImportProgressBanner";
 import TapsonAssistant from "@/components/TapsonAssistant";
 import { useUnreadChats } from "@/hooks/useUnreadChats";
-import { useChatNotifications } from "@/hooks/useChatNotifications";
 import logo from "@/assets/pubstore-logo.png";
 
 let shellNotifChannelNonce = 0;
