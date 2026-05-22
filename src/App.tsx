@@ -56,7 +56,20 @@ import CarRentals from "./pages/CarRentals.tsx";
 import UserProfile from "./pages/UserProfile.tsx";
 import GroupBuyDetail from "./pages/GroupBuyDetail.tsx";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Keep cached data fresh for 60s and in memory for 5min so navigating
+      // between pages doesn't reset every screen to a "Loading…" state.
+      staleTime: 60_000,
+      gcTime: 5 * 60_000,
+      retry: 2,
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 4000),
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+    },
+  },
+});
 
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
