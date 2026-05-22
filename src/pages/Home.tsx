@@ -46,6 +46,7 @@ import { useWallet } from "@/hooks/useWallet";
 import { Wallet as WalletIcon, Plus, RefreshCw, Radio, Eye } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Tab = "home" | "fyp" | "following";
 const TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
