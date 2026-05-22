@@ -17,6 +17,7 @@ import SocialActions from "@/components/social/SocialActions";
 import InquiryGateDialog from "@/components/marketplace/InquiryGateDialog";
 import { isApprovalExpired } from "@/lib/inquiryGate";
 import { supabase } from "@/integrations/supabase/client";
+import CircleSpinner from "@/components/CircleSpinner";
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
 

@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { FilterBar, FilterField, SortPills } from "@/components/marketplace/FilterBar";
 import { Slider } from "@/components/ui/slider";
+import CircleSpinner from "@/components/CircleSpinner";
 
 const CATS = [
   { id: "all", label: "All" },

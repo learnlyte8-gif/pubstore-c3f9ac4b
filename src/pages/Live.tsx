@@ -19,6 +19,7 @@ import { useShop } from "@/store/shop";
 import { toast } from "sonner";
 import { fetchSupplier, fetchProducts, type Supplier, type Product } from "@/data/products";
 import EmptyState from "@/components/EmptyState";
+import CircleSpinner from "@/components/CircleSpinner";
 
 type DbStream = {
   id: string;

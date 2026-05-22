@@ -4,6 +4,7 @@ import {
   ArrowLeft, Package, FileText, MessageCircle, TrendingDown, Bell, CheckCheck, Truck, Sparkles, Trash2, ShoppingBag, UserPlus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import CircleSpinner from "@/components/CircleSpinner";
 
 type Notif = {
   id: string;

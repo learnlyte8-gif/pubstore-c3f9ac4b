@@ -7,6 +7,7 @@ import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { FilterBar, FilterField, SortPills } from "@/components/marketplace/FilterBar";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
+import CircleSpinner from "@/components/CircleSpinner";
 
 const CATS = [
   { id: "all", label: "All", icon: Factory },

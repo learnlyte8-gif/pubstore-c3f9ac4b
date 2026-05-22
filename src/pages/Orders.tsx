@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useShop } from "@/store/shop";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import CircleSpinner from "@/components/CircleSpinner";
 
 type OrderStatus = "awaiting_payment" | "placed" | "processing" | "shipped" | "delivered" | "cancelled";
 

@@ -11,6 +11,7 @@ import { fetchCarRental, fetchCarRentals, CAR_RENTAL_CLASSES, type CarRental } f
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
+import CircleSpinner from "@/components/CircleSpinner";
 
 export default function CarRentals() {
   const { id } = useParams();

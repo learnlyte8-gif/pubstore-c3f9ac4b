@@ -12,6 +12,7 @@ import ShareToChatSheet from "@/components/chat/ShareToChatSheet";
 import SupplierCertifications from "@/components/marketplace/SupplierCertifications";
 import SupplierInspectionReports from "@/components/marketplace/SupplierInspectionReports";
 import type { ChatAttachment } from "@/components/chat/AttachmentCard";
+import CircleSpinner from "@/components/CircleSpinner";
 
 export default function Supplier() {
   const { id } = useParams<{ id: string }>();
