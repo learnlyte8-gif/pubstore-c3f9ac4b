@@ -171,7 +171,7 @@ const Home = () => {
           )}
 
           {isLoading ? (
-            <p className="px-4 py-8 text-center text-sm text-muted-foreground">Loading marketplace…</p>
+            <HomeRailsSkeleton />
           ) : products.length === 0 ? (
             <div className="px-4 mt-4">
               <EmptyState
