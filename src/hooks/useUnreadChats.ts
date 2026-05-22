@@ -91,11 +91,25 @@ const resetState = () => {
   setState(EMPTY_STATE);
 };
 
+// Cap the number of conversations we actively track unread counts for. The
+// long tail of dormant chats can balloon to hundreds; the badge only cares
+// about the most recently active rooms.
+const TRACKED_CONVERSATION_LIMIT = 80;
+
 const loadTrackedConversations = async (uid: string): Promise<ConversationRef[]> => {
   const [{ data: buyerConvs }, { data: mySup }, { data: memberRows }] = await Promise.all([
-    supabase.from("conversations").select("id, last_message_at").eq("buyer_id", uid),
+    supabase
+      .from("conversations")
+      .select("id, last_message_at")
+      .eq("buyer_id", uid)
+      .order("last_message_at", { ascending: false, nullsFirst: false })
+      .limit(TRACKED_CONVERSATION_LIMIT),
     supabase.from("suppliers").select("id").eq("owner_id", uid),
-    supabase.from("conversation_members").select("conversation_id").eq("user_id", uid),
+    supabase
+      .from("conversation_members")
+      .select("conversation_id")
+      .eq("user_id", uid)
+      .limit(TRACKED_CONVERSATION_LIMIT),
   ]);
 
   let supConvs: ConversationRef[] = [];
@@ -106,7 +120,9 @@ const loadTrackedConversations = async (uid: string): Promise<ConversationRef[]>
         const { data } = await supabase
           .from("conversations")
           .select("id, last_message_at")
-          .in("supplier_id", group);
+          .in("supplier_id", group)
+          .order("last_message_at", { ascending: false, nullsFirst: false })
+          .limit(TRACKED_CONVERSATION_LIMIT);
         return (data ?? []) as ConversationRef[];
       }),
     );
@@ -128,9 +144,16 @@ const loadTrackedConversations = async (uid: string): Promise<ConversationRef[]>
     memberConvs = batches.flat();
   }
 
-  return [...(buyerConvs ?? []), ...supConvs, ...memberConvs].filter(
+  const merged = [...(buyerConvs ?? []), ...supConvs, ...memberConvs].filter(
     (conversation, index, all) => all.findIndex((candidate) => candidate.id === conversation.id) === index,
   );
+  // Keep the freshest conversations only so recompute() stays O(LIMIT) COUNTs.
+  merged.sort((a, b) => {
+    const ta = a.last_message_at ? Date.parse(a.last_message_at) : 0;
+    const tb = b.last_message_at ? Date.parse(b.last_message_at) : 0;
+    return tb - ta;
+  });
+  return merged.slice(0, TRACKED_CONVERSATION_LIMIT);
 };
 
 const recompute = async (uid: string) => {
