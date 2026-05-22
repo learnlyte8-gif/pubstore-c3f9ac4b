@@ -5,6 +5,7 @@ import {
   Search, Send, ShieldCheck, ArrowLeft, MessageCircle, Sparkles,
   Image as ImageIcon, Heart, Phone, Video, Info, Mic, Camera,
   Reply, Forward, Copy, Trash2, SmilePlus, X, Check,
+  Users, Store, Hash, PenSquare, UserPlus, Inbox, Paperclip,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveMasterSupplierId, fetchProducts, type Product } from "@/data/products";
