@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { getPushState, subscribeToPush, unsubscribeFromPush, isPushSupported } from "@/lib/push";
+import CircleSpinner from "@/components/CircleSpinner";
 
 type Prefs = {
   inapp_followed_supplier_new_product: boolean;

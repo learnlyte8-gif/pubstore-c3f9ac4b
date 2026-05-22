@@ -8,6 +8,7 @@ import { FilterBar, FilterField, SortPills } from "@/components/marketplace/Filt
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import SaveHeart from "@/components/marketplace/SaveHeart";
+import CircleSpinner from "@/components/CircleSpinner";
 
 const KINDS = [
   { id: "all", label: "All", icon: Sprout },

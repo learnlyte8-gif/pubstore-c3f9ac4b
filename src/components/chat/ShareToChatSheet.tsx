@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import AttachmentCard, { type ChatAttachment } from "./AttachmentCard";
 import { logShare } from "@/hooks/useSocial";
+import CircleSpinner from "@/components/CircleSpinner";
 
 type Recipient = {
   // Stable key — for existing convs we use the conversation id; for new DM

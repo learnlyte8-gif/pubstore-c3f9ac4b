@@ -5,6 +5,7 @@ import { useGroupBuy, useGroupBuyMembers, useGroupBuyRealtime, useJoinGroupBuy }
 import { useAuthUserId } from "@/hooks/useSocial";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import CircleSpinner from "@/components/CircleSpinner";
 
 export default function GroupBuyDetail() {
   const { id } = useParams<{ id: string }>();

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { fetchMyConnections, fetchSuggestedSeekers, type JobSeekerProfile } from "@/data/jobs";
 import EmptyState from "@/components/EmptyState";
+import CircleSpinner from "@/components/CircleSpinner";
 
 type Tab = "discover" | "requests" | "connections";
 

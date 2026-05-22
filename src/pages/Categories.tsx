@@ -14,6 +14,7 @@ import {
   rankByAffinity,
 } from "@/hooks/useInterests";
 import { useTradeMode } from "@/hooks/useTradeMode";
+import CircleSpinner from "@/components/CircleSpinner";
 
 const ALL_ID = "__all__";
 

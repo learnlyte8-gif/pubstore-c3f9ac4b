@@ -11,6 +11,7 @@ import ShareToChatSheet from "@/components/chat/ShareToChatSheet";
 import type { ChatAttachment } from "@/components/chat/AttachmentCard";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import type { SaveKind } from "@/hooks/useSaves";
+import CircleSpinner from "@/components/CircleSpinner";
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
 

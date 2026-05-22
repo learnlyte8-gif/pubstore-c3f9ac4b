@@ -16,6 +16,7 @@ import InquiryApprovalPanel from "@/components/marketplace/InquiryApprovalPanel"
 import PendingInquiriesInbox from "@/components/marketplace/PendingInquiriesInbox";
 import { toast } from "@/hooks/use-toast";
 import DiscoverPeople from "@/components/social/DiscoverPeople";
+import CircleSpinner from "@/components/CircleSpinner";
 
 let messageChannelNonce = 0;
 

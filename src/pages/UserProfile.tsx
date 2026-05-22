@@ -5,6 +5,7 @@ import { useUserFollowCounts } from "@/hooks/useSocial";
 import FollowUserButton from "@/components/social/FollowUserButton";
 import { ArrowLeft, MessageCircle, Heart, Share2 } from "lucide-react";
 import { toast } from "sonner";
+import CircleSpinner from "@/components/CircleSpinner";
 
 type Profile = {
   user_id: string;
