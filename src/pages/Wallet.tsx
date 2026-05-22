@@ -185,8 +185,32 @@ export default function WalletPage() {
             <p className="text-4xl font-black tracking-tighter tabular-nums leading-none">{fmt(balance)}</p>
             <p className="text-[11px] opacity-75 mt-2">Use at checkout on any product, any supplier.</p>
           </div>
+
+          <div className="grid grid-cols-2 gap-2 mt-3">
+            <button
+              onClick={() => setSendOpen(true)}
+              disabled={!userId}
+              className="h-11 rounded-xl bg-primary-foreground text-primary font-black text-sm flex items-center justify-center gap-1.5 disabled:opacity-50 shadow-soft"
+            >
+              <Send className="w-4 h-4" /> Send
+            </button>
+            <a
+              href="#add-money"
+              className="h-11 rounded-xl bg-primary-foreground/15 backdrop-blur border border-primary-foreground/30 text-primary-foreground font-black text-sm flex items-center justify-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" /> Add money
+            </a>
+          </div>
         </div>
       </div>
+
+      <SendMoneyDialog
+        open={sendOpen}
+        onOpenChange={setSendOpen}
+        balance={balance}
+        currentUserId={userId}
+        onSent={refresh}
+      />
 
       {/* Capturing banner (returning from PayPal) */}
       {capturing && (
