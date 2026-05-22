@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, Loader2, ShieldCheck, Zap, Smartphone, CreditCard } from "lucide-react";
+import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, Loader2, ShieldCheck, Zap, Smartphone, CreditCard, Send } from "lucide-react";
+import SendMoneyDialog from "@/components/wallet/SendMoneyDialog";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/useWallet";
@@ -25,6 +26,7 @@ export default function WalletPage() {
   const [capturing, setCapturing] = useState(false);
   const [provider, setProvider] = useState<Provider>("pesepay");
   const [customAmount, setCustomAmount] = useState<string>("");
+  const [sendOpen, setSendOpen] = useState(false);
 
   const captureRanRef = useRef(false);
   const pesepayRanRef = useRef(false);
@@ -183,8 +185,32 @@ export default function WalletPage() {
             <p className="text-4xl font-black tracking-tighter tabular-nums leading-none">{fmt(balance)}</p>
             <p className="text-[11px] opacity-75 mt-2">Use at checkout on any product, any supplier.</p>
           </div>
+
+          <div className="grid grid-cols-2 gap-2 mt-3">
+            <button
+              onClick={() => setSendOpen(true)}
+              disabled={!userId}
+              className="h-11 rounded-xl bg-primary-foreground text-primary font-black text-sm flex items-center justify-center gap-1.5 disabled:opacity-50 shadow-soft"
+            >
+              <Send className="w-4 h-4" /> Send
+            </button>
+            <a
+              href="#add-money"
+              className="h-11 rounded-xl bg-primary-foreground/15 backdrop-blur border border-primary-foreground/30 text-primary-foreground font-black text-sm flex items-center justify-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" /> Add money
+            </a>
+          </div>
         </div>
       </div>
+
+      <SendMoneyDialog
+        open={sendOpen}
+        onOpenChange={setSendOpen}
+        balance={balance}
+        currentUserId={userId}
+        onSent={refresh}
+      />
 
       {/* Capturing banner (returning from PayPal) */}
       {capturing && (
@@ -197,8 +223,8 @@ export default function WalletPage() {
       )}
 
       {/* Top-up amounts */}
-      <div className={`px-4 relative z-10 ${capturing ? "mt-3" : "-mt-6"}`}>
-        <div className="bg-card rounded-2xl border border-border shadow-elevated p-4">
+      <div id="add-money" className={`px-4 relative z-10 ${capturing ? "mt-3" : "-mt-6"}`}>
+        <div className="bg-card rounded-2xl border border-border shadow-elevated p-4 scroll-mt-4">
           <div className="flex items-center gap-1.5 mb-3">
             <Plus className="w-4 h-4 text-primary" />
             <p className="text-sm font-black tracking-tight">Add money</p>

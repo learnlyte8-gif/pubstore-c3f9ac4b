@@ -4628,6 +4628,25 @@ export type Database = {
         Args: { _supplier_id: string }
         Returns: string
       }
+      transfer_wallet_funds: {
+        Args: { _amount: number; _note?: string; _recipient_id: string }
+        Returns: {
+          amount: number
+          balance_after: number
+          created_at: string
+          description: string | null
+          id: string
+          kind: string
+          reference: string | null
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "wallet_transactions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       app_role: "supplier" | "buyer" | "admin"
