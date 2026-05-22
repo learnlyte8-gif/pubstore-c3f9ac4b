@@ -5,6 +5,7 @@ import {
   Search, Send, ShieldCheck, ArrowLeft, MessageCircle, Sparkles,
   Image as ImageIcon, Heart, Phone, Video, Info, Mic, Camera,
   Reply, Forward, Copy, Trash2, SmilePlus, X, Check,
+  Users, Store, Hash, PenSquare, UserPlus, Inbox, Paperclip,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveMasterSupplierId, fetchProducts, type Product } from "@/data/products";
@@ -849,27 +850,54 @@ export default function Messages() {
     );
   }
 
+  const totalUnread = Object.values(perConversation).reduce((a, b) => a + b, 0);
+  const tabMeta = [
+    { k: "unread" as const, label: "Unread", Icon: Inbox },
+    { k: "suppliers" as const, label: "Suppliers", Icon: Store },
+    { k: "people" as const, label: "People", Icon: Users },
+    { k: "groups" as const, label: "Groups", Icon: Hash },
+    { k: "discover" as const, label: "Discover", Icon: UserPlus },
+  ];
+
   return (
-    <div className="pb-8">
+    <div className="pb-24 relative">
       <div className="px-4 pt-4 pb-3 border-b border-border/60 glass-strong sticky top-14 z-10">
         <div className="flex items-center justify-between mb-3">
-          <h1 className="text-2xl font-extrabold tracking-tight"><span className="text-gradient-ig">Messages</span></h1>
-          <span className="text-[11px] font-semibold text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
-            {filtered.length} {filtered.length === 1 ? "chat" : "chats"}
-          </span>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-extrabold tracking-tight leading-none"><span className="text-gradient-ig">Messages</span></h1>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {totalUnread > 0
+                ? <><span className="font-semibold text-foreground">{totalUnread}</span> unread · {filtered.length} {filtered.length === 1 ? "chat" : "chats"}</>
+                : <>{filtered.length} {filtered.length === 1 ? "conversation" : "conversations"}</>}
+            </p>
+          </div>
+          <button
+            onClick={() => setTab("discover")}
+            className="h-9 pl-3 pr-3.5 rounded-full bg-ig-gradient text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-pop active:scale-95 transition"
+          >
+            <PenSquare className="w-3.5 h-3.5" /> New
+          </button>
         </div>
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search conversations" className="w-full h-10 pl-9 pr-3 rounded-full bg-muted text-sm outline-none focus:ring-2 focus:ring-primary/40" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search people, suppliers, groups"
+            className="w-full h-10 pl-9 pr-9 rounded-full bg-muted text-sm outline-none focus:ring-2 focus:ring-primary/40"
+          />
+          {search && (
+            <button onClick={() => setSearch("")} aria-label="Clear" className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-background/60">
+              <X className="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+          )}
         </div>
-        <div className="mt-3 flex items-center gap-1 overflow-x-auto no-scrollbar">
-          {([
-            ["unread", "Unread"], ["suppliers", "Suppliers"], ["people", "People"], ["groups", "Groups"], ["discover", "Discover"],
-          ] as const).map(([k, label]) => {
-            const active = tab === k;
+        <div className="mt-3 flex items-center gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1">
+          {tabMeta.map(({ k, label, Icon }) => {
+            const isActive = tab === k;
             const count = k === "unread"
               ? Object.values(perConversation).filter((n) => n > 0).length
-              : conversations.filter((c) => {
+              : k === "discover" ? 0 : conversations.filter((c) => {
                   const ck = c.kind ?? "buyer_supplier";
                   if (k === "suppliers") return ck === "buyer_supplier";
                   if (k === "people") return ck === "dm";
@@ -880,9 +908,21 @@ export default function Messages() {
               <button
                 key={k}
                 onClick={() => setTab(k)}
-                className={`h-8 px-3 rounded-full text-xs font-bold whitespace-nowrap transition ${active ? "bg-foreground text-background" : "bg-muted text-muted-foreground"}`}
+                className={`h-8 px-3 rounded-full text-xs font-bold whitespace-nowrap inline-flex items-center gap-1.5 transition active:scale-95 ${
+                  isActive
+                    ? "bg-foreground text-background shadow-soft"
+                    : "bg-muted text-muted-foreground hover:bg-muted/70"
+                }`}
               >
-                {label}{count > 0 && <span className={`ml-1.5 ${active ? "opacity-80" : ""}`}>{count}</span>}
+                <Icon className="w-3.5 h-3.5" strokeWidth={2.2} />
+                {label}
+                {count > 0 && (
+                  <span className={`min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center ${
+                    isActive ? "bg-background/20 text-background" : k === "unread" ? "bg-ig-gradient text-white" : "bg-background/80 text-foreground"
+                  }`}>
+                    {count > 99 ? "99+" : count}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -905,7 +945,7 @@ export default function Messages() {
         <div className="px-4 pt-4 space-y-3">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="flex items-center gap-3 animate-pulse">
-              <div className="w-12 h-12 rounded-full bg-muted" />
+              <div className="w-13 h-13 rounded-full bg-muted" style={{ width: 52, height: 52 }} />
               <div className="flex-1 space-y-2">
                 <div className="h-3 w-1/3 rounded bg-muted" />
                 <div className="h-3 w-2/3 rounded bg-muted" />
@@ -914,56 +954,94 @@ export default function Messages() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-24 px-6 animate-fade-in">
+        <div className="text-center py-20 px-6 animate-fade-in">
           <div className="relative w-20 h-20 mx-auto mb-4">
             <div className="absolute inset-0 rounded-full bg-ig-gradient opacity-20 blur-xl" />
             <div className="relative w-full h-full rounded-full bg-ig-gradient flex items-center justify-center shadow-pop">
               <MessageCircle className="w-9 h-9 text-white" strokeWidth={2} />
             </div>
           </div>
-          <p className="text-base font-bold">No conversations yet</p>
-          <p className="text-xs text-muted-foreground mt-1.5 max-w-[260px] mx-auto">
-            Open a supplier's store and tap <span className="font-semibold text-foreground">Contact supplier</span> to start chatting.
+          <p className="text-base font-bold">
+            {tab === "unread" ? "You're all caught up" : search ? "No matches" : "No conversations yet"}
           </p>
+          <p className="text-xs text-muted-foreground mt-1.5 max-w-[280px] mx-auto">
+            {tab === "unread"
+              ? "New messages will show up here."
+              : tab === "groups"
+              ? "Start a group buy from any product to chat with buyers."
+              : tab === "people"
+              ? "Find friends to chat with in Discover."
+              : search
+              ? "Try a different name or keyword."
+              : "Open a supplier's store and tap Contact supplier to start chatting."}
+          </p>
+          {(tab === "people" || (tab === "unread" && conversations.length === 0)) && (
+            <button
+              onClick={() => setTab("discover")}
+              className="mt-5 h-10 px-4 rounded-full bg-ig-gradient text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-pop active:scale-95 transition"
+            >
+              <UserPlus className="w-4 h-4" /> Find people
+            </button>
+          )}
         </div>
       ) : (
-        <ul className="px-2 pt-2">
+        <ul className="px-2 pt-2 divide-y divide-border/40">
           {filtered.map((c, i) => {
             const unread = perConversation[c.id] ?? 0;
+            const kind = c.kind ?? "buyer_supplier";
+            const kindMeta =
+              kind === "group_buy"
+                ? { label: "Group", Icon: Hash, className: "bg-ig-gradient text-white" }
+                : kind === "dm"
+                ? { label: "DM", Icon: Users, className: "bg-primary/15 text-primary" }
+                : { label: "Supplier", Icon: Store, className: "bg-muted text-muted-foreground" };
+            const snippet = c.last_message?.trim();
+            const isAttachment = !snippet || /^(shared|sent)/i.test(snippet);
             return (
-              <li key={c.id} style={{ animationDelay: `${i * 40}ms` }} className="animate-fade-in">
+              <li key={c.id} style={{ animationDelay: `${i * 30}ms` }} className="animate-fade-in">
                 <button
                   onClick={() => setActiveId(c.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl active:scale-[0.99] transition text-left ${unread > 0 ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-muted/60"}`}
+                  className={`group relative w-full flex items-center gap-3 px-3 py-3 active:scale-[0.995] transition text-left ${
+                    unread > 0 ? "bg-primary/[0.04] hover:bg-primary/[0.08]" : "hover:bg-muted/50"
+                  }`}
                 >
+                  {unread > 0 && <span className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r bg-ig-gradient" />}
                   <div className="relative shrink-0">
-                    <div className="ring-gradient rounded-full p-[2px]" style={{ width: 52, height: 52 }}>
+                    <div className={`${unread > 0 || kind !== "buyer_supplier" ? "ring-gradient" : "bg-border/60"} rounded-full p-[2px]`} style={{ width: 56, height: 56 }}>
                       {c.peer?.logo ? (
                         <img src={c.peer.logo} alt="" className="w-full h-full rounded-full object-cover bg-card" />
                       ) : (
-                        <div className="w-full h-full rounded-full bg-muted flex items-center justify-center text-sm font-bold">
-                          {(c.peer?.name ?? c.supplier?.name ?? "S")[0]}
+                        <div className={`w-full h-full rounded-full flex items-center justify-center text-base font-extrabold ${
+                          kind === "group_buy" ? "bg-ig-gradient text-white" : "bg-muted text-foreground"
+                        }`}>
+                          {kind === "group_buy" ? <Hash className="w-5 h-5" /> : (c.peer?.name ?? c.supplier?.name ?? "S")[0]?.toUpperCase()}
                         </div>
                       )}
                     </div>
-                    <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-background" />
+                    {kind === "dm" && (
+                      <span className="absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-background" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <p className={`text-sm truncate flex items-center gap-1 ${unread > 0 ? "font-extrabold" : "font-bold"}`}>
-                        {c.peer?.name ?? c.supplier?.name ?? "Conversation"}
+                      <p className={`text-[15px] truncate flex items-center gap-1.5 ${unread > 0 ? "font-extrabold" : "font-bold"}`}>
+                        <span className="truncate">{c.peer?.name ?? c.supplier?.name ?? "Conversation"}</span>
                         {c.peer?.verified && <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0 fill-primary/20" />}
                       </p>
-                      <span className={`text-[10px] shrink-0 ${unread > 0 ? "text-primary font-bold" : "text-muted-foreground"}`}>
+                      <span className={`text-[10px] shrink-0 tabular-nums ${unread > 0 ? "text-primary font-bold" : "text-muted-foreground"}`}>
                         {fmtTime(c.last_message_at)}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between gap-2 mt-0.5">
-                      <p className={`text-xs truncate ${unread > 0 ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
-                        {c.last_message ?? "No messages yet — say hi 👋"}
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className={`inline-flex items-center gap-0.5 px-1.5 py-[1px] rounded-full text-[9px] font-bold uppercase tracking-wider shrink-0 ${kindMeta.className}`}>
+                        <kindMeta.Icon className="w-2.5 h-2.5" /> {kindMeta.label}
+                      </span>
+                      <p className={`text-xs truncate flex-1 inline-flex items-center gap-1 ${unread > 0 ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
+                        {isAttachment && c.last_message && <Paperclip className="w-3 h-3 shrink-0" />}
+                        <span className="truncate">{snippet || "No messages yet — say hi 👋"}</span>
                       </p>
                       {unread > 0 && (
-                        <span className="shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center shadow-soft">
+                        <span className="shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-ig-gradient text-white text-[10px] font-bold flex items-center justify-center shadow-soft">
                           {unread > 99 ? "99+" : unread}
                         </span>
                       )}
@@ -974,6 +1052,16 @@ export default function Messages() {
             );
           })}
         </ul>
+      )}
+
+      {tab !== "discover" && !loading && (
+        <button
+          onClick={() => setTab("discover")}
+          aria-label="Find people"
+          className="fixed right-4 bottom-24 z-40 h-14 w-14 rounded-full bg-ig-gradient text-white shadow-elevated flex items-center justify-center active:scale-90 transition"
+        >
+          <PenSquare className="w-5 h-5" />
+        </button>
       )}
     </div>
   );
