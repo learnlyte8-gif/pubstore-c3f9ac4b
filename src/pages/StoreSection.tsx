@@ -137,7 +137,7 @@ function ImportView() {
 
   const allowed = !!email && ALLOWED_IMPORT_EMAILS.includes(email);
 
-  if (email === null) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+  if (email === null) return <div className="p-8 text-center text-muted-foreground text-sm"><CircleSpinner size={28} /></div>;
 
   if (!allowed) {
     return (
@@ -695,7 +695,7 @@ function ProductsView() {
     exitSelect();
   };
 
-  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm"><CircleSpinner size={28} /></div>;
 
   return (
     <div className="px-4 py-4 space-y-3 pb-32">
@@ -961,7 +961,7 @@ function EditProductView({ productId }: { productId: string }) {
     navigate("/store/products");
   };
 
-  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm"><CircleSpinner size={28} /></div>;
   if (!product) return <EmptyState title="Product not found" description="It may have been deleted." />;
 
   return (
@@ -1203,7 +1203,7 @@ function OrdersView() {
     qc.invalidateQueries({ queryKey: ["store-orders"] });
   };
 
-  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm"><CircleSpinner size={28} /></div>;
   if (!orders.length) {
     return <EmptyState icon={<ShoppingBag className="w-7 h-7 text-muted-foreground" />} title="No orders yet" description="When buyers purchase your products they'll appear here." />;
   }
@@ -1273,7 +1273,7 @@ function AnalyticsView() {
     enabled: !!supplier,
   });
 
-  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm"><CircleSpinner size={28} /></div>;
   if (!data) return <EmptyState title="Create a store first" description="Set up your supplier store to see analytics." />;
 
   const cards = [
@@ -1388,7 +1388,7 @@ function PromoteView() {
     qc.invalidateQueries({ queryKey: ["my-coupons"] });
   };
 
-  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm"><CircleSpinner size={28} /></div>;
 
   return (
     <div className="px-4 py-4 space-y-3">
@@ -1524,7 +1524,7 @@ function ReviewsView() {
     enabled: !!supplier,
   });
 
-  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm"><CircleSpinner size={28} /></div>;
   if (!reviews.length) {
     return <EmptyState icon={<Star className="w-7 h-7 text-muted-foreground" />} title="No reviews yet" description="Buyer reviews will appear here once your products are reviewed." />;
   }
@@ -1839,7 +1839,7 @@ function ServiceShell({
         </Button>
       </div>
       {isLoading ? (
-        <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>
+        <div className="p-8 text-center text-muted-foreground text-sm"><CircleSpinner size={28} /></div>
       ) : items.length === 0 ? (
         <EmptyState
           icon={<Sparkles className="w-7 h-7 text-muted-foreground" />}
@@ -2289,7 +2289,7 @@ function NewsServiceView() {
     if (error) toast.error(error.message); else { toast.success("Removed"); qc.invalidateQueries({ queryKey: ["my-news"] }); }
   };
 
-  if (allowed === null) return <div className="p-8 text-center text-sm text-muted-foreground">Loading…</div>;
+  if (allowed === null) return <div className="p-8 text-center text-sm text-muted-foreground"><CircleSpinner size={28} /></div>;
   if (!allowed) {
     return (
       <div className="px-4 py-8">
@@ -2484,7 +2484,7 @@ function DriverServiceView() {
     qc.invalidateQueries({ queryKey: ["my-driver-profile"] });
   };
 
-  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm"><CircleSpinner size={28} /></div>;
 
   return (
     <div className="px-4 py-4 space-y-4">
@@ -2628,7 +2628,7 @@ function ProServiceView() {
     const { error } = await supabase.from("service_providers").delete().eq("id", id);
     if (error) toast.error(error.message); else { toast.success("Removed"); qc.invalidateQueries({ queryKey: ["my-pros"] }); }
   };
-  if (!userId) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+  if (!userId) return <div className="p-8 text-center text-muted-foreground text-sm"><CircleSpinner size={28} /></div>;
   return (
     <>
       <ServiceShell
@@ -2739,7 +2739,7 @@ function PropertyServiceView() {
     const { error } = await supabase.from("properties").delete().eq("id", id);
     if (error) toast.error(error.message); else { toast.success("Removed"); qc.invalidateQueries({ queryKey: ["my-properties"] }); }
   };
-  if (!userId) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+  if (!userId) return <div className="p-8 text-center text-muted-foreground text-sm"><CircleSpinner size={28} /></div>;
   return (
     <>
       <ServiceShell
@@ -3009,7 +3009,7 @@ function CourierServiceView() {
     else { toast.success("Updated"); qc.invalidateQueries({ queryKey: ["my-courier-partnerships"] }); }
   };
 
-  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm"><CircleSpinner size={28} /></div>;
 
   return (
     <div className="px-4 py-4 space-y-4">
@@ -3165,7 +3165,7 @@ function FinanceServiceView() {
     const { error } = await supabase.from("finance_products").delete().eq("id", id);
     if (error) toast.error(error.message); else { toast.success("Removed"); qc.invalidateQueries({ queryKey: ["my-finance"] }); }
   };
-  if (!userId) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+  if (!userId) return <div className="p-8 text-center text-muted-foreground text-sm"><CircleSpinner size={28} /></div>;
   return (
     <>
       <ServiceShell
@@ -3288,7 +3288,7 @@ function CarRentalServiceView() {
     const { error } = await supabase.from("car_rentals").delete().eq("id", id);
     if (error) toast.error(error.message); else { toast.success("Removed"); qc.invalidateQueries({ queryKey: ["my-car-rentals"] }); }
   };
-  if (!userId) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
+  if (!userId) return <div className="p-8 text-center text-muted-foreground text-sm"><CircleSpinner size={28} /></div>;
   return (
     <>
       <ServiceShell

@@ -308,7 +308,7 @@ export default function WalletPage() {
         <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2 px-1">Activity</p>
         <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
           {isLoading ? (
-            <p className="p-6 text-center text-sm text-muted-foreground">Loading…</p>
+            <p className="p-6 text-center text-sm text-muted-foreground"><CircleSpinner size={28} /></p>
           ) : transactions.length === 0 ? (
             <p className="p-6 text-center text-sm text-muted-foreground">No transactions yet. Add money to get started.</p>
           ) : (

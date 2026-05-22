@@ -117,7 +117,7 @@ function NewsIndex() {
         }
       />
 
-      {isLoading && <p className="px-4 mt-8 text-center text-sm text-muted-foreground">Loading…</p>}
+      {isLoading && <p className="px-4 mt-8 text-center text-sm text-muted-foreground"><CircleSpinner size={28} /></p>}
 
       {!isLoading && filtered.length === 0 && (
         <div className="px-4 mt-10 text-center">

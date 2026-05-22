@@ -73,7 +73,7 @@ export default function Supplier() {
     }
   };
 
-  if (isLoading) return <p className="p-12 text-center text-sm text-muted-foreground">Loading…</p>;
+  if (isLoading) return <p className="p-12 text-center text-sm text-muted-foreground"><CircleSpinner size={28} /></p>;
 
   if (!supplier) {
     return (

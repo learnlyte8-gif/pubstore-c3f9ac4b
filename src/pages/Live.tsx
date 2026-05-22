@@ -130,7 +130,7 @@ function LiveBrowser({
       </div>
 
       {loading ? (
-        <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>
+        <div className="p-8 text-center text-muted-foreground text-sm"><CircleSpinner size={28} /></div>
       ) : streams.length === 0 ? (
         <div className="pt-6">
           <EmptyState

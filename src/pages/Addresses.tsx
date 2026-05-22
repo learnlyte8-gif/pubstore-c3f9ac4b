@@ -100,7 +100,7 @@ export default function Addresses() {
       </header>
 
       <div className="px-4 py-4 space-y-3">
-        {loading && <p className="text-center text-sm text-muted-foreground py-8">Loading…</p>}
+        {loading && <p className="text-center text-sm text-muted-foreground py-8"><CircleSpinner size={28} /></p>}
 
         {!loading && items.length === 0 && !adding && !editing && (
           <div className="text-center py-12">

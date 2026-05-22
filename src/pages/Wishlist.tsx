@@ -121,7 +121,7 @@ export default function Wishlist() {
 
         <TabsContent value="products" className="mt-4">
           {loading ? (
-            <div className="py-10 text-center text-sm text-muted-foreground">Loading…</div>
+            <div className="py-10 text-center text-sm text-muted-foreground"><CircleSpinner size={28} /></div>
           ) : items.length === 0 ? (
             <EmptyBlock
               title="No saved products yet"
@@ -167,7 +167,7 @@ export default function Wishlist() {
 
         <TabsContent value="services" className="mt-4">
           {savedLoading ? (
-            <div className="py-10 text-center text-sm text-muted-foreground">Loading…</div>
+            <div className="py-10 text-center text-sm text-muted-foreground"><CircleSpinner size={28} /></div>
           ) : savedCount === 0 ? (
             <EmptyBlock
               title="No saved services yet"

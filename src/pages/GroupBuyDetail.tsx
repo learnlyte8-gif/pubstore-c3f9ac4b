@@ -17,7 +17,7 @@ export default function GroupBuyDetail() {
   const [qty, setQty] = useState(1);
   const [busy, setBusy] = useState(false);
 
-  if (isLoading) return <div className="px-4 py-10 text-sm text-muted-foreground">Loading…</div>;
+  if (isLoading) return <div className="px-4 py-10 text-sm text-muted-foreground"><CircleSpinner size={28} /></div>;
   if (!gb) return (
     <div className="px-4 py-16 text-center">
       <p className="font-semibold">Group buy not found</p>

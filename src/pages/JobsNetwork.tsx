@@ -89,7 +89,7 @@ export default function JobsNetwork() {
       <main className="px-4 mt-4 space-y-3">
         {tab === "discover" && (
           <>
-            {loadingSuggested && <p className="text-center text-xs text-muted-foreground py-6">Loading…</p>}
+            {loadingSuggested && <p className="text-center text-xs text-muted-foreground py-6"><CircleSpinner size={28} /></p>}
             {!loadingSuggested && filteredSuggestions.length === 0 && (
               <EmptyState icon={<Sparkles className="w-7 h-7 text-muted-foreground" />} title="No suggestions" description="Check back later as more people join." />
             )}
