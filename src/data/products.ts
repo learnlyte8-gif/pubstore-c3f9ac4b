@@ -293,6 +293,13 @@ export async function resolveMasterSupplierId(supplierId: string): Promise<strin
   return master;
 }
 
+// Hard caps so a single query never tries to pull thousands of rows over the
+// wire. Supabase has a default 1000-row ceiling; we tighten further for UX.
+const DEFAULT_PRODUCT_LIMIT = 60;
+const MAX_PRODUCT_LIMIT = 200;
+const DEFAULT_SUPPLIER_LIMIT = 60;
+const MAX_SUPPLIER_LIMIT = 200;
+
 export async function fetchProducts(opts: {
   category?: string;
   supplierId?: string;
@@ -308,7 +315,11 @@ export async function fetchProducts(opts: {
 
   let q = supabase
     .from("products")
-    .select("*, suppliers!inner(name, verified, gold, country, location_address, latitude, longitude, trade_type)")
+    // Narrow the column set so we never pull large `description`/`specs` blobs
+    // for list views — list cards only need a handful of fields.
+    .select(
+      "id, supplier_id, title, image, gallery, price, original_price, category_slug, badge, free_shipping, moq, unit, lead_time, ship_from, rating, review_count, sold, deal_ends_at, suppliers!inner(name, verified, gold, country, location_address, latitude, longitude, trade_type)"
+    )
     .eq("active", true);
   if (opts.category) q = q.eq("category_slug", opts.category);
   if (supplierId) q = q.eq("supplier_id", supplierId);
@@ -318,8 +329,11 @@ export async function fetchProducts(opts: {
     const term = opts.search.replace(/[%,]/g, " ").trim();
     if (term) {
       const like = `%${term}%`;
+      // Drop `description.ilike` from the OR — full-text scan on a long text
+      // column is the slowest part of catalog search. Title/category/badge
+      // cover real-world queries and stay index-friendly.
       q = q.or(
-        `title.ilike.${like},description.ilike.${like},category_slug.ilike.${like},badge.ilike.${like}`,
+        `title.ilike.${like},category_slug.ilike.${like},badge.ilike.${like}`,
       );
     }
   }
@@ -330,23 +344,28 @@ export async function fetchProducts(opts: {
     case "rating": q = q.order("rating", { ascending: false }); break;
     default: q = q.order("created_at", { ascending: false });
   }
-  if (opts.limit) q = q.limit(opts.limit);
+  const limit = Math.min(opts.limit ?? DEFAULT_PRODUCT_LIMIT, MAX_PRODUCT_LIMIT);
+  q = q.limit(limit);
   const { data, error } = await q;
-  if (error || !data) return [];
-  return (data as DbProductWithSupplier[]).map(mapProduct);
+  // Throw so React Query can retry + surface a real error instead of an
+  // infinite "Loading…" state.
+  if (error) throw error;
+  return ((data ?? []) as unknown as DbProductWithSupplier[]).map(mapProduct);
 }
 
 export async function fetchProduct(id: string): Promise<Product | null> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("products")
     .select("*, suppliers!inner(name, verified, gold, country, location_address, latitude, longitude)")
     .eq("id", id)
     .maybeSingle();
+  if (error) throw error;
   return data ? mapProduct(data as DbProductWithSupplier) : null;
 }
 
 export async function fetchSupplier(id: string): Promise<Supplier | null> {
-  const { data } = await supabase.from("suppliers").select("*").eq("id", id).maybeSingle();
+  const { data, error } = await supabase.from("suppliers").select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
   return data ? mapSupplier(data as DbSupplier) : null;
 }
 
@@ -357,8 +376,10 @@ export async function fetchSuppliers(opts: { limit?: number; verifiedOnly?: bool
   // master store keeps its identity. Pages that explicitly want mirrors
   // (e.g. directory) can opt in.
   if (!opts.includeMirrors) q = q.is("mirror_of", null);
-  if (opts.limit) q = q.limit(opts.limit);
-  const { data } = await q;
+  const limit = Math.min(opts.limit ?? DEFAULT_SUPPLIER_LIMIT, MAX_SUPPLIER_LIMIT);
+  q = q.limit(limit);
+  const { data, error } = await q;
+  if (error) throw error;
   return ((data ?? []) as DbSupplier[]).map(mapSupplier);
 }
 
