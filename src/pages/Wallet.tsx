@@ -223,8 +223,8 @@ export default function WalletPage() {
       )}
 
       {/* Top-up amounts */}
-      <div className={`px-4 relative z-10 ${capturing ? "mt-3" : "-mt-6"}`}>
-        <div className="bg-card rounded-2xl border border-border shadow-elevated p-4">
+      <div id="add-money" className={`px-4 relative z-10 ${capturing ? "mt-3" : "-mt-6"}`}>
+        <div className="bg-card rounded-2xl border border-border shadow-elevated p-4 scroll-mt-4">
           <div className="flex items-center gap-1.5 mb-3">
             <Plus className="w-4 h-4 text-primary" />
             <p className="text-sm font-black tracking-tight">Add money</p>
