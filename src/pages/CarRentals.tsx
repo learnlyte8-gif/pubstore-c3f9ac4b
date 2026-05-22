@@ -172,7 +172,7 @@ function CarRentalDetail({ id }: { id: string }) {
     queryFn: () => fetchCarRental(id),
   });
 
-  if (isLoading) return <div className="p-10 text-center text-sm text-muted-foreground">Loading…</div>;
+  if (isLoading) return <div className="p-10 text-center text-sm text-muted-foreground"><CircleSpinner size={28} /></div>;
   if (!r) return <EmptyState title="Vehicle not found" description="It may have been removed." />;
 
   const youngDriverThreshold = r.young_driver_age_threshold ?? 25;

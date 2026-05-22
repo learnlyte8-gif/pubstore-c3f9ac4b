@@ -824,7 +824,7 @@ export default function Messages() {
             </div>
             <div className="flex-1 overflow-y-auto p-3">
               {productLoading ? (
-                <p className="text-center text-xs text-muted-foreground py-10">Loading…</p>
+                <p className="text-center text-xs text-muted-foreground py-10"><CircleSpinner size={28} /></p>
               ) : productResults.length === 0 ? (
                 <p className="text-center text-xs text-muted-foreground py-10">No products found</p>
               ) : (

@@ -133,7 +133,7 @@ export default function RFQ() {
       </div>
 
       {loading ? (
-        <p className="text-center text-sm text-muted-foreground py-16">Loading…</p>
+        <p className="text-center text-sm text-muted-foreground py-16"><CircleSpinner size={28} /></p>
       ) : tab === "inbox" ? (
         <RFQList items={rfqs} mode="mine" onOpen={setOpenId} />
       ) : tab === "browse" ? (

@@ -72,7 +72,7 @@ export default function ProductDetail() {
     return () => { cancelled = true; supabase.removeChannel(ch); };
   }, [product?.id, buyerId]);
 
-  if (isLoading) return <p className="p-12 text-center text-sm text-muted-foreground">Loading…</p>;
+  if (isLoading) return <p className="p-12 text-center text-sm text-muted-foreground"><CircleSpinner size={28} /></p>;
   if (!product) {
     return (
       <div className="px-6 py-16 text-center">

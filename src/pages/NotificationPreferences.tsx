@@ -135,7 +135,7 @@ export default function NotificationPreferences() {
       </header>
 
       {loading || !prefs ? (
-        <p className="text-center text-sm text-muted-foreground py-16">Loading…</p>
+        <p className="text-center text-sm text-muted-foreground py-16"><CircleSpinner size={28} /></p>
       ) : (
         <div className="px-4 py-4 space-y-5">
           {/* Native push enable card */}

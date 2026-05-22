@@ -259,7 +259,7 @@ function AgroDetail({ id }: { id: string }) {
   const navigate = useNavigate();
   const { data: it, isLoading } = useQuery({ queryKey: ["agro-item", id], queryFn: () => fetchAgroItem(id) });
 
-  if (isLoading) return <p className="px-4 py-12 text-center text-sm text-muted-foreground">Loading…</p>;
+  if (isLoading) return <p className="px-4 py-12 text-center text-sm text-muted-foreground"><CircleSpinner size={28} /></p>;
   if (!it) return <p className="px-4 py-12 text-center text-sm">Listing not found.</p>;
 
   const isProject = it.kind === "project";

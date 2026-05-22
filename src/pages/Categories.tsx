@@ -147,7 +147,7 @@ export default function Categories() {
         )}
 
         {isLoading ? (
-          <p className="text-center py-12 text-sm text-muted-foreground">Loading…</p>
+          <p className="text-center py-12 text-sm text-muted-foreground"><CircleSpinner size={28} /></p>
         ) : visible.length === 0 ? (
           <EmptyState title="No products yet" description="Be the first supplier to list in this category." />
         ) : (

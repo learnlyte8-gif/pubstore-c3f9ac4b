@@ -101,7 +101,7 @@ export default function UserProfile() {
   };
 
   if (loading) {
-    return <div className="px-4 py-10 text-sm text-muted-foreground">Loading…</div>;
+    return <div className="px-4 py-10 text-sm text-muted-foreground"><CircleSpinner size={28} /></div>;
   }
   if (!profile) {
     return (

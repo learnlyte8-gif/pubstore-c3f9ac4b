@@ -184,7 +184,7 @@ function StayDetail({ id }: { id: string }) {
   const [bookOpen, setBookOpen] = useState(false);
   const { data: stay, isLoading } = useQuery({ queryKey: ["stay", id], queryFn: () => fetchStay(id) });
 
-  if (isLoading) return <p className="px-4 py-12 text-center text-sm text-muted-foreground">Loading…</p>;
+  if (isLoading) return <p className="px-4 py-12 text-center text-sm text-muted-foreground"><CircleSpinner size={28} /></p>;
   if (!stay) return <p className="px-4 py-12 text-center text-sm">Stay not found.</p>;
 
   return (

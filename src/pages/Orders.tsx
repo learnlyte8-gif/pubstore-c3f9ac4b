@@ -141,7 +141,7 @@ export default function Orders() {
       </div>
 
       {loading ? (
-        <p className="text-center text-sm text-muted-foreground py-16">Loading…</p>
+        <p className="text-center text-sm text-muted-foreground py-16"><CircleSpinner size={28} /></p>
       ) : visible.length === 0 ? (
         <div className="text-center py-16 px-6">
           <Package className="w-10 h-10 mx-auto text-muted-foreground" />

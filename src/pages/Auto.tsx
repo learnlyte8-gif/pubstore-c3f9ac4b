@@ -228,7 +228,7 @@ function AutoDetail({ id }: { id: string }) {
   const { isSaved, toggle } = useVehicleSaves();
   const { data: v, isLoading } = useQuery({ queryKey: ["vehicle", id], queryFn: () => fetchVehicle(id) });
 
-  if (isLoading) return <p className="px-4 py-12 text-center text-sm text-muted-foreground">Loading…</p>;
+  if (isLoading) return <p className="px-4 py-12 text-center text-sm text-muted-foreground"><CircleSpinner size={28} /></p>;
   if (!v) return <p className="px-4 py-12 text-center text-sm">Vehicle not found.</p>;
   const saved = isSaved(v.id);
 

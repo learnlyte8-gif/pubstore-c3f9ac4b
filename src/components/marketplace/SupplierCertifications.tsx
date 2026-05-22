@@ -87,7 +87,7 @@ export default function SupplierCertifications({
     setItems((arr) => arr.filter((c) => c.id !== id));
   };
 
-  if (loading) return <p className="text-center text-sm text-muted-foreground py-8">Loading…</p>;
+  if (loading) return <p className="text-center text-sm text-muted-foreground py-8"><CircleSpinner size={28} /></p>;
 
   return (
     <div className="space-y-3">
