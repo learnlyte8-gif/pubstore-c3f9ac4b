@@ -66,6 +66,9 @@ let subscriberCount = 0;
 let started = false;
 let readListenerAttached = false;
 let startVersion = 0;
+let channelNonce = 0;
+
+const makeUnreadChannelName = (uid: string) => `unread-chats:${uid}:${++channelNonce}`;
 
 const emit = () => {
   listeners.forEach((listener) => listener(state));
@@ -228,7 +231,7 @@ async function attachRealtime(uid: string) {
   if (currentUserId !== uid) return;
 
   const nextChannel = supabase
-    .channel(`unread-chats:${uid}`)
+    .channel(makeUnreadChannelName(uid))
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
       handleIncomingMessage(uid, payload as { new: any });
     })

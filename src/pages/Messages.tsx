@@ -17,6 +17,10 @@ import PendingInquiriesInbox from "@/components/marketplace/PendingInquiriesInbo
 import { toast } from "@/hooks/use-toast";
 import DiscoverPeople from "@/components/social/DiscoverPeople";
 
+let messageChannelNonce = 0;
+
+const makeMessageChannelName = (conversationId: string) => `messages:${conversationId}:${++messageChannelNonce}`;
+
 const chunk = <T,>(items: T[], size: number) => {
   const batches: T[][] = [];
   for (let i = 0; i < items.length; i += size) batches.push(items.slice(i, i + size));
@@ -390,7 +394,7 @@ export default function Messages() {
     })();
 
     const channel = supabase
-      .channel(`messages:${activeId}`)
+      .channel(makeMessageChannelName(activeId))
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${activeId}` },

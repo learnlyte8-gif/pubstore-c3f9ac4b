@@ -16,6 +16,10 @@ import { useUnreadChats } from "@/hooks/useUnreadChats";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import logo from "@/assets/pubstore-logo.png";
 
+let shellNotifChannelNonce = 0;
+
+const makeShellNotifChannelName = (uid: string) => `shell-notif:${uid}:${++shellNotifChannelNonce}`;
+
 export default function AppShell() {
   const [session, setSession] = useState<Session | null>(null);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
@@ -38,7 +42,7 @@ export default function AppShell() {
     };
     load();
     const ch = supabase
-      .channel(`shell-notif:${uid}`)
+      .channel(makeShellNotifChannelName(uid))
       .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${uid}` }, load)
       .subscribe();
     return () => { supabase.removeChannel(ch); };

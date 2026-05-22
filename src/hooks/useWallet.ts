@@ -14,6 +14,9 @@ export type WalletTx = {
 
 // The wallet tables were just added; cast through `any` until Supabase types regenerate.
 const sb = supabase as any;
+let walletChannelNonce = 0;
+
+const makeWalletChannelName = (userId: string) => `wallet-${userId}:${++walletChannelNonce}`;
 
 export function useWallet() {
   const qc = useQueryClient();
@@ -61,7 +64,7 @@ export function useWallet() {
   useEffect(() => {
     if (!userId) return;
     const ch = supabase
-      .channel(`wallet-${userId}`)
+      .channel(makeWalletChannelName(userId))
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "wallet_transactions", filter: `user_id=eq.${userId}` },
