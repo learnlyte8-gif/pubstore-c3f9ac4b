@@ -2,13 +2,14 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAgro, fetchAgroItem } from "@/data/verticals";
 import { ArrowLeft, Sprout, Tractor, Droplets, Leaf, Egg, TrendingUp, Clock, MapPin, ShieldCheck } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { FilterBar, FilterField, SortPills } from "@/components/marketplace/FilterBar";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import SaveHeart from "@/components/marketplace/SaveHeart";
 import CircleSpinner from "@/components/CircleSpinner";
+import QuoteRequestDialog from "@/components/marketplace/QuoteRequestDialog";
 
 const KINDS = [
   { id: "all", label: "All", icon: Sprout },
