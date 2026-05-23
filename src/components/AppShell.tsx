@@ -129,7 +129,7 @@ export default function AppShell() {
 
       {/* Floating glass liquid nav — left edge, vertical */}
       <nav
-        className="fixed left-2 top-1/2 -translate-y-1/2 z-40 lg:hidden pointer-events-none"
+        className="fixed left-2 top-1/2 -translate-y-1/2 z-40 pointer-events-none"
         aria-label="Primary"
         style={{ paddingLeft: "env(safe-area-inset-left)" }}
       >
