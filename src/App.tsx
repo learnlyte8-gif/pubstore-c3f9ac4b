@@ -26,6 +26,7 @@ import Compare from "./pages/Compare.tsx";
 import Live from "./pages/Live.tsx";
 import MyStore from "./pages/MyStore.tsx";
 import StoreSection from "./pages/StoreSection.tsx";
+import StoreActions from "./pages/StoreActions.tsx";
 import Addresses from "./pages/Addresses.tsx";
 import PaymentMethods from "./pages/PaymentMethods.tsx";
 import BecomeSupplier from "./pages/BecomeSupplier.tsx";
@@ -127,6 +128,7 @@ const App = () => (
                 <Route path="/profile" element={<Account />} />
                 <Route path="/account" element={<Account />} />
                 <Route path="/store" element={<MyStore />} />
+                <Route path="/store/actions" element={<StoreActions />} />
                 <Route path="/store/:section" element={<StoreSection />} />
                 <Route path="/store/:section/:sub" element={<StoreSection />} />
                 <Route path="/addresses" element={<Addresses />} />
