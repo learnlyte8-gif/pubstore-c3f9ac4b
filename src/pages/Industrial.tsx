@@ -202,6 +202,7 @@ function IndustrialIndex() {
 function IndustrialDetail({ id }: { id: string }) {
   const navigate = useNavigate();
   const { data: it, isLoading } = useQuery({ queryKey: ["industrial-item", id], queryFn: () => fetchIndustrialItem(id) });
+  const [rfqOpen, setRfqOpen] = useState(false);
 
   if (isLoading) return <p className="px-4 py-12 text-center text-sm text-muted-foreground"><CircleSpinner size={28} /></p>;
   if (!it) return <p className="px-4 py-12 text-center text-sm">Listing not found.</p>;
