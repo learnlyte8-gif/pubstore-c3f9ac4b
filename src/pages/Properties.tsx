@@ -9,6 +9,7 @@ import PropertyInquiryDialog from "@/components/marketplace/PropertyInquiryDialo
 export default function Properties() {
   const [listingType, setListingType] = useState<string>("rent");
   const [kind, setKind] = useState<string>("");
+  const [inquiryFor, setInquiryFor] = useState<Property | null>(null);
 
   const { data: properties = [] } = useQuery({
     queryKey: ["properties", listingType, kind],
