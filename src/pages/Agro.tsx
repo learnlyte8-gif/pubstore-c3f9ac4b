@@ -366,11 +366,18 @@ function AgroDetail({ id }: { id: string }) {
               {it.unit && it.price != null && <span className="text-[10px] font-normal text-muted-foreground"> /{it.unit}</span>}
             </p>
           </div>
-          <Link to="/rfq" className="h-11 px-5 rounded-full bg-emerald-900 text-emerald-50 text-sm font-bold flex items-center">
+          <button onClick={() => setRfqOpen(true)} className="h-11 px-5 rounded-full bg-emerald-900 text-emerald-50 text-sm font-bold flex items-center">
             {isProject ? "Pledge" : "Request quote"}
-          </Link>
+          </button>
         </div>
       </div>
+
+      <QuoteRequestDialog
+        open={rfqOpen}
+        onOpenChange={setRfqOpen}
+        kind="agro"
+        subject={{ id: it.id, title: it.title, category: it.kind, unit: it.unit, moq: it.moq, isProject }}
+      />
     </div>
   );
 }
