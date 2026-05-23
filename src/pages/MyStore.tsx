@@ -229,17 +229,17 @@ export default function MyStore() {
         </Section>
 
         <Section title="Services & verticals">
-          <Row icon={Sprout} label="Agro listings" hint="Produce, machinery, inputs, livestock, projects" to="/store/services/agro" />
-          <Row icon={BedDouble} label="Stays & B&B" hint="List rooms, hotels, factory tours" to="/store/services/stays" />
-          <Row icon={Car} label="Vehicles" hint="Cars, EVs, trucks, bikes, parts" to="/store/services/vehicles" />
-          <Row icon={Factory} label="Industrial listings" hint="Machinery, materials, capacity" to="/store/services/industrial" />
-          <Row icon={Navigation} label="Ride driver" hint="Register your car · earn driving passengers" to="/store/services/driver" />
-          <Row icon={Wrench} label="Local services" hint="Plumbing, electrical, tutoring, freelance" to="/store/services/pros" />
-          <Row icon={HomeIcon} label="Real estate" hint="Rent or sell apartments, houses, land" to="/store/services/properties" />
-          <Row icon={Truck} label="Courier / logistics" hint="Deliveries, freight, partner with suppliers" to="/store/services/logistics" />
-          <Row icon={Banknote} label="Finance products" hint="Loans, vehicle financing, insurance" to="/store/services/finance" />
-          <Row icon={Car} label="Car rentals" hint="Self-drive listings, mileage, rules & penalties" to="/store/services/car-rentals" />
-          {canImport && <Row icon={Newspaper} label="News & editorial" hint="Publish articles · admin" to="/store/services/news" />}
+          <Row icon={Sprout} label="Agro listings" hint="Produce, machinery, inputs, livestock, projects" to="/store/services/agro" manageTo="/store/services/agro?tab=actions" />
+          <Row icon={BedDouble} label="Stays & B&B" hint="List rooms, hotels, factory tours" to="/store/services/stays" manageTo="/store/services/stays?tab=actions" />
+          <Row icon={Car} label="Vehicles" hint="Cars, EVs, trucks, bikes, parts" to="/store/services/vehicles" manageTo="/store/services/vehicles?tab=actions" />
+          <Row icon={Factory} label="Industrial listings" hint="Machinery, materials, capacity" to="/store/services/industrial" manageTo="/store/services/industrial?tab=actions" />
+          <Row icon={Navigation} label="Ride driver" hint="Register your car · earn driving passengers" to="/store/services/driver" manageTo="/store/services/driver?tab=actions" />
+          <Row icon={Wrench} label="Local services" hint="Plumbing, electrical, tutoring, freelance" to="/store/services/pros" manageTo="/store/services/pros?tab=actions" />
+          <Row icon={HomeIcon} label="Real estate" hint="Rent or sell apartments, houses, land" to="/store/services/properties" manageTo="/store/services/properties?tab=actions" />
+          <Row icon={Truck} label="Courier / logistics" hint="Deliveries, freight, partner with suppliers" to="/store/services/logistics" manageTo="/store/services/logistics?tab=actions" />
+          <Row icon={Banknote} label="Finance products" hint="Loans, vehicle financing, insurance" to="/store/services/finance" manageTo="/store/services/finance?tab=actions" />
+          <Row icon={Car} label="Car rentals" hint="Self-drive listings, mileage, rules & penalties" to="/store/services/car-rentals" manageTo="/store/services/car-rentals?tab=actions" />
+          {canImport && <Row icon={Newspaper} label="News & editorial" hint="Publish articles · admin" to="/store/services/news" manageTo="/store/services/news?tab=actions" />}
         </Section>
 
         <Section title="Storefront">
@@ -339,15 +339,25 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Row({ icon: Icon, label, hint, to }: { icon: any; label: string; hint?: string; to: string }) {
+function Row({ icon: Icon, label, hint, to, manageTo }: { icon: any; label: string; hint?: string; to: string; manageTo?: string }) {
   return (
-    <Link to={to} className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted/40 transition">
-      <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center"><Icon className="w-4 h-4" /></span>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold">{label}</p>
-        {hint && <p className="text-[11px] text-muted-foreground truncate">{hint}</p>}
-      </div>
-      <ChevronRight className="w-4 h-4 text-muted-foreground" />
-    </Link>
+    <div className="flex items-center gap-2 pr-2 hover:bg-muted/40 transition">
+      <Link to={to} className="flex items-center gap-3 px-4 py-3.5 flex-1 min-w-0">
+        <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center"><Icon className="w-4 h-4" /></span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold">{label}</p>
+          {hint && <p className="text-[11px] text-muted-foreground truncate">{hint}</p>}
+        </div>
+      </Link>
+      {manageTo && (
+        <Link
+          to={manageTo}
+          className="shrink-0 px-2.5 h-7 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center gap-1"
+        >
+          <BarChart3 className="w-3 h-3" /> Actions
+        </Link>
+      )}
+      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+    </div>
   );
 }

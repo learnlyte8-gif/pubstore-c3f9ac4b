@@ -234,6 +234,12 @@ const Home = () => {
 
               <JobsRail />
 
+              <section className="px-4 mt-6">
+                <RecommendationStrip />
+              </section>
+
+
+
 
               {suppliers.length > 0 && (
                 <section className="px-4 mt-6">
