@@ -79,8 +79,10 @@ export default function Properties() {
                     {p.area_sqm && <span className="flex items-center gap-1"><Maximize2 className="w-3 h-3" /> {p.area_sqm}m²</span>}
                   </div>
                   <div className="flex gap-1.5 mt-2">
-                    {p.contact_phone && <a href={`tel:${p.contact_phone}`} className="flex-1 h-8 rounded-full bg-primary text-primary-foreground text-[11px] font-bold flex items-center justify-center gap-1"><Phone className="w-3 h-3" /> Call</a>}
-                    {p.contact_whatsapp && <a href={`https://wa.me/${p.contact_whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener" className="flex-1 h-8 rounded-full bg-emerald-500 text-white text-[11px] font-bold flex items-center justify-center gap-1"><MessageCircle className="w-3 h-3" /> WhatsApp</a>}
+                    <button onClick={() => setInquiryFor(p)} className="flex-1 h-8 rounded-full bg-foreground text-background text-[11px] font-bold flex items-center justify-center gap-1">
+                      <Mail className="w-3 h-3" /> {p.listing_type === "sale" ? "Inquire" : "Reserve"}
+                    </button>
+                    {p.contact_whatsapp && <a href={`https://wa.me/${p.contact_whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener" className="h-8 px-3 rounded-full bg-emerald-500 text-white text-[11px] font-bold flex items-center justify-center gap-1"><MessageCircle className="w-3 h-3" /></a>}
                   </div>
                 </div>
               </div>
@@ -88,6 +90,14 @@ export default function Properties() {
           </div>
         )}
       </div>
+
+      {inquiryFor && (
+        <PropertyInquiryDialog
+          property={inquiryFor}
+          open={!!inquiryFor}
+          onOpenChange={(v) => !v && setInquiryFor(null)}
+        />
+      )}
     </div>
   );
 }
