@@ -281,11 +281,18 @@ function IndustrialDetail({ id }: { id: string }) {
               {it.unit && it.price != null && <span className="text-[10px] font-normal text-muted-foreground"> /{it.unit}</span>}
             </p>
           </div>
-          <Link to="/rfq" className="h-11 px-5 rounded-full bg-sky-950 text-sky-50 text-sm font-bold flex items-center">
+          <button onClick={() => setRfqOpen(true)} className="h-11 px-5 rounded-full bg-sky-950 text-sky-50 text-sm font-bold flex items-center">
             Request quote
-          </Link>
+          </button>
         </div>
       </div>
+
+      <QuoteRequestDialog
+        open={rfqOpen}
+        onOpenChange={setRfqOpen}
+        kind="industrial"
+        subject={{ id: it.id, title: it.title, category: it.category, unit: it.unit, moq: it.moq }}
+      />
     </div>
   );
 }
