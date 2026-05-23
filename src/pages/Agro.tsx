@@ -2,13 +2,14 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAgro, fetchAgroItem } from "@/data/verticals";
 import { ArrowLeft, Sprout, Tractor, Droplets, Leaf, Egg, TrendingUp, Clock, MapPin, ShieldCheck } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { FilterBar, FilterField, SortPills } from "@/components/marketplace/FilterBar";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import SaveHeart from "@/components/marketplace/SaveHeart";
 import CircleSpinner from "@/components/CircleSpinner";
+import QuoteRequestDialog from "@/components/marketplace/QuoteRequestDialog";
 
 const KINDS = [
   { id: "all", label: "All", icon: Sprout },
@@ -259,6 +260,7 @@ function AgroIndex() {
 function AgroDetail({ id }: { id: string }) {
   const navigate = useNavigate();
   const { data: it, isLoading } = useQuery({ queryKey: ["agro-item", id], queryFn: () => fetchAgroItem(id) });
+  const [rfqOpen, setRfqOpen] = useState(false);
 
   if (isLoading) return <p className="px-4 py-12 text-center text-sm text-muted-foreground"><CircleSpinner size={28} /></p>;
   if (!it) return <p className="px-4 py-12 text-center text-sm">Listing not found.</p>;
@@ -364,11 +366,18 @@ function AgroDetail({ id }: { id: string }) {
               {it.unit && it.price != null && <span className="text-[10px] font-normal text-muted-foreground"> /{it.unit}</span>}
             </p>
           </div>
-          <Link to="/rfq" className="h-11 px-5 rounded-full bg-emerald-900 text-emerald-50 text-sm font-bold flex items-center">
+          <button onClick={() => setRfqOpen(true)} className="h-11 px-5 rounded-full bg-emerald-900 text-emerald-50 text-sm font-bold flex items-center">
             {isProject ? "Pledge" : "Request quote"}
-          </Link>
+          </button>
         </div>
       </div>
+
+      <QuoteRequestDialog
+        open={rfqOpen}
+        onOpenChange={setRfqOpen}
+        kind="agro"
+        subject={{ id: it.id, title: it.title, category: it.kind, unit: it.unit, moq: it.moq, isProject }}
+      />
     </div>
   );
 }

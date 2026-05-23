@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import ServiceActionsTab from "@/components/marketplace/ServiceActionsTab";
 import { ArrowLeft, Plus, TrendingUp, Eye, ShoppingBag, DollarSign, Star, Megaphone, Truck, Package, Settings, Image as ImageIcon, X, Loader2, Link2, Download, Sparkles, Percent, Check, Pencil, Trash2, CheckSquare, Square, Tag, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,8 +41,15 @@ const titles: Record<string, { title: string; sub: string }> = {
 
 export default function StoreSection() {
   const { section = "products", sub } = useParams();
+  const [params, setParams] = useSearchParams();
   const key = sub ? `${section}/${sub}` : section;
   const meta = titles[key] || { title: "Store", sub: "" };
+  const isService = section === "services" && !!sub;
+  const tab = params.get("tab") === "actions" ? "actions" : "manage";
+  const serviceKey = sub as
+    | "stays" | "vehicles" | "industrial" | "news" | "driver" | "pros"
+    | "properties" | "logistics" | "finance" | "car-rentals" | "agro" | undefined;
+  const supportsActions = isService && serviceKey && serviceKey !== "news";
 
   return (
     <div className="pb-24">
@@ -55,29 +63,51 @@ export default function StoreSection() {
         </div>
       </header>
 
-      {key === "products" && <ProductsView />}
-      {key === "products/new" && <NewProductView />}
-      {section === "product-edit" && sub && <EditProductView productId={sub} />}
-      {key === "orders" && <OrdersView />}
-      {key === "analytics" && <AnalyticsView />}
-      {key === "promote" && <PromoteView />}
-      {key === "reviews" && <ReviewsView />}
-      {key === "shipping" && <ShippingView />}
-      {key === "profile" && <ProfileView />}
-      {key === "settings" && <SettingsView />}
-      {key === "import" && <ImportView />}
-      {key === "services/stays" && <StaysServiceView />}
-      {key === "services/vehicles" && <VehiclesServiceView />}
-      {key === "services/industrial" && <IndustrialServiceView />}
-      {key === "services/news" && <NewsServiceView />}
-      {key === "services/driver" && <DriverServiceView />}
-      {key === "services/pros" && <ProServiceView />}
-      {key === "services/properties" && <PropertyServiceView />}
-      {key === "services/logistics" && <CourierServiceView />}
-      {key === "services/finance" && <FinanceServiceView />}
-      {key === "services/car-rentals" && <CarRentalServiceView />}
-      {key === "services/agro" && <AgroServiceView />}
+      {supportsActions && (
+        <div className="px-3 pt-2 flex gap-1 bg-background sticky top-[57px] z-10 border-b">
+          <TabBtn active={tab === "manage"} onClick={() => { params.delete("tab"); setParams(params, { replace: true }); }}>Manage</TabBtn>
+          <TabBtn active={tab === "actions"} onClick={() => { params.set("tab", "actions"); setParams(params, { replace: true }); }}>Actions inbox</TabBtn>
+        </div>
+      )}
+
+      {supportsActions && tab === "actions" ? (
+        <ServiceActionsTab section={serviceKey as any} />
+      ) : (
+        <>
+          {key === "products" && <ProductsView />}
+          {key === "products/new" && <NewProductView />}
+          {section === "product-edit" && sub && <EditProductView productId={sub} />}
+          {key === "orders" && <OrdersView />}
+          {key === "analytics" && <AnalyticsView />}
+          {key === "promote" && <PromoteView />}
+          {key === "reviews" && <ReviewsView />}
+          {key === "shipping" && <ShippingView />}
+          {key === "profile" && <ProfileView />}
+          {key === "settings" && <SettingsView />}
+          {key === "import" && <ImportView />}
+          {key === "services/stays" && <StaysServiceView />}
+          {key === "services/vehicles" && <VehiclesServiceView />}
+          {key === "services/industrial" && <IndustrialServiceView />}
+          {key === "services/news" && <NewsServiceView />}
+          {key === "services/driver" && <DriverServiceView />}
+          {key === "services/pros" && <ProServiceView />}
+          {key === "services/properties" && <PropertyServiceView />}
+          {key === "services/logistics" && <CourierServiceView />}
+          {key === "services/finance" && <FinanceServiceView />}
+          {key === "services/car-rentals" && <CarRentalServiceView />}
+          {key === "services/agro" && <AgroServiceView />}
+        </>
+      )}
     </div>
+  );
+}
+
+function TabBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex-1 h-10 text-xs font-bold border-b-2 transition ${active ? "border-foreground text-foreground" : "border-transparent text-muted-foreground"}`}
+    >{children}</button>
   );
 }
 
