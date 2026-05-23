@@ -77,8 +77,10 @@ export default function Finance() {
                     </ul>
                   )}
                   <div className="flex gap-1.5 mt-2">
-                    {p.contact_phone && <a href={`tel:${p.contact_phone}`} className="flex-1 h-8 rounded-full bg-primary text-primary-foreground text-[11px] font-bold flex items-center justify-center gap-1"><Phone className="w-3 h-3" /> Apply</a>}
-                    {p.contact_whatsapp && <a href={`https://wa.me/${p.contact_whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener" className="flex-1 h-8 rounded-full bg-emerald-500 text-white text-[11px] font-bold flex items-center justify-center gap-1"><MessageCircle className="w-3 h-3" /> Chat</a>}
+                    <button onClick={() => setApplyFor(p)} className="flex-1 h-8 rounded-full bg-foreground text-background text-[11px] font-bold flex items-center justify-center gap-1">
+                      <FileText className="w-3 h-3" /> Apply
+                    </button>
+                    {p.contact_whatsapp && <a href={`https://wa.me/${p.contact_whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener" className="h-8 px-3 rounded-full bg-emerald-500 text-white text-[11px] font-bold flex items-center justify-center gap-1"><MessageCircle className="w-3 h-3" /></a>}
                   </div>
                 </div>
               </div>
@@ -86,6 +88,14 @@ export default function Finance() {
           </div>
         )}
       </div>
+
+      {applyFor && (
+        <FinanceApplicationDialog
+          product={applyFor}
+          open={!!applyFor}
+          onOpenChange={(v) => !v && setApplyFor(null)}
+        />
+      )}
     </div>
   );
 }
