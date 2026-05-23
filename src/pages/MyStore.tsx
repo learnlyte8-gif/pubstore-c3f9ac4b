@@ -218,6 +218,7 @@ export default function MyStore() {
           <Row icon={Package} label="Products" hint={`${myProducts.length} listed`} to="/store/products" />
           {canImport && <Row icon={Download} label="Import from the web" hint="Alibaba, Amazon, Shopify · beta" to="/store/import" />}
           <Row icon={ShoppingBag} label="Orders" hint={stats?.pendingOrders ? `${stats.pendingOrders} pending` : "View store orders"} to="/store/orders" />
+          <Row icon={Inbox} label="Actions inbox" hint="Bookings, RFQs, applications across all services" to="/store/actions" />
           <Row icon={Truck} label="Shipping & logistics" hint="Templates, carriers" to="/store/shipping" />
           <Row icon={MessageCircle} label="Customer messages" hint="Buyer chats" to="/messages" />
         </Section>
