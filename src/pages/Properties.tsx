@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Home as HomeIcon, MapPin, Bed, Bath, Maximize2, Phone, MessageCircle, Star } from "lucide-react";
-import { fetchProperties, PROPERTY_KINDS } from "@/data/newVerticals";
+import { Home as HomeIcon, MapPin, Bed, Bath, Maximize2, Phone, MessageCircle, Star, Mail } from "lucide-react";
+import { fetchProperties, PROPERTY_KINDS, type Property } from "@/data/newVerticals";
 import EmptyState from "@/components/EmptyState";
+import PropertyInquiryDialog from "@/components/marketplace/PropertyInquiryDialog";
 
 export default function Properties() {
   const [listingType, setListingType] = useState<string>("rent");
