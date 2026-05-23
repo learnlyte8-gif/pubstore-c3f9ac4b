@@ -2,12 +2,13 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchIndustrial, fetchIndustrialItem } from "@/data/verticals";
 import { ArrowLeft, Factory, Boxes, Truck, ShieldCheck, Briefcase, Zap, Clock, MapPin } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { FilterBar, FilterField, SortPills } from "@/components/marketplace/FilterBar";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import CircleSpinner from "@/components/CircleSpinner";
+import QuoteRequestDialog from "@/components/marketplace/QuoteRequestDialog";
 
 const CATS = [
   { id: "all", label: "All", icon: Factory },
