@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Banknote, Phone, MessageCircle, ShieldCheck, Percent, Calendar, Check } from "lucide-react";
-import { fetchFinanceProducts, FINANCE_KINDS } from "@/data/newVerticals";
+import { Banknote, Phone, MessageCircle, ShieldCheck, Percent, Calendar, Check, FileText } from "lucide-react";
+import { fetchFinanceProducts, FINANCE_KINDS, type FinanceProduct } from "@/data/newVerticals";
 import EmptyState from "@/components/EmptyState";
+import FinanceApplicationDialog from "@/components/marketplace/FinanceApplicationDialog";
 
 export default function Finance() {
   const [kind, setKind] = useState<string>("");
+  const [applyFor, setApplyFor] = useState<FinanceProduct | null>(null);
   const { data: products = [] } = useQuery({
     queryKey: ["finance-products", kind],
     queryFn: () => fetchFinanceProducts({ kind: kind || undefined, limit: 60 }),
