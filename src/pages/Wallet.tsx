@@ -324,7 +324,12 @@ export default function WalletPage() {
                     toast.error("Minimum top-up is $10.00");
                     return;
                   }
-                  startCheckout(Math.round(amt * 100) / 100);
+                  const rounded = Math.round(amt * 100) / 100;
+                  if (provider === "simulate") {
+                    simulateDeposit(rounded);
+                  } else {
+                    startCheckout(rounded);
+                  }
                 }}
               >
                 {redirecting && selected !== null && !TOPUP_AMOUNTS.includes(selected) ? <CircleSpinner size={16} /> : "Add"}
