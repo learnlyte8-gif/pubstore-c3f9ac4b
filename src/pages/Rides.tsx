@@ -503,7 +503,15 @@ export default function Rides() {
               const km = me ? haversineKm(me.lat, me.lng, Number(d.lat), Number(d.lng)) : 0;
               const eta = Math.max(1, Math.round(km * 2.2));
               return (
-                <div key={d.user_id} className="flex items-center gap-3 p-3">
+                <button
+                  type="button"
+                  key={d.user_id}
+                  onClick={() => {
+                    setVClass(d.vehicle_class as VClass);
+                    toast.message(`Picked ${d.vehicle_class} · ${d.display_name ?? "driver"}`);
+                  }}
+                  className="w-full text-left flex items-center gap-3 p-3 hover:bg-muted/50 transition"
+                >
                   <span className={`w-9 h-9 rounded-full bg-gradient-to-br ${
                     d.vehicle_class === "moto" ? "from-amber-500 to-orange-400" :
                     d.vehicle_class === "comfort" ? "from-sky-500 to-blue-400" :
@@ -521,7 +529,7 @@ export default function Rides() {
                     <div className="flex items-center gap-1 text-xs font-bold justify-end"><Star className="w-3 h-3 fill-amber-400 text-amber-400" /> {Number(d.rating).toFixed(1)}</div>
                     <p className="text-[10px] text-muted-foreground">{km.toFixed(1)}km · {eta}m</p>
                   </div>
-                </div>
+                </button>
               );
             })}
             {drivers.length === 0 && (
