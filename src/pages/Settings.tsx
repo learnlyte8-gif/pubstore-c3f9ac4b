@@ -99,18 +99,6 @@ export default function Settings() {
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </Link>
-          <button onClick={sendTestNotification} disabled={testingPush} className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-muted/40 disabled:opacity-50 text-left">
-            <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center"><Send className="w-4.5 h-4.5" /></span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold">Send test notification</p>
-              <p className="text-[11px] text-muted-foreground">Fire a push to this device instantly</p>
-            </div>
-            {testingPush ? (
-              <span className="text-[10px] text-muted-foreground">sending…</span>
-            ) : (
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            )}
-          </button>
         </Section>
 
         <Section title="Region">
