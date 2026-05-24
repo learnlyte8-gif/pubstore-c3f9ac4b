@@ -76,6 +76,7 @@ function buildRoutes(p: LatLng, d: LatLng) {
 
 export default function Rides() {
   const { userId, requireAuth } = useRequireAuth();
+  const navigate = useNavigate();
   const [me, setMe] = useState<LatLng | null>(null);
   const [locBusy, setLocBusy] = useState(false);
   const [pickup, setPickup] = useState<{ lat: number; lng: number; address: string } | null>(null);
@@ -87,6 +88,8 @@ export default function Rides() {
   const [creating, setCreating] = useState(false);
   const [routeChoice, setRouteChoice] = useState<"fastest" | "balanced" | "scenic">("fastest");
   const [tab, setTab] = useState<"now" | "schedule" | "share">("now");
+  const [showRating, setShowRating] = useState(false);
+  const [completedRide, setCompletedRide] = useState<Ride | null>(null);
 
   const ride = useActiveRide(activeRideId);
   const offers = useRideOffers(activeRideId);
