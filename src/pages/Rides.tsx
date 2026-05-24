@@ -429,22 +429,26 @@ export default function Rides() {
       <div className="relative mt-3 z-10">
         <div className="mx-3 rounded-3xl bg-card border border-border shadow-elevated overflow-hidden">
           {!inActiveFlow ? (
-            <RequestPanel
-              pickup={pickup} setPickup={setPickup}
-              dropoff={dropoff} setDropoff={setDropoff}
-              vClass={vClass} setVClass={setVClass}
-              fare={fare} setFare={setFare}
-              suggested={suggested} distance={activeRoute?.km ?? distance}
-              etaMins={activeRoute?.mins ?? 0}
-              surge={surge}
-              notes={notes} setNotes={setNotes}
-              onSwap={swapPickupDrop}
-              onUseMy={useMyLocationFor}
-              onSubmit={requestRide}
-              busy={creating}
-              driversCount={drivers.length}
-              tab={tab}
-            />
+            tab === "share" ? (
+              <PoolPanel userId={userId} me={me} pickup={pickup} dropoff={dropoff} />
+            ) : (
+              <RequestPanel
+                pickup={pickup} setPickup={setPickup}
+                dropoff={dropoff} setDropoff={setDropoff}
+                vClass={vClass} setVClass={setVClass}
+                fare={fare} setFare={setFare}
+                suggested={suggested} distance={activeRoute?.km ?? distance}
+                etaMins={activeRoute?.mins ?? 0}
+                surge={surge}
+                notes={notes} setNotes={setNotes}
+                onSwap={swapPickupDrop}
+                onUseMy={useMyLocationFor}
+                onSubmit={requestRide}
+                busy={creating}
+                driversCount={drivers.length}
+                tab={tab}
+              />
+            )
           ) : (
             <ActiveRidePanel
               ride={ride!}
