@@ -802,9 +802,10 @@ function RequestPanel(props: {
       <button
         onClick={onSubmit}
         disabled={busy || !pickup || !dropoff}
-        className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-bold text-sm shadow-elevated disabled:opacity-50 flex items-center justify-center gap-2"
+        className="rides-cta w-full h-14 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 uppercase tracking-wider"
       >
         {busy ? <CircleSpinner size={16} /> : <><Sparkles className="w-4 h-4" /> {tab === "schedule" ? "Schedule ride" : tab === "share" ? "Find pool" : "Find drivers"} · ${fare.toFixed(2)}</>}
+
       </button>
     </div>
   );
