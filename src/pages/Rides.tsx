@@ -472,7 +472,11 @@ export default function Rides() {
               { label: "Mall",    sub: "Quick fare",  icon: Sparkles,   tone: "from-rose-500 to-orange-400" },
               { label: "Hospital",sub: "Priority",    icon: AlertTriangle, tone: "from-red-500 to-rose-400" },
             ].map((s) => (
-              <button key={s.label} className="shrink-0 w-32 rounded-2xl bg-muted/50 p-3 text-left border border-border hover:bg-muted transition">
+              <button
+                key={s.label}
+                onClick={() => quickDestination(s.label)}
+                className="shrink-0 w-32 rounded-2xl bg-muted/50 p-3 text-left border border-border hover:bg-muted active:scale-95 transition"
+              >
                 <span className={`w-9 h-9 rounded-xl bg-gradient-to-br ${s.tone} flex items-center justify-center mb-2 shadow-soft`}>
                   <s.icon className="w-4 h-4 text-white" />
                 </span>
