@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Inbox, RefreshCw, ExternalLink, Calendar, Phone, Mail, MapPin, DollarSign, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -181,7 +181,7 @@ async function fetchActions(section: SectionKey, uid: string): Promise<{ table: 
   }
 }
 
-export default function ServiceActionsTab({ section }: { section: SectionKey }) {
+export default function ServiceActionsTab({ section, focusId }: { section: SectionKey; focusId?: string }) {
   const { userId } = useAuthUser();
   const qc = useQueryClient();
   const { data, isLoading, refetch, isFetching } = useQuery({
@@ -190,6 +190,13 @@ export default function ServiceActionsTab({ section }: { section: SectionKey }) 
     enabled: !!userId,
   });
   const [busyId, setBusyId] = useState<string | null>(null);
+  const focusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (focusId && focusRef.current) {
+      focusRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [focusId, data]);
 
   if (!userId) return <p className="px-4 py-12 text-center text-sm text-muted-foreground">Sign in to see your inbox</p>;
 
@@ -229,8 +236,14 @@ export default function ServiceActionsTab({ section }: { section: SectionKey }) 
         <EmptyState title="No actions yet" description="When buyers submit requests or bookings, they'll land here." />
       ) : (
         <div className="space-y-2">
-          {rows.map((r) => (
-            <article key={r.id} className="bg-card border rounded-2xl p-3 shadow-card">
+          {rows.map((r) => {
+            const isFocus = focusId === r.id;
+            return (
+            <article
+              key={r.id}
+              ref={isFocus ? (focusRef as any) : undefined}
+              className={`bg-card border rounded-2xl p-3 shadow-card transition ${isFocus ? "ring-2 ring-primary" : ""}`}
+            >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="font-bold text-sm leading-tight">{r.title}</p>
@@ -276,7 +289,8 @@ export default function ServiceActionsTab({ section }: { section: SectionKey }) 
                 </div>
               </div>
             </article>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

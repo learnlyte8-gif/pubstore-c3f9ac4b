@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, BedDouble, Car, Factory, Sprout, Home as HomeIcon, Banknote, Wrench } from "lucide-react";
 import ServiceActionsTab from "@/components/marketplace/ServiceActionsTab";
 
@@ -14,8 +14,20 @@ const SECTIONS = [
   { id: "pros", label: "Local services", icon: Wrench },
 ] as const;
 
+type SectionId = (typeof SECTIONS)[number]["id"];
+
 export default function StoreActions() {
-  const [section, setSection] = useState<(typeof SECTIONS)[number]["id"]>("stays");
+  const [params] = useSearchParams();
+  const initial = (SECTIONS.find((s) => s.id === params.get("section"))?.id ?? "stays") as SectionId;
+  const [section, setSection] = useState<SectionId>(initial);
+  const focusId = params.get("id") || undefined;
+
+  // If notification opens this page later with a new ?section= , sync state.
+  useEffect(() => {
+    const next = SECTIONS.find((s) => s.id === params.get("section"))?.id as SectionId | undefined;
+    if (next && next !== section) setSection(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
 
   return (
     <div className="pb-24">
@@ -45,7 +57,7 @@ export default function StoreActions() {
         })}
       </div>
 
-      <ServiceActionsTab section={section} />
+      <ServiceActionsTab section={section} focusId={focusId} />
     </div>
   );
 }
