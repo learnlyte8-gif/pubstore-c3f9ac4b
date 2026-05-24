@@ -282,7 +282,7 @@ export default function WalletPage() {
             {TOPUP_AMOUNTS.map((a) => (
               <button
                 key={a}
-                onClick={() => startCheckout(a)}
+                onClick={() => (provider === "simulate" ? simulateDeposit(a) : startCheckout(a))}
                 disabled={redirecting || capturing}
                 className={`h-14 rounded-xl border transition flex items-center justify-center font-black text-base tabular-nums tracking-tight disabled:opacity-50 ${
                   selected === a
