@@ -695,9 +695,9 @@ function RequestPanel(props: {
           placeholder="Note for driver (optional)…"
           className="flex-1 h-10 px-3 rounded-xl bg-muted/50 border border-border text-sm outline-none focus:border-primary"
         />
-        <button className="h-10 px-3 rounded-xl bg-muted/50 border border-border text-[10px] font-bold flex items-center gap-1">
+        <Link to="/wallet" className="h-10 px-3 rounded-xl bg-muted/50 border border-border text-[10px] font-bold flex items-center gap-1 hover:bg-muted">
           <Wallet className="w-3.5 h-3.5" /> Wallet
-        </button>
+        </Link>
       </div>
 
       <button
