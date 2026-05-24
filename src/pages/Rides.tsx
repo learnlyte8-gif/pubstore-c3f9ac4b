@@ -867,15 +867,26 @@ function ActiveRidePanel({ ride, offers, myUserId, onAccept, onCancel, onStart, 
     );
   }
 
-  // Accepted / arriving / in_progress
+  const statusLabel =
+    ride.status === "in_progress" ? "TRIP IN PROGRESS" :
+    ride.status === "arriving"    ? "DRIVER ARRIVING" :
+                                    "DRIVER ON THE WAY";
+
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[10px] font-bold tracking-wider text-emerald-600 dark:text-emerald-400">DRIVER ON THE WAY</p>
+          <p className="text-[10px] font-bold tracking-wider text-emerald-600 dark:text-emerald-400">{statusLabel}</p>
           <p className="text-xl font-black mt-0.5">${(ride.final_fare ?? ride.rider_offer).toFixed(2)} · {ride.vehicle_class}</p>
         </div>
-        <button onClick={onCancel} className="h-9 px-3 rounded-full bg-muted text-xs font-bold flex items-center gap-1"><X className="w-3 h-3" /> Cancel</button>
+        <div className="flex items-center gap-1.5">
+          <button onClick={onShare} className="h-9 w-9 rounded-full bg-muted flex items-center justify-center" aria-label="Share trip">
+            <Share2 className="w-4 h-4" />
+          </button>
+          {ride.status !== "in_progress" && (
+            <button onClick={onCancel} className="h-9 px-3 rounded-full bg-muted text-xs font-bold flex items-center gap-1"><X className="w-3 h-3" /> Cancel</button>
+          )}
+        </div>
       </div>
 
       {acceptedOffer && (
@@ -888,9 +899,16 @@ function ActiveRidePanel({ ride, offers, myUserId, onAccept, onCancel, onStart, 
             <p className="text-[11px] text-muted-foreground truncate">{acceptedOffer.vehicle_label} · {acceptedOffer.vehicle_plate}</p>
             <p className="text-[11px] flex items-center gap-1 mt-0.5"><Star className="w-3 h-3 fill-amber-400 text-amber-400" /> {acceptedOffer.driver_rating.toFixed(1)} · {acceptedOffer.driver_trips} trips</p>
           </div>
-          <button className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-elevated">
+          <a
+            href="tel:+1000000000"
+            className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-elevated"
+            aria-label="Call driver"
+          >
             <Phone className="w-4 h-4" />
-          </button>
+          </a>
+          {myUserId && acceptedOffer.driver_id && (
+            <RideChat rideId={ride.id} myUserId={myUserId} counterpartName={acceptedOffer.driver_name ?? "Driver"} />
+          )}
         </div>
       )}
 
@@ -904,6 +922,22 @@ function ActiveRidePanel({ ride, offers, myUserId, onAccept, onCancel, onStart, 
         <div className="flex items-start gap-2"><span className="w-2 h-2 mt-1.5 rounded-full bg-emerald-500" /> <span className="flex-1">{ride.pickup_address}</span></div>
         <div className="flex items-start gap-2"><span className="w-2 h-2 mt-1.5 rotate-45 bg-rose-500" /> <span className="flex-1">{ride.dropoff_address}</span></div>
       </div>
+
+      {ride.status === "accepted" || ride.status === "arriving" ? (
+        <button
+          onClick={onStart}
+          className="w-full h-12 rounded-2xl bg-foreground text-background font-bold text-sm shadow-elevated flex items-center justify-center gap-2"
+        >
+          <PlayCircle className="w-4 h-4" /> I'm in the car · Start trip
+        </button>
+      ) : ride.status === "in_progress" ? (
+        <button
+          onClick={onComplete}
+          className="w-full h-12 rounded-2xl bg-emerald-500 text-white font-bold text-sm shadow-elevated flex items-center justify-center gap-2"
+        >
+          <CheckCircle2 className="w-4 h-4" /> Complete trip & pay
+        </button>
+      ) : null}
     </div>
   );
 }
