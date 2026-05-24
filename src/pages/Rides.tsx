@@ -97,6 +97,33 @@ export default function Rides() {
   const ride = useActiveRide(activeRideId);
   const offers = useRideOffers(activeRideId);
   const drivers = useNearbyDrivers(me, 10);
+  const sharedTrips = useNearbySharedTrips(me, 25);
+  const [demand, setDemand] = useState<{ id: string; lat: number; lng: number }[]>([]);
+
+  // Live demand pins: other riders currently searching (anonymous pickup points)
+  useEffect(() => {
+    if (!me) return;
+    let alive = true;
+    const load = async () => {
+      const { data } = await (sbAny as any).from("rides")
+        .select("id,pickup_lat,pickup_lng,status,created_at")
+        .in("status", ["searching", "offered"])
+        .gte("created_at", new Date(Date.now() - 15 * 60 * 1000).toISOString())
+        .limit(60);
+      if (!alive) return;
+      const pts = (data ?? [])
+        .filter((r: any) => r.id !== activeRideId)
+        .map((r: any) => ({ id: r.id, lat: Number(r.pickup_lat), lng: Number(r.pickup_lng) }))
+        .filter((p: any) => haversineKm(me.lat, me.lng, p.lat, p.lng) <= 15);
+      setDemand(pts);
+    };
+    load();
+    const ch = sbAny.channel("demand-pins")
+      .on("postgres_changes", { event: "*", schema: "public", table: "rides" }, load)
+      .subscribe();
+    const t = setInterval(load, 10000);
+    return () => { alive = false; sbAny.removeChannel(ch); clearInterval(t); };
+  }, [me?.lat, me?.lng, activeRideId]);
 
   const distance = useMemo(() => (pickup && dropoff ? haversineKm(pickup.lat, pickup.lng, dropoff.lat, dropoff.lng) : 0), [pickup, dropoff]);
   const suggested = useMemo(() => (distance > 0 ? suggestFare(distance, vClass) : 0), [distance, vClass]);
