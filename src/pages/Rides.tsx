@@ -758,10 +758,11 @@ function RequestPanel(props: {
           </div>
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-black tracking-tight">${fare.toFixed(2)}</span>
-          {suggested > 0 && fare < suggested * surge * 0.85 && <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 inline-flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Fewer offers</span>}
-          {suggested > 0 && fare >= suggested * surge * 1.1 && <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1"><Zap className="w-3 h-3" /> Faster</span>}
+          <span className="text-4xl font-black tracking-tight font-display text-[hsl(var(--rides-mint-soft))]" style={{ textShadow: "0 0 24px hsl(165 90% 50% / 0.5)" }} data-hud>${fare.toFixed(2)}</span>
+          {suggested > 0 && fare < suggested * surge * 0.85 && <span className="text-[10px] font-bold text-amber-400 inline-flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Fewer offers</span>}
+          {suggested > 0 && fare >= suggested * surge * 1.1 && <span className="text-[10px] font-bold text-emerald-400 inline-flex items-center gap-1"><Zap className="w-3 h-3" /> Faster</span>}
         </div>
+
         <input
           type="range" min={Math.max(1, suggested * 0.6)} max={Math.max(suggested * 2, 25)} step={0.5} value={fare}
           onChange={(e) => setFare(Number(e.target.value))}
