@@ -538,6 +538,17 @@ export default function Rides() {
           </div>
         </div>
       </div>
+
+      {showRating && completedRide && userId && completedRide.driver_id && (
+        <RideRating
+          rideId={completedRide.id}
+          raterId={userId}
+          rateeId={completedRide.driver_id}
+          direction="rider_to_driver"
+          rateeName={offers.find((o) => o.driver_id === completedRide.driver_id)?.driver_name ?? "Driver"}
+          onClose={() => { setShowRating(false); setCompletedRide(null); }}
+        />
+      )}
     </div>
   );
 }
