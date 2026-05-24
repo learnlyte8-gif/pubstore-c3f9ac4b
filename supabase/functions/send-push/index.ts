@@ -122,6 +122,7 @@ Deno.serve(async (req) => {
       title: record.title,
       body: record.body ?? "",
       url: record.link ?? "/home",
+      image: record.image ?? undefined,
       tag: t || undefined,
       data: { type: t || undefined },
     });
