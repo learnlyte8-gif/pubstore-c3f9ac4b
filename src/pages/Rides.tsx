@@ -316,6 +316,21 @@ export default function Rides() {
             pickup={pickup ? { lat: pickup.lat, lng: pickup.lng } : null}
             dropoff={dropoff ? { lat: dropoff.lat, lng: dropoff.lng } : null}
             drivers={inActiveFlow ? [] : drivers.map((d) => ({ ...d, lat: Number(d.lat), lng: Number(d.lng) }))}
+            sharedTrips={inActiveFlow ? [] : sharedTrips
+              .filter((t) => t.current_lat != null && t.current_lng != null)
+              .map((t) => ({
+                id: t.id,
+                lat: Number(t.current_lat),
+                lng: Number(t.current_lng),
+                heading: Number(t.heading ?? 0),
+                seats_available: t.seats_available,
+                seats_total: t.seats_total,
+                host_kind: t.host_kind,
+                dest_address: t.dest_address,
+                seat_price: Number(t.seat_price),
+                onClick: () => setTab("share"),
+              }))}
+            demand={inActiveFlow ? [] : demand}
             driverPosition={ride?.driver_lat && ride?.driver_lng ? { lat: Number(ride.driver_lat), lng: Number(ride.driver_lng) } : null}
             routes={mapRoutes as any}
             className="w-full h-full"
