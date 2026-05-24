@@ -133,18 +133,32 @@ self.addEventListener("notificationclick", (event) => {
 
   event.waitUntil(
     (async () => {
+      const absolute = new URL(target, self.location.origin).href;
       const allClients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+
+      // Prefer a client already on the target URL — just focus it.
       for (const client of allClients) {
-        if ("focus" in client) {
+        if (client.url === absolute && "focus" in client) {
+          try { await client.focus(); return; } catch (_) {}
+        }
+      }
+
+      // Otherwise navigate an existing window to the deep link, then focus.
+      for (const client of allClients) {
+        if ("navigate" in client && "focus" in client) {
           try {
-            client.postMessage({ type: "navigate", url: target });
-            await client.focus();
+            const navigated = await client.navigate(absolute).catch(() => null);
+            const c = navigated || client;
+            try { c.postMessage({ type: "navigate", url: target }); } catch (_) {}
+            await c.focus();
             return;
           } catch (_) {}
         }
       }
+
+      // Last resort: open a new window.
       if (self.clients.openWindow) {
-        await self.clients.openWindow(target);
+        await self.clients.openWindow(absolute);
       }
     })(),
   );
