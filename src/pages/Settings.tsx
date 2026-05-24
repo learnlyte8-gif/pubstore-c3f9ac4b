@@ -28,45 +28,7 @@ export default function Settings() {
     toast.success(has ? "Removed from interests" : "Added to interests");
   };
 
-  const sendTestNotification = async () => {
-    if (!userId) {
-      toast.error("Sign in to send a test notification");
-      return;
-    }
-    setTestingPush(true);
-    try {
-      const pushState = await getPushState();
-      if (pushState.supported) {
-        const subscribed = await subscribeToPush();
-        if (!subscribed.ok) {
-          throw new Error(subscribed.reason || "This device is not subscribed for push yet.");
-        }
-      }
 
-      const { data, error } = await supabase.functions.invoke("send-push", {
-        body: {
-          user_id: userId,
-          title: "PUBSTORE test push",
-          body: "This is a manual test notification",
-          url: "/settings",
-          type: "test",
-        },
-      });
-      if (error) throw error;
-      if (data?.sent < 1) {
-        throw new Error(data?.errors?.[0]?.body || data?.reason || "No device accepted the notification.");
-      }
-      toast.success("Test notification sent", {
-        description: `Delivered to ${data.sent} device(s)`,
-      });
-    } catch (e) {
-      toast.error("Failed to send test", {
-        description: e instanceof Error ? e.message : "Unknown error",
-      });
-    } finally {
-      setTestingPush(false);
-    }
-  };
 
   return (
     <div className="pb-24">
