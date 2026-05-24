@@ -6,8 +6,6 @@ import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { INTERESTS } from "@/data/interests";
 import { useMyInterests } from "@/hooks/useInterests";
-import { supabase } from "@/integrations/supabase/client";
-import { useMyInterests } from "@/hooks/useInterests";
 
 export default function Settings() {
   const { theme, setTheme } = useTheme();
