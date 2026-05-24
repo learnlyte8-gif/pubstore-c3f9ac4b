@@ -307,7 +307,31 @@ export default function Rides() {
     : undefined;
 
   return (
-    <div className="relative min-h-[calc(100dvh-3.5rem)] bg-gradient-to-b from-background via-background to-muted/30">
+    <div className="rides-theme relative min-h-[calc(100dvh-3.5rem)] overflow-hidden">
+      {/* Ambient grid + glow background accents */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.07]" style={{
+        backgroundImage: "linear-gradient(hsl(165 80% 60% / 0.6) 1px, transparent 1px), linear-gradient(90deg, hsl(165 80% 60% / 0.6) 1px, transparent 1px)",
+        backgroundSize: "40px 40px",
+        maskImage: "radial-gradient(70% 50% at 50% 0%, black 30%, transparent 80%)"
+      }} />
+      <div className="pointer-events-none absolute -top-32 -right-24 w-[420px] h-[420px] rounded-full blur-3xl" style={{ background: "radial-gradient(circle, hsl(165 90% 55% / 0.35), transparent 70%)" }} />
+
+      {/* HERO HEADER STRIP */}
+      <div className="relative px-3 pt-3 pb-2 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="rides-chip h-7 px-2.5 rounded-full inline-flex items-center gap-1.5 text-[10px] font-bold">
+            <span className="relative w-1.5 h-1.5 rounded-full bg-[hsl(var(--rides-mint))] rides-pulse" />
+            LIVE NETWORK
+          </span>
+          <span className="rides-glass-soft h-7 px-2.5 rounded-full inline-flex items-center gap-1 text-[10px] font-bold" data-hud>
+            v2.6 · {drivers.length} units
+          </span>
+        </div>
+        <Link to="/wallet" className="rides-glass-soft h-7 px-2.5 rounded-full inline-flex items-center gap-1.5 text-[10px] font-bold">
+          <Wallet className="w-3 h-3 text-[hsl(var(--rides-mint-soft))]" /> Wallet
+        </Link>
+      </div>
+
       {/* Hero map with overlays */}
       <div className="relative">
         <div className="h-[46vh] min-h-[320px] w-full">
