@@ -52,6 +52,7 @@ interface NotifRow {
   body?: string | null;
   link?: string | null;
   type?: string | null;
+  image?: string | null;
 }
 
 interface SubRow {
