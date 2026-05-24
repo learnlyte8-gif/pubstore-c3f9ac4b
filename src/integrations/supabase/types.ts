@@ -3756,6 +3756,152 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_trip_joins: {
+        Row: {
+          amount_due: number | null
+          created_at: string
+          dropoff_address: string | null
+          dropoff_lat: number | null
+          dropoff_lng: number | null
+          id: string
+          paid: boolean
+          paid_at: string | null
+          payment_tx_id: string | null
+          pickup_address: string | null
+          pickup_lat: number | null
+          pickup_lng: number | null
+          rider_id: string
+          seats: number
+          status: string
+          trip_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_due?: number | null
+          created_at?: string
+          dropoff_address?: string | null
+          dropoff_lat?: number | null
+          dropoff_lng?: number | null
+          id?: string
+          paid?: boolean
+          paid_at?: string | null
+          payment_tx_id?: string | null
+          pickup_address?: string | null
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          rider_id: string
+          seats?: number
+          status?: string
+          trip_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_due?: number | null
+          created_at?: string
+          dropoff_address?: string | null
+          dropoff_lat?: number | null
+          dropoff_lng?: number | null
+          id?: string
+          paid?: boolean
+          paid_at?: string | null
+          payment_tx_id?: string | null
+          pickup_address?: string | null
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          rider_id?: string
+          seats?: number
+          status?: string
+          trip_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_trip_joins_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "shared_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shared_trips: {
+        Row: {
+          created_at: string
+          currency: string
+          current_lat: number | null
+          current_lng: number | null
+          departure_at: string
+          dest_address: string
+          dest_lat: number
+          dest_lng: number
+          heading: number | null
+          host_id: string
+          host_kind: string
+          id: string
+          notes: string | null
+          origin_address: string
+          origin_lat: number
+          origin_lng: number
+          seat_price: number
+          seats_available: number
+          seats_total: number
+          status: string
+          updated_at: string
+          vehicle_class: string
+          vehicle_label: string | null
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          current_lat?: number | null
+          current_lng?: number | null
+          departure_at: string
+          dest_address: string
+          dest_lat: number
+          dest_lng: number
+          heading?: number | null
+          host_id: string
+          host_kind?: string
+          id?: string
+          notes?: string | null
+          origin_address: string
+          origin_lat: number
+          origin_lng: number
+          seat_price?: number
+          seats_available?: number
+          seats_total?: number
+          status?: string
+          updated_at?: string
+          vehicle_class?: string
+          vehicle_label?: string | null
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          current_lat?: number | null
+          current_lng?: number | null
+          departure_at?: string
+          dest_address?: string
+          dest_lat?: number
+          dest_lng?: number
+          heading?: number | null
+          host_id?: string
+          host_kind?: string
+          id?: string
+          notes?: string | null
+          origin_address?: string
+          origin_lat?: number
+          origin_lng?: number
+          seat_price?: number
+          seats_available?: number
+          seats_total?: number
+          status?: string
+          updated_at?: string
+          vehicle_class?: string
+          vehicle_label?: string | null
+        }
+        Relationships: []
+      }
       shares: {
         Row: {
           channel: Database["public"]["Enums"]["share_channel"]
@@ -4621,6 +4767,46 @@ export type Database = {
       is_group_buy_owner: {
         Args: { _gid: string; _uid: string }
         Returns: boolean
+      }
+      match_shared_trips: {
+        Args: {
+          _dropoff_lat: number
+          _dropoff_lng: number
+          _pickup_lat: number
+          _pickup_lng: number
+          _radius_km?: number
+        }
+        Returns: {
+          created_at: string
+          currency: string
+          current_lat: number | null
+          current_lng: number | null
+          departure_at: string
+          dest_address: string
+          dest_lat: number
+          dest_lng: number
+          heading: number | null
+          host_id: string
+          host_kind: string
+          id: string
+          notes: string | null
+          origin_address: string
+          origin_lat: number
+          origin_lng: number
+          seat_price: number
+          seats_available: number
+          seats_total: number
+          status: string
+          updated_at: string
+          vehicle_class: string
+          vehicle_label: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "shared_trips"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       pay_order_with_wallet: {
         Args: { _order_id: string }

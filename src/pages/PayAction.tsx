@@ -19,6 +19,7 @@ const KIND_LABEL: Record<string, string> = {
   "vehicle": "Vehicle inquiry",
   "service-bid": "Service bid",
   "logistics-bid": "Courier bid",
+  "shared-trip-seat": "Ride-share seat",
 };
 
 async function loadInfo(kind: string, id: string): Promise<Info | null> {
@@ -57,6 +58,16 @@ async function loadInfo(kind: string, id: string): Promise<Info | null> {
       const { data } = await sb.from("logistics_bids").select("fare,status,paid,logistics_requests(title)").eq("id", id).maybeSingle();
       if (!data) return null;
       return { title: data.logistics_requests?.title ?? "Delivery", amount: Number(data.fare ?? 0), status: data.status, paid: !!data.paid };
+    }
+    if (kind === "shared-trip-seat") {
+      const { data } = await sb.from("shared_trip_joins").select("amount_due,status,paid,seats,shared_trips(dest_address,seat_price)").eq("id", id).maybeSingle();
+      if (!data) return null;
+      return {
+        title: `${data.seats} seat${data.seats > 1 ? "s" : ""} → ${data.shared_trips?.dest_address ?? "shared trip"}`,
+        amount: Number(data.amount_due ?? 0),
+        status: data.status,
+        paid: !!data.paid,
+      };
     }
   } catch { /* noop */ }
   return null;

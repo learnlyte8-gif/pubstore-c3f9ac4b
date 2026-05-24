@@ -9,10 +9,13 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useNearbyDrivers, useRideOffers, useActiveRide, suggestFare, haversineKm, type Ride, type RideOffer } from "@/hooks/useRides";
+import { useNearbySharedTrips } from "@/hooks/useSharedTrips";
 import RideMap from "@/components/rides/RideMap";
 import RideChat from "@/components/rides/RideChat";
 import RideRating from "@/components/rides/RideRating";
+import PoolPanel from "@/components/rides/PoolPanel";
 import CircleSpinner from "@/components/CircleSpinner";
+import { supabase as sbAny } from "@/integrations/supabase/client";
 
 type LatLng = { lat: number; lng: number };
 type VClass = Ride["vehicle_class"];
@@ -94,6 +97,33 @@ export default function Rides() {
   const ride = useActiveRide(activeRideId);
   const offers = useRideOffers(activeRideId);
   const drivers = useNearbyDrivers(me, 10);
+  const sharedTrips = useNearbySharedTrips(me, 25);
+  const [demand, setDemand] = useState<{ id: string; lat: number; lng: number }[]>([]);
+
+  // Live demand pins: other riders currently searching (anonymous pickup points)
+  useEffect(() => {
+    if (!me) return;
+    let alive = true;
+    const load = async () => {
+      const { data } = await (sbAny as any).from("rides")
+        .select("id,pickup_lat,pickup_lng,status,created_at")
+        .in("status", ["searching", "offered"])
+        .gte("created_at", new Date(Date.now() - 15 * 60 * 1000).toISOString())
+        .limit(60);
+      if (!alive) return;
+      const pts = (data ?? [])
+        .filter((r: any) => r.id !== activeRideId)
+        .map((r: any) => ({ id: r.id, lat: Number(r.pickup_lat), lng: Number(r.pickup_lng) }))
+        .filter((p: any) => haversineKm(me.lat, me.lng, p.lat, p.lng) <= 15);
+      setDemand(pts);
+    };
+    load();
+    const ch = sbAny.channel("demand-pins")
+      .on("postgres_changes", { event: "*", schema: "public", table: "rides" }, load)
+      .subscribe();
+    const t = setInterval(load, 10000);
+    return () => { alive = false; sbAny.removeChannel(ch); clearInterval(t); };
+  }, [me?.lat, me?.lng, activeRideId]);
 
   const distance = useMemo(() => (pickup && dropoff ? haversineKm(pickup.lat, pickup.lng, dropoff.lat, dropoff.lng) : 0), [pickup, dropoff]);
   const suggested = useMemo(() => (distance > 0 ? suggestFare(distance, vClass) : 0), [distance, vClass]);
@@ -286,6 +316,21 @@ export default function Rides() {
             pickup={pickup ? { lat: pickup.lat, lng: pickup.lng } : null}
             dropoff={dropoff ? { lat: dropoff.lat, lng: dropoff.lng } : null}
             drivers={inActiveFlow ? [] : drivers.map((d) => ({ ...d, lat: Number(d.lat), lng: Number(d.lng) }))}
+            sharedTrips={inActiveFlow ? [] : sharedTrips
+              .filter((t) => t.current_lat != null && t.current_lng != null)
+              .map((t) => ({
+                id: t.id,
+                lat: Number(t.current_lat),
+                lng: Number(t.current_lng),
+                heading: Number(t.heading ?? 0),
+                seats_available: t.seats_available,
+                seats_total: t.seats_total,
+                host_kind: t.host_kind,
+                dest_address: t.dest_address,
+                seat_price: Number(t.seat_price),
+                onClick: () => setTab("share"),
+              }))}
+            demand={inActiveFlow ? [] : demand}
             driverPosition={ride?.driver_lat && ride?.driver_lng ? { lat: Number(ride.driver_lat), lng: Number(ride.driver_lng) } : null}
             routes={mapRoutes as any}
             className="w-full h-full"
@@ -304,10 +349,13 @@ export default function Rides() {
             <Flame className="w-3 h-3 text-amber-500" />
             <span className="text-[10px] font-bold">{surge.toFixed(2)}× surge</span>
           </div>
-          <div className="px-2.5 h-8 rounded-full bg-background/95 backdrop-blur border border-border shadow-card flex items-center gap-1.5 pointer-events-auto">
-            <Sun className="w-3 h-3 text-sky-500" />
-            <span className="text-[10px] font-bold">24°</span>
-          </div>
+          <button
+            onClick={() => setTab("share")}
+            className="px-2.5 h-8 rounded-full bg-background/95 backdrop-blur border border-border shadow-card flex items-center gap-1.5 pointer-events-auto"
+          >
+            <Users className="w-3 h-3 text-emerald-500" />
+            <span className="text-[10px] font-bold">{sharedTrips.length} pool</span>
+          </button>
           <div className="ml-auto pointer-events-auto">
             <button
               onClick={() => useMyLocationFor("pickup")}
@@ -381,22 +429,26 @@ export default function Rides() {
       <div className="relative mt-3 z-10">
         <div className="mx-3 rounded-3xl bg-card border border-border shadow-elevated overflow-hidden">
           {!inActiveFlow ? (
-            <RequestPanel
-              pickup={pickup} setPickup={setPickup}
-              dropoff={dropoff} setDropoff={setDropoff}
-              vClass={vClass} setVClass={setVClass}
-              fare={fare} setFare={setFare}
-              suggested={suggested} distance={activeRoute?.km ?? distance}
-              etaMins={activeRoute?.mins ?? 0}
-              surge={surge}
-              notes={notes} setNotes={setNotes}
-              onSwap={swapPickupDrop}
-              onUseMy={useMyLocationFor}
-              onSubmit={requestRide}
-              busy={creating}
-              driversCount={drivers.length}
-              tab={tab}
-            />
+            tab === "share" ? (
+              <PoolPanel userId={userId} me={me} pickup={pickup} dropoff={dropoff} />
+            ) : (
+              <RequestPanel
+                pickup={pickup} setPickup={setPickup}
+                dropoff={dropoff} setDropoff={setDropoff}
+                vClass={vClass} setVClass={setVClass}
+                fare={fare} setFare={setFare}
+                suggested={suggested} distance={activeRoute?.km ?? distance}
+                etaMins={activeRoute?.mins ?? 0}
+                surge={surge}
+                notes={notes} setNotes={setNotes}
+                onSwap={swapPickupDrop}
+                onUseMy={useMyLocationFor}
+                onSubmit={requestRide}
+                busy={creating}
+                driversCount={drivers.length}
+                tab={tab}
+              />
+            )
           ) : (
             <ActiveRidePanel
               ride={ride!}
