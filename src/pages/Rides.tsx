@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Car, Bike, Users, MapPin, Navigation, Crosshair, Plus, Minus, Star, Clock, Zap, Shield, Phone, X, ArrowRight,
   Sparkles, Wallet, TrendingUp, AlertTriangle, Route as RouteIcon, Gauge, Fuel, Leaf, Activity, Radio, Timer,
-  CloudRain, Sun, ChevronRight, Flame,
+  CloudRain, Sun, ChevronRight, Flame, PlayCircle, CheckCircle2, Share2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
-import { useNearbyDrivers, useRideOffers, useActiveRide, suggestFare, haversineKm, type Ride } from "@/hooks/useRides";
+import { useNearbyDrivers, useRideOffers, useActiveRide, suggestFare, haversineKm, type Ride, type RideOffer } from "@/hooks/useRides";
 import RideMap from "@/components/rides/RideMap";
+import RideChat from "@/components/rides/RideChat";
+import RideRating from "@/components/rides/RideRating";
 import CircleSpinner from "@/components/CircleSpinner";
 
 type LatLng = { lat: number; lng: number };
