@@ -307,10 +307,37 @@ export default function Rides() {
     : undefined;
 
   return (
-    <div className="relative min-h-[calc(100dvh-3.5rem)] bg-gradient-to-b from-background via-background to-muted/30">
-      {/* Hero map with overlays */}
-      <div className="relative">
-        <div className="h-[46vh] min-h-[320px] w-full">
+    <div className="rides-theme relative min-h-[calc(100dvh-3.5rem)] overflow-hidden">
+      {/* Ambient grid + glow background accents */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.07]" style={{
+        backgroundImage: "linear-gradient(hsl(165 80% 60% / 0.6) 1px, transparent 1px), linear-gradient(90deg, hsl(165 80% 60% / 0.6) 1px, transparent 1px)",
+        backgroundSize: "40px 40px",
+        maskImage: "radial-gradient(70% 50% at 50% 0%, black 30%, transparent 80%)"
+      }} />
+      <div className="pointer-events-none absolute -top-32 -right-24 w-[420px] h-[420px] rounded-full blur-3xl" style={{ background: "radial-gradient(circle, hsl(165 90% 55% / 0.35), transparent 70%)" }} />
+
+      {/* HERO HEADER STRIP */}
+      <div className="relative px-3 pt-3 pb-2 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="rides-chip h-7 px-2.5 rounded-full inline-flex items-center gap-1.5 text-[10px] font-bold">
+            <span className="relative w-1.5 h-1.5 rounded-full bg-[hsl(var(--rides-mint))] rides-pulse" />
+            LIVE NETWORK
+          </span>
+          <span className="rides-glass-soft h-7 px-2.5 rounded-full inline-flex items-center gap-1 text-[10px] font-bold" data-hud>
+            v2.6 · {drivers.length} units
+          </span>
+        </div>
+        <Link to="/wallet" className="rides-glass-soft h-7 px-2.5 rounded-full inline-flex items-center gap-1.5 text-[10px] font-bold">
+          <Wallet className="w-3 h-3 text-[hsl(var(--rides-mint-soft))]" /> Wallet
+        </Link>
+      </div>
+
+      {/* Hero map with overlays — holographic frame */}
+      <div className="relative px-3">
+        <div className="rides-holo-ring">
+          <div className="relative h-[44vh] min-h-[300px] w-full overflow-hidden rides-scan">
+            <div className="h-full w-full">
+
           <RideMap
             me={me}
             pickup={pickup ? { lat: pickup.lat, lng: pickup.lng } : null}
@@ -339,32 +366,31 @@ export default function Rides() {
 
         {/* Top status strip */}
         <div className="absolute top-3 left-3 right-3 flex items-center gap-2 pointer-events-none">
-          <div className="px-2.5 h-8 rounded-full bg-background/95 backdrop-blur border border-border shadow-card flex items-center gap-1.5 pointer-events-auto">
-            <span className="relative w-1.5 h-1.5 rounded-full bg-emerald-500">
-              <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-60" />
-            </span>
-            <span className="text-[10px] font-bold">{drivers.length} live</span>
+          <div className="rides-glass px-2.5 h-8 rounded-full flex items-center gap-1.5 pointer-events-auto">
+            <span className="relative w-1.5 h-1.5 rounded-full bg-[hsl(var(--rides-mint))] rides-pulse" />
+            <span className="text-[10px] font-bold" data-hud>{drivers.length} LIVE</span>
           </div>
-          <div className="px-2.5 h-8 rounded-full bg-background/95 backdrop-blur border border-border shadow-card flex items-center gap-1.5 pointer-events-auto">
-            <Flame className="w-3 h-3 text-amber-500" />
-            <span className="text-[10px] font-bold">{surge.toFixed(2)}× surge</span>
+          <div className="rides-glass px-2.5 h-8 rounded-full flex items-center gap-1.5 pointer-events-auto">
+            <Flame className="w-3 h-3 text-amber-400" />
+            <span className="text-[10px] font-bold" data-hud>{surge.toFixed(2)}× SURGE</span>
           </div>
           <button
             onClick={() => setTab("share")}
-            className="px-2.5 h-8 rounded-full bg-background/95 backdrop-blur border border-border shadow-card flex items-center gap-1.5 pointer-events-auto"
+            className="rides-glass px-2.5 h-8 rounded-full flex items-center gap-1.5 pointer-events-auto"
           >
-            <Users className="w-3 h-3 text-emerald-500" />
-            <span className="text-[10px] font-bold">{sharedTrips.length} pool</span>
+            <Users className="w-3 h-3 text-[hsl(var(--rides-mint-soft))]" />
+            <span className="text-[10px] font-bold" data-hud>{sharedTrips.length} POOL</span>
           </button>
           <div className="ml-auto pointer-events-auto">
             <button
               onClick={() => useMyLocationFor("pickup")}
-              className="h-8 w-8 rounded-full bg-background/95 backdrop-blur border border-border shadow-card flex items-center justify-center"
+              className="rides-glass h-8 w-8 rounded-full flex items-center justify-center"
             >
-              {locBusy ? <CircleSpinner size={12} /> : <Crosshair className="w-3.5 h-3.5" />}
+              {locBusy ? <CircleSpinner size={12} /> : <Crosshair className="w-3.5 h-3.5 text-[hsl(var(--rides-mint-soft))]" />}
             </button>
           </div>
         </div>
+
 
         {/* Bottom map overlay: route alternatives */}
         {!inActiveFlow && routes.length > 0 && (
@@ -376,19 +402,19 @@ export default function Rides() {
                   <button
                     key={r.id}
                     onClick={() => setRouteChoice(r.id as any)}
-                    className={`shrink-0 px-3 h-9 rounded-full backdrop-blur border flex items-center gap-2 transition-all ${
+                    className={`shrink-0 px-3 h-9 rounded-full flex items-center gap-2 transition-all ${
                       active
-                        ? "bg-foreground text-background border-foreground shadow-elevated scale-105"
-                        : "bg-background/90 border-border"
+                        ? "rides-chip scale-105 shadow-[0_8px_24px_-6px_hsl(165_90%_50%/0.5)]"
+                        : "rides-glass-soft"
                     }`}
                   >
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: r.color }} />
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: r.color, boxShadow: `0 0 8px ${r.color}` }} />
                     <span className="text-[10px] font-black tracking-wide uppercase">{r.label}</span>
-                    <span className="text-[10px] font-bold opacity-80">{r.mins}m · {r.km.toFixed(1)}km</span>
-                    <span className={`text-[9px] font-bold px-1.5 rounded-full ${
-                      r.traffic === "free"     ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" :
-                      r.traffic === "light"    ? "bg-sky-500/20 text-sky-700 dark:text-sky-300" :
-                                                  "bg-amber-500/20 text-amber-700 dark:text-amber-300"
+                    <span className="text-[10px] font-bold opacity-80" data-hud>{r.mins}m · {r.km.toFixed(1)}km</span>
+                    <span className={`text-[9px] font-bold px-1.5 rounded-full uppercase tracking-wider ${
+                      r.traffic === "free"     ? "bg-emerald-500/20 text-emerald-300" :
+                      r.traffic === "light"    ? "bg-sky-500/20 text-sky-300" :
+                                                  "bg-amber-500/20 text-amber-300"
                     }`}>{r.traffic}</span>
                   </button>
                 );
@@ -396,25 +422,32 @@ export default function Rides() {
             </div>
           </div>
         )}
+
+          </div>
+        </div>
       </div>
+
 
       {/* Mode tabs */}
       {!inActiveFlow && (
         <div className="px-3 mt-3">
-          <div className="flex gap-1 p-1 rounded-2xl bg-muted/60 border border-border">
+          <div className="rides-glass flex gap-1 p-1 rounded-2xl">
             {[
-              { id: "now",      label: "Ride now",  icon: Zap },
-              { id: "schedule", label: "Schedule",  icon: Timer },
-              { id: "share",    label: "Pool",      icon: Users },
+              { id: "now",      label: "RIDE NOW",  icon: Zap },
+              { id: "schedule", label: "SCHEDULE",  icon: Timer },
+              { id: "share",    label: "POOL",      icon: Users },
             ].map((t) => {
               const active = tab === t.id;
               return (
                 <button
                   key={t.id}
                   onClick={() => setTab(t.id as any)}
-                  className={`flex-1 h-9 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition ${
-                    active ? "bg-background shadow-card text-foreground" : "text-muted-foreground"
+                  className={`flex-1 h-10 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
+                    active
+                      ? "bg-gradient-to-b from-[hsl(var(--rides-mint)/0.25)] to-[hsl(var(--rides-mint)/0.1)] text-[hsl(var(--rides-mint-soft))] shadow-[inset_0_0_0_1px_hsl(var(--rides-mint)/0.5),0_0_24px_-4px_hsl(var(--rides-mint)/0.45)]"
+                      : "text-[hsl(var(--rides-muted))]"
                   }`}
+                  data-hud
                 >
                   <t.icon className="w-3.5 h-3.5" />
                   {t.label}
@@ -427,7 +460,8 @@ export default function Rides() {
 
       {/* Main panel */}
       <div className="relative mt-3 z-10">
-        <div className="mx-3 rounded-3xl bg-card border border-border shadow-elevated overflow-hidden">
+        <div className="mx-3 rounded-3xl rides-glass overflow-hidden">
+
           {!inActiveFlow ? (
             tab === "share" ? (
               <PoolPanel userId={userId} me={me} pickup={pickup} dropoff={dropoff} />
@@ -679,8 +713,8 @@ function RequestPanel(props: {
       {/* Vehicle class with live price tags */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[11px] font-bold tracking-wider text-muted-foreground">CHOOSE A RIDE</p>
-          {distance > 0 && <p className="text-[10px] text-muted-foreground">{distance.toFixed(1)} km · ~{etaMins} min</p>}
+          <p className="rides-label">CHOOSE A RIDE</p>
+          {distance > 0 && <p className="text-[10px] text-muted-foreground" data-hud>{distance.toFixed(1)} km · ~{etaMins} min</p>}
         </div>
         <div className="grid grid-cols-4 gap-2">
           {CLASSES.map((c) => {
@@ -691,20 +725,21 @@ function RequestPanel(props: {
               <button
                 key={c.id}
                 onClick={() => setVClass(c.id)}
-                className={`relative rounded-2xl p-2.5 border transition-all text-left ${active ? "border-primary bg-primary/5 scale-[1.02] shadow-soft" : "border-border bg-card hover:bg-muted/50"}`}
+                className={`rides-card relative p-2.5 text-left ${active ? "rides-card-active" : ""}`}
               >
-                <span className={`inline-flex w-8 h-8 rounded-xl bg-gradient-to-br ${c.tone} items-center justify-center mb-1.5 shadow-soft`}>
+                <span className={`inline-flex w-9 h-9 rounded-xl bg-gradient-to-br ${c.tone} items-center justify-center mb-1.5 shadow-[0_6px_18px_-4px_hsl(165_80%_30%/0.4)]`}>
                   <Icon className="w-4 h-4 text-white" />
                 </span>
-                <p className="text-[11px] font-bold leading-none">{c.label}</p>
-                <p className="text-[9px] text-muted-foreground mt-1">{c.eta} · {c.seats}</p>
-                {price > 0 && <p className="text-[10px] font-black text-primary mt-1">${price.toFixed(2)}</p>}
-                {active && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary" />}
+                <p className="text-[11px] font-bold leading-none font-display">{c.label}</p>
+                <p className="text-[9px] text-muted-foreground mt-1" data-hud>{c.eta} · {c.seats}</p>
+                {price > 0 && <p className="text-[11px] font-black text-[hsl(var(--rides-mint-soft))] mt-1" data-hud>${price.toFixed(2)}</p>}
+                {active && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[hsl(var(--rides-mint))] rides-pulse" />}
               </button>
             );
           })}
         </div>
       </div>
+
 
       {/* Fare bidding with breakdown */}
       <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 p-3">
@@ -723,10 +758,11 @@ function RequestPanel(props: {
           </div>
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-black tracking-tight">${fare.toFixed(2)}</span>
-          {suggested > 0 && fare < suggested * surge * 0.85 && <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 inline-flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Fewer offers</span>}
-          {suggested > 0 && fare >= suggested * surge * 1.1 && <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1"><Zap className="w-3 h-3" /> Faster</span>}
+          <span className="text-4xl font-black tracking-tight font-display text-[hsl(var(--rides-mint-soft))]" style={{ textShadow: "0 0 24px hsl(165 90% 50% / 0.5)" }} data-hud>${fare.toFixed(2)}</span>
+          {suggested > 0 && fare < suggested * surge * 0.85 && <span className="text-[10px] font-bold text-amber-400 inline-flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Fewer offers</span>}
+          {suggested > 0 && fare >= suggested * surge * 1.1 && <span className="text-[10px] font-bold text-emerald-400 inline-flex items-center gap-1"><Zap className="w-3 h-3" /> Faster</span>}
         </div>
+
         <input
           type="range" min={Math.max(1, suggested * 0.6)} max={Math.max(suggested * 2, 25)} step={0.5} value={fare}
           onChange={(e) => setFare(Number(e.target.value))}
@@ -766,9 +802,10 @@ function RequestPanel(props: {
       <button
         onClick={onSubmit}
         disabled={busy || !pickup || !dropoff}
-        className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-bold text-sm shadow-elevated disabled:opacity-50 flex items-center justify-center gap-2"
+        className="rides-cta w-full h-14 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 uppercase tracking-wider"
       >
         {busy ? <CircleSpinner size={16} /> : <><Sparkles className="w-4 h-4" /> {tab === "schedule" ? "Schedule ride" : tab === "share" ? "Find pool" : "Find drivers"} · ${fare.toFixed(2)}</>}
+
       </button>
     </div>
   );
