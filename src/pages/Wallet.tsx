@@ -271,9 +271,10 @@ export default function WalletPage() {
           </div>
 
           {/* Provider picker */}
-          <div className="grid grid-cols-2 gap-2 mb-3">
+          <div className="grid grid-cols-3 gap-2 mb-3">
             <ProviderBtn active={provider === "pesepay"} onClick={() => setProvider("pesepay")} icon={Smartphone} label="Pesepay" sub="EcoCash · OneMoney · Visa" />
             <ProviderBtn active={provider === "paypal"} onClick={() => setProvider("paypal")} icon={CreditCard} label="PayPal" sub="Cards & PayPal" />
+            <ProviderBtn active={provider === "simulate"} onClick={() => setProvider("simulate")} icon={Wrench} label="Simulate" sub="Test deposit" />
           </div>
 
 
