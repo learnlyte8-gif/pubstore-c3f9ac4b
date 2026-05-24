@@ -169,29 +169,14 @@ export default function WalletPage() {
     setSelected(amount);
     setRedirecting(true);
     try {
-      const { data: wallet } = await sb
-        .from("wallets")
-        .select("balance")
-        .eq("user_id", userId)
-        .maybeSingle();
-      const current = Number(wallet?.balance ?? 1);
-      const next = Math.round((current + amount) * 100) / 100;
-
-      const { error: txErr } = await sb.from("wallet_transactions").insert({
-        user_id: userId,
-        kind: "topup",
-        amount,
-        balance_after: next,
-        description: `Simulated top-up of ${fmt(amount)}`,
-        reference: `sim-${Date.now()}`,
+      const { error } = await sb.rpc("apply_wallet_transaction", {
+        _user_id: userId,
+        _kind: "topup",
+        _amount: amount,
+        _description: `Simulated top-up of ${fmt(amount)}`,
+        _reference: `sim-${Date.now()}`,
       });
-      if (txErr) throw txErr;
-
-      const { error: walletErr } = await sb.from("wallets").upsert(
-        { user_id: userId, balance: next },
-        { onConflict: "user_id" }
-      );
-      if (walletErr) throw walletErr;
+      if (error) throw error;
 
       toast.success(`Simulated +${fmt(amount)} added to wallet`);
       refresh();
