@@ -556,3 +556,160 @@
 @media (prefers-reduced-motion: reduce) {
   .samsung-bubble-spin { animation: samsung-bubble-spin 2.2s linear infinite; }
 }
+
+/* ============================================================
+   RIDES — Neon-Mint Holographic Theme (scoped via .rides-theme)
+   ============================================================ */
+.rides-theme {
+  --rides-bg-0: 210 60% 4%;
+  --rides-bg-1: 200 55% 7%;
+  --rides-surface: 200 40% 9%;
+  --rides-surface-2: 200 35% 12%;
+  --rides-border: 165 40% 22%;
+  --rides-fg: 150 30% 95%;
+  --rides-muted: 180 15% 65%;
+  --rides-mint: 165 80% 52%;
+  --rides-mint-soft: 150 90% 72%;
+  --rides-forest: 155 70% 22%;
+  --rides-deep: 213 70% 16%;
+
+  background:
+    radial-gradient(60% 40% at 80% 0%, hsl(var(--rides-mint) / 0.18) 0%, transparent 60%),
+    radial-gradient(50% 35% at 0% 30%, hsl(var(--rides-forest) / 0.45) 0%, transparent 65%),
+    radial-gradient(80% 60% at 50% 100%, hsl(var(--rides-deep) / 0.7) 0%, transparent 70%),
+    linear-gradient(180deg, hsl(var(--rides-bg-0)) 0%, hsl(var(--rides-bg-1)) 100%);
+  color: hsl(var(--rides-fg));
+  font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-feature-settings: "ss01", "tnum", "cv11";
+  min-height: 100dvh;
+}
+.rides-theme h1, .rides-theme h2, .rides-theme h3, .rides-theme h4,
+.rides-theme .font-display {
+  font-family: 'Sora', 'Manrope', sans-serif;
+  letter-spacing: -0.03em;
+}
+.rides-theme .font-mono-num,
+.rides-theme [data-hud] {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Glass surfaces */
+.rides-glass {
+  background: linear-gradient(180deg, hsl(var(--rides-surface) / 0.85) 0%, hsl(var(--rides-surface-2) / 0.75) 100%);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  border: 1px solid hsl(var(--rides-border) / 0.55);
+  box-shadow:
+    0 1px 0 hsl(var(--rides-mint-soft) / 0.08) inset,
+    0 0 0 1px hsl(0 0% 0% / 0.4),
+    0 22px 60px -22px hsl(165 100% 30% / 0.35);
+}
+.rides-glass-soft {
+  background: hsl(var(--rides-surface) / 0.55);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid hsl(var(--rides-border) / 0.4);
+}
+
+/* Neon mint chip */
+.rides-chip {
+  background: linear-gradient(180deg, hsl(var(--rides-mint) / 0.18), hsl(var(--rides-mint) / 0.08));
+  border: 1px solid hsl(var(--rides-mint) / 0.45);
+  color: hsl(var(--rides-mint-soft));
+  text-shadow: 0 0 16px hsl(var(--rides-mint) / 0.45);
+}
+
+/* Primary neon button */
+.rides-cta {
+  position: relative;
+  background: linear-gradient(135deg, hsl(var(--rides-mint)) 0%, hsl(var(--rides-mint-soft)) 100%);
+  color: hsl(200 100% 6%);
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  border: 1px solid hsl(var(--rides-mint-soft));
+  box-shadow:
+    0 0 0 1px hsl(var(--rides-mint) / 0.4),
+    0 10px 30px -8px hsl(var(--rides-mint) / 0.7),
+    0 0 60px -10px hsl(var(--rides-mint) / 0.5),
+    inset 0 1px 0 hsl(0 0% 100% / 0.4);
+  transition: transform .2s, box-shadow .3s;
+}
+.rides-cta:hover { transform: translateY(-1px); box-shadow: 0 14px 36px -8px hsl(var(--rides-mint) / 0.85), 0 0 80px -8px hsl(var(--rides-mint) / 0.6); }
+.rides-cta:disabled { opacity: .5; box-shadow: none; }
+
+/* Card pill — vehicle class etc */
+.rides-card {
+  background: linear-gradient(180deg, hsl(var(--rides-surface) / 0.9), hsl(var(--rides-surface-2) / 0.7));
+  border: 1px solid hsl(var(--rides-border) / 0.5);
+  border-radius: 18px;
+  transition: all .25s cubic-bezier(.22,1,.36,1);
+}
+.rides-card:hover { border-color: hsl(var(--rides-mint) / 0.5); transform: translateY(-2px); }
+.rides-card-active {
+  border-color: hsl(var(--rides-mint));
+  background: linear-gradient(180deg, hsl(var(--rides-mint) / 0.18), hsl(var(--rides-mint) / 0.05));
+  box-shadow: 0 0 0 1px hsl(var(--rides-mint) / 0.5), 0 12px 30px -10px hsl(var(--rides-mint) / 0.5);
+}
+
+/* Holographic ring border */
+.rides-holo-ring {
+  position: relative;
+  background:
+    conic-gradient(from 120deg,
+      hsl(165 90% 55%) 0deg,
+      hsl(200 80% 50%) 90deg,
+      hsl(280 70% 60%) 180deg,
+      hsl(165 90% 55%) 360deg);
+  padding: 1.5px;
+  border-radius: 22px;
+}
+.rides-holo-ring > * { border-radius: 20px; background: hsl(var(--rides-surface)); }
+
+/* HUD label */
+.rides-label {
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: hsl(var(--rides-mint-soft) / 0.85);
+}
+
+/* Sweep scan line */
+@keyframes rides-scan {
+  0% { transform: translateY(-100%); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(200%); opacity: 0; }
+}
+.rides-scan::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 40%;
+  background: linear-gradient(180deg, transparent, hsl(var(--rides-mint) / 0.18), transparent);
+  animation: rides-scan 4.5s cubic-bezier(.45,0,.25,1) infinite;
+  pointer-events: none;
+}
+
+/* Pulse mint dot */
+@keyframes rides-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--rides-mint) / 0.6); }
+  50%      { box-shadow: 0 0 0 8px hsl(var(--rides-mint) / 0); }
+}
+.rides-pulse { animation: rides-pulse 1.8s ease-in-out infinite; }
+
+/* Override muted/border tokens within scope so shadcn primitives inherit nicely */
+.rides-theme .text-muted-foreground { color: hsl(var(--rides-muted)); }
+.rides-theme .bg-muted { background: hsl(var(--rides-surface-2) / 0.6); }
+.rides-theme .bg-muted\/40,
+.rides-theme .bg-muted\/50,
+.rides-theme .bg-muted\/60 { background: hsl(var(--rides-surface-2) / 0.5); }
+.rides-theme .border-border { border-color: hsl(var(--rides-border) / 0.5); }
+.rides-theme .bg-card { background: hsl(var(--rides-surface) / 0.85); }
+.rides-theme .bg-background { background: transparent; }
+.rides-theme .text-primary { color: hsl(var(--rides-mint-soft)); }
+.rides-theme .bg-primary { background: hsl(var(--rides-mint)); color: hsl(200 100% 6%); }
+.rides-theme .border-primary { border-color: hsl(var(--rides-mint)); }
+.rides-theme .accent-primary { accent-color: hsl(var(--rides-mint)); }
+.rides-theme input { color: hsl(var(--rides-fg)); }
+.rides-theme input::placeholder { color: hsl(var(--rides-muted) / 0.7); }
