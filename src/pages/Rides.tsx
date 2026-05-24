@@ -187,6 +187,31 @@ export default function Rides() {
     toast.message("Ride cancelled");
   };
 
+  const startTrip = async () => {
+    if (!activeRideId) return;
+    await supabase.from("rides").update({ status: "in_progress", started_at: new Date().toISOString() }).eq("id", activeRideId);
+    toast.success("Trip started");
+  };
+
+  const completeTrip = async () => {
+    if (!activeRideId || !ride) return;
+    await supabase.from("rides").update({ status: "completed", completed_at: new Date().toISOString() }).eq("id", activeRideId);
+    setCompletedRide(ride);
+    setShowRating(true);
+    toast.success("Trip completed");
+  };
+
+  const shareTrip = async () => {
+    if (!ride) return;
+    const url = `${window.location.origin}/rides?share=${ride.id}`;
+    const text = `I'm on a ${ride.vehicle_class} ride to ${ride.dropoff_address}. Track me: ${url}`;
+    if (navigator.share) {
+      try { await navigator.share({ title: "My PUBSTORE ride", text, url }); return; } catch { /* fall through */ }
+    }
+    try { await navigator.clipboard.writeText(text); toast.success("Trip link copied"); }
+    catch { toast.error("Could not share"); }
+  };
+
   const swapPickupDrop = () => {
     if (!pickup || !dropoff) return;
     setPickup(dropoff); setDropoff(pickup);
@@ -203,6 +228,41 @@ export default function Rides() {
       setLocBusy(false);
     }, () => setLocBusy(false), { enableHighAccuracy: true, timeout: 8000 });
   };
+
+  const quickDestination = async (label: string) => {
+    if (label === "Home" || label === "Work") {
+      try {
+        const saved = JSON.parse(localStorage.getItem(`ride_saved_${label.toLowerCase()}`) ?? "null");
+        if (saved?.lat && saved?.lng) {
+          setDropoff(saved);
+          toast.success(`Drop-off set to ${label}`);
+          return;
+        }
+      } catch { /* ignore */ }
+      toast.message(`${label} not saved yet`, { action: { label: "Set", onClick: () => navigate("/addresses") } });
+      return;
+    }
+    const center = pickup ?? me;
+    const q = center ? `${label} near ${center.lat.toFixed(3)},${center.lng.toFixed(3)}` : label;
+    const res = await searchPlace(q);
+    if (res[0]) {
+      setDropoff({ lat: res[0].lat, lng: res[0].lng, address: res[0].label });
+      toast.success(`Drop-off set to ${label}`);
+    } else {
+      toast.error(`No ${label} found nearby`);
+    }
+  };
+
+  // Auto-handle terminal ride states
+  useEffect(() => {
+    if (!ride) return;
+    if (ride.status === "cancelled") {
+      setActiveRideId(null);
+    } else if (ride.status === "completed" && !showRating) {
+      setCompletedRide(ride);
+      setShowRating(true);
+    }
+  }, [ride?.status]); // eslint-disable-line
 
   const inActiveFlow = ride && ["searching", "offered", "accepted", "arriving", "in_progress"].includes(ride.status);
 
