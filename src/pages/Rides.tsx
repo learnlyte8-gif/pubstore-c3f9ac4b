@@ -401,8 +401,12 @@ export default function Rides() {
             <ActiveRidePanel
               ride={ride!}
               offers={offers}
+              myUserId={userId ?? ""}
               onAccept={acceptOffer}
               onCancel={cancelRide}
+              onStart={startTrip}
+              onComplete={completeTrip}
+              onShare={shareTrip}
             />
           )}
         </div>
