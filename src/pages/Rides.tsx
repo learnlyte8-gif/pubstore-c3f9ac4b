@@ -423,7 +423,10 @@ export default function Rides() {
             </div>
           </div>
         )}
+          </div>
+        </div>
       </div>
+
 
       {/* Mode tabs */}
       {!inActiveFlow && (
