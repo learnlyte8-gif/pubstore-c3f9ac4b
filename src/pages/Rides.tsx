@@ -349,10 +349,13 @@ export default function Rides() {
             <Flame className="w-3 h-3 text-amber-500" />
             <span className="text-[10px] font-bold">{surge.toFixed(2)}× surge</span>
           </div>
-          <div className="px-2.5 h-8 rounded-full bg-background/95 backdrop-blur border border-border shadow-card flex items-center gap-1.5 pointer-events-auto">
-            <Sun className="w-3 h-3 text-sky-500" />
-            <span className="text-[10px] font-bold">24°</span>
-          </div>
+          <button
+            onClick={() => setTab("share")}
+            className="px-2.5 h-8 rounded-full bg-background/95 backdrop-blur border border-border shadow-card flex items-center gap-1.5 pointer-events-auto"
+          >
+            <Users className="w-3 h-3 text-emerald-500" />
+            <span className="text-[10px] font-bold">{sharedTrips.length} pool</span>
+          </button>
           <div className="ml-auto pointer-events-auto">
             <button
               onClick={() => useMyLocationFor("pickup")}
