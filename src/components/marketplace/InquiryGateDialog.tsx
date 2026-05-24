@@ -34,12 +34,25 @@ export default function InquiryGateDialog({
     if (!msg.trim()) return;
     setSending(true);
     try {
-      // Record the inquiry (pending supplier approval)
-      const { error: invErr } = await supabase.from("product_inquiries").upsert(
-        { buyer_id: buyerId, product_id: productId, supplier_id: supplierId, message: msg, product_title: productTitle, status: "pending", decided_at: null, decided_by: null },
-        { onConflict: "buyer_id,product_id" }
-      );
-      if (invErr) throw invErr;
+      // Record the inquiry (pending supplier approval) — update if exists, else insert
+      const { data: existingInq } = await supabase
+        .from("product_inquiries")
+        .select("id")
+        .eq("buyer_id", buyerId)
+        .eq("product_id", productId)
+        .maybeSingle();
+      if (existingInq?.id) {
+        const { error: updErr } = await supabase
+          .from("product_inquiries")
+          .update({ message: msg, product_title: productTitle, supplier_id: supplierId, status: "pending", decided_at: null, decided_by: null })
+          .eq("id", existingInq.id);
+        if (updErr) throw updErr;
+      } else {
+        const { error: insErr } = await supabase
+          .from("product_inquiries")
+          .insert({ buyer_id: buyerId, product_id: productId, supplier_id: supplierId, message: msg, product_title: productTitle, status: "pending" });
+        if (insErr) throw insErr;
+      }
 
       // Find or create conversation
       const { data: existing } = await supabase
