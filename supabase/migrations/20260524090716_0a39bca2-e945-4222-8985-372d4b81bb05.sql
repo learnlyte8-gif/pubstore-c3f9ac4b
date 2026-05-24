@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public._send_product_suggestions() FROM PUBLIC, anon, authenticated;
