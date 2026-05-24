@@ -402,19 +402,19 @@ export default function Rides() {
                   <button
                     key={r.id}
                     onClick={() => setRouteChoice(r.id as any)}
-                    className={`shrink-0 px-3 h-9 rounded-full backdrop-blur border flex items-center gap-2 transition-all ${
+                    className={`shrink-0 px-3 h-9 rounded-full flex items-center gap-2 transition-all ${
                       active
-                        ? "bg-foreground text-background border-foreground shadow-elevated scale-105"
-                        : "bg-background/90 border-border"
+                        ? "rides-chip scale-105 shadow-[0_8px_24px_-6px_hsl(165_90%_50%/0.5)]"
+                        : "rides-glass-soft"
                     }`}
                   >
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: r.color }} />
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: r.color, boxShadow: `0 0 8px ${r.color}` }} />
                     <span className="text-[10px] font-black tracking-wide uppercase">{r.label}</span>
-                    <span className="text-[10px] font-bold opacity-80">{r.mins}m · {r.km.toFixed(1)}km</span>
-                    <span className={`text-[9px] font-bold px-1.5 rounded-full ${
-                      r.traffic === "free"     ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" :
-                      r.traffic === "light"    ? "bg-sky-500/20 text-sky-700 dark:text-sky-300" :
-                                                  "bg-amber-500/20 text-amber-700 dark:text-amber-300"
+                    <span className="text-[10px] font-bold opacity-80" data-hud>{r.mins}m · {r.km.toFixed(1)}km</span>
+                    <span className={`text-[9px] font-bold px-1.5 rounded-full uppercase tracking-wider ${
+                      r.traffic === "free"     ? "bg-emerald-500/20 text-emerald-300" :
+                      r.traffic === "light"    ? "bg-sky-500/20 text-sky-300" :
+                                                  "bg-amber-500/20 text-amber-300"
                     }`}>{r.traffic}</span>
                   </button>
                 );
@@ -422,6 +422,7 @@ export default function Rides() {
             </div>
           </div>
         )}
+
           </div>
         </div>
       </div>
