@@ -171,6 +171,7 @@ export type Database = {
       }
       car_rental_bookings: {
         Row: {
+          amount_due: number | null
           created_at: string
           cross_border: boolean
           cross_border_destination: string | null
@@ -182,6 +183,9 @@ export type Database = {
           id: string
           license_years: number | null
           notes: string | null
+          paid: boolean
+          paid_at: string | null
+          payment_tx_id: string | null
           pickup_at: string
           pickup_location: string | null
           rental_id: string
@@ -195,6 +199,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          amount_due?: number | null
           created_at?: string
           cross_border?: boolean
           cross_border_destination?: string | null
@@ -206,6 +211,9 @@ export type Database = {
           id?: string
           license_years?: number | null
           notes?: string | null
+          paid?: boolean
+          paid_at?: string | null
+          payment_tx_id?: string | null
           pickup_at: string
           pickup_location?: string | null
           rental_id: string
@@ -219,6 +227,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          amount_due?: number | null
           created_at?: string
           cross_border?: boolean
           cross_border_destination?: string | null
@@ -230,6 +239,9 @@ export type Database = {
           id?: string
           license_years?: number | null
           notes?: string | null
+          paid?: boolean
+          paid_at?: string | null
+          payment_tx_id?: string | null
           pickup_at?: string
           pickup_location?: string | null
           rental_id?: string
@@ -925,6 +937,7 @@ export type Database = {
       }
       finance_applications: {
         Row: {
+          amount_due: number
           amount_requested: number | null
           applicant_email: string | null
           applicant_id: string
@@ -935,6 +948,9 @@ export type Database = {
           id: string
           monthly_income: number | null
           notes: string | null
+          paid: boolean
+          paid_at: string | null
+          payment_tx_id: string | null
           product_id: string
           purpose: string | null
           status: string
@@ -942,6 +958,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          amount_due?: number
           amount_requested?: number | null
           applicant_email?: string | null
           applicant_id: string
@@ -952,6 +969,9 @@ export type Database = {
           id?: string
           monthly_income?: number | null
           notes?: string | null
+          paid?: boolean
+          paid_at?: string | null
+          payment_tx_id?: string | null
           product_id: string
           purpose?: string | null
           status?: string
@@ -959,6 +979,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          amount_due?: number
           amount_requested?: number | null
           applicant_email?: string | null
           applicant_id?: string
@@ -969,6 +990,9 @@ export type Database = {
           id?: string
           monthly_income?: number | null
           notes?: string | null
+          paid?: boolean
+          paid_at?: string | null
+          payment_tx_id?: string | null
           product_id?: string
           purpose?: string | null
           status?: string
@@ -2076,6 +2100,9 @@ export type Database = {
           fare: number
           id: string
           message: string | null
+          paid: boolean
+          paid_at: string | null
+          payment_tx_id: string | null
           request_id: string
           status: string
           vehicle_label: string | null
@@ -2092,6 +2119,9 @@ export type Database = {
           fare: number
           id?: string
           message?: string | null
+          paid?: boolean
+          paid_at?: string | null
+          payment_tx_id?: string | null
           request_id: string
           status?: string
           vehicle_label?: string | null
@@ -2108,6 +2138,9 @@ export type Database = {
           fare?: number
           id?: string
           message?: string | null
+          paid?: boolean
+          paid_at?: string | null
+          payment_tx_id?: string | null
           request_id?: string
           status?: string
           vehicle_label?: string | null
@@ -3001,6 +3034,7 @@ export type Database = {
       }
       property_inquiries: {
         Row: {
+          amount_due: number
           created_at: string
           id: string
           inquirer_email: string | null
@@ -3008,11 +3042,15 @@ export type Database = {
           inquirer_name: string | null
           inquirer_phone: string | null
           message: string | null
+          paid: boolean
+          paid_at: string | null
+          payment_tx_id: string | null
           preferred_date: string | null
           property_id: string
           status: string
         }
         Insert: {
+          amount_due?: number
           created_at?: string
           id?: string
           inquirer_email?: string | null
@@ -3020,11 +3058,15 @@ export type Database = {
           inquirer_name?: string | null
           inquirer_phone?: string | null
           message?: string | null
+          paid?: boolean
+          paid_at?: string | null
+          payment_tx_id?: string | null
           preferred_date?: string | null
           property_id: string
           status?: string
         }
         Update: {
+          amount_due?: number
           created_at?: string
           id?: string
           inquirer_email?: string | null
@@ -3032,6 +3074,9 @@ export type Database = {
           inquirer_name?: string | null
           inquirer_phone?: string | null
           message?: string | null
+          paid?: boolean
+          paid_at?: string | null
+          payment_tx_id?: string | null
           preferred_date?: string | null
           property_id?: string
           status?: string
@@ -3532,6 +3577,9 @@ export type Database = {
           eta_days: number | null
           id: string
           message: string | null
+          paid: boolean
+          paid_at: string | null
+          payment_tx_id: string | null
           price: number
           provider_avatar: string | null
           provider_name: string | null
@@ -3545,6 +3593,9 @@ export type Database = {
           eta_days?: number | null
           id?: string
           message?: string | null
+          paid?: boolean
+          paid_at?: string | null
+          payment_tx_id?: string | null
           price: number
           provider_avatar?: string | null
           provider_name?: string | null
@@ -3558,6 +3609,9 @@ export type Database = {
           eta_days?: number | null
           id?: string
           message?: string | null
+          paid?: boolean
+          paid_at?: string | null
+          payment_tx_id?: string | null
           price?: number
           provider_avatar?: string | null
           provider_name?: string | null
@@ -3742,6 +3796,7 @@ export type Database = {
       }
       stay_bookings: {
         Row: {
+          amount_due: number | null
           check_in: string
           check_out: string
           cleaning_fee: number
@@ -3753,6 +3808,9 @@ export type Database = {
           nightly_rate: number
           nights: number
           notes: string | null
+          paid: boolean
+          paid_at: string | null
+          payment_tx_id: string | null
           service_fee: number
           status: string
           stay_id: string
@@ -3760,6 +3818,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          amount_due?: number | null
           check_in: string
           check_out: string
           cleaning_fee?: number
@@ -3771,6 +3830,9 @@ export type Database = {
           nightly_rate?: number
           nights?: number
           notes?: string | null
+          paid?: boolean
+          paid_at?: string | null
+          payment_tx_id?: string | null
           service_fee?: number
           status?: string
           stay_id: string
@@ -3778,6 +3840,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          amount_due?: number | null
           check_in?: string
           check_out?: string
           cleaning_fee?: number
@@ -3789,6 +3852,9 @@ export type Database = {
           nightly_rate?: number
           nights?: number
           notes?: string | null
+          paid?: boolean
+          paid_at?: string | null
+          payment_tx_id?: string | null
           service_fee?: number
           status?: string
           stay_id?: string
@@ -4193,6 +4259,7 @@ export type Database = {
       }
       vehicle_inquiries: {
         Row: {
+          amount_due: number
           buyer_id: string
           contact_email: string | null
           contact_name: string | null
@@ -4204,12 +4271,16 @@ export type Database = {
           kind: string
           loan_term_months: number | null
           message: string | null
+          paid: boolean
+          paid_at: string | null
+          payment_tx_id: string | null
           preferred_date: string | null
           status: string
           updated_at: string
           vehicle_id: string
         }
         Insert: {
+          amount_due?: number
           buyer_id: string
           contact_email?: string | null
           contact_name?: string | null
@@ -4221,12 +4292,16 @@ export type Database = {
           kind?: string
           loan_term_months?: number | null
           message?: string | null
+          paid?: boolean
+          paid_at?: string | null
+          payment_tx_id?: string | null
           preferred_date?: string | null
           status?: string
           updated_at?: string
           vehicle_id: string
         }
         Update: {
+          amount_due?: number
           buyer_id?: string
           contact_email?: string | null
           contact_name?: string | null
@@ -4238,6 +4313,9 @@ export type Database = {
           kind?: string
           loan_term_months?: number | null
           message?: string | null
+          paid?: boolean
+          paid_at?: string | null
+          payment_tx_id?: string | null
           preferred_date?: string | null
           status?: string
           updated_at?: string
@@ -4562,6 +4640,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      pay_service_action_with_wallet: {
+        Args: { _kind: string; _record_id: string }
+        Returns: Json
       }
       pending_rides_for_driver: {
         Args: { _lat: number; _lng: number; _radius_km?: number }
