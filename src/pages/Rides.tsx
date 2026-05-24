@@ -780,11 +780,15 @@ function AddressInput({ icon, placeholder, value, onPick, onUseMy }: {
 }
 
 /* ---------- Active ride panel ---------- */
-function ActiveRidePanel({ ride, offers, onAccept, onCancel }: {
+function ActiveRidePanel({ ride, offers, myUserId, onAccept, onCancel, onStart, onComplete, onShare }: {
   ride: Ride;
-  offers: ReturnType<typeof useRideOffers> extends infer T ? T : never;
+  offers: RideOffer[];
+  myUserId: string;
   onAccept: (id: string, driverId: string, fare: number) => void;
   onCancel: () => void;
+  onStart: () => void;
+  onComplete: () => void;
+  onShare: () => void;
 }) {
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
