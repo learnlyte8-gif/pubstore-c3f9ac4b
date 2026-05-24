@@ -7,14 +7,13 @@ import { toast } from "sonner";
 import { INTERESTS } from "@/data/interests";
 import { useMyInterests } from "@/hooks/useInterests";
 import { supabase } from "@/integrations/supabase/client";
-import { getPushState, subscribeToPush } from "@/lib/push";
+import { useMyInterests } from "@/hooks/useInterests";
 
 export default function Settings() {
   const { theme, setTheme } = useTheme();
   const [currency, setCurrency] = useState("USD");
   const [language, setLanguage] = useState("English");
   const { interests, save: saveInterests, userId } = useMyInterests();
-  const [testingPush, setTestingPush] = useState(false);
 
   const toggleInterest = async (item: string) => {
     if (!userId) {
