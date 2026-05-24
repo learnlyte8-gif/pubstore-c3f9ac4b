@@ -332,9 +332,12 @@ export default function Rides() {
         </Link>
       </div>
 
-      {/* Hero map with overlays */}
-      <div className="relative">
-        <div className="h-[46vh] min-h-[320px] w-full">
+      {/* Hero map with overlays — holographic frame */}
+      <div className="relative px-3">
+        <div className="rides-holo-ring">
+          <div className="relative h-[44vh] min-h-[300px] w-full overflow-hidden rides-scan">
+            <div className="h-full w-full">
+
           <RideMap
             me={me}
             pickup={pickup ? { lat: pickup.lat, lng: pickup.lng } : null}
