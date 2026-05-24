@@ -431,20 +431,23 @@ export default function Rides() {
       {/* Mode tabs */}
       {!inActiveFlow && (
         <div className="px-3 mt-3">
-          <div className="flex gap-1 p-1 rounded-2xl bg-muted/60 border border-border">
+          <div className="rides-glass flex gap-1 p-1 rounded-2xl">
             {[
-              { id: "now",      label: "Ride now",  icon: Zap },
-              { id: "schedule", label: "Schedule",  icon: Timer },
-              { id: "share",    label: "Pool",      icon: Users },
+              { id: "now",      label: "RIDE NOW",  icon: Zap },
+              { id: "schedule", label: "SCHEDULE",  icon: Timer },
+              { id: "share",    label: "POOL",      icon: Users },
             ].map((t) => {
               const active = tab === t.id;
               return (
                 <button
                   key={t.id}
                   onClick={() => setTab(t.id as any)}
-                  className={`flex-1 h-9 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition ${
-                    active ? "bg-background shadow-card text-foreground" : "text-muted-foreground"
+                  className={`flex-1 h-10 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
+                    active
+                      ? "bg-gradient-to-b from-[hsl(var(--rides-mint)/0.25)] to-[hsl(var(--rides-mint)/0.1)] text-[hsl(var(--rides-mint-soft))] shadow-[inset_0_0_0_1px_hsl(var(--rides-mint)/0.5),0_0_24px_-4px_hsl(var(--rides-mint)/0.45)]"
+                      : "text-[hsl(var(--rides-muted))]"
                   }`}
+                  data-hud
                 >
                   <t.icon className="w-3.5 h-3.5" />
                   {t.label}
@@ -457,7 +460,8 @@ export default function Rides() {
 
       {/* Main panel */}
       <div className="relative mt-3 z-10">
-        <div className="mx-3 rounded-3xl bg-card border border-border shadow-elevated overflow-hidden">
+        <div className="mx-3 rounded-3xl rides-glass overflow-hidden">
+
           {!inActiveFlow ? (
             tab === "share" ? (
               <PoolPanel userId={userId} me={me} pickup={pickup} dropoff={dropoff} />
