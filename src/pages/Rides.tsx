@@ -366,32 +366,31 @@ export default function Rides() {
 
         {/* Top status strip */}
         <div className="absolute top-3 left-3 right-3 flex items-center gap-2 pointer-events-none">
-          <div className="px-2.5 h-8 rounded-full bg-background/95 backdrop-blur border border-border shadow-card flex items-center gap-1.5 pointer-events-auto">
-            <span className="relative w-1.5 h-1.5 rounded-full bg-emerald-500">
-              <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-60" />
-            </span>
-            <span className="text-[10px] font-bold">{drivers.length} live</span>
+          <div className="rides-glass px-2.5 h-8 rounded-full flex items-center gap-1.5 pointer-events-auto">
+            <span className="relative w-1.5 h-1.5 rounded-full bg-[hsl(var(--rides-mint))] rides-pulse" />
+            <span className="text-[10px] font-bold" data-hud>{drivers.length} LIVE</span>
           </div>
-          <div className="px-2.5 h-8 rounded-full bg-background/95 backdrop-blur border border-border shadow-card flex items-center gap-1.5 pointer-events-auto">
-            <Flame className="w-3 h-3 text-amber-500" />
-            <span className="text-[10px] font-bold">{surge.toFixed(2)}× surge</span>
+          <div className="rides-glass px-2.5 h-8 rounded-full flex items-center gap-1.5 pointer-events-auto">
+            <Flame className="w-3 h-3 text-amber-400" />
+            <span className="text-[10px] font-bold" data-hud>{surge.toFixed(2)}× SURGE</span>
           </div>
           <button
             onClick={() => setTab("share")}
-            className="px-2.5 h-8 rounded-full bg-background/95 backdrop-blur border border-border shadow-card flex items-center gap-1.5 pointer-events-auto"
+            className="rides-glass px-2.5 h-8 rounded-full flex items-center gap-1.5 pointer-events-auto"
           >
-            <Users className="w-3 h-3 text-emerald-500" />
-            <span className="text-[10px] font-bold">{sharedTrips.length} pool</span>
+            <Users className="w-3 h-3 text-[hsl(var(--rides-mint-soft))]" />
+            <span className="text-[10px] font-bold" data-hud>{sharedTrips.length} POOL</span>
           </button>
           <div className="ml-auto pointer-events-auto">
             <button
               onClick={() => useMyLocationFor("pickup")}
-              className="h-8 w-8 rounded-full bg-background/95 backdrop-blur border border-border shadow-card flex items-center justify-center"
+              className="rides-glass h-8 w-8 rounded-full flex items-center justify-center"
             >
-              {locBusy ? <CircleSpinner size={12} /> : <Crosshair className="w-3.5 h-3.5" />}
+              {locBusy ? <CircleSpinner size={12} /> : <Crosshair className="w-3.5 h-3.5 text-[hsl(var(--rides-mint-soft))]" />}
             </button>
           </div>
         </div>
+
 
         {/* Bottom map overlay: route alternatives */}
         {!inActiveFlow && routes.length > 0 && (
