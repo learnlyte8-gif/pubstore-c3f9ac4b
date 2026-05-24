@@ -9,10 +9,13 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useNearbyDrivers, useRideOffers, useActiveRide, suggestFare, haversineKm, type Ride, type RideOffer } from "@/hooks/useRides";
+import { useNearbySharedTrips } from "@/hooks/useSharedTrips";
 import RideMap from "@/components/rides/RideMap";
 import RideChat from "@/components/rides/RideChat";
 import RideRating from "@/components/rides/RideRating";
+import PoolPanel from "@/components/rides/PoolPanel";
 import CircleSpinner from "@/components/CircleSpinner";
+import { supabase as sbAny } from "@/integrations/supabase/client";
 
 type LatLng = { lat: number; lng: number };
 type VClass = Ride["vehicle_class"];
