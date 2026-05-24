@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Car, Bike, Users, MapPin, Navigation, Crosshair, Plus, Minus, Star, Clock, Zap, Shield, Phone, X, ArrowRight,
   Sparkles, Wallet, TrendingUp, AlertTriangle, Route as RouteIcon, Gauge, Fuel, Leaf, Activity, Radio, Timer,
-  CloudRain, Sun, ChevronRight, Flame,
+  CloudRain, Sun, ChevronRight, Flame, PlayCircle, CheckCircle2, Share2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
-import { useNearbyDrivers, useRideOffers, useActiveRide, suggestFare, haversineKm, type Ride } from "@/hooks/useRides";
+import { useNearbyDrivers, useRideOffers, useActiveRide, suggestFare, haversineKm, type Ride, type RideOffer } from "@/hooks/useRides";
 import RideMap from "@/components/rides/RideMap";
+import RideChat from "@/components/rides/RideChat";
+import RideRating from "@/components/rides/RideRating";
 import CircleSpinner from "@/components/CircleSpinner";
 
 type LatLng = { lat: number; lng: number };
@@ -74,6 +76,7 @@ function buildRoutes(p: LatLng, d: LatLng) {
 
 export default function Rides() {
   const { userId, requireAuth } = useRequireAuth();
+  const navigate = useNavigate();
   const [me, setMe] = useState<LatLng | null>(null);
   const [locBusy, setLocBusy] = useState(false);
   const [pickup, setPickup] = useState<{ lat: number; lng: number; address: string } | null>(null);
@@ -85,6 +88,8 @@ export default function Rides() {
   const [creating, setCreating] = useState(false);
   const [routeChoice, setRouteChoice] = useState<"fastest" | "balanced" | "scenic">("fastest");
   const [tab, setTab] = useState<"now" | "schedule" | "share">("now");
+  const [showRating, setShowRating] = useState(false);
+  const [completedRide, setCompletedRide] = useState<Ride | null>(null);
 
   const ride = useActiveRide(activeRideId);
   const offers = useRideOffers(activeRideId);
@@ -182,6 +187,31 @@ export default function Rides() {
     toast.message("Ride cancelled");
   };
 
+  const startTrip = async () => {
+    if (!activeRideId) return;
+    await supabase.from("rides").update({ status: "in_progress", started_at: new Date().toISOString() }).eq("id", activeRideId);
+    toast.success("Trip started");
+  };
+
+  const completeTrip = async () => {
+    if (!activeRideId || !ride) return;
+    await supabase.from("rides").update({ status: "completed", completed_at: new Date().toISOString() }).eq("id", activeRideId);
+    setCompletedRide(ride);
+    setShowRating(true);
+    toast.success("Trip completed");
+  };
+
+  const shareTrip = async () => {
+    if (!ride) return;
+    const url = `${window.location.origin}/rides?share=${ride.id}`;
+    const text = `I'm on a ${ride.vehicle_class} ride to ${ride.dropoff_address}. Track me: ${url}`;
+    if (navigator.share) {
+      try { await navigator.share({ title: "My PUBSTORE ride", text, url }); return; } catch { /* fall through */ }
+    }
+    try { await navigator.clipboard.writeText(text); toast.success("Trip link copied"); }
+    catch { toast.error("Could not share"); }
+  };
+
   const swapPickupDrop = () => {
     if (!pickup || !dropoff) return;
     setPickup(dropoff); setDropoff(pickup);
@@ -198,6 +228,41 @@ export default function Rides() {
       setLocBusy(false);
     }, () => setLocBusy(false), { enableHighAccuracy: true, timeout: 8000 });
   };
+
+  const quickDestination = async (label: string) => {
+    if (label === "Home" || label === "Work") {
+      try {
+        const saved = JSON.parse(localStorage.getItem(`ride_saved_${label.toLowerCase()}`) ?? "null");
+        if (saved?.lat && saved?.lng) {
+          setDropoff(saved);
+          toast.success(`Drop-off set to ${label}`);
+          return;
+        }
+      } catch { /* ignore */ }
+      toast.message(`${label} not saved yet`, { action: { label: "Set", onClick: () => navigate("/addresses") } });
+      return;
+    }
+    const center = pickup ?? me;
+    const q = center ? `${label} near ${center.lat.toFixed(3)},${center.lng.toFixed(3)}` : label;
+    const res = await searchPlace(q);
+    if (res[0]) {
+      setDropoff({ lat: res[0].lat, lng: res[0].lng, address: res[0].label });
+      toast.success(`Drop-off set to ${label}`);
+    } else {
+      toast.error(`No ${label} found nearby`);
+    }
+  };
+
+  // Auto-handle terminal ride states
+  useEffect(() => {
+    if (!ride) return;
+    if (ride.status === "cancelled") {
+      setActiveRideId(null);
+    } else if (ride.status === "completed" && !showRating) {
+      setCompletedRide(ride);
+      setShowRating(true);
+    }
+  }, [ride?.status]); // eslint-disable-line
 
   const inActiveFlow = ride && ["searching", "offered", "accepted", "arriving", "in_progress"].includes(ride.status);
 
@@ -336,8 +401,12 @@ export default function Rides() {
             <ActiveRidePanel
               ride={ride!}
               offers={offers}
+              myUserId={userId ?? ""}
               onAccept={acceptOffer}
               onCancel={cancelRide}
+              onStart={startTrip}
+              onComplete={completeTrip}
+              onShare={shareTrip}
             />
           )}
         </div>
@@ -403,7 +472,11 @@ export default function Rides() {
               { label: "Mall",    sub: "Quick fare",  icon: Sparkles,   tone: "from-rose-500 to-orange-400" },
               { label: "Hospital",sub: "Priority",    icon: AlertTriangle, tone: "from-red-500 to-rose-400" },
             ].map((s) => (
-              <button key={s.label} className="shrink-0 w-32 rounded-2xl bg-muted/50 p-3 text-left border border-border hover:bg-muted transition">
+              <button
+                key={s.label}
+                onClick={() => quickDestination(s.label)}
+                className="shrink-0 w-32 rounded-2xl bg-muted/50 p-3 text-left border border-border hover:bg-muted active:scale-95 transition"
+              >
                 <span className={`w-9 h-9 rounded-xl bg-gradient-to-br ${s.tone} flex items-center justify-center mb-2 shadow-soft`}>
                   <s.icon className="w-4 h-4 text-white" />
                 </span>
@@ -430,7 +503,15 @@ export default function Rides() {
               const km = me ? haversineKm(me.lat, me.lng, Number(d.lat), Number(d.lng)) : 0;
               const eta = Math.max(1, Math.round(km * 2.2));
               return (
-                <div key={d.user_id} className="flex items-center gap-3 p-3">
+                <button
+                  type="button"
+                  key={d.user_id}
+                  onClick={() => {
+                    setVClass(d.vehicle_class as VClass);
+                    toast.message(`Picked ${d.vehicle_class} · ${d.display_name ?? "driver"}`);
+                  }}
+                  className="w-full text-left flex items-center gap-3 p-3 hover:bg-muted/50 transition"
+                >
                   <span className={`w-9 h-9 rounded-full bg-gradient-to-br ${
                     d.vehicle_class === "moto" ? "from-amber-500 to-orange-400" :
                     d.vehicle_class === "comfort" ? "from-sky-500 to-blue-400" :
@@ -448,7 +529,7 @@ export default function Rides() {
                     <div className="flex items-center gap-1 text-xs font-bold justify-end"><Star className="w-3 h-3 fill-amber-400 text-amber-400" /> {Number(d.rating).toFixed(1)}</div>
                     <p className="text-[10px] text-muted-foreground">{km.toFixed(1)}km · {eta}m</p>
                   </div>
-                </div>
+                </button>
               );
             })}
             {drivers.length === 0 && (
@@ -457,6 +538,17 @@ export default function Rides() {
           </div>
         </div>
       </div>
+
+      {showRating && completedRide && userId && completedRide.driver_id && (
+        <RideRating
+          rideId={completedRide.id}
+          raterId={userId}
+          rateeId={completedRide.driver_id}
+          direction="rider_to_driver"
+          rateeName={offers.find((o) => o.driver_id === completedRide.driver_id)?.driver_name ?? "Driver"}
+          onClose={() => { setShowRating(false); setCompletedRide(null); }}
+        />
+      )}
     </div>
   );
 }
@@ -614,9 +706,9 @@ function RequestPanel(props: {
           placeholder="Note for driver (optional)…"
           className="flex-1 h-10 px-3 rounded-xl bg-muted/50 border border-border text-sm outline-none focus:border-primary"
         />
-        <button className="h-10 px-3 rounded-xl bg-muted/50 border border-border text-[10px] font-bold flex items-center gap-1">
+        <Link to="/wallet" className="h-10 px-3 rounded-xl bg-muted/50 border border-border text-[10px] font-bold flex items-center gap-1 hover:bg-muted">
           <Wallet className="w-3.5 h-3.5" /> Wallet
-        </button>
+        </Link>
       </div>
 
       <button
@@ -688,11 +780,15 @@ function AddressInput({ icon, placeholder, value, onPick, onUseMy }: {
 }
 
 /* ---------- Active ride panel ---------- */
-function ActiveRidePanel({ ride, offers, onAccept, onCancel }: {
+function ActiveRidePanel({ ride, offers, myUserId, onAccept, onCancel, onStart, onComplete, onShare }: {
   ride: Ride;
-  offers: ReturnType<typeof useRideOffers> extends infer T ? T : never;
+  offers: RideOffer[];
+  myUserId: string;
   onAccept: (id: string, driverId: string, fare: number) => void;
   onCancel: () => void;
+  onStart: () => void;
+  onComplete: () => void;
+  onShare: () => void;
 }) {
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
@@ -771,15 +867,26 @@ function ActiveRidePanel({ ride, offers, onAccept, onCancel }: {
     );
   }
 
-  // Accepted / arriving / in_progress
+  const statusLabel =
+    ride.status === "in_progress" ? "TRIP IN PROGRESS" :
+    ride.status === "arriving"    ? "DRIVER ARRIVING" :
+                                    "DRIVER ON THE WAY";
+
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[10px] font-bold tracking-wider text-emerald-600 dark:text-emerald-400">DRIVER ON THE WAY</p>
+          <p className="text-[10px] font-bold tracking-wider text-emerald-600 dark:text-emerald-400">{statusLabel}</p>
           <p className="text-xl font-black mt-0.5">${(ride.final_fare ?? ride.rider_offer).toFixed(2)} · {ride.vehicle_class}</p>
         </div>
-        <button onClick={onCancel} className="h-9 px-3 rounded-full bg-muted text-xs font-bold flex items-center gap-1"><X className="w-3 h-3" /> Cancel</button>
+        <div className="flex items-center gap-1.5">
+          <button onClick={onShare} className="h-9 w-9 rounded-full bg-muted flex items-center justify-center" aria-label="Share trip">
+            <Share2 className="w-4 h-4" />
+          </button>
+          {ride.status !== "in_progress" && (
+            <button onClick={onCancel} className="h-9 px-3 rounded-full bg-muted text-xs font-bold flex items-center gap-1"><X className="w-3 h-3" /> Cancel</button>
+          )}
+        </div>
       </div>
 
       {acceptedOffer && (
@@ -792,9 +899,16 @@ function ActiveRidePanel({ ride, offers, onAccept, onCancel }: {
             <p className="text-[11px] text-muted-foreground truncate">{acceptedOffer.vehicle_label} · {acceptedOffer.vehicle_plate}</p>
             <p className="text-[11px] flex items-center gap-1 mt-0.5"><Star className="w-3 h-3 fill-amber-400 text-amber-400" /> {acceptedOffer.driver_rating.toFixed(1)} · {acceptedOffer.driver_trips} trips</p>
           </div>
-          <button className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-elevated">
+          <a
+            href="tel:+1000000000"
+            className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-elevated"
+            aria-label="Call driver"
+          >
             <Phone className="w-4 h-4" />
-          </button>
+          </a>
+          {myUserId && acceptedOffer.driver_id && (
+            <RideChat rideId={ride.id} myUserId={myUserId} counterpartName={acceptedOffer.driver_name ?? "Driver"} />
+          )}
         </div>
       )}
 
@@ -808,6 +922,22 @@ function ActiveRidePanel({ ride, offers, onAccept, onCancel }: {
         <div className="flex items-start gap-2"><span className="w-2 h-2 mt-1.5 rounded-full bg-emerald-500" /> <span className="flex-1">{ride.pickup_address}</span></div>
         <div className="flex items-start gap-2"><span className="w-2 h-2 mt-1.5 rotate-45 bg-rose-500" /> <span className="flex-1">{ride.dropoff_address}</span></div>
       </div>
+
+      {ride.status === "accepted" || ride.status === "arriving" ? (
+        <button
+          onClick={onStart}
+          className="w-full h-12 rounded-2xl bg-foreground text-background font-bold text-sm shadow-elevated flex items-center justify-center gap-2"
+        >
+          <PlayCircle className="w-4 h-4" /> I'm in the car · Start trip
+        </button>
+      ) : ride.status === "in_progress" ? (
+        <button
+          onClick={onComplete}
+          className="w-full h-12 rounded-2xl bg-emerald-500 text-white font-bold text-sm shadow-elevated flex items-center justify-center gap-2"
+        >
+          <CheckCircle2 className="w-4 h-4" /> Complete trip & pay
+        </button>
+      ) : null}
     </div>
   );
 }
