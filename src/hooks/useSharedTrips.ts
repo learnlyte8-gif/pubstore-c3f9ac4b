@@ -74,7 +74,7 @@ export function useNearbySharedTrips(center: { lat: number; lng: number } | null
     };
     load();
     const ch = supabase
-      .channel("shared-trips-near")
+      .channel(`shared-trips-near-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "shared_trips" }, load)
       .subscribe();
     return () => { alive = false; supabase.removeChannel(ch); };
