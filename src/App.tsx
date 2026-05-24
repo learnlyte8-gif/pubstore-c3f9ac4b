@@ -168,6 +168,7 @@ const App = () => (
                 <Route path="/car-rentals/:id" element={<CarRentals />} />
                 <Route path="/u/:userId" element={<UserProfile />} />
                 <Route path="/group-buy/:id" element={<GroupBuyDetail />} />
+                <Route path="/pay/:kind/:id" element={<PayAction />} />
               </Route>
               <Route path="/index" element={<Navigate to="/home" replace />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
