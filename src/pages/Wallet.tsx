@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, Loader2, ShieldCheck, Zap, Smartphone, CreditCard, Send } from "lucide-react";
+import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, Loader2, ShieldCheck, Zap, Smartphone, CreditCard, Send, Wrench } from "lucide-react";
 import SendMoneyDialog from "@/components/wallet/SendMoneyDialog";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ const PENDING_KEY = "pubstore.paypal.pending";
 const sb = supabase as any;
 
 type Pending = { orderID: string; amount: number };
-type Provider = "paypal" | "pesepay";
+type Provider = "paypal" | "pesepay" | "simulate";
 
 export default function WalletPage() {
   const { balance, transactions, isLoading, userId, refresh } = useWallet();
@@ -163,6 +163,46 @@ export default function WalletPage() {
     }
   };
 
+  /** Instant test deposit — no external payment gateway. */
+  const simulateDeposit = async (amount: number) => {
+    if (!userId) { toast.error("Sign in first"); return; }
+    setSelected(amount);
+    setRedirecting(true);
+    try {
+      const { data: wallet } = await sb
+        .from("wallets")
+        .select("balance")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const current = Number(wallet?.balance ?? 1);
+      const next = Math.round((current + amount) * 100) / 100;
+
+      const { error: txErr } = await sb.from("wallet_transactions").insert({
+        user_id: userId,
+        kind: "topup",
+        amount,
+        balance_after: next,
+        description: `Simulated top-up of ${fmt(amount)}`,
+        reference: `sim-${Date.now()}`,
+      });
+      if (txErr) throw txErr;
+
+      const { error: walletErr } = await sb.from("wallets").upsert(
+        { user_id: userId, balance: next },
+        { onConflict: "user_id" }
+      );
+      if (walletErr) throw walletErr;
+
+      toast.success(`Simulated +${fmt(amount)} added to wallet`);
+      refresh();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Simulation failed");
+    } finally {
+      setRedirecting(false);
+      setSelected(null);
+    }
+  };
+
   return (
     <div className="pb-12">
       {/* Header */}
@@ -231,9 +271,10 @@ export default function WalletPage() {
           </div>
 
           {/* Provider picker */}
-          <div className="grid grid-cols-2 gap-2 mb-3">
+          <div className="grid grid-cols-3 gap-2 mb-3">
             <ProviderBtn active={provider === "pesepay"} onClick={() => setProvider("pesepay")} icon={Smartphone} label="Pesepay" sub="EcoCash · OneMoney · Visa" />
             <ProviderBtn active={provider === "paypal"} onClick={() => setProvider("paypal")} icon={CreditCard} label="PayPal" sub="Cards & PayPal" />
+            <ProviderBtn active={provider === "simulate"} onClick={() => setProvider("simulate")} icon={Wrench} label="Simulate" sub="Test deposit" />
           </div>
 
 
@@ -241,7 +282,7 @@ export default function WalletPage() {
             {TOPUP_AMOUNTS.map((a) => (
               <button
                 key={a}
-                onClick={() => startCheckout(a)}
+                onClick={() => (provider === "simulate" ? simulateDeposit(a) : startCheckout(a))}
                 disabled={redirecting || capturing}
                 className={`h-14 rounded-xl border transition flex items-center justify-center font-black text-base tabular-nums tracking-tight disabled:opacity-50 ${
                   selected === a
@@ -283,7 +324,12 @@ export default function WalletPage() {
                     toast.error("Minimum top-up is $10.00");
                     return;
                   }
-                  startCheckout(Math.round(amt * 100) / 100);
+                  const rounded = Math.round(amt * 100) / 100;
+                  if (provider === "simulate") {
+                    simulateDeposit(rounded);
+                  } else {
+                    startCheckout(rounded);
+                  }
                 }}
               >
                 {redirecting && selected !== null && !TOPUP_AMOUNTS.includes(selected) ? <CircleSpinner size={16} /> : "Add"}
