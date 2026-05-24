@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, Loader2, ShieldCheck, Zap, Smartphone, CreditCard, Send } from "lucide-react";
+import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, Loader2, ShieldCheck, Zap, Smartphone, CreditCard, Send, Wrench } from "lucide-react";
 import SendMoneyDialog from "@/components/wallet/SendMoneyDialog";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
