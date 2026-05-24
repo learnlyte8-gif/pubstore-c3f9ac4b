@@ -713,8 +713,8 @@ function RequestPanel(props: {
       {/* Vehicle class with live price tags */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[11px] font-bold tracking-wider text-muted-foreground">CHOOSE A RIDE</p>
-          {distance > 0 && <p className="text-[10px] text-muted-foreground">{distance.toFixed(1)} km · ~{etaMins} min</p>}
+          <p className="rides-label">CHOOSE A RIDE</p>
+          {distance > 0 && <p className="text-[10px] text-muted-foreground" data-hud>{distance.toFixed(1)} km · ~{etaMins} min</p>}
         </div>
         <div className="grid grid-cols-4 gap-2">
           {CLASSES.map((c) => {
@@ -725,20 +725,21 @@ function RequestPanel(props: {
               <button
                 key={c.id}
                 onClick={() => setVClass(c.id)}
-                className={`relative rounded-2xl p-2.5 border transition-all text-left ${active ? "border-primary bg-primary/5 scale-[1.02] shadow-soft" : "border-border bg-card hover:bg-muted/50"}`}
+                className={`rides-card relative p-2.5 text-left ${active ? "rides-card-active" : ""}`}
               >
-                <span className={`inline-flex w-8 h-8 rounded-xl bg-gradient-to-br ${c.tone} items-center justify-center mb-1.5 shadow-soft`}>
+                <span className={`inline-flex w-9 h-9 rounded-xl bg-gradient-to-br ${c.tone} items-center justify-center mb-1.5 shadow-[0_6px_18px_-4px_hsl(165_80%_30%/0.4)]`}>
                   <Icon className="w-4 h-4 text-white" />
                 </span>
-                <p className="text-[11px] font-bold leading-none">{c.label}</p>
-                <p className="text-[9px] text-muted-foreground mt-1">{c.eta} · {c.seats}</p>
-                {price > 0 && <p className="text-[10px] font-black text-primary mt-1">${price.toFixed(2)}</p>}
-                {active && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary" />}
+                <p className="text-[11px] font-bold leading-none font-display">{c.label}</p>
+                <p className="text-[9px] text-muted-foreground mt-1" data-hud>{c.eta} · {c.seats}</p>
+                {price > 0 && <p className="text-[11px] font-black text-[hsl(var(--rides-mint-soft))] mt-1" data-hud>${price.toFixed(2)}</p>}
+                {active && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[hsl(var(--rides-mint))] rides-pulse" />}
               </button>
             );
           })}
         </div>
       </div>
+
 
       {/* Fare bidding with breakdown */}
       <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 p-3">
