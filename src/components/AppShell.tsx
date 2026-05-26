@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useShop } from "@/store/shop";
 import RotatingHint from "@/components/RotatingHint";
 import LiveActivityToaster from "@/components/LiveActivityToaster";
+import ActiveRideMonitor from "@/components/rides/ActiveRideMonitor";
 import NativeSuggestionToaster from "@/components/NativeSuggestionToaster";
 import InstallPrompt from "@/components/InstallPrompt";
 import BannerAd from "@/components/marketplace/BannerAd";
