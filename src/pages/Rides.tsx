@@ -157,6 +157,25 @@ export default function Rides() {
     );
   }, []); // eslint-disable-line
 
+  // Rehydrate an in-flight ride for this user on mount so refreshing / reopening
+  // the page doesn't lose the active trip.
+  useEffect(() => {
+    if (!userId || activeRideId) return;
+    let alive = true;
+    (async () => {
+      const { data } = await supabase
+        .from("rides")
+        .select("id")
+        .eq("rider_id", userId)
+        .in("status", ["searching", "offered", "accepted", "arriving", "in_progress"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (alive && data?.id) setActiveRideId(data.id);
+    })();
+    return () => { alive = false; };
+  }, [userId, activeRideId]);
+
   // Live update rider position
   useEffect(() => {
     if (!activeRideId || !navigator.geolocation) return;
