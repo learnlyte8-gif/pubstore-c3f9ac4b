@@ -455,6 +455,7 @@ export default function Rides() {
               { id: "now",      label: "RIDE NOW",  icon: Zap },
               { id: "schedule", label: "SCHEDULE",  icon: Timer },
               { id: "share",    label: "POOL",      icon: Users },
+              { id: "trips",    label: "TRIPS",     icon: RouteIcon },
             ].map((t) => {
               const active = tab === t.id;
               return (
