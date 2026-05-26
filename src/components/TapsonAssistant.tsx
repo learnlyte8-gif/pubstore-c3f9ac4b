@@ -30,45 +30,66 @@ const QUICK_PROMPTS = [
 ];
 
 async function buildLiveContext(): Promise<string> {
-  const [cats, products, suppliers, liveStreamsRes] = await Promise.all([
+  const [cats, products, suppliers, liveStreamsRes, services, properties, finance, vehicles, stays, industrial, news] = await Promise.all([
     fetchCategories(),
-    fetchProducts({ limit: 30, sortBy: "sold" }),
-    fetchSuppliers({ limit: 30 }),
-    supabase.from("live_streams").select("id,title,supplier_id,viewer_count").eq("status", "live").limit(8),
+    fetchProducts({ limit: 25, sortBy: "sold" }),
+    fetchSuppliers({ limit: 20 }),
+    supabase.from("live_streams").select("id,title,supplier_id,viewer_count").eq("status", "live").limit(6),
+    supabase.from("service_providers").select("id,display_name,category,city,country,hourly_rate,currency,rating").eq("active", true).limit(15),
+    supabase.from("properties").select("id,title,property_kind,listing_type,city,country,price,currency,bedrooms").eq("active", true).limit(15),
+    supabase.from("finance_products").select("id,title,kind,provider_name,country,min_amount,max_amount,interest_rate,currency").eq("active", true).limit(10),
+    supabase.from("vehicles").select("id,title,kind,make,model,city,country,price,currency").eq("active", true).limit(12),
+    supabase.from("stays").select("id,title,kind,city,country,price_per_night,currency,rating").eq("active", true).limit(12),
+    supabase.from("industrial_listings").select("id,title,category,country,price,currency").eq("active", true).limit(10),
+    supabase.from("news_articles").select("id,title,slug,category").limit(8),
   ]);
 
   const verified = suppliers.filter((s) => s.verified).length;
   const gold = suppliers.filter((s) => s.gold).length;
 
-  const productLines = products
-    .map(
-      (p) =>
-        `- ${p.title} (id:${p.id}) — $${p.price} · MOQ ${p.moq} ${p.unit} · ${p.category || "general"} · supplier:${p.supplierId} · ${p.rating}★ · sold ${p.sold}${p.dealEndsAt ? " · DEAL ACTIVE" : ""}`
-    )
-    .join("\n");
-
-  const supplierLines = suppliers
-    .map(
-      (s) =>
-        `- ${s.name} (id:${s.id}) — ${s.country || "—"} · ${s.rating}★ · ${s.responseRate}% resp · ${s.verified ? "Verified " : ""}${s.gold ? "Gold " : ""}${s.tradeAssurance ? "TradeAssured" : ""}`.trim()
-    )
-    .join("\n");
-
-  const liveLines = (liveStreamsRes.data ?? [])
-    .map((l: any) => `- ${l.title} (supplier:${l.supplier_id}) · ${l.viewer_count} viewers`)
-    .join("\n");
+  const productLines = products.map((p) => `- ${p.title} (id:${p.id}) — $${p.price} · MOQ ${p.moq} ${p.unit} · ${p.category || "general"} · supplier:${p.supplierId} · ${p.rating}★ · sold ${p.sold}${p.dealEndsAt ? " · DEAL" : ""}`).join("\n");
+  const supplierLines = suppliers.map((s) => `- ${s.name} (id:${s.id}) — ${s.country || "—"} · ${s.rating}★ · ${s.responseRate}% resp · ${s.verified ? "Verified " : ""}${s.gold ? "Gold " : ""}${s.tradeAssurance ? "TradeAssured" : ""}`.trim()).join("\n");
+  const liveLines = (liveStreamsRes.data ?? []).map((l: any) => `- ${l.title} (supplier:${l.supplier_id}) · ${l.viewer_count} viewers`).join("\n");
+  const serviceLines = (services.data ?? []).map((s: any) => `- ${s.display_name} · ${s.category} · ${s.city ?? ""} ${s.country ?? ""} · ${s.hourly_rate ? `${s.currency || "$"}${s.hourly_rate}/hr` : "—"} · ${s.rating ?? 0}★`).join("\n");
+  const propLines = (properties.data ?? []).map((p: any) => `- ${p.title} · ${p.property_kind}/${p.listing_type} · ${p.city ?? ""} ${p.country ?? ""} · ${p.currency || "$"}${p.price}${p.bedrooms ? ` · ${p.bedrooms}bd` : ""}`).join("\n");
+  const finLines = (finance.data ?? []).map((f: any) => `- ${f.title} (${f.kind}) · ${f.provider_name ?? ""} · ${f.currency || "$"}${f.min_amount}–${f.max_amount}${f.interest_rate ? ` · ${f.interest_rate}%` : ""}`).join("\n");
+  const vehLines = (vehicles.data ?? []).map((v: any) => `- ${v.title} · ${v.kind} ${v.make ?? ""} ${v.model ?? ""} · ${v.city ?? ""} · ${v.currency || "$"}${v.price}`).join("\n");
+  const stayLines = (stays.data ?? []).map((s: any) => `- ${s.title} · ${s.kind} · ${s.city ?? ""} ${s.country ?? ""} · ${s.currency || "$"}${s.price_per_night}/night · ${s.rating ?? 0}★`).join("\n");
+  const indLines = (industrial.data ?? []).map((i: any) => `- ${i.title} · ${i.category} · ${i.country ?? ""} · ${i.currency || "$"}${i.price ?? "—"}`).join("\n");
+  const newsLines = (news.data ?? []).map((n: any) => `- ${n.title} · ${n.category ?? ""} (/news/${n.slug})`).join("\n");
 
   return `Categories: ${cats.map((c) => c.name).join(", ")}
-Total live products: ${products.length} | Suppliers: ${suppliers.length} (${verified} verified, ${gold} gold)
+Marketplace: ${products.length} products | ${suppliers.length} suppliers (${verified} verified, ${gold} gold)
 
-REAL Products (use these EXACT IDs in ::product[ID] tokens):
-${productLines || "(none yet)"}
+REAL Products (use IDs in ::product[ID]):
+${productLines || "(none)"}
 
-REAL Suppliers (use these EXACT IDs in ::supplier[ID] and ::live[ID] tokens):
-${supplierLines || "(none yet)"}
+REAL Suppliers (use IDs in ::supplier[ID] and ::live[ID]):
+${supplierLines || "(none)"}
 
-Live streams right now:
-${liveLines || "(none)"}`;
+Live streams now:
+${liveLines || "(none)"}
+
+SERVICES (/services):
+${serviceLines || "(none)"}
+
+PROPERTIES (/properties):
+${propLines || "(none)"}
+
+FINANCE (/finance):
+${finLines || "(none)"}
+
+VEHICLES (/auto):
+${vehLines || "(none)"}
+
+STAYS (/stays):
+${stayLines || "(none)"}
+
+INDUSTRIAL (/industrial):
+${indLines || "(none)"}
+
+NEWS (/news):
+${newsLines || "(none)"}`;
 }
 
 export default function TapsonAssistant() {
