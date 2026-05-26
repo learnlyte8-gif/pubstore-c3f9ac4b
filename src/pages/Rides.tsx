@@ -485,6 +485,8 @@ export default function Rides() {
           {!inActiveFlow ? (
             tab === "share" ? (
               <PoolPanel userId={userId} me={me} pickup={pickup} dropoff={dropoff} />
+            ) : tab === "trips" ? (
+              <TripsPanel userId={userId} />
             ) : (
               <RequestPanel
                 pickup={pickup} setPickup={setPickup}
@@ -680,7 +682,7 @@ function RequestPanel(props: {
   onSubmit: () => void;
   busy: boolean;
   driversCount: number;
-  tab: "now" | "schedule" | "share";
+  tab: "now" | "schedule" | "share" | "trips";
 }) {
   const { pickup, setPickup, dropoff, setDropoff, vClass, setVClass, fare, setFare, suggested, distance, etaMins, surge, notes, setNotes, onSwap, onUseMy, onSubmit, busy, tab } = props;
   const baseFare = suggested;
