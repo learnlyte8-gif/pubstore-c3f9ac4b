@@ -158,6 +158,7 @@ export default function AppShell() {
       <TapsonAssistant />
       <LiveActivityToaster />
       <NativeSuggestionToaster />
+      <ActiveRideMonitor />
       <BannerAd />
       <ImportProgressBanner />
       <InstallPrompt />
