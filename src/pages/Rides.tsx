@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import {
   Car, Bike, Users, MapPin, Navigation, Crosshair, Plus, Minus, Star, Clock, Zap, Shield, Phone, X, ArrowRight,
   Sparkles, Wallet, TrendingUp, AlertTriangle, Route as RouteIcon, Gauge, Fuel, Leaf, Activity, Radio, Timer,
-  CloudRain, Sun, ChevronRight, Flame, PlayCircle, CheckCircle2, Share2,
+  CloudRain, Sun, ChevronRight, Flame, PlayCircle, CheckCircle2, Share2, History,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -90,7 +90,7 @@ export default function Rides() {
   const [activeRideId, setActiveRideId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [routeChoice, setRouteChoice] = useState<"fastest" | "balanced" | "scenic">("fastest");
-  const [tab, setTab] = useState<"now" | "schedule" | "share">("now");
+  const [tab, setTab] = useState<"now" | "schedule" | "share" | "trips">("now");
   const [showRating, setShowRating] = useState(false);
   const [completedRide, setCompletedRide] = useState<Ride | null>(null);
 
@@ -455,6 +455,7 @@ export default function Rides() {
               { id: "now",      label: "RIDE NOW",  icon: Zap },
               { id: "schedule", label: "SCHEDULE",  icon: Timer },
               { id: "share",    label: "POOL",      icon: Users },
+              { id: "trips",    label: "TRIPS",     icon: RouteIcon },
             ].map((t) => {
               const active = tab === t.id;
               return (
@@ -484,6 +485,8 @@ export default function Rides() {
           {!inActiveFlow ? (
             tab === "share" ? (
               <PoolPanel userId={userId} me={me} pickup={pickup} dropoff={dropoff} />
+            ) : tab === "trips" ? (
+              <TripsPanel userId={userId} />
             ) : (
               <RequestPanel
                 pickup={pickup} setPickup={setPickup}
@@ -679,7 +682,7 @@ function RequestPanel(props: {
   onSubmit: () => void;
   busy: boolean;
   driversCount: number;
-  tab: "now" | "schedule" | "share";
+  tab: "now" | "schedule" | "share" | "trips";
 }) {
   const { pickup, setPickup, dropoff, setDropoff, vClass, setVClass, fare, setFare, suggested, distance, etaMins, surge, notes, setNotes, onSwap, onUseMy, onSubmit, busy, tab } = props;
   const baseFare = suggested;
@@ -883,6 +886,98 @@ function AddressInput({ icon, placeholder, value, onPick, onUseMy }: {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ---------- Trips panel ---------- */
+function TripsPanel({ userId }: { userId: string | null }) {
+  const [rides, setRides] = useState<Ride[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userId) { setLoading(false); return; }
+    let alive = true;
+    const load = async () => {
+      const { data } = await supabase
+        .from("rides")
+        .select("*")
+        .eq("rider_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (alive) { setRides((data ?? []) as Ride[]); setLoading(false); }
+    };
+    load();
+    const ch = supabase
+      .channel(`my-trips:${userId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "rides", filter: `rider_id=eq.${userId}` }, load)
+      .subscribe();
+    return () => { alive = false; supabase.removeChannel(ch); };
+  }, [userId]);
+
+  const statusMeta: Record<Ride["status"], { label: string; tone: string; icon: typeof CheckCircle2 }> = {
+    searching:   { label: "Searching",   tone: "text-amber-400",       icon: Zap },
+    offered:     { label: "Offered",     tone: "text-sky-400",         icon: Zap },
+    accepted:    { label: "Accepted",    tone: "text-emerald-400",     icon: CheckCircle2 },
+    arriving:    { label: "Arriving",    tone: "text-emerald-400",     icon: Car },
+    in_progress: { label: "In progress", tone: "text-emerald-400",     icon: Navigation },
+    completed:   { label: "Completed",   tone: "text-primary",         icon: CheckCircle2 },
+    cancelled:   { label: "Cancelled",   tone: "text-muted-foreground",icon: X },
+  };
+
+  return (
+    <div className="p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <History className="w-4 h-4 text-[hsl(var(--rides-mint-soft))]" />
+          <p className="text-sm font-bold tracking-wide">Your trips</p>
+        </div>
+        <span className="text-[10px] text-muted-foreground">{rides.length} total</span>
+      </div>
+
+      {loading && (
+        <div className="flex justify-center py-8">
+          <CircleSpinner size={20} />
+        </div>
+      )}
+
+      {!loading && rides.length === 0 && (
+        <div className="text-center py-8 text-sm text-muted-foreground">
+          No trips yet. Book your first ride!
+        </div>
+      )}
+
+      <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+        {rides.map((r) => {
+          const meta = statusMeta[r.status];
+          const Icon = meta.icon;
+          return (
+            <div key={r.id} className="rounded-2xl bg-card border border-border p-3 flex items-center gap-3 shadow-card">
+              <span className={`w-10 h-10 rounded-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center shrink-0`}>
+                <Icon className={`w-4 h-4 ${meta.tone}`} />
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-bold truncate">{r.pickup_address}</p>
+                  <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
+                  <p className="text-sm font-bold truncate">{r.dropoff_address}</p>
+                </div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-muted ${meta.tone}`}>{meta.label}</span>
+                  <span className="text-[10px] text-muted-foreground">{r.vehicle_class}</span>
+                  <span className="text-[10px] text-muted-foreground">· {r.distance_km.toFixed(1)} km</span>
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-sm font-black">${(r.final_fare ?? r.rider_offer).toFixed(2)}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {new Date(r.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
