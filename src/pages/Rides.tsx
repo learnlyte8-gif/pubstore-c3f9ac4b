@@ -90,7 +90,7 @@ export default function Rides() {
   const [activeRideId, setActiveRideId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [routeChoice, setRouteChoice] = useState<"fastest" | "balanced" | "scenic">("fastest");
-  const [tab, setTab] = useState<"now" | "schedule" | "share">("now");
+  const [tab, setTab] = useState<"now" | "schedule" | "share" | "trips">("now");
   const [showRating, setShowRating] = useState(false);
   const [completedRide, setCompletedRide] = useState<Ride | null>(null);
 
