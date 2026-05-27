@@ -122,7 +122,10 @@ export default function AppShell() {
         <ScrollProgress />
       </header>
 
-      <main className="flex-1 max-w-2xl w-full mx-auto">
+      <main
+        className="flex-1 max-w-2xl w-full mx-auto"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 84px)" }}
+      >
         <div key={location.pathname} className="page-transition">
           <Outlet />
         </div>

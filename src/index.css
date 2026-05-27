@@ -20,8 +20,15 @@
     -ms-content-zooming: none;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
   }
-  #root { overflow-x: hidden; max-width: 100vw; }
+  body {
+    /* Lock against horizontal jitter from off-screen animations / shadows */
+    position: relative;
+    width: 100%;
+  }
+  #root { overflow-x: hidden; max-width: 100vw; position: relative; }
   .chat-scroll { overflow-x: hidden; overscroll-behavior: contain; }
   * {
     -webkit-touch-callout: none;
@@ -220,6 +227,23 @@
     font-weight: 900 !important;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
+  }
+
+  /* iOS focus-zoom prevention — inputs MUST be >= 16px to avoid auto-zoom jump */
+  @media (max-width: 767px) {
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+  }
+
+  /* Smooth, non-jittery scrolling everywhere */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Kill horizontal scroll on every common wrapper to eliminate sideways shake */
+  main, section, article, header, footer, nav, aside {
+    max-width: 100%;
   }
 
   button, a, [role="button"] {
