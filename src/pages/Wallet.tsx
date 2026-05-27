@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, Loader2, ShieldCheck, Zap, Smartphone, CreditCard, Send, Wrench } from "lucide-react";
+import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, Loader2, ShieldCheck, Zap, Smartphone, CreditCard, Send, Wrench, Banknote, Clock, XCircle } from "lucide-react";
 import SendMoneyDialog from "@/components/wallet/SendMoneyDialog";
+import WithdrawDialog from "@/components/wallet/WithdrawDialog";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/useWallet";
@@ -27,6 +29,32 @@ export default function WalletPage() {
   const [provider, setProvider] = useState<Provider>("pesepay");
   const [customAmount, setCustomAmount] = useState<string>("");
   const [sendOpen, setSendOpen] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+
+  const { data: withdrawals = [], refetch: refetchWithdrawals } = useQuery({
+    queryKey: ["withdrawals", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await sb
+        .from("withdrawal_requests")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      return data ?? [];
+    },
+  });
+
+  const cancelWithdrawal = async (id: string) => {
+    try {
+      const { error } = await sb.rpc("cancel_withdrawal_request", { _id: id });
+      if (error) throw error;
+      toast.success("Withdrawal cancelled — funds refunded");
+      refresh();
+      refetchWithdrawals();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not cancel withdrawal");
+    }
+  };
 
   const captureRanRef = useRef(false);
   const pesepayRanRef = useRef(false);
@@ -211,20 +239,27 @@ export default function WalletPage() {
             <p className="text-[11px] opacity-75 mt-2">Use at checkout on any product, any supplier.</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 mt-3">
+          <div className="grid grid-cols-3 gap-2 mt-3">
             <button
               onClick={() => setSendOpen(true)}
               disabled={!userId}
-              className="h-11 rounded-xl bg-primary-foreground text-primary font-black text-sm flex items-center justify-center gap-1.5 disabled:opacity-50 shadow-soft"
+              className="h-11 rounded-xl bg-primary-foreground text-primary font-black text-xs flex items-center justify-center gap-1 disabled:opacity-50 shadow-soft"
             >
-              <Send className="w-4 h-4" /> Send
+              <Send className="w-3.5 h-3.5" /> Send
             </button>
             <a
               href="#add-money"
-              className="h-11 rounded-xl bg-primary-foreground/15 backdrop-blur border border-primary-foreground/30 text-primary-foreground font-black text-sm flex items-center justify-center gap-1.5"
+              className="h-11 rounded-xl bg-primary-foreground/15 backdrop-blur border border-primary-foreground/30 text-primary-foreground font-black text-xs flex items-center justify-center gap-1"
             >
-              <Plus className="w-4 h-4" /> Add money
+              <Plus className="w-3.5 h-3.5" /> Add
             </a>
+            <button
+              onClick={() => setWithdrawOpen(true)}
+              disabled={!userId || balance < 5}
+              className="h-11 rounded-xl bg-primary-foreground/15 backdrop-blur border border-primary-foreground/30 text-primary-foreground font-black text-xs flex items-center justify-center gap-1 disabled:opacity-40"
+            >
+              <Banknote className="w-3.5 h-3.5" /> Withdraw
+            </button>
           </div>
         </div>
       </div>
@@ -236,6 +271,42 @@ export default function WalletPage() {
         currentUserId={userId}
         onSent={refresh}
       />
+
+      <WithdrawDialog
+        open={withdrawOpen}
+        onOpenChange={setWithdrawOpen}
+        balance={balance}
+        onSubmitted={() => { refresh(); refetchWithdrawals(); }}
+      />
+
+      {/* Pending withdrawals */}
+      {withdrawals.length > 0 && (
+        <div className="px-4 mt-4">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2 px-1">Withdrawals</p>
+          <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden divide-y divide-border">
+            {withdrawals.map((w: any) => {
+              const pending = w.status === "pending";
+              return (
+                <div key={w.id} className="flex items-center gap-3 px-4 py-3">
+                  <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${pending ? "bg-amber-500/15 text-amber-600 dark:text-amber-400" : w.status === "paid" ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground"}`}>
+                    {pending ? <Clock className="w-4 h-4" /> : <Banknote className="w-4 h-4" />}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold truncate capitalize">{w.method} · {w.destination}</p>
+                    <p className="text-[11px] text-muted-foreground capitalize">{w.status} · {new Date(w.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <p className="text-sm font-black tabular-nums">${Number(w.amount).toFixed(2)}</p>
+                  {pending && (
+                    <button onClick={() => cancelWithdrawal(w.id)} className="ml-2 w-8 h-8 rounded-full bg-muted hover:bg-destructive/15 hover:text-destructive flex items-center justify-center" aria-label="Cancel">
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Capturing banner (returning from PayPal) */}
       {capturing && (

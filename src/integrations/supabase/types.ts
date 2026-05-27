@@ -4717,6 +4717,60 @@ export type Database = {
           },
         ]
       }
+      withdrawal_requests: {
+        Row: {
+          account_name: string | null
+          admin_note: string | null
+          amount: number
+          created_at: string
+          destination: string
+          hold_tx_id: string | null
+          id: string
+          method: string
+          notes: string | null
+          payout_tx_id: string | null
+          processed_at: string | null
+          reference: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_name?: string | null
+          admin_note?: string | null
+          amount: number
+          created_at?: string
+          destination: string
+          hold_tx_id?: string | null
+          id?: string
+          method: string
+          notes?: string | null
+          payout_tx_id?: string | null
+          processed_at?: string | null
+          reference: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_name?: string | null
+          admin_note?: string | null
+          amount?: number
+          created_at?: string
+          destination?: string
+          hold_tx_id?: string | null
+          id?: string
+          method?: string
+          notes?: string | null
+          payout_tx_id?: string | null
+          processed_at?: string | null
+          reference?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -4744,6 +4798,32 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "wallet_transactions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      cancel_withdrawal_request: {
+        Args: { _id: string }
+        Returns: {
+          account_name: string | null
+          admin_note: string | null
+          amount: number
+          created_at: string
+          destination: string
+          hold_tx_id: string | null
+          id: string
+          method: string
+          notes: string | null
+          payout_tx_id: string | null
+          processed_at: string | null
+          reference: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "withdrawal_requests"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -4875,6 +4955,38 @@ export type Database = {
           product_id: string
           score: number
         }[]
+      }
+      request_wallet_withdrawal: {
+        Args: {
+          _account_name?: string
+          _amount: number
+          _destination: string
+          _method: string
+          _notes?: string
+        }
+        Returns: {
+          account_name: string | null
+          admin_note: string | null
+          amount: number
+          created_at: string
+          destination: string
+          hold_tx_id: string | null
+          id: string
+          method: string
+          notes: string | null
+          payout_tx_id: string | null
+          processed_at: string | null
+          reference: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "withdrawal_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       resolve_master_supplier: {
         Args: { _supplier_id: string }
