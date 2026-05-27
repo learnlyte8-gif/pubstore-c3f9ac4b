@@ -4,7 +4,7 @@ import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, Loader2, ShieldCheck, Zap, Smartphone, CreditCard, Send, Wrench, Banknote, Clock, XCircle } from "lucide-react";
 import SendMoneyDialog from "@/components/wallet/SendMoneyDialog";
 import WithdrawDialog from "@/components/wallet/WithdrawDialog";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/useWallet";
@@ -30,7 +30,6 @@ export default function WalletPage() {
   const [customAmount, setCustomAmount] = useState<string>("");
   const [sendOpen, setSendOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
-  const qc = useQueryClient();
 
   const { data: withdrawals = [], refetch: refetchWithdrawals } = useQuery({
     queryKey: ["withdrawals", userId],
