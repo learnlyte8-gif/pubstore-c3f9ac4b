@@ -122,17 +122,17 @@ export default function AppShell() {
         <ScrollProgress />
       </header>
 
-      <main className="flex-1 max-w-2xl w-full mx-auto lg:pb-4">
+      <main className="flex-1 max-w-2xl w-full mx-auto">
         <div key={location.pathname} className="page-transition">
           <Outlet />
         </div>
       </main>
 
-      {/* Floating glass liquid nav — left edge, vertical */}
+      {/* Floating glass liquid nav — bottom, horizontal */}
       <nav
-        className="fixed left-2 top-1/2 -translate-y-1/2 z-40 pointer-events-none"
+        className="fixed bottom-2 left-1/2 -translate-x-1/2 z-40 pointer-events-none w-[min(100%-1rem,28rem)]"
         aria-label="Primary"
-        style={{ paddingLeft: "env(safe-area-inset-left)" }}
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div
           className="pointer-events-auto relative rounded-[28px] p-1.5
@@ -146,7 +146,7 @@ export default function AppShell() {
                      after:bg-gradient-to-br after:from-[hsl(24_100%_56%/0.25)] after:via-transparent after:to-primary/20
                      after:blur-xl after:-z-10 after:pointer-events-none"
         >
-          <ul className="relative flex flex-col items-stretch gap-0.5">
+          <ul className="relative flex flex-row items-stretch gap-0.5">
             <TabItem to="/home" icon={House} label="Home" />
             <TabItem to="/categories" icon={ShoppingBag} label="Shop" />
             <TabItem to="/messages" icon={MessageCircle} label="Chats" badge={chatsWithUnread} />
