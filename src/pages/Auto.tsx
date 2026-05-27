@@ -234,7 +234,7 @@ function AutoDetail({ id }: { id: string }) {
   const saved = isSaved(v.id);
 
   return (
-    <div className="pb-32 bg-zinc-950 text-zinc-50 min-h-[calc(100vh-3.5rem)] animate-fade-in">
+    <div className=" bg-zinc-950 text-zinc-50 min-h-[calc(100vh-3.5rem)] animate-fade-in">
       <div className="relative h-80 bg-zinc-900">
         {v.cover && <img src={v.cover} alt={v.title} className="w-full h-full object-cover" />}
         <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/40 via-transparent to-zinc-950" />

@@ -866,7 +866,7 @@ export default function Messages() {
   ];
 
   return (
-    <div className="pb-24 relative">
+    <div className=" relative">
       <div className="px-4 pt-4 pb-3 border-b border-border/60 glass-strong sticky top-14 z-10">
         <div className="flex items-center justify-between mb-3">
           <div className="min-w-0">

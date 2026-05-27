@@ -84,7 +84,7 @@ export default function Verification() {
   }
 
   return (
-    <div className="pb-32">
+    <div className="">
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/85 to-primary/60" />
         <div className="relative px-4 pt-4 pb-10 text-primary-foreground">

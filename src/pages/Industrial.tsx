@@ -208,7 +208,7 @@ function IndustrialDetail({ id }: { id: string }) {
   if (!it) return <p className="px-4 py-12 text-center text-sm">Listing not found.</p>;
 
   return (
-    <div className="pb-32 animate-fade-in">
+    <div className=" animate-fade-in">
       <div className="relative h-72 bg-muted">
         {it.cover && <img src={it.cover} alt={it.title} className="w-full h-full object-cover" />}
         <button onClick={() => navigate(-1)} className="absolute top-3 left-3 w-9 h-9 rounded-full bg-background/90 backdrop-blur flex items-center justify-center shadow">

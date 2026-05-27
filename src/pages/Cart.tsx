@@ -321,7 +321,7 @@ export default function Cart() {
 
   if (cartProducts.length === 0) {
     return (
-      <div className="px-6 pt-16 pb-24 text-center animate-fade-up">
+      <div className="px-6 pt-16  text-center animate-fade-up">
         <div className="w-20 h-20 rounded-full bg-muted mx-auto flex items-center justify-center mb-4">
           <ShoppingBag className="w-9 h-9 text-muted-foreground" />
         </div>
@@ -341,7 +341,7 @@ export default function Cart() {
   const selectedAddr = addresses.find((a) => a.id === addressId);
 
   return (
-    <div className="pb-40">
+    <div className="">
       <div className="px-4 pt-3 pb-2 flex items-center justify-between">
         <h1 className="text-xl font-bold">Cart ({cartProducts.length})</h1>
         <button onClick={clearCart} className="text-xs text-muted-foreground hover:text-destructive">

@@ -86,7 +86,7 @@ export default function JobsProfile() {
   }
 
   return (
-    <div className="pb-20">
+    <div className="">
       {/* Cover */}
       <div className="relative h-32 bg-gradient-to-br from-blue-700 via-indigo-700 to-sky-600">
         {profile?.cover_url && <img src={profile.cover_url} alt="" className="w-full h-full object-cover" />}
