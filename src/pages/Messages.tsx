@@ -38,7 +38,7 @@ type Conversation = {
   last_message: string | null;
   last_message_at: string | null;
   supplier?: { id: string; name: string; logo: string | null; verified: boolean | null; response_time: string | null; response_rate: number | null; owner_id: string };
-  peer?: { name: string; logo: string | null; verified: boolean | null; subtitle: string | null; supplierId?: string };
+  peer?: { name: string; logo: string | null; verified: boolean | null; subtitle: string | null; supplierId?: string; groupBuyId?: string };
 };
 
 type TabKey = "unread" | "suppliers" | "people" | "groups" | "discover";
@@ -306,10 +306,28 @@ export default function Messages() {
       );
       profileMap = new Map(profBatches.flat().map((p: any) => [p.user_id, p]));
     }
+    // Resolve group buy ids for group_buy conversations
+    const groupConvIds = merged.filter((c) => (c.kind ?? "buyer_supplier") === "group_buy").map((c) => c.id);
+    const groupMap = new Map<string, { id: string; title: string | null; target_qty: number; status: string }>();
+    if (groupConvIds.length) {
+      const { data: gbs } = await supabase
+        .from("group_buys")
+        .select("id,title,target_qty,status,conversation_id")
+        .in("conversation_id", groupConvIds);
+      (gbs ?? []).forEach((g: any) => { if (g.conversation_id) groupMap.set(g.conversation_id, g); });
+    }
+
     merged.forEach((c) => {
       const kind = c.kind ?? "buyer_supplier";
       if (kind === "group_buy") {
-        c.peer = { name: c.title ?? "Group buy", logo: null, verified: false, subtitle: "Group chat" };
+        const g = groupMap.get(c.id);
+        c.peer = {
+          name: g?.title ?? c.title ?? "Group buy",
+          logo: null,
+          verified: false,
+          subtitle: g ? `Group · target ${g.target_qty} · ${g.status}` : "Group chat",
+          groupBuyId: g?.id,
+        };
         return;
       }
       if (kind === "dm") {
@@ -628,6 +646,11 @@ export default function Messages() {
           <div className="flex items-center gap-0.5 shrink-0">
             <button aria-label="Call" className="p-2 rounded-full hover:bg-muted active:scale-90 transition"><Phone className="w-5 h-5" strokeWidth={1.9} /></button>
             <button aria-label="Video" className="p-2 rounded-full hover:bg-muted active:scale-90 transition"><Video className="w-5 h-5" strokeWidth={1.9} /></button>
+            {active.peer?.groupBuyId && (
+              <Link to={`/group-buy/${active.peer.groupBuyId}`} aria-label="Group info" className="p-2 rounded-full hover:bg-muted active:scale-90 transition">
+                <Info className="w-5 h-5" strokeWidth={1.9} />
+              </Link>
+            )}
             {active.supplier && (
               <Link to={`/supplier/${active.supplier.id}`} aria-label="Info" className="p-2 rounded-full hover:bg-muted active:scale-90 transition">
                 <Info className="w-5 h-5" strokeWidth={1.9} />

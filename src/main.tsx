@@ -29,6 +29,20 @@ window.addEventListener("dragstart", (e) => {
 });
 // Prevent pinch-zoom gesture artifacts on iOS Safari
 document.addEventListener("gesturestart", (e) => e.preventDefault());
+document.addEventListener("gesturechange", (e) => e.preventDefault());
+document.addEventListener("gestureend", (e) => e.preventDefault());
+// Block pinch / ctrl+wheel zoom on desktop
+window.addEventListener("wheel", (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
+window.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && ["+", "-", "=", "0"].includes(e.key)) e.preventDefault();
+});
+// Block iOS double-tap zoom
+let lastTouchEnd = 0;
+document.addEventListener("touchend", (e) => {
+  const now = Date.now();
+  if (now - lastTouchEnd <= 350) e.preventDefault();
+  lastTouchEnd = now;
+}, { passive: false });
 
 // ---------------------------------------------------------------------------
 // Swallow Supabase auth-token lock contention errors. These happen when

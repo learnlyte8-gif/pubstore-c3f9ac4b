@@ -30,7 +30,9 @@ export default function GroupBuyDetail() {
   const pct = Math.min(100, Math.round((total / gb.target_qty) * 100));
   const mine = members.find((m) => m.user_id === me);
   const isMember = !!mine;
-  const isLocked = gb.status !== "open";
+  // Group stays active and joinable until the item is actually bought (fulfilled / cancelled).
+  // "locked" just means target reached — chat & pledges remain open.
+  const isLocked = gb.status === "fulfilled" || gb.status === "cancelled";
   const deadlineLabel = gb.deadline ? new Date(gb.deadline).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "Open-ended";
 
   const handleJoin = async () => {
