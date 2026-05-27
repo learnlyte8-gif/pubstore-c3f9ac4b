@@ -101,7 +101,7 @@ export default function ProductDetail() {
   };
 
   return (
-    <div className="pb-32 -mt-px">
+    <div className=" -mt-px">
       <div className="sticky top-12 z-30 bg-background/90 backdrop-blur border-b px-2 py-2 flex items-center justify-between">
         <button onClick={() => navigate(-1)} aria-label="Back" className="w-9 h-9 rounded-full hover:bg-muted flex items-center justify-center"><ArrowLeft className="w-5 h-5" /></button>
         <div className="flex items-center gap-1">

@@ -127,7 +127,7 @@ export default function NotificationPreferences() {
   const emailRows = ROWS.filter((r) => r.channel === "email");
 
   return (
-    <div className="pb-24">
+    <div className="">
       <header className="sticky top-0 z-20 bg-background/90 backdrop-blur border-b px-3 py-3 flex items-center gap-2">
         <Link to="/settings" className="w-9 h-9 rounded-full hover:bg-muted flex items-center justify-center">
           <ArrowLeft className="w-4 h-4" />

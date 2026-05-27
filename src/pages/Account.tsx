@@ -114,7 +114,7 @@ export default function Account() {
         <div className="absolute -top-20 -right-16 w-64 h-64 rounded-full bg-primary-foreground/15 blur-3xl" />
         <div className="absolute -bottom-24 -left-10 w-72 h-72 rounded-full bg-accent/30 blur-3xl" />
 
-        <div className="relative px-4 pt-6 pb-20 text-primary-foreground">
+        <div className="relative px-4 pt-6  text-primary-foreground">
           {/* Profile row */}
           <div className="flex items-center gap-3.5">
             <div className="relative">

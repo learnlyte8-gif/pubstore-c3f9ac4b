@@ -179,7 +179,7 @@ function CarRentalDetail({ id }: { id: string }) {
   const youngDriverThreshold = r.young_driver_age_threshold ?? 25;
 
   return (
-    <div className="pb-28">
+    <div className="">
       {/* Hero gallery */}
       <div className="relative aspect-[16/10] bg-muted">
         {r.cover && <img src={r.cover} alt={r.title} className="w-full h-full object-cover" />}

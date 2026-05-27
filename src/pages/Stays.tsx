@@ -189,7 +189,7 @@ function StayDetail({ id }: { id: string }) {
   if (!stay) return <p className="px-4 py-12 text-center text-sm">Stay not found.</p>;
 
   return (
-    <div className="pb-32 animate-fade-in">
+    <div className=" animate-fade-in">
       <div className="relative h-72">
         {stay.cover && <img src={stay.cover} alt={stay.title} className="w-full h-full object-cover" />}
         <div className="absolute inset-0 bg-gradient-to-b from-foreground/40 via-transparent to-transparent" />

@@ -67,7 +67,7 @@ export default function JobsFeed() {
   }
 
   return (
-    <div className="pb-20">
+    <div className="">
       <header className="px-4 pt-4 pb-3 bg-gradient-to-br from-blue-700 via-indigo-700 to-sky-600 text-white sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <button onClick={() => nav(-1)} className="w-9 h-9 rounded-full bg-white/15 grid place-items-center"><ArrowLeft className="w-4 h-4" /></button>

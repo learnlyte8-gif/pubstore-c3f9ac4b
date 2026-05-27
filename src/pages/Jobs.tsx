@@ -127,7 +127,7 @@ export default function Jobs() {
   const visibleJobs = tab === "saved" ? savedJobs : tab === "applied" ? jobs.filter((j) => appliedJobsIds.has(j.id)) : jobs;
 
   return (
-    <div className="pb-24">
+    <div className="">
       {/* Hero */}
       <header className="px-4 pt-4 pb-4 bg-gradient-to-br from-blue-700 via-indigo-700 to-sky-600 text-white">
         <div className="flex items-center justify-between gap-2">

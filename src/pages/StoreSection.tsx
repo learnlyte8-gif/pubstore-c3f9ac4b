@@ -52,7 +52,7 @@ export default function StoreSection() {
   const supportsActions = isService && serviceKey && serviceKey !== "news";
 
   return (
-    <div className="pb-24">
+    <div className="">
       <header className="sticky top-0 z-20 bg-background/90 backdrop-blur border-b px-3 py-3 flex items-center gap-2">
         <Link to="/store" className="w-9 h-9 rounded-full hover:bg-muted flex items-center justify-center">
           <ArrowLeft className="w-4 h-4" />
@@ -728,7 +728,7 @@ function ProductsView() {
   if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm"><CircleSpinner size={28} /></div>;
 
   return (
-    <div className="px-4 py-4 space-y-3 pb-32">
+    <div className="px-4 py-4 space-y-3 ">
       {!selectMode ? (
         <div className="flex gap-2">
           <Button asChild className="flex-1 h-11">
