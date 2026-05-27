@@ -306,10 +306,28 @@ export default function Messages() {
       );
       profileMap = new Map(profBatches.flat().map((p: any) => [p.user_id, p]));
     }
+    // Resolve group buy ids for group_buy conversations
+    const groupConvIds = merged.filter((c) => (c.kind ?? "buyer_supplier") === "group_buy").map((c) => c.id);
+    const groupMap = new Map<string, { id: string; title: string | null; target_qty: number; status: string }>();
+    if (groupConvIds.length) {
+      const { data: gbs } = await supabase
+        .from("group_buys")
+        .select("id,title,target_qty,status,conversation_id")
+        .in("conversation_id", groupConvIds);
+      (gbs ?? []).forEach((g: any) => { if (g.conversation_id) groupMap.set(g.conversation_id, g); });
+    }
+
     merged.forEach((c) => {
       const kind = c.kind ?? "buyer_supplier";
       if (kind === "group_buy") {
-        c.peer = { name: c.title ?? "Group buy", logo: null, verified: false, subtitle: "Group chat" };
+        const g = groupMap.get(c.id);
+        c.peer = {
+          name: g?.title ?? c.title ?? "Group buy",
+          logo: null,
+          verified: false,
+          subtitle: g ? `Group · target ${g.target_qty} · ${g.status}` : "Group chat",
+          groupBuyId: g?.id,
+        };
         return;
       }
       if (kind === "dm") {
