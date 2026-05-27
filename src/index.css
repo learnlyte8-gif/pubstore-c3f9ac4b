@@ -188,11 +188,11 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', system-ui, Roboto, 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-weight: 600;
+    font-weight: 700;
     font-feature-settings: "kern", "liga", "calt", "ss01", "tnum";
     font-synthesis: none;
     text-rendering: optimizeLegibility;
-    letter-spacing: -0.012em;
+    letter-spacing: -0.014em;
     -webkit-tap-highlight-color: transparent;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -202,9 +202,9 @@
 
   /* Native typographic scale — confident, bold native feel */
   p, span, a, li, label, div { font-weight: inherit; }
-  h1, h2, h3, h4, h5, h6 { letter-spacing: -0.024em; font-weight: 800; }
+  h1, h2, h3, h4, h5, h6 { letter-spacing: -0.024em; font-weight: 900; }
   h1 { letter-spacing: -0.03em; font-weight: 900; }
-  strong, b { font-weight: 800; }
+  strong, b { font-weight: 900; }
 
   /* Prices — extra bold, tabular numerals */
   [data-price], .price, .product-price {
