@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, Loader2, ShieldCheck, Zap, Smartphone, CreditCard, Send, Wrench } from "lucide-react";
+import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, Loader2, ShieldCheck, Zap, Smartphone, CreditCard, Send, Wrench, Banknote, Clock, XCircle } from "lucide-react";
 import SendMoneyDialog from "@/components/wallet/SendMoneyDialog";
+import WithdrawDialog from "@/components/wallet/WithdrawDialog";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/useWallet";
@@ -27,6 +29,33 @@ export default function WalletPage() {
   const [provider, setProvider] = useState<Provider>("pesepay");
   const [customAmount, setCustomAmount] = useState<string>("");
   const [sendOpen, setSendOpen] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const qc = useQueryClient();
+
+  const { data: withdrawals = [], refetch: refetchWithdrawals } = useQuery({
+    queryKey: ["withdrawals", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await sb
+        .from("withdrawal_requests")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      return data ?? [];
+    },
+  });
+
+  const cancelWithdrawal = async (id: string) => {
+    try {
+      const { error } = await sb.rpc("cancel_withdrawal_request", { _id: id });
+      if (error) throw error;
+      toast.success("Withdrawal cancelled — funds refunded");
+      refresh();
+      refetchWithdrawals();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not cancel withdrawal");
+    }
+  };
 
   const captureRanRef = useRef(false);
   const pesepayRanRef = useRef(false);
