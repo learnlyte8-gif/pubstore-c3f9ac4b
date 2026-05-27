@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,7 +33,7 @@ function daysAgo(n: number) {
 }
 
 export default function StoreAnalytics() {
-  const [range, setRange] = (require("react") as typeof import("react")).useState<Range>("30d");
+  const [range, setRange] = useState<Range>("30d");
   const days = RANGES.find((r) => r.id === range)!.days;
   const since = useMemo(() => daysAgo(days - 1), [days]);
   const prevSince = useMemo(() => daysAgo(days * 2 - 1), [days]);
