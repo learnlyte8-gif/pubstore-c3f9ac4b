@@ -229,6 +229,23 @@
     letter-spacing: -0.02em;
   }
 
+  /* iOS focus-zoom prevention — inputs MUST be >= 16px to avoid auto-zoom jump */
+  @media (max-width: 767px) {
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+  }
+
+  /* Smooth, non-jittery scrolling everywhere */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Kill horizontal scroll on every common wrapper to eliminate sideways shake */
+  main, section, article, header, footer, nav, aside {
+    max-width: 100%;
+  }
+
   button, a, [role="button"] {
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
