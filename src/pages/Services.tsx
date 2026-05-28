@@ -194,6 +194,15 @@ function PostTaskForm({ onPosted }: { onPosted: () => void }) {
           <input value={city} onChange={(e) => setCity(e.target.value)} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1" />
         </div>
       </div>
+      <MediaUpload
+        images={media.images}
+        video={media.video}
+        onChange={setMedia}
+        folder="service-requests"
+        bucket="restaurant-media"
+        label="Attach photos / video (optional)"
+        hint="Show the issue · up to 6 photos · 1 video (60 MB)"
+      />
       <div>
         <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Deadline</label>
         <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1" />
