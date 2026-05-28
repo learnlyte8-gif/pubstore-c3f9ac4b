@@ -58,6 +58,7 @@ import CarRentals from "./pages/CarRentals.tsx";
 import UserProfile from "./pages/UserProfile.tsx";
 import GroupBuyDetail from "./pages/GroupBuyDetail.tsx";
 import PayAction from "./pages/PayAction.tsx";
+import Restaurants from "./pages/Restaurants.tsx";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -168,6 +169,8 @@ const App = () => (
                 <Route path="/jobs/:id" element={<Jobs />} />
                 <Route path="/car-rentals" element={<CarRentals />} />
                 <Route path="/car-rentals/:id" element={<CarRentals />} />
+                <Route path="/restaurants" element={<Restaurants />} />
+                <Route path="/restaurants/:id" element={<Restaurants />} />
                 <Route path="/u/:userId" element={<UserProfile />} />
                 <Route path="/group-buy/:id" element={<GroupBuyDetail />} />
                 <Route path="/pay/:kind/:id" element={<PayAction />} />
