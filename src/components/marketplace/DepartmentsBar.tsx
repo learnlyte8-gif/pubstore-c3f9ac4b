@@ -1,19 +1,20 @@
 import { Link, useLocation } from "react-router-dom";
-import { Store, Newspaper, BedDouble, Car, Factory, Navigation, Wrench, Home as HomeIcon, Truck, Banknote, Briefcase, Sprout, type LucideIcon } from "lucide-react";
+import { Store, Newspaper, BedDouble, Car, Factory, Navigation, Wrench, Home as HomeIcon, Truck, Banknote, Briefcase, Sprout, UtensilsCrossed, type LucideIcon } from "lucide-react";
 
 const DEPTS: { to: string; label: string; icon: LucideIcon; tone: string }[] = [
-  { to: "/home",       label: "Market",     icon: Store,      tone: "from-primary to-primary/70" },
-  { to: "/jobs",       label: "Jobs",       icon: Briefcase,  tone: "from-blue-700 to-indigo-500" },
-  { to: "/rides",      label: "Rides",      icon: Navigation, tone: "from-emerald-500 to-teal-400" },
-  { to: "/services",   label: "Services",   icon: Wrench,     tone: "from-violet-600 to-fuchsia-500" },
-  { to: "/properties", label: "Property",   icon: HomeIcon,   tone: "from-sky-700 to-blue-500" },
-  { to: "/logistics",  label: "Delivery",   icon: Truck,      tone: "from-orange-600 to-rose-500" },
-  { to: "/finance",    label: "Finance",    icon: Banknote,   tone: "from-emerald-700 to-cyan-600" },
-  { to: "/news",       label: "News",       icon: Newspaper,  tone: "from-rose-500 to-orange-400" },
-  { to: "/stays",      label: "Stays",      icon: BedDouble,  tone: "from-amber-500 to-yellow-300" },
-  { to: "/auto",       label: "Auto",       icon: Car,        tone: "from-zinc-900 to-zinc-600" },
-  { to: "/industrial", label: "Industrial", icon: Factory,    tone: "from-sky-700 to-sky-400" },
-  { to: "/agro",       label: "Agro",       icon: Sprout,     tone: "from-emerald-700 to-lime-500" },
+  { to: "/home",        label: "Market",     icon: Store,            tone: "from-primary to-primary/70" },
+  { to: "/restaurants", label: "Food",       icon: UtensilsCrossed,  tone: "from-rose-600 via-orange-500 to-amber-400" },
+  { to: "/jobs",        label: "Jobs",       icon: Briefcase,        tone: "from-blue-700 to-indigo-500" },
+  { to: "/rides",       label: "Rides",      icon: Navigation,       tone: "from-emerald-500 to-teal-400" },
+  { to: "/services",    label: "Services",   icon: Wrench,           tone: "from-violet-600 to-fuchsia-500" },
+  { to: "/properties",  label: "Property",   icon: HomeIcon,         tone: "from-sky-700 to-blue-500" },
+  { to: "/logistics",   label: "Delivery",   icon: Truck,            tone: "from-orange-600 to-rose-500" },
+  { to: "/finance",     label: "Finance",    icon: Banknote,         tone: "from-emerald-700 to-cyan-600" },
+  { to: "/news",        label: "News",       icon: Newspaper,        tone: "from-rose-500 to-orange-400" },
+  { to: "/stays",       label: "Stays",      icon: BedDouble,        tone: "from-amber-500 to-yellow-300" },
+  { to: "/auto",        label: "Auto",       icon: Car,              tone: "from-zinc-900 to-zinc-600" },
+  { to: "/industrial",  label: "Industrial", icon: Factory,          tone: "from-sky-700 to-sky-400" },
+  { to: "/agro",        label: "Agro",       icon: Sprout,           tone: "from-emerald-700 to-lime-500" },
 ];
 
 export default function DepartmentsBar() {

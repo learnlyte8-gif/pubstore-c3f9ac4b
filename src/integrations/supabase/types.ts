@@ -96,6 +96,7 @@ export type Database = {
           title: string
           unit: string | null
           updated_at: string
+          video_url: string | null
         }
         Insert: {
           active?: boolean
@@ -127,6 +128,7 @@ export type Database = {
           title: string
           unit?: string | null
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
           active?: boolean
@@ -158,6 +160,7 @@ export type Database = {
           title?: string
           unit?: string | null
           updated_at?: string
+          video_url?: string | null
         }
         Relationships: [
           {
@@ -328,6 +331,7 @@ export type Database = {
           updated_at: string
           vehicle_class: string
           verified: boolean
+          video_url: string | null
           views: number
           weekend_surcharge_pct: number | null
           year: number | null
@@ -405,6 +409,7 @@ export type Database = {
           updated_at?: string
           vehicle_class?: string
           verified?: boolean
+          video_url?: string | null
           views?: number
           weekend_surcharge_pct?: number | null
           year?: number | null
@@ -482,6 +487,7 @@ export type Database = {
           updated_at?: string
           vehicle_class?: string
           verified?: boolean
+          video_url?: string | null
           views?: number
           weekend_surcharge_pct?: number | null
           year?: number | null
@@ -1027,6 +1033,7 @@ export type Database = {
           term_months: number | null
           title: string
           updated_at: string
+          video_url: string | null
         }
         Insert: {
           active?: boolean
@@ -1053,6 +1060,7 @@ export type Database = {
           term_months?: number | null
           title: string
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
           active?: boolean
@@ -1079,6 +1087,7 @@ export type Database = {
           term_months?: number | null
           title?: string
           updated_at?: string
+          video_url?: string | null
         }
         Relationships: []
       }
@@ -1107,6 +1116,83 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      food_orders: {
+        Row: {
+          buyer_id: string
+          contact_phone: string | null
+          created_at: string
+          currency: string
+          delivery_address: string | null
+          delivery_fee: number
+          id: string
+          items: Json
+          lat: number | null
+          lng: number | null
+          notes: string | null
+          paid: boolean
+          paid_at: string | null
+          payment_tx_id: string | null
+          ref_code: string | null
+          restaurant_id: string
+          status: string
+          subtotal: number
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          buyer_id: string
+          contact_phone?: string | null
+          created_at?: string
+          currency?: string
+          delivery_address?: string | null
+          delivery_fee?: number
+          id?: string
+          items?: Json
+          lat?: number | null
+          lng?: number | null
+          notes?: string | null
+          paid?: boolean
+          paid_at?: string | null
+          payment_tx_id?: string | null
+          ref_code?: string | null
+          restaurant_id: string
+          status?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          buyer_id?: string
+          contact_phone?: string | null
+          created_at?: string
+          currency?: string
+          delivery_address?: string | null
+          delivery_fee?: number
+          id?: string
+          items?: Json
+          lat?: number | null
+          lng?: number | null
+          notes?: string | null
+          paid?: boolean
+          paid_at?: string | null
+          payment_tx_id?: string | null
+          ref_code?: string | null
+          restaurant_id?: string
+          status?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "food_orders_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
         ]
@@ -1269,6 +1355,7 @@ export type Database = {
           title: string
           unit: string | null
           updated_at: string
+          video_url: string | null
         }
         Insert: {
           active?: boolean
@@ -1293,6 +1380,7 @@ export type Database = {
           title: string
           unit?: string | null
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
           active?: boolean
@@ -1317,6 +1405,7 @@ export type Database = {
           title?: string
           unit?: string | null
           updated_at?: string
+          video_url?: string | null
         }
         Relationships: [
           {
@@ -1628,6 +1717,7 @@ export type Database = {
           status: string
           title: string
           updated_at: string
+          video_url: string | null
           views: number
           workplace_type: string
         }
@@ -1658,6 +1748,7 @@ export type Database = {
           status?: string
           title: string
           updated_at?: string
+          video_url?: string | null
           views?: number
           workplace_type?: string
         }
@@ -1688,6 +1779,7 @@ export type Database = {
           status?: string
           title?: string
           updated_at?: string
+          video_url?: string | null
           views?: number
           workplace_type?: string
         }
@@ -2222,6 +2314,113 @@ export type Database = {
           weight_kg?: number | null
         }
         Relationships: []
+      }
+      menu_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          restaurant_id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          restaurant_id: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          restaurant_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_categories_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_items: {
+        Row: {
+          available: boolean
+          category_id: string | null
+          created_at: string
+          currency: string
+          description: string | null
+          gallery: string[]
+          id: string
+          image: string | null
+          name: string
+          price: number
+          restaurant_id: string
+          sort_order: number
+          spicy: boolean
+          tags: string[]
+          updated_at: string
+          vegetarian: boolean
+          video_url: string | null
+        }
+        Insert: {
+          available?: boolean
+          category_id?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          gallery?: string[]
+          id?: string
+          image?: string | null
+          name: string
+          price?: number
+          restaurant_id: string
+          sort_order?: number
+          spicy?: boolean
+          tags?: string[]
+          updated_at?: string
+          vegetarian?: boolean
+          video_url?: string | null
+        }
+        Update: {
+          available?: boolean
+          category_id?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          gallery?: string[]
+          id?: string
+          image?: string | null
+          name?: string
+          price?: number
+          restaurant_id?: string
+          sort_order?: number
+          spicy?: boolean
+          tags?: string[]
+          updated_at?: string
+          vegetarian?: boolean
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "menu_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_items_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messages: {
         Row: {
@@ -2816,6 +3015,7 @@ export type Database = {
           title: string
           unit: string | null
           updated_at: string
+          video_url: string | null
         }
         Insert: {
           active?: boolean | null
@@ -2845,6 +3045,7 @@ export type Database = {
           title: string
           unit?: string | null
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
           active?: boolean | null
@@ -2874,6 +3075,7 @@ export type Database = {
           title?: string
           unit?: string | null
           updated_at?: string
+          video_url?: string | null
         }
         Relationships: [
           {
@@ -2961,6 +3163,7 @@ export type Database = {
           supplier_id: string | null
           title: string
           updated_at: string
+          video_url: string | null
           views: number
           virtual_tour_url: string | null
         }
@@ -2994,6 +3197,7 @@ export type Database = {
           supplier_id?: string | null
           title: string
           updated_at?: string
+          video_url?: string | null
           views?: number
           virtual_tour_url?: string | null
         }
@@ -3027,6 +3231,7 @@ export type Database = {
           supplier_id?: string | null
           title?: string
           updated_at?: string
+          video_url?: string | null
           views?: number
           virtual_tour_url?: string | null
         }
@@ -3213,6 +3418,113 @@ export type Database = {
           },
           {
             foreignKeyName: "quotes_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      restaurants: {
+        Row: {
+          active: boolean
+          address: string | null
+          city: string | null
+          country: string | null
+          cover: string | null
+          created_at: string
+          cuisine: string | null
+          delivery_enabled: boolean
+          delivery_fee: number
+          description: string | null
+          featured: boolean
+          gallery: string[]
+          hours: Json
+          id: string
+          lat: number | null
+          lng: number | null
+          min_order: number
+          name: string
+          owner_user_id: string
+          phone: string | null
+          prep_time_minutes: number
+          price_level: number
+          rating: number
+          reservation_enabled: boolean
+          review_count: number
+          slug: string | null
+          supplier_id: string | null
+          updated_at: string
+          video_url: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          cover?: string | null
+          created_at?: string
+          cuisine?: string | null
+          delivery_enabled?: boolean
+          delivery_fee?: number
+          description?: string | null
+          featured?: boolean
+          gallery?: string[]
+          hours?: Json
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          min_order?: number
+          name: string
+          owner_user_id: string
+          phone?: string | null
+          prep_time_minutes?: number
+          price_level?: number
+          rating?: number
+          reservation_enabled?: boolean
+          review_count?: number
+          slug?: string | null
+          supplier_id?: string | null
+          updated_at?: string
+          video_url?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          cover?: string | null
+          created_at?: string
+          cuisine?: string | null
+          delivery_enabled?: boolean
+          delivery_fee?: number
+          description?: string | null
+          featured?: boolean
+          gallery?: string[]
+          hours?: Json
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          min_order?: number
+          name?: string
+          owner_user_id?: string
+          phone?: string | null
+          prep_time_minutes?: number
+          price_level?: number
+          rating?: number
+          reservation_enabled?: boolean
+          review_count?: number
+          slug?: string | null
+          supplier_id?: string | null
+          updated_at?: string
+          video_url?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurants_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
@@ -3645,6 +3957,7 @@ export type Database = {
           updated_at: string
           user_id: string
           verified: boolean
+          video_url: string | null
           whatsapp: string | null
         }
         Insert: {
@@ -3670,6 +3983,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           verified?: boolean
+          video_url?: string | null
           whatsapp?: string | null
         }
         Update: {
@@ -3695,6 +4009,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           verified?: boolean
+          video_url?: string | null
           whatsapp?: string | null
         }
         Relationships: []
@@ -3717,6 +4032,7 @@ export type Database = {
           status: string
           title: string
           updated_at: string
+          video_url: string | null
         }
         Insert: {
           address?: string | null
@@ -3735,6 +4051,7 @@ export type Database = {
           status?: string
           title: string
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
           address?: string | null
@@ -3753,6 +4070,7 @@ export type Database = {
           status?: string
           title?: string
           updated_at?: string
+          video_url?: string | null
         }
         Relationships: []
       }
@@ -4043,6 +4361,7 @@ export type Database = {
           supplier_id: string | null
           title: string
           updated_at: string
+          video_url: string | null
         }
         Insert: {
           active?: boolean
@@ -4069,6 +4388,7 @@ export type Database = {
           supplier_id?: string | null
           title: string
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
           active?: boolean
@@ -4095,6 +4415,7 @@ export type Database = {
           supplier_id?: string | null
           title?: string
           updated_at?: string
+          video_url?: string | null
         }
         Relationships: [
           {
@@ -4319,6 +4640,56 @@ export type Database = {
           },
         ]
       }
+      table_reservations: {
+        Row: {
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          guest_id: string
+          id: string
+          notes: string | null
+          party_size: number
+          reserved_for: string
+          restaurant_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          guest_id: string
+          id?: string
+          notes?: string | null
+          party_size?: number
+          reserved_for: string
+          restaurant_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          guest_id?: string
+          id?: string
+          notes?: string | null
+          party_size?: number
+          reserved_for?: string
+          restaurant_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "table_reservations_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_follows: {
         Row: {
           created_at: string
@@ -4535,6 +4906,7 @@ export type Database = {
           title: string
           transmission: string | null
           updated_at: string
+          video_url: string | null
           year: number | null
         }
         Insert: {
@@ -4565,6 +4937,7 @@ export type Database = {
           title: string
           transmission?: string | null
           updated_at?: string
+          video_url?: string | null
           year?: number | null
         }
         Update: {
@@ -4595,6 +4968,7 @@ export type Database = {
           title?: string
           transmission?: string | null
           updated_at?: string
+          video_url?: string | null
           year?: number | null
         }
         Relationships: [

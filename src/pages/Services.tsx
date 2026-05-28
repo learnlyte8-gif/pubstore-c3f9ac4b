@@ -7,6 +7,7 @@ import { fetchServiceProviders, fetchServiceRequests, SERVICE_CATEGORIES } from 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
+import MediaUpload from "@/components/MediaUpload";
 
 type Tab = "find" | "tasks" | "post";
 
@@ -141,6 +142,7 @@ function PostTaskForm({ onPosted }: { onPosted: () => void }) {
   const [budget, setBudget] = useState("");
   const [city, setCity] = useState("");
   const [deadline, setDeadline] = useState("");
+  const [media, setMedia] = useState<{ images: string[]; video: string | null }>({ images: [], video: null });
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
@@ -156,11 +158,13 @@ function PostTaskForm({ onPosted }: { onPosted: () => void }) {
       budget: budget ? Number(budget) : null,
       city: city || null,
       deadline: deadline || null,
+      gallery: media.images,
+      video_url: media.video,
     });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Task posted — providers will bid soon");
-    setTitle(""); setDescription(""); setBudget(""); setCity(""); setDeadline("");
+    setTitle(""); setDescription(""); setBudget(""); setCity(""); setDeadline(""); setMedia({ images: [], video: null });
     onPosted();
   };
 
@@ -190,6 +194,15 @@ function PostTaskForm({ onPosted }: { onPosted: () => void }) {
           <input value={city} onChange={(e) => setCity(e.target.value)} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1" />
         </div>
       </div>
+      <MediaUpload
+        images={media.images}
+        video={media.video}
+        onChange={setMedia}
+        folder="service-requests"
+        bucket="restaurant-media"
+        label="Attach photos / video (optional)"
+        hint="Show the issue · up to 6 photos · 1 video (60 MB)"
+      />
       <div>
         <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Deadline</label>
         <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1" />
