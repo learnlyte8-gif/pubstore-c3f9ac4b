@@ -7,6 +7,7 @@ import { fetchServiceProviders, fetchServiceRequests, SERVICE_CATEGORIES } from 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
+import MediaUpload from "@/components/MediaUpload";
 
 type Tab = "find" | "tasks" | "post";
 
@@ -141,6 +142,7 @@ function PostTaskForm({ onPosted }: { onPosted: () => void }) {
   const [budget, setBudget] = useState("");
   const [city, setCity] = useState("");
   const [deadline, setDeadline] = useState("");
+  const [media, setMedia] = useState<{ images: string[]; video: string | null }>({ images: [], video: null });
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
@@ -156,11 +158,13 @@ function PostTaskForm({ onPosted }: { onPosted: () => void }) {
       budget: budget ? Number(budget) : null,
       city: city || null,
       deadline: deadline || null,
+      gallery: media.images,
+      video_url: media.video,
     });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Task posted — providers will bid soon");
-    setTitle(""); setDescription(""); setBudget(""); setCity(""); setDeadline("");
+    setTitle(""); setDescription(""); setBudget(""); setCity(""); setDeadline(""); setMedia({ images: [], video: null });
     onPosted();
   };
 
