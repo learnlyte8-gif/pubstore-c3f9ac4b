@@ -31,6 +31,7 @@ import ServicesRail from "@/components/marketplace/ServicesRail";
 import PropertiesRail from "@/components/marketplace/PropertiesRail";
 import FinanceRail from "@/components/marketplace/FinanceRail";
 import CarRentalsRail from "@/components/marketplace/CarRentalsRail";
+import RestaurantsRail from "@/components/marketplace/RestaurantsRail";
 import JobsRail from "@/components/marketplace/JobsRail";
 import TapsonAssistant from "@/components/TapsonAssistant";
 import EmptyState from "@/components/EmptyState";
@@ -276,7 +277,10 @@ const Home = () => {
 
               <NewsRail />
 
+              <RestaurantsRail />
+
               <StaysRail />
+
 
               <section className="px-4 mt-6">
                 <SectionHeader icon={Newspaper} title="Live activity" subtitle="What buyers are doing right now" />
