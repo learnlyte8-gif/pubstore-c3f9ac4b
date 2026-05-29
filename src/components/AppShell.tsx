@@ -15,6 +15,7 @@ import ImportProgressBanner from "@/components/ImportProgressBanner";
 import TapsonAssistant from "@/components/TapsonAssistant";
 import { useUnreadChats } from "@/hooks/useUnreadChats";
 import logo from "@/assets/pubstore-logo.png";
+import { useStatusBarSync } from "@/hooks/useStatusBarSync";
 
 let shellNotifChannelNonce = 0;
 
@@ -26,6 +27,8 @@ export default function AppShell() {
   const { cartCount, wishlist } = useShop();
   const { chatsWithUnread } = useUnreadChats();
   const location = useLocation();
+  useStatusBarSync();
+  
   
 
   useEffect(() => {
