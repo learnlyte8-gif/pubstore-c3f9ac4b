@@ -151,17 +151,28 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
     else toast.success("Saved to wishlist", { description: product.title });
   };
 
+  const images = (product.gallery && product.gallery.length > 0 ? product.gallery : [product.image]).filter(Boolean) as string[];
+  const [slideIdx, setSlideIdx] = useState(0);
+  useEffect(() => {
+    if (images.length < 2) return;
+    const t = setInterval(() => setSlideIdx((i) => (i + 1) % images.length), 2000);
+    return () => clearInterval(t);
+  }, [images.length]);
+
   if (variant === "compact") {
     return (
       <>
       <Link to={`/product/${product.id}`} onClick={() => logProductClick(product, "card-compact")} className="shrink-0 w-36 group block">
         <div className="relative aspect-square rounded-xl overflow-hidden bg-muted shadow-card group-hover:shadow-elevated transition">
-          <img
-            src={product.image}
-            alt={product.title}
-            loading="lazy"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-          />
+          {images.map((src, i) => (
+            <img
+              key={i}
+              src={src}
+              alt={product.title}
+              loading="lazy"
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === slideIdx ? "opacity-100" : "opacity-0"}`}
+            />
+          ))}
           {off > 0 && (
             <span className="absolute top-1.5 left-1.5 bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded">
               -{off}%
@@ -241,12 +252,15 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
       className="group rounded-xl overflow-hidden bg-card border border-border shadow-card hover:shadow-elevated hover:-translate-y-0.5 transition block"
     >
       <div className="relative aspect-square bg-muted overflow-hidden">
-        <img
-          src={product.image}
-          alt={product.title}
-          loading="lazy"
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-        />
+        {images.map((src, i) => (
+          <img
+            key={i}
+            src={src}
+            alt={product.title}
+            loading="lazy"
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === slideIdx ? "opacity-100" : "opacity-0"}`}
+          />
+        ))}
         {displayBadge && badgeStyle[displayBadge as NonNullable<Product["badge"]>] && (
           <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded ${badgeStyle[displayBadge as NonNullable<Product["badge"]>]}`}>
             {displayBadge}

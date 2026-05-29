@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { LayoutGrid, ChevronRight, ChevronLeft } from "lucide-react";
+import { Link } from "react-router-dom";
+import { LayoutGrid, ChevronRight, ChevronLeft, UtensilsCrossed } from "lucide-react";
 import ProductCard from "@/components/marketplace/ProductCard";
 import EmptyState from "@/components/EmptyState";
 import TradeModeSwitch from "@/components/marketplace/TradeModeSwitch";
@@ -91,6 +92,15 @@ export default function Categories() {
               <LayoutGrid className="w-5 h-5" strokeWidth={isAll ? 2.2 : 1.7} />
               <span className="text-[11px] leading-tight">All</span>
             </button>
+          </li>
+          <li>
+            <Link
+              to="/restaurants"
+              className="w-full flex flex-col items-center gap-1 py-4 px-1 text-center transition text-muted-foreground hover:bg-background/60"
+            >
+              <UtensilsCrossed className="w-5 h-5 text-rose-500" strokeWidth={2} />
+              <span className="text-[11px] leading-tight">Food</span>
+            </Link>
           </li>
           {cats.map(({ id, name, icon: Icon }) => {
             const isActive = active === id;
