@@ -267,6 +267,10 @@ function RestaurantDetail({ id }: { id: string }) {
 
   const { data: r } = useQuery({ queryKey: ["restaurant", id], queryFn: () => fetchRestaurant(id) });
   const { data: menu } = useQuery({ queryKey: ["menu", id], queryFn: () => fetchMenu(id) });
+  const { data: currentUserId } = useQuery({
+    queryKey: ["auth-user-id"],
+    queryFn: async () => (await supabase.auth.getUser()).data.user?.id ?? null,
+  });
 
   const grouped = useMemo(() => {
     if (!menu) return [];
@@ -296,7 +300,7 @@ function RestaurantDetail({ id }: { id: string }) {
 
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
   const cartTotal = cart.reduce((s, i) => s + i.qty * i.price, 0);
-  const isOwner = !!r && r.owner_user_id;
+  const isOwner = !!r && !!currentUserId && r.owner_user_id === currentUserId;
 
   return (
     <div className="pb-24">
