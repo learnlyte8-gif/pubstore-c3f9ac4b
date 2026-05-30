@@ -273,11 +273,6 @@ const Home = () => {
               <StaysRail />
 
 
-              <section className="px-4 mt-6">
-                <SectionHeader icon={Newspaper} title="Live activity" subtitle="What buyers are doing right now" />
-                <LiveFeed />
-              </section>
-
               <AutoRail />
 
               <ServicesRail />
