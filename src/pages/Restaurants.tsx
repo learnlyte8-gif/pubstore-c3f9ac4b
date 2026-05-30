@@ -267,6 +267,10 @@ function RestaurantDetail({ id }: { id: string }) {
 
   const { data: r } = useQuery({ queryKey: ["restaurant", id], queryFn: () => fetchRestaurant(id) });
   const { data: menu } = useQuery({ queryKey: ["menu", id], queryFn: () => fetchMenu(id) });
+  const { data: currentUserId } = useQuery({
+    queryKey: ["auth-user-id"],
+    queryFn: async () => (await supabase.auth.getUser()).data.user?.id ?? null,
+  });
 
   const grouped = useMemo(() => {
     if (!menu) return [];
