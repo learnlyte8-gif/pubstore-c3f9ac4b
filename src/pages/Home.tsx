@@ -15,7 +15,7 @@ import TopSuppliers from "@/components/marketplace/TopSuppliers";
 import VerticalFeed from "@/components/marketplace/VerticalFeed";
 import LiveStatsBanner from "@/components/marketplace/LiveStatsBanner";
 import BrandSpotlight from "@/components/marketplace/BrandSpotlight";
-import LiveFeed from "@/components/marketplace/LiveFeed";
+
 import LiveStreamsRail from "@/components/marketplace/LiveStreamsRail";
 import PromoTile from "@/components/marketplace/PromoTile";
 import CategoryCallout from "@/components/marketplace/CategoryCallout";
