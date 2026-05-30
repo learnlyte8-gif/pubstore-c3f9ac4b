@@ -266,11 +266,6 @@ const Home = () => {
                 <BrandSpotlight />
               </section>
 
-              <section className="px-4 mt-6">
-                <SectionHeader icon={Globe2} title="Source by region" subtitle="Verified factories worldwide" />
-                <RegionSourcing />
-              </section>
-
               <NewsRail />
 
               <RestaurantsRail />
