@@ -247,8 +247,6 @@ const Home = () => {
                 </section>
               )}
 
-              <SuppliersNearMe />
-
               <section className="px-4 mt-6">
                 <SectionHeader icon={Sparkles} title="For you" subtitle="Ranked by your interests, follows & activity" />
                 <div className="grid grid-cols-2 gap-3 mt-3">
