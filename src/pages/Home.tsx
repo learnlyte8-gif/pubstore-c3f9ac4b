@@ -2,7 +2,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import {
   TrendingUp, Sparkles, LayoutGrid, Building2, Compass, Users, Home as HomeIcon, Store as StoreIcon,
-  Globe2, Award, Newspaper, Zap, ShieldCheck, Truck, Flame, Menu, X, FileText, Package, GitCompare, Wallet, BadgePercent,
+  Award, Newspaper, Zap, ShieldCheck, Truck, Flame, Menu, X, FileText, Package, GitCompare, Wallet, BadgePercent,
   Briefcase, Wrench, Banknote, BedDouble, Car, Factory, Sprout, Navigation,
   type LucideIcon,
 } from "lucide-react";
