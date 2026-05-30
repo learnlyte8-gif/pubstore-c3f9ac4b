@@ -300,7 +300,7 @@ function RestaurantDetail({ id }: { id: string }) {
 
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
   const cartTotal = cart.reduce((s, i) => s + i.qty * i.price, 0);
-  const isOwner = !!r && r.owner_user_id;
+  const isOwner = !!r && !!currentUserId && r.owner_user_id === currentUserId;
 
   return (
     <div className="pb-24">
