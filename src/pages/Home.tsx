@@ -2,7 +2,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import {
   TrendingUp, Sparkles, LayoutGrid, Building2, Compass, Users, Home as HomeIcon, Store as StoreIcon,
-  Globe2, Award, Newspaper, Zap, ShieldCheck, Truck, Flame, Menu, X, FileText, Package, GitCompare, Wallet, BadgePercent,
+  Award, Newspaper, Zap, ShieldCheck, Truck, Flame, Menu, X, FileText, Package, GitCompare, Wallet, BadgePercent,
   Briefcase, Wrench, Banknote, BedDouble, Car, Factory, Sprout, Navigation,
   type LucideIcon,
 } from "lucide-react";
@@ -13,11 +13,9 @@ import Promo3DCarousel from "@/components/marketplace/Promo3DCarousel";
 import ProductCard from "@/components/marketplace/ProductCard";
 import TopSuppliers from "@/components/marketplace/TopSuppliers";
 import VerticalFeed from "@/components/marketplace/VerticalFeed";
-import SuppliersNearMe from "@/components/marketplace/SuppliersNearMe";
 import LiveStatsBanner from "@/components/marketplace/LiveStatsBanner";
 import BrandSpotlight from "@/components/marketplace/BrandSpotlight";
-import RegionSourcing from "@/components/marketplace/RegionSourcing";
-import LiveFeed from "@/components/marketplace/LiveFeed";
+
 import LiveStreamsRail from "@/components/marketplace/LiveStreamsRail";
 import PromoTile from "@/components/marketplace/PromoTile";
 import CategoryCallout from "@/components/marketplace/CategoryCallout";
@@ -249,8 +247,6 @@ const Home = () => {
                 </section>
               )}
 
-              <SuppliersNearMe />
-
               <section className="px-4 mt-6">
                 <SectionHeader icon={Sparkles} title="For you" subtitle="Ranked by your interests, follows & activity" />
                 <div className="grid grid-cols-2 gap-3 mt-3">
@@ -270,22 +266,12 @@ const Home = () => {
                 <BrandSpotlight />
               </section>
 
-              <section className="px-4 mt-6">
-                <SectionHeader icon={Globe2} title="Source by region" subtitle="Verified factories worldwide" />
-                <RegionSourcing />
-              </section>
-
               <NewsRail />
 
               <RestaurantsRail />
 
               <StaysRail />
 
-
-              <section className="px-4 mt-6">
-                <SectionHeader icon={Newspaper} title="Live activity" subtitle="What buyers are doing right now" />
-                <LiveFeed />
-              </section>
 
               <AutoRail />
 
