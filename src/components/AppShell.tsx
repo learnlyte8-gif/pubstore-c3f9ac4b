@@ -166,7 +166,7 @@ export default function AppShell() {
       <LiveActivityToaster />
       <NativeSuggestionToaster />
       <ActiveRideMonitor />
-      <BannerAd />
+      {(location.pathname === "/home" || location.pathname === "/categories") && <BannerAd />}
       <ImportProgressBanner />
       <InstallPrompt />
     </div>
