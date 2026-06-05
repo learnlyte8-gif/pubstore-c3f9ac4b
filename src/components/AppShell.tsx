@@ -419,13 +419,39 @@ function HomeFeedTabs() {
     { id: "fyp", label: "For you" },
     { id: "following", label: "Following" },
   ];
+  const containerRef = useRef<HTMLDivElement>(null);
+  const btnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+
+  useEffect(() => {
+    const el = btnRefs.current[active];
+    const parent = containerRef.current;
+    if (!el || !parent) return;
+    const update = () => {
+      const elRect = el.getBoundingClientRect();
+      const parentRect = parent.getBoundingClientRect();
+      setIndicator({ left: elRect.left - parentRect.left, width: elRect.width });
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    ro.observe(parent);
+    window.addEventListener("resize", update);
+    return () => { ro.disconnect(); window.removeEventListener("resize", update); };
+  }, [active]);
+
   return (
-    <div role="tablist" className="flex items-center gap-3 mr-auto min-w-0 overflow-x-auto no-scrollbar">
+    <div
+      ref={containerRef}
+      role="tablist"
+      className="relative flex items-center gap-4 mr-auto min-w-0 overflow-hidden"
+    >
       {TABS.map((t) => {
         const isActive = active === t.id;
         return (
           <button
             key={t.id}
+            ref={(el) => { btnRefs.current[t.id] = el; }}
             role="tab"
             aria-selected={isActive}
             onClick={() => {
@@ -434,20 +460,21 @@ function HomeFeedTabs() {
               else next.set("feed", t.id);
               setParams(next, { replace: true });
             }}
-            className={`relative shrink-0 text-[13px] font-bold leading-none py-1 transition-colors ${
+            className={`relative shrink-0 text-[13px] font-bold leading-none py-1.5 transition-colors ${
               isActive ? "text-foreground" : "text-muted-foreground"
             }`}
           >
             {t.label}
-            <span
-              className={`absolute -bottom-1 left-1/2 -translate-x-1/2 h-[3px] rounded-full bg-[hsl(24_100%_56%)] transition-all ${
-                isActive ? "w-5 opacity-100" : "w-0 opacity-0"
-              }`}
-            />
           </button>
         );
       })}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute bottom-0 h-[3px] rounded-full bg-[hsl(24_100%_56%)] transition-[transform,width] duration-300 ease-out"
+        style={{ width: indicator.width, transform: `translateX(${indicator.left}px)` }}
+      />
     </div>
   );
 }
+
 
