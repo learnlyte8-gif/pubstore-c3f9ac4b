@@ -85,6 +85,39 @@ export function useGroupBuyInvites() {
   });
 }
 
+/** Pull the pending invite (if any) for the current user on a specific group. */
+export function useMyInviteForGroup(groupId: string | undefined) {
+  const uid = useAuthUserId();
+  return useQuery({
+    queryKey: ["gb-invite-mine", groupId, uid],
+    enabled: !!uid && !!groupId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("group_buy_invites")
+        .select("*")
+        .eq("group_id", groupId!)
+        .eq("invitee_id", uid!)
+        .maybeSingle();
+      return data;
+    },
+  });
+}
+
+export async function respondToGroupBuyInvite(inviteId: string, accept: boolean) {
+  const { error } = await supabase
+    .from("group_buy_invites")
+    .update({ status: accept ? "accepted" : "declined", responded_at: new Date().toISOString() })
+    .eq("id", inviteId);
+  if (error) throw error;
+}
+
+/** Owner converts a locked group buy into a single pooled order. */
+export async function placeGroupBuyOrder(groupId: string) {
+  const { data, error } = await supabase.rpc("place_group_buy_order", { _group_id: groupId });
+  if (error) throw error;
+  return data as { id: string } | null;
+}
+
 export async function createGroupBuy(input: {
   productId: string;
   supplierId: string;
