@@ -324,6 +324,7 @@ export default function ShareToChatSheet({
   };
 
   return (
+  return createPortal(
     <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-background/70 backdrop-blur-md animate-fade-in" onClick={onClose} />
       <div className="relative w-full sm:max-w-md bg-card border-t sm:border sm:rounded-3xl rounded-t-3xl shadow-elevated max-h-[85dvh] flex flex-col animate-slide-up overflow-hidden">
