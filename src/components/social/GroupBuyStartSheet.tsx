@@ -137,6 +137,7 @@ export default function GroupBuyStartSheet({ open, onClose, productId, productTi
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
