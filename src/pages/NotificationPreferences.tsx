@@ -66,8 +66,8 @@ export default function NotificationPreferences() {
   const [userId, setUserId] = useState<string | null>(null);
   const [prefs, setPrefs] = useState<Prefs | null>(null);
   const [loading, setLoading] = useState(true);
-  const [pushState, setPushState] = useState<{ supported: boolean; permission: string; subscribed: boolean }>({
-    supported: false, permission: "default", subscribed: false,
+  const [pushState, setPushState] = useState<{ supported: boolean; permission: string; subscribed: boolean; iosNeedsInstall: boolean }>({
+    supported: false, permission: "default", subscribed: false, iosNeedsInstall: false,
   });
   const [saving, setSaving] = useState<string | null>(null);
 
