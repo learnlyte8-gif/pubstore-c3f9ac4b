@@ -393,6 +393,7 @@ export default function ShareToChatSheet({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
