@@ -5330,6 +5330,41 @@ export type Database = {
           score: number
         }[]
       }
+      place_group_buy_order: {
+        Args: { _group_id: string }
+        Returns: {
+          address_id: string | null
+          buyer_id: string
+          coupon_code: string | null
+          created_at: string
+          discount: number
+          dispute_opened_at: string | null
+          dispute_reason: string | null
+          escrow_amount: number
+          escrow_released_at: string | null
+          escrow_status: string
+          eta: string | null
+          id: string
+          payment_method: string | null
+          payment_reference: string | null
+          payment_status: string
+          ref_code: string | null
+          ship_to: string | null
+          shipping: number
+          status: Database["public"]["Enums"]["order_status"]
+          subtotal: number
+          supplier_id: string
+          total: number
+          tracking: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       request_wallet_withdrawal: {
         Args: {
           _account_name?: string
