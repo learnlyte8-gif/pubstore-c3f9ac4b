@@ -92,14 +92,20 @@ export async function getPushState(): Promise<{
       supported: true,
       permission: Notification.permission,
       subscribed: !!sub && (!vapidPublicKey || currentKey === vapidPublicKey),
+      iosNeedsInstall: false,
     };
   } catch {
-    return { supported: true, permission: Notification.permission, subscribed: false };
+    return { supported: true, permission: Notification.permission, subscribed: false, iosNeedsInstall: false };
   }
 }
 
-/** Prompt for permission, subscribe, and persist the subscription server-side. */
 export async function subscribeToPush(): Promise<{ ok: boolean; reason?: string }> {
+  if (iosNeedsInstall()) {
+    return {
+      ok: false,
+      reason: "On iPhone, tap Share → Add to Home Screen, then open PUBSTORE from the home-screen icon to enable notifications.",
+    };
+  }
   if (!isPushSupported()) return { ok: false, reason: "Notifications are not supported on this device." };
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, reason: "Sign in first." };
