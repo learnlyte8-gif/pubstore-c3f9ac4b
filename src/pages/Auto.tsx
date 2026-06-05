@@ -292,7 +292,7 @@ function AutoDetail({ id }: { id: string }) {
         )}
       </div>
 
-      <div className="fixed bottom-16 inset-x-0 z-20 px-3">
+      <div className="fixed bottom-24 inset-x-0 z-30 px-3">
         <div className="max-w-md mx-auto bg-zinc-50 text-zinc-950 rounded-2xl p-3 flex items-center gap-2 shadow-elevated">
           <div className="flex-1 min-w-0">
             <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">List price</p>
