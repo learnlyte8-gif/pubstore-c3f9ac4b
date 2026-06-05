@@ -111,7 +111,9 @@ const App = () => (
             }}
           />
           <BrowserRouter>
+            <ScrollToTop />
             <Routes>
+
               <Route path="/" element={<Splash />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/onboarding" element={<Onboarding />} />
