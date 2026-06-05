@@ -132,7 +132,10 @@ export default function AppShell() {
               Search
             </Link>
           </div>
+
+          {location.pathname === "/home" && <HomeFeedTabs />}
         </div>
+
         <ScrollProgress />
       </header>
 
