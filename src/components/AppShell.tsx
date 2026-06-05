@@ -69,10 +69,15 @@ export default function AppShell() {
           {/* Row 1: brand + Tapson + action icons */}
           <div className="h-10 flex items-center gap-2">
             <RailDrawer />
-            <Link to="/home" className="flex items-center gap-1.5 min-w-0 mr-auto active:opacity-70 transition" aria-label="PUBSTORE home">
-              <img src={logo} alt="" className="w-7 h-7 shrink-0" />
-              <span className="font-brand text-[18px] tracking-[0.02em] leading-none truncate">PUBSTORE</span>
-            </Link>
+            {location.pathname === "/home" ? (
+              <HomeFeedTabs />
+            ) : (
+              <Link to="/home" className="flex items-center gap-1.5 min-w-0 mr-auto active:opacity-70 transition" aria-label="PUBSTORE home">
+                <img src={logo} alt="" className="w-7 h-7 shrink-0" />
+                <span className="font-brand text-[18px] tracking-[0.02em] leading-none truncate">PUBSTORE</span>
+              </Link>
+            )}
+
 
             <button
               onClick={() => window.dispatchEvent(new Event("tapson:open"))}
