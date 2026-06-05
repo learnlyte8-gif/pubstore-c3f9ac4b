@@ -3,11 +3,31 @@ import { supabase } from "@/integrations/supabase/client";
 
 let vapidPublicKeyPromise: Promise<string> | null = null;
 
-export const isPushSupported = () =>
+const isIOS = () =>
+  typeof navigator !== "undefined" &&
+  (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    // iPadOS 13+ reports as Mac with touch
+    (navigator.platform === "MacIntel" && (navigator as any).maxTouchPoints > 1));
+
+const isStandalone = () =>
   typeof window !== "undefined" &&
-  "serviceWorker" in navigator &&
-  "PushManager" in window &&
-  "Notification" in window;
+  (window.matchMedia?.("(display-mode: standalone)").matches ||
+    // iOS Safari legacy
+    (window.navigator as any).standalone === true);
+
+/** True when iOS Safari can't deliver web push because the app isn't installed. */
+export const iosNeedsInstall = () => isIOS() && !isStandalone();
+
+export const isPushSupported = () => {
+  if (typeof window === "undefined") return false;
+  if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+    return false;
+  }
+  // On iOS, web push only works once the PWA is added to the home screen.
+  if (iosNeedsInstall()) return false;
+  return true;
+};
+
 
 function urlBase64ToUint8Array(base64: string): Uint8Array {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
@@ -51,10 +71,18 @@ export async function getPushState(): Promise<{
   supported: boolean;
   permission: NotificationPermission | "unsupported";
   subscribed: boolean;
+  iosNeedsInstall: boolean;
 }> {
+  const needsInstall = iosNeedsInstall();
   if (!isPushSupported()) {
-    return { supported: false, permission: "unsupported", subscribed: false };
+    return {
+      supported: false,
+      permission: "unsupported",
+      subscribed: false,
+      iosNeedsInstall: needsInstall,
+    };
   }
+
   try {
     const reg = await ensureRegistration();
     const sub = await reg.pushManager.getSubscription();
