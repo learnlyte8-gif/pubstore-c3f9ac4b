@@ -137,17 +137,6 @@ const Home = () => {
             );
           })}
         </div>
-        <div className="flex items-center justify-center gap-2">
-          <TradeModeSwitch />
-          <button
-            onClick={() => { refresh(); toast.success("Feed refreshed", { description: "Reordered using your latest activity" }); }}
-            aria-label="Refresh my feed"
-            className="h-8 px-3 rounded-full bg-foreground text-background text-[11px] font-bold flex items-center gap-1.5 shadow-card active:scale-95 transition"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${seed > 0 ? "animate-spin-once" : ""}`} strokeWidth={2.6} />
-            Refresh feed
-          </button>
-        </div>
       </div>
 
       {tab === "home" && (
