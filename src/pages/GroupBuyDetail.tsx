@@ -1,22 +1,34 @@
 import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { ArrowLeft, Users, Clock, Target, Plus, Check } from "lucide-react";
-import { useGroupBuy, useGroupBuyMembers, useGroupBuyRealtime, useJoinGroupBuy } from "@/hooks/useGroupBuy";
+import { ArrowLeft, Users, Clock, Target, Plus, Check, ShoppingBag, X } from "lucide-react";
+import {
+  useGroupBuy,
+  useGroupBuyMembers,
+  useGroupBuyRealtime,
+  useJoinGroupBuy,
+  useMyInviteForGroup,
+  respondToGroupBuyInvite,
+  placeGroupBuyOrder,
+} from "@/hooks/useGroupBuy";
 import { useAuthUserId } from "@/hooks/useSocial";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import CircleSpinner from "@/components/CircleSpinner";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function GroupBuyDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const me = useAuthUserId();
   const { data: gb, isLoading } = useGroupBuy(id);
   const { data: members = [] } = useGroupBuyMembers(id);
+  const { data: myInvite } = useMyInviteForGroup(id);
   useGroupBuyRealtime(id);
   const join = useJoinGroupBuy();
   const [qty, setQty] = useState(1);
   const [busy, setBusy] = useState(false);
+  const [ordering, setOrdering] = useState(false);
 
   if (isLoading) return <div className="px-4 py-10 text-sm text-muted-foreground"><CircleSpinner size={28} /></div>;
   if (!gb) return (
@@ -30,9 +42,11 @@ export default function GroupBuyDetail() {
   const pct = Math.min(100, Math.round((total / gb.target_qty) * 100));
   const mine = members.find((m) => m.user_id === me);
   const isMember = !!mine;
-  // Group stays active and joinable until the item is actually bought (fulfilled / cancelled).
-  // "locked" just means target reached — chat & pledges remain open.
-  const isLocked = gb.status === "fulfilled" || gb.status === "cancelled";
+  const isOwner = me === gb.owner_id;
+  const targetReached = total >= gb.target_qty;
+  const isFulfilled = gb.status === "fulfilled";
+  const isCancelled = gb.status === "cancelled";
+  const isClosed = isFulfilled || isCancelled;
   const deadlineLabel = gb.deadline ? new Date(gb.deadline).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "Open-ended";
 
   const handleJoin = async () => {
@@ -43,14 +57,49 @@ export default function GroupBuyDetail() {
     setBusy(true);
     try {
       await join(gb.id, qty);
+      // If joining via an invite, mark it accepted
+      if (myInvite && myInvite.status === "pending") {
+        try { await respondToGroupBuyInvite(myInvite.id, true); } catch { /* non-fatal */ }
+        qc.invalidateQueries({ queryKey: ["gb-invite-mine", id] });
+        qc.invalidateQueries({ queryKey: ["gb-invites"] });
+      }
       toast.success(mine ? "Pledge updated" : "Joined group buy");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Couldn't join");
     } finally { setBusy(false); }
   };
 
-  const openChat = async () => {
-    if (!gb.conversation_id) return;
-    navigate(`/messages`);
+  const handleDeclineInvite = async () => {
+    if (!myInvite) return;
+    setBusy(true);
+    try {
+      await respondToGroupBuyInvite(myInvite.id, false);
+      qc.invalidateQueries({ queryKey: ["gb-invite-mine", id] });
+      qc.invalidateQueries({ queryKey: ["gb-invites"] });
+      toast.success("Invite declined");
+      navigate(-1);
+    } finally { setBusy(false); }
   };
+
+  const handlePlaceOrder = async () => {
+    setOrdering(true);
+    try {
+      const order = await placeGroupBuyOrder(gb.id);
+      toast.success("Group order placed");
+      qc.invalidateQueries({ queryKey: ["group-buy", id] });
+      if (order?.id) navigate(`/orders?ref=${order.id}`);
+      else navigate("/orders");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Couldn't place order");
+    } finally { setOrdering(false); }
+  };
+
+  const openChat = () => {
+    if (!gb.conversation_id) return;
+    navigate(`/messages?conv=${gb.conversation_id}`);
+  };
+
+  const showPendingInviteCTA = !!myInvite && myInvite.status === "pending" && !isMember && !isClosed;
 
   return (
     <div className="pb-10">
@@ -69,6 +118,29 @@ export default function GroupBuyDetail() {
         </Link>
       </section>
 
+      {showPendingInviteCTA && (
+        <section className="mx-5 mt-5 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-primary">You're invited</p>
+          <p className="text-sm mt-1">Join this group buy to pool an order with friends.</p>
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              onClick={handleDeclineInvite}
+              disabled={busy}
+              className="flex-1 h-9 rounded-full bg-muted text-xs font-bold flex items-center justify-center gap-1"
+            >
+              <X className="w-3.5 h-3.5" /> Decline
+            </button>
+            <button
+              onClick={handleJoin}
+              disabled={busy}
+              className="flex-1 h-9 rounded-full bg-foreground text-background text-xs font-bold flex items-center justify-center gap-1"
+            >
+              <Check className="w-3.5 h-3.5" /> Accept & pledge {qty}
+            </button>
+          </div>
+        </section>
+      )}
+
       <section className="px-5 mt-5">
         <div className="flex items-end justify-between mb-1.5">
           <p className="text-sm font-bold tabular-nums">{total} / {gb.target_qty} units</p>
@@ -82,33 +154,68 @@ export default function GroupBuyDetail() {
           <span className="flex items-center gap-1"><Target className="w-3.5 h-3.5" /> Target {gb.target_qty}</span>
           <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {deadlineLabel}</span>
         </div>
-        {isLocked && (
-          <p className="mt-3 text-xs font-bold text-emerald-600 uppercase tracking-wide">
-            {gb.status === "locked" ? "Target reached — supplier notified" : gb.status}
-          </p>
+        {isFulfilled && (
+          <p className="mt-3 text-xs font-bold text-emerald-600 uppercase tracking-wide">Order placed — see orders</p>
+        )}
+        {isCancelled && (
+          <p className="mt-3 text-xs font-bold text-destructive uppercase tracking-wide">Cancelled</p>
+        )}
+        {!isClosed && targetReached && (
+          <p className="mt-3 text-xs font-bold text-emerald-600 uppercase tracking-wide">Target reached — ready to order</p>
         )}
       </section>
 
-      <section className="px-5 mt-6">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Your pledge</h2>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center bg-muted rounded-full h-10 px-1">
-            <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-8 h-8 rounded-full flex items-center justify-center font-bold">−</button>
-            <input
-              type="number" min={1} value={qty}
-              onChange={(e) => setQty(Math.max(1, parseInt(e.target.value) || 1))}
-              className="w-12 bg-transparent text-center text-sm font-bold outline-none"
-            />
-            <button onClick={() => setQty((q) => q + 1)} className="w-8 h-8 rounded-full flex items-center justify-center font-bold"><Plus className="w-4 h-4" /></button>
+      {/* Pledge controls */}
+      {!isClosed && (
+        <section className="px-5 mt-6">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Your pledge</h2>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center bg-muted rounded-full h-10 px-1">
+              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-8 h-8 rounded-full flex items-center justify-center font-bold">−</button>
+              <input
+                type="number" min={1} value={qty}
+                onChange={(e) => setQty(Math.max(1, parseInt(e.target.value) || 1))}
+                className="w-12 bg-transparent text-center text-sm font-bold outline-none"
+              />
+              <button onClick={() => setQty((q) => q + 1)} className="w-8 h-8 rounded-full flex items-center justify-center font-bold"><Plus className="w-4 h-4" /></button>
+            </div>
+            <button
+              onClick={handleJoin} disabled={busy}
+              className="flex-1 h-10 rounded-full bg-foreground text-background text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-1.5"
+            >
+              {isMember ? <><Check className="w-4 h-4" /> Update pledge</> : "Join group buy"}
+            </button>
           </div>
+        </section>
+      )}
+
+      {/* Owner: place pooled order once target is reached */}
+      {isOwner && !isClosed && targetReached && (
+        <section className="px-5 mt-5">
           <button
-            onClick={handleJoin} disabled={busy || isLocked}
-            className="flex-1 h-10 rounded-full bg-foreground text-background text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-1.5"
+            onClick={handlePlaceOrder}
+            disabled={ordering}
+            className="w-full h-12 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 shadow-card"
           >
-            {isMember ? <><Check className="w-4 h-4" /> Update pledge</> : "Join group buy"}
+            {ordering ? <CircleSpinner size={18} /> : <><ShoppingBag className="w-4 h-4" /> Place group order ({total} units)</>}
           </button>
-        </div>
-      </section>
+          <p className="text-[11px] text-muted-foreground text-center mt-2">
+            Creates one pooled order with the supplier. You can pay from the Orders page.
+          </p>
+        </section>
+      )}
+
+      {/* Members → Order link once fulfilled */}
+      {isFulfilled && (
+        <section className="px-5 mt-5">
+          <button
+            onClick={() => navigate("/orders")}
+            className="w-full h-12 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center gap-2"
+          >
+            <ShoppingBag className="w-4 h-4" /> View order
+          </button>
+        </section>
+      )}
 
       <section className="px-5 mt-6">
         <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Members</h2>
