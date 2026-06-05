@@ -55,7 +55,9 @@ const TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
 ];
 
 const Home = () => {
-  const [tab, setTab] = useState<Tab>("home");
+  const [searchParams] = (await import("react-router-dom"), require("react-router-dom") as typeof import("react-router-dom")).useSearchParams ? (() => { const { useSearchParams } = require("react-router-dom"); return [useSearchParams()[0]]; })() : [new URLSearchParams()];
+  const tab: Tab = (searchParams.get("feed") as Tab) || "home";
+
   const { interests } = useMyInterests();
   const wishlistSlugs = useWishlistInterestSlugs();
   const { slugs: searchSlugs, tokens: searchTokens } = useRecentSearchSlugs();
