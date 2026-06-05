@@ -202,6 +202,7 @@ export default function Messages() {
   const [params, setParams] = useSearchParams();
   const initialSupplierId = params.get("supplier");
   const initialPrefill = params.get("prefill");
+  const initialConvId = params.get("conv");
   const [userId, setUserId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
