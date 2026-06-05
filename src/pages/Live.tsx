@@ -414,7 +414,7 @@ function LiveRoom({ stream, hostUserId, onLeave }: { stream: EnrichedStream; hos
   ) : null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black text-white flex flex-col">
+    <div className="fixed inset-0 z-[60] bg-black text-white flex flex-col">
       {bgImages.map((src, i) => (
         <img
           key={src + i}

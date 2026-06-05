@@ -419,7 +419,7 @@ function RestaurantDetail({ id }: { id: string }) {
       {cartCount > 0 && tab === "menu" && (
         <button
           onClick={() => setCartOpen(true)}
-          className="fixed bottom-20 left-4 right-4 z-40 h-12 rounded-full bg-foreground text-background flex items-center justify-between px-4 shadow-elevated"
+          className="fixed bottom-24 left-4 right-4 z-50 h-12 rounded-full bg-foreground text-background flex items-center justify-between px-4 shadow-elevated"
         >
           <span className="flex items-center gap-2 text-sm font-bold">
             <ShoppingBag className="w-4 h-4" /> {cartCount} item{cartCount > 1 ? "s" : ""}
@@ -431,7 +431,7 @@ function RestaurantDetail({ id }: { id: string }) {
       {r.reservation_enabled && tab === "info" && (
         <button
           onClick={() => setResOpen(true)}
-          className="fixed bottom-20 left-4 right-4 z-40 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center gap-2 shadow-elevated"
+          className="fixed bottom-24 left-4 right-4 z-50 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center gap-2 shadow-elevated"
         >
           <CalendarDays className="w-4 h-4" /> Reserve a table
         </button>

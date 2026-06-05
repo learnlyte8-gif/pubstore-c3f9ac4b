@@ -247,7 +247,7 @@ function StayDetail({ id }: { id: string }) {
       </div>
 
       {/* Sticky book bar */}
-      <div className="fixed bottom-16 inset-x-0 z-20 px-3">
+      <div className="fixed bottom-24 inset-x-0 z-30 px-3">
         <div className="max-w-md mx-auto bg-card border shadow-elevated rounded-2xl p-3 flex items-center gap-3">
           <div className="flex-1 min-w-0">
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">From</p>
