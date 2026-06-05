@@ -400,6 +400,14 @@ export default function Messages() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, initialSupplierId, conversations.length]);
 
+  // Deep-link via ?conv=<conversation_id>
+  useEffect(() => {
+    if (!userId || !initialConvId) return;
+    setActiveId(initialConvId);
+    setParams((prev) => { const next = new URLSearchParams(prev); next.delete("conv"); return next; }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, initialConvId]);
+
   useEffect(() => {
     if (!activeId) { setMessages([]); setReplyTo(null); return; }
     let alive = true;
