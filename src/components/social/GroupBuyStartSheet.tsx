@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Users, Search, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthUserId } from "@/hooks/useSocial";
