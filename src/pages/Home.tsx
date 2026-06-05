@@ -6,7 +6,7 @@ import {
   Briefcase, Wrench, Banknote, BedDouble, Car, Factory, Sprout, Navigation,
   type LucideIcon,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Promo3DCarousel from "@/components/marketplace/Promo3DCarousel";
@@ -55,7 +55,10 @@ const TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
 ];
 
 const Home = () => {
-  const [tab, setTab] = useState<Tab>("home");
+  const [searchParams] = useSearchParams();
+  const tab: Tab = (searchParams.get("feed") as Tab) || "home";
+
+
   const { interests } = useMyInterests();
   const wishlistSlugs = useWishlistInterestSlugs();
   const { slugs: searchSlugs, tokens: searchTokens } = useRecentSearchSlugs();
@@ -116,33 +119,7 @@ const Home = () => {
 
   return (
     <div className="pb-6">
-      <div className="sticky top-[100px] z-30 bg-background border-b border-border -mt-2 mb-2">
-        <div role="tablist" className="flex items-stretch">
-          {TABS.map((t) => {
-            const active = tab === t.id;
-            const Icon = t.icon;
-            return (
-              <button
-                key={t.id}
-                role="tab"
-                aria-selected={active}
-                onClick={() => setTab(t.id)}
-                className={`relative flex-1 flex items-center justify-center gap-1.5 h-11 text-[13px] font-bold uppercase tracking-wide transition-colors ${
-                  active ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Icon className="w-4 h-4" strokeWidth={active ? 2.6 : 2} />
-                {t.label}
-                <span
-                  className={`absolute left-0 right-0 bottom-0 h-[3px] rounded-t-sm transition-all ${
-                    active ? "bg-primary scale-x-100" : "bg-transparent scale-x-0"
-                  }`}
-                />
-              </button>
-            );
-          })}
-        </div>
-      </div>
+
 
 
       {tab === "home" && (
