@@ -10,6 +10,8 @@ import Splash from "./pages/Splash.tsx";
 import Auth from "./pages/Auth.tsx";
 import Onboarding from "./pages/Onboarding.tsx";
 import AppShell from "./components/AppShell.tsx";
+import ScrollToTop from "./components/ScrollToTop.tsx";
+
 import Home from "./pages/Home.tsx";
 import Cart from "./pages/Cart.tsx";
 import ProductDetail from "./pages/ProductDetail.tsx";
@@ -109,7 +111,9 @@ const App = () => (
             }}
           />
           <BrowserRouter>
+            <ScrollToTop />
             <Routes>
+
               <Route path="/" element={<Splash />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/onboarding" element={<Onboarding />} />
