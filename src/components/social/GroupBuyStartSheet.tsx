@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Users, Search, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthUserId } from "@/hooks/useSocial";
@@ -69,7 +70,7 @@ export default function GroupBuyStartSheet({ open, onClose, productId, productTi
     } finally { setBusy(false); }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[100] bg-background/70 backdrop-blur-sm flex items-end" onClick={onClose}>
       <div className="w-full max-h-[90vh] bg-background rounded-t-3xl shadow-elevated flex flex-col safe-bottom" onClick={(e) => e.stopPropagation()}>
         <div className="mx-auto mt-2 mb-1 h-1.5 w-12 rounded-full bg-muted" />
@@ -136,6 +137,7 @@ export default function GroupBuyStartSheet({ open, onClose, productId, productTi
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
