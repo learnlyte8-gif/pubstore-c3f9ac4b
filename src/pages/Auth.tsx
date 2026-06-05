@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
@@ -11,27 +10,22 @@ import { Input } from "@/components/ui/input";
 import logo from "@/assets/pubstore-logo.png";
 import ShoppingBackdrop from "@/components/ShoppingBackdrop";
 
-const signInSchema = z.object({
-  email: z.string().trim().email({ message: "Enter a valid email" }).max(255),
-  password: z.string().min(6, { message: "At least 6 characters" }).max(72),
-});
-const signUpSchema = signInSchema.extend({
-  name: z.string().trim().min(1, { message: "Name is required" }).max(100),
-});
+const emailSchema = z.string().trim().email({ message: "Enter a valid email" }).max(255);
+const codeSchema = z.string().trim().regex(/^\d{6}$/, { message: "Enter the 6-digit code" });
 
-type Mode = "signin" | "signup";
+type Step = "email" | "code";
 
 export default function Auth() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const redirectTo = params.get("redirect") || "/home";
-  const [mode, setMode] = useState<Mode>("signin");
+  const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [showPwd, setShowPwd] = useState(false);
+  const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
+  const [resendIn, setResendIn] = useState(0);
 
   useEffect(() => {
     const routeForSession = async (uid: string) => {
@@ -55,39 +49,50 @@ export default function Auth() {
     return () => sub.subscription.unsubscribe();
   }, [navigate, redirectTo]);
 
-  const handleEmailAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = setTimeout(() => setResendIn((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
+
+  const sendCode = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const parsed = emailSchema.safeParse(email);
+    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
     setLoading(true);
     try {
-      if (mode === "signup") {
-        const parsed = signUpSchema.safeParse({ name, email, password });
-        if (!parsed.success) return toast.error(parsed.error.issues[0].message);
-        const { error } = await supabase.auth.signUp({
-          email: parsed.data.email,
-          password: parsed.data.password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/home`,
-            data: { display_name: parsed.data.name },
-          },
-        });
-        if (error) {
-          return toast.error(
-            error.message.includes("already") ? "Account already exists. Sign in instead." : error.message
-          );
-        }
-        toast.success("Welcome to PUBSTORE 🎉");
-      } else {
-        const parsed = signInSchema.safeParse({ email, password });
-        if (!parsed.success) return toast.error(parsed.error.issues[0].message);
-        const { error } = await supabase.auth.signInWithPassword({
-          email: parsed.data.email,
-          password: parsed.data.password,
-        });
-        if (error) {
-          return toast.error(error.message.includes("Invalid") ? "Wrong email or password" : error.message);
-        }
-        toast.success("Welcome back");
+      const { error } = await supabase.auth.signInWithOtp({
+        email: parsed.data,
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: `${window.location.origin}/home`,
+          data: name.trim() ? { display_name: name.trim() } : undefined,
+        },
+      });
+      if (error) return toast.error(error.message);
+      toast.success("Code sent — check your email");
+      setStep("code");
+      setResendIn(45);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsed = codeSchema.safeParse(code);
+    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: email.trim(),
+        token: parsed.data,
+        type: "email",
+      });
+      if (error) {
+        return toast.error(error.message.includes("expired") ? "Code expired — request a new one" : "Invalid code");
       }
+      toast.success("Welcome to PUBSTORE 🎉");
     } finally {
       setLoading(false);
     }
@@ -111,7 +116,6 @@ export default function Auth() {
     <main className="relative min-h-[100dvh] bg-background flex flex-col items-center justify-between px-6 py-10 sm:py-14 overflow-hidden">
       <ShoppingBackdrop variant="dark" opacity={0.07} />
       <div className="relative w-full max-w-sm flex-1 flex flex-col justify-center">
-        {/* Logo + brand */}
         <div className="flex flex-col items-center mb-10 animate-fade-up">
           <img src={logo} alt="PUBSTORE" width={72} height={72} className="w-18 h-18 mb-4" />
           <h1 className="font-brand text-5xl text-foreground tracking-wide">PUBSTORE</h1>
@@ -125,69 +129,81 @@ export default function Auth() {
           Continue browsing as guest
         </button>
 
-        <form onSubmit={handleEmailAuth} className="space-y-2 animate-fade-up" style={{ animationDelay: "60ms" }}>
-          {mode === "signup" && (
+        {step === "email" ? (
+          <form onSubmit={sendCode} className="space-y-2 animate-fade-up" style={{ animationDelay: "60ms" }}>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Full Name"
+              placeholder="Full name (optional)"
               autoComplete="name"
               className="h-12 bg-input border-border text-sm rounded-md"
             />
-          )}
-          <Input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Phone number, username or email"
-            autoComplete="email"
-            className="h-12 bg-input border-border text-sm rounded-md"
-          />
-          <div className="relative">
             <Input
-              type={showPwd ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              autoComplete={mode === "signin" ? "current-password" : "new-password"}
-              className="h-12 bg-input border-border text-sm rounded-md pr-14"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email address"
+              autoComplete="email"
+              className="h-12 bg-input border-border text-sm rounded-md"
             />
-            {password.length > 0 && (
+            <Button
+              type="submit"
+              disabled={loading || oauthLoading}
+              className="w-full h-12 mt-3 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-lg disabled:opacity-60"
+            >
+              {loading ? <CircleSpinner size={20} /> : "Send code"}
+            </Button>
+            <p className="text-[11px] text-muted-foreground text-center pt-2">
+              We'll email you a 6-digit code — no password needed.
+            </p>
+          </form>
+        ) : (
+          <form onSubmit={verifyCode} className="space-y-2 animate-fade-up" style={{ animationDelay: "60ms" }}>
+            <p className="text-xs text-muted-foreground text-center mb-2">
+              Code sent to <span className="font-semibold text-foreground">{email}</span>
+            </p>
+            <Input
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="6-digit code"
+              className="h-12 bg-input border-border text-center text-lg tracking-[0.5em] font-bold rounded-md"
+            />
+            <Button
+              type="submit"
+              disabled={loading || code.length !== 6}
+              className="w-full h-12 mt-3 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-lg disabled:opacity-60"
+            >
+              {loading ? <CircleSpinner size={20} /> : "Verify & continue"}
+            </Button>
+            <div className="flex items-center justify-between pt-2 text-xs">
               <button
                 type="button"
-                onClick={() => setShowPwd((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground text-sm font-semibold"
+                onClick={() => { setStep("email"); setCode(""); }}
+                className="text-muted-foreground hover:text-foreground"
               >
-                {showPwd ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                Change email
               </button>
-            )}
-          </div>
-
-          <Button
-            type="submit"
-            disabled={loading || oauthLoading}
-            className="w-full h-12 mt-3 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-lg disabled:opacity-60"
-          >
-            {loading ? <CircleSpinner size={20} /> : mode === "signin" ? "Log in" : "Sign up"}
-          </Button>
-
-          {mode === "signin" && (
-            <div className="text-center pt-2">
-              <button type="button" className="text-xs text-primary font-medium">
-                Forgot password?
+              <button
+                type="button"
+                disabled={resendIn > 0 || loading}
+                onClick={() => sendCode()}
+                className="text-primary font-medium disabled:opacity-50"
+              >
+                {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}
               </button>
             </div>
-          )}
-        </form>
+          </form>
+        )}
 
-        {/* Divider */}
         <div className="flex items-center gap-4 my-6 animate-fade-up" style={{ animationDelay: "120ms" }}>
           <div className="h-px flex-1 bg-border" />
           <span className="text-xs font-semibold text-muted-foreground uppercase">or</span>
           <div className="h-px flex-1 bg-border" />
         </div>
 
-        {/* Google */}
         <button
           type="button"
           onClick={handleGoogle}
@@ -206,26 +222,7 @@ export default function Auth() {
         </button>
       </div>
 
-      {/* Bottom switch card — Instagram style */}
       <div className="relative w-full max-w-sm mt-8">
-        <div className="border border-border rounded-md py-4 text-center text-sm animate-fade-up" style={{ animationDelay: "200ms" }}>
-          {mode === "signin" ? (
-            <>
-              Don't have an account?{" "}
-              <button onClick={() => setMode("signup")} className="text-primary font-semibold">
-                Sign up
-              </button>
-            </>
-          ) : (
-            <>
-              Have an account?{" "}
-              <button onClick={() => setMode("signin")} className="text-primary font-semibold">
-                Log in
-              </button>
-            </>
-          )}
-        </div>
-
         <p className="text-[11px] text-muted-foreground text-center mt-6 leading-relaxed">
           By continuing, you agree to PUBSTORE's{" "}
           <Link to="#" className="text-foreground/80 underline-offset-2 hover:underline">Terms</Link> and{" "}
