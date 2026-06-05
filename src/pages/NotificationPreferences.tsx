@@ -148,16 +148,20 @@ export default function NotificationPreferences() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold">Notifications on this device</p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {!pushState.supported
-                    ? "Your browser doesn't support push notifications. On iPhone, install the app to your home screen first."
-                    : pushState.permission === "denied"
-                      ? "You blocked notifications in your browser. Re-enable them in browser settings to receive push."
-                      : pushState.subscribed
-                        ? "You'll receive push notifications even when PUBSTORE is closed."
-                        : "Get a buzz when a supplier you follow drops a new product, when your order ships, and more."}
+                  {pushState.iosNeedsInstall
+                    ? "On iPhone, push notifications only work after you install PUBSTORE. Tap the Share icon in Safari, then 'Add to Home Screen', and open the app from its new icon."
+                    : !pushState.supported
+                      ? "Your browser doesn't support push notifications."
+                      : pushState.permission === "denied"
+                        ? "You blocked notifications in your browser. Re-enable them in browser settings to receive push."
+                        : pushState.subscribed
+                          ? "You'll receive push notifications even when PUBSTORE is closed."
+                          : "Get a buzz when a supplier you follow drops a new product, when your order ships, and more."}
                 </p>
                 <div className="mt-3">
-                  {!pushState.supported ? (
+                  {pushState.iosNeedsInstall ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"><AlertCircle className="w-3.5 h-3.5" /> Install required on iPhone</span>
+                  ) : !pushState.supported ? (
                     <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"><AlertCircle className="w-3.5 h-3.5" /> Unsupported</span>
                   ) : pushState.subscribed ? (
                     <Button size="sm" variant="outline" onClick={disablePush}>Disable on this device</Button>
