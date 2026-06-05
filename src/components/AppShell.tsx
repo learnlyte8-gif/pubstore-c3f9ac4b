@@ -65,9 +65,48 @@ export default function AppShell() {
     <div className="min-h-[100dvh] bg-background text-foreground flex flex-col overflow-x-clip">
       {/* Top bar — solid, elevated */}
       <header className="sticky top-0 z-40 bg-background safe-top shadow-[0_8px_32px_-8px_hsl(0_0%_0%_/_0.18),0_2px_8px_-2px_hsl(0_0%_0%_/_0.10)]">
-        <div className="max-w-2xl mx-auto h-12 px-3 flex items-center gap-2">
-          <div className="flex-1 flex items-center gap-1 min-w-0 h-9 rounded-lg bg-background border-2 border-[hsl(24_100%_56%)] pl-1 pr-1 shadow-[0_1px_0_hsl(24_100%_56%/0.15)]">
+        <div className="max-w-2xl mx-auto px-3 pt-1.5 pb-2 flex flex-col gap-2">
+          {/* Row 1: brand + Tapson + action icons */}
+          <div className="h-10 flex items-center gap-2">
             <RailDrawer />
+            <Link to="/home" className="flex items-center gap-1.5 min-w-0 mr-auto active:opacity-70 transition" aria-label="PUBSTORE home">
+              <img src={logo} alt="" className="w-7 h-7 shrink-0" />
+              <span className="font-brand text-[18px] tracking-[0.02em] leading-none truncate">PUBSTORE</span>
+            </Link>
+
+            <button
+              onClick={() => window.dispatchEvent(new Event("tapson:open"))}
+              aria-label="Ask Tapson"
+              className="shrink-0 flex items-center gap-1 h-8 pl-1.5 pr-2.5 rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-pop active:scale-95 transition"
+            >
+              <span className="w-5 h-5 rounded-full bg-background/25 backdrop-blur flex items-center justify-center">
+                <Sparkles className="w-3 h-3" strokeWidth={2.6} />
+              </span>
+              <span className="text-[11px] font-bold tracking-tight">Tapson</span>
+            </button>
+
+            <div className="flex items-center gap-0.5 shrink-0">
+              <Link to="/notifications" aria-label="Notifications" className="relative p-2 rounded-full active:scale-90 active:bg-muted transition">
+                <Bell className="w-[22px] h-[22px]" strokeWidth={1.8} />
+                {unreadNotifs > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-background">
+                    {unreadNotifs > 99 ? "99+" : unreadNotifs}
+                  </span>
+                )}
+              </Link>
+              <Link to="/cart" aria-label="Cart" className="relative p-2 rounded-full active:scale-90 active:bg-muted transition">
+                <ShoppingCart className="w-[22px] h-[22px]" strokeWidth={1.8} />
+                {cartCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-background">
+                    {cartCount > 99 ? "99+" : cartCount}
+                  </span>
+                )}
+              </Link>
+            </div>
+          </div>
+
+          {/* Row 2: full-width search */}
+          <div className="flex items-center gap-1 min-w-0 h-9 rounded-lg bg-background border-2 border-[hsl(24_100%_56%)] pl-2 pr-1 shadow-[0_1px_0_hsl(24_100%_56%/0.15)]">
             <Link
               to="/search"
               className="flex-1 flex items-center gap-1.5 min-w-0 active:opacity-70 transition"
@@ -91,39 +130,10 @@ export default function AppShell() {
               Search
             </Link>
           </div>
-
-          <button
-            onClick={() => window.dispatchEvent(new Event("tapson:open"))}
-            aria-label="Ask Tapson"
-            className="shrink-0 flex items-center gap-1 h-8 pl-1.5 pr-2.5 rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-pop active:scale-95 transition"
-          >
-            <span className="w-5 h-5 rounded-full bg-background/25 backdrop-blur flex items-center justify-center">
-              <Sparkles className="w-3 h-3" strokeWidth={2.6} />
-            </span>
-            <span className="text-[11px] font-bold tracking-tight">Tapson</span>
-          </button>
-
-          <div className="flex items-center gap-0.5 shrink-0">
-            <Link to="/notifications" aria-label="Notifications" className="relative p-2 rounded-full active:scale-90 active:bg-muted transition">
-              <Bell className="w-[22px] h-[22px]" strokeWidth={1.8} />
-              {unreadNotifs > 0 && (
-                <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-background">
-                  {unreadNotifs > 99 ? "99+" : unreadNotifs}
-                </span>
-              )}
-            </Link>
-            <Link to="/cart" aria-label="Cart" className="relative p-2 rounded-full active:scale-90 active:bg-muted transition">
-              <ShoppingCart className="w-[22px] h-[22px]" strokeWidth={1.8} />
-              {cartCount > 0 && (
-                <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-background">
-                  {cartCount > 99 ? "99+" : cartCount}
-                </span>
-            )}
-          </Link>
-          </div>
         </div>
         <ScrollProgress />
       </header>
+
 
       <main
         className="flex-1 max-w-2xl w-full mx-auto"
