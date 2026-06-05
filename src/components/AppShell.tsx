@@ -410,3 +410,44 @@ function RailDrawer() {
     </Sheet>
   );
 }
+
+function HomeFeedTabs() {
+  const [params, setParams] = useSearchParams();
+  const active = (params.get("feed") as "home" | "fyp" | "following") || "home";
+  const TABS: { id: "home" | "fyp" | "following"; label: string }[] = [
+    { id: "home", label: "Home" },
+    { id: "fyp", label: "For you" },
+    { id: "following", label: "Following" },
+  ];
+  return (
+    <div role="tablist" className="flex items-center gap-3 mr-auto min-w-0 overflow-x-auto no-scrollbar">
+      {TABS.map((t) => {
+        const isActive = active === t.id;
+        return (
+          <button
+            key={t.id}
+            role="tab"
+            aria-selected={isActive}
+            onClick={() => {
+              const next = new URLSearchParams(params);
+              if (t.id === "home") next.delete("feed");
+              else next.set("feed", t.id);
+              setParams(next, { replace: true });
+            }}
+            className={`relative shrink-0 text-[13px] font-bold leading-none py-1 transition-colors ${
+              isActive ? "text-foreground" : "text-muted-foreground"
+            }`}
+          >
+            {t.label}
+            <span
+              className={`absolute -bottom-1 left-1/2 -translate-x-1/2 h-[3px] rounded-full bg-[hsl(24_100%_56%)] transition-all ${
+                isActive ? "w-5 opacity-100" : "w-0 opacity-0"
+              }`}
+            />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
