@@ -327,13 +327,13 @@ export default function Rides() {
 
   return (
     <div className="rides-theme relative min-h-[calc(100dvh-3.5rem)] overflow-hidden">
-      {/* Ambient grid + glow background accents */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.07]" style={{
-        backgroundImage: "linear-gradient(hsl(165 80% 60% / 0.6) 1px, transparent 1px), linear-gradient(90deg, hsl(165 80% 60% / 0.6) 1px, transparent 1px)",
-        backgroundSize: "40px 40px",
+      {/* Subtle ambient background — kept minimal for a clean, calm feel */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.04]" style={{
+        backgroundImage: "linear-gradient(hsl(217 91% 60% / 0.5) 1px, transparent 1px), linear-gradient(90deg, hsl(217 91% 60% / 0.5) 1px, transparent 1px)",
+        backgroundSize: "44px 44px",
         maskImage: "radial-gradient(70% 50% at 50% 0%, black 30%, transparent 80%)"
       }} />
-      <div className="pointer-events-none absolute -top-32 -right-24 w-[420px] h-[420px] rounded-full blur-3xl" style={{ background: "radial-gradient(circle, hsl(165 90% 55% / 0.35), transparent 70%)" }} />
+
 
       {/* HERO HEADER STRIP */}
       <div className="relative px-3 pt-3 pb-2 flex items-center justify-between">
