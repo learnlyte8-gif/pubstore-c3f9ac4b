@@ -214,7 +214,7 @@ export default function Driver() {
             <ArrowLeft className="w-3.5 h-3.5" /> Rider mode
           </button>
           <span className="px-3 h-9 rounded-full rides-glass flex items-center gap-2 text-xs font-bold pointer-events-auto">
-            <span className={`w-2 h-2 rounded-full ${online ? "bg-emerald-400" : "bg-zinc-500"}`} />
+            <span className={`w-2 h-2 rounded-full ${online ? "bg-emerald-400" : "bg-muted-foreground"}`} />
             {online ? "ONLINE" : "OFFLINE"}
           </span>
         </div>
@@ -225,7 +225,7 @@ export default function Driver() {
           {!inActive ? (
             <div className="p-4 space-y-4">
               {/* Driver identity card */}
-              <div className="flex items-start gap-3 rounded-2xl bg-zinc-950 border border-border p-3 overflow-hidden">
+              <div className="flex items-start gap-3 rounded-2xl bg-card border border-border p-3 overflow-hidden">
                 <div className="relative w-16 h-16 rounded-xl overflow-hidden rides-glass-soft shrink-0">
                   {dp.vehicle_photo
                     ? <img src={dp.vehicle_photo} alt="" className="w-full h-full object-cover" />
@@ -236,7 +236,7 @@ export default function Driver() {
                   <p className="text-sm font-bold mt-0.5 truncate">{dp.display_name ?? "Driver"}</p>
                   <p className="text-[11px] text-muted-foreground truncate">{vehicleLabel || "Vehicle"} · {dp.vehicle_year ?? ""}</p>
                   <div className="mt-1 flex items-center gap-1.5">
-                    <span className="px-1.5 py-0.5 rounded bg-zinc-50 text-zinc-950 text-[10px] font-mono font-black tracking-wider">{dp.vehicle_plate}</span>
+                    <span className="px-1.5 py-0.5 rounded bg-foreground text-background text-[10px] font-mono font-black tracking-wider">{dp.vehicle_plate}</span>
                     <span className="text-[10px] text-muted-foreground inline-flex items-center gap-0.5"><Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" /> {Number(dp.rating ?? 5).toFixed(1)} · {dp.trips ?? 0} trips</span>
                   </div>
                 </div>
@@ -252,7 +252,7 @@ export default function Driver() {
               {/* Online toggle */}
               <button
                 onClick={online ? goOffline : goOnline}
-                className={`w-full h-14 rounded-2xl font-black text-base flex items-center justify-center gap-2 shadow-elevated transition ${online ? "bg-zinc-50 text-zinc-950" : "rides-cta text-white"}`}
+                className={`w-full h-14 rounded-2xl font-black text-base flex items-center justify-center gap-2 shadow-elevated transition ${online ? "bg-foreground text-background" : "rides-cta text-white"}`}
               >
                 <Power className="w-5 h-5" />
                 {online ? "Go offline" : "Go online"}
@@ -314,7 +314,7 @@ function ActiveTripPanel({
   ride, myUserId, onAdvance,
 }: { ride: Ride; myUserId: string; onAdvance: (s: Ride["status"]) => void }) {
   return (
-    <div className="p-4 space-y-3 text-zinc-50">
+    <div className="p-4 space-y-3 text-foreground">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-emerald-400">
@@ -325,7 +325,7 @@ function ActiveTripPanel({
         <RideChat rideId={ride.id} myUserId={myUserId} counterpartName="Rider" />
       </div>
 
-      <div className="rounded-xl bg-zinc-950 border border-border p-3 text-xs space-y-1.5">
+      <div className="rounded-xl bg-card border border-border p-3 text-xs space-y-1.5">
         <div className="flex items-start gap-2"><span className="w-2 h-2 mt-1.5 rounded-full bg-emerald-400" /> <span className="flex-1">{ride.pickup_address}</span></div>
         <div className="flex items-start gap-2"><span className="w-2 h-2 mt-1.5 rotate-45 bg-rose-400" /> <span className="flex-1">{ride.dropoff_address}</span></div>
       </div>
@@ -339,7 +339,7 @@ function ActiveTripPanel({
       <div className="grid grid-cols-2 gap-2">
         {ride.status === "accepted" && (
           <>
-            <button onClick={() => onAdvance("arriving")} className="h-11 rounded-xl bg-zinc-50 text-zinc-950 text-sm font-bold">I'm on the way</button>
+            <button onClick={() => onAdvance("arriving")} className="h-11 rounded-xl bg-foreground text-background text-sm font-bold">I'm on the way</button>
             <button onClick={() => onAdvance("in_progress")} className="h-11 rounded-xl rides-cta text-white text-sm font-bold">Start trip</button>
           </>
         )}
@@ -385,11 +385,11 @@ function RequestCard({
           step={0.5}
           value={counter}
           onChange={(e) => setCounter(Number(e.target.value))}
-          className="w-24 h-9 px-2 rounded-lg bg-zinc-950 border border-border text-sm font-bold text-center"
+          className="w-24 h-9 px-2 rounded-lg bg-card border border-border text-sm font-bold text-center"
         />
         <button
           onClick={() => onSend(req, req.rider_offer)}
-          className="flex-1 h-9 rounded-lg bg-zinc-50 text-zinc-950 text-xs font-bold flex items-center justify-center gap-1"
+          className="flex-1 h-9 rounded-lg bg-foreground text-background text-xs font-bold flex items-center justify-center gap-1"
         >
           <Zap className="w-3 h-3" /> Accept ${req.rider_offer.toFixed(2)}
         </button>
@@ -406,7 +406,7 @@ function RequestCard({
 
 function Stat({ label, value, icon: Icon }: { label: string; value: string; icon: typeof Clock }) {
   return (
-    <div className="rounded-xl bg-zinc-950 border border-border p-2 text-center">
+    <div className="rounded-xl bg-card border border-border p-2 text-center">
       <Icon className="w-3.5 h-3.5 mx-auto text-emerald-400" />
       <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground mt-0.5">{label}</p>
       <p className="text-sm font-black capitalize">{value}</p>
