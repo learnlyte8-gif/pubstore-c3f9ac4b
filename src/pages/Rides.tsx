@@ -780,7 +780,7 @@ function RequestPanel(props: {
           </div>
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="text-4xl font-black tracking-tight font-display text-[hsl(var(--rides-mint-soft))]" style={{ textShadow: "0 0 24px hsl(165 90% 50% / 0.5)" }} data-hud>${fare.toFixed(2)}</span>
+          <span className="text-4xl font-black tracking-tight font-display text-[hsl(var(--rides-mint))]" data-hud>${fare.toFixed(2)}</span>
           {suggested > 0 && fare < suggested * surge * 0.85 && <span className="text-[10px] font-bold text-amber-400 inline-flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Fewer offers</span>}
           {suggested > 0 && fare >= suggested * surge * 1.1 && <span className="text-[10px] font-bold text-emerald-400 inline-flex items-center gap-1"><Zap className="w-3 h-3" /> Faster</span>}
         </div>
