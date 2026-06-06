@@ -89,10 +89,10 @@ function FindMode({
   return (
     <div className="space-y-3">
       {pickup && dropoff && matches.length > 0 && (
-        <div className="rounded-2xl bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent border border-emerald-500/30 p-3">
+        <div className="rounded-2xl rides-glass-soft p-3 border border-[hsl(var(--rides-mint)/0.3)]">
           <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="w-4 h-4 text-emerald-600" />
-            <p className="text-[11px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+            <Sparkles className="w-4 h-4 text-[hsl(var(--rides-mint))]" />
+            <p className="rides-label !text-[hsl(var(--rides-mint))]">
               {matches.length} match{matches.length > 1 ? "es" : ""} on your route
             </p>
           </div>
@@ -101,6 +101,7 @@ function FindMode({
           </div>
         </div>
       )}
+
 
       {!pickup || !dropoff ? (
         <p className="text-xs text-muted-foreground text-center py-2">Set your pickup & drop-off above to see route matches.</p>
