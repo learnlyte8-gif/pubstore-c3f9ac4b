@@ -348,7 +348,7 @@ function MyPool({ userId, myJoins }: { userId: string | null; myJoins: ReturnTyp
                   <p className="text-[10px] text-muted-foreground truncate">{j.pickup_address ?? "Pickup TBD"} → {j.dropoff_address ?? "TBD"}</p>
                 </div>
                 {j.status === "accepted" && !j.paid && (
-                  <Link to={`/pay/shared-trip-seat/${j.id}`} className="h-8 px-3 rounded-full bg-primary text-primary-foreground text-[11px] font-bold inline-flex items-center gap-1">
+                  <Link to={`/pay/shared-trip-seat/${j.id}`} className="h-8 px-3 rounded-full rides-cta text-[11px] inline-flex items-center gap-1">
                     Pay <ChevronRight className="w-3 h-3" />
                   </Link>
                 )}
