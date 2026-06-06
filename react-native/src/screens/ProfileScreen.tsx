@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -8,15 +8,22 @@ import { theme } from '@/config/theme';
 import { ScreenLoader } from '@/components/States';
 import type { Profile } from '@/types';
 
-const ROWS: { icon: string; label: string; path: string }[] = [
-  { icon: 'receipt-outline', label: 'Orders', path: '/orders' },
-  { icon: 'wallet-outline', label: 'Wallet', path: '/wallet' },
-  { icon: 'location-outline', label: 'Addresses', path: '/addresses' },
-  { icon: 'card-outline', label: 'Payment methods', path: '/payment-methods' },
-  { icon: 'notifications-outline', label: 'Notifications', path: '/notifications' },
-  { icon: 'shield-checkmark-outline', label: 'Verification', path: '/verification' },
-  { icon: 'help-circle-outline', label: 'Help center', path: '/help' },
-  { icon: 'settings-outline', label: 'Settings', path: '/settings' },
+type RouteName =
+  | 'Orders' | 'Wallet' | 'Notifications' | 'Account' | 'Addresses' | 'PaymentMethods'
+  | 'Verification' | 'HelpCenter' | 'Settings' | 'Privacy' | 'MyStore';
+
+const ROWS: { icon: string; label: string; route: RouteName }[] = [
+  { icon: 'receipt-outline', label: 'Orders', route: 'Orders' },
+  { icon: 'wallet-outline', label: 'Wallet', route: 'Wallet' },
+  { icon: 'notifications-outline', label: 'Notifications', route: 'Notifications' },
+  { icon: 'storefront-outline', label: 'My store', route: 'MyStore' },
+  { icon: 'person-outline', label: 'Profile', route: 'Account' },
+  { icon: 'location-outline', label: 'Addresses', route: 'Addresses' },
+  { icon: 'card-outline', label: 'Payment methods', route: 'PaymentMethods' },
+  { icon: 'shield-checkmark-outline', label: 'Verification', route: 'Verification' },
+  { icon: 'help-circle-outline', label: 'Help center', route: 'HelpCenter' },
+  { icon: 'settings-outline', label: 'Settings', route: 'Settings' },
+  { icon: 'document-text-outline', label: 'Privacy', route: 'Privacy' },
 ];
 
 export function ProfileScreen() {
@@ -49,47 +56,45 @@ export function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.header}>
-        <View style={styles.avatar}>
-          {profile?.avatar_url ? (
-            <Image source={{ uri: profile.avatar_url }} style={StyleSheet.absoluteFillObject} />
-          ) : (
-            <Ionicons name="person" size={32} color={theme.colors.muted} />
+      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+        <View style={styles.header}>
+          <View style={styles.avatar}>
+            {profile?.avatar_url ? (
+              <Image source={{ uri: profile.avatar_url }} style={StyleSheet.absoluteFillObject} />
+            ) : (
+              <Ionicons name="person" size={32} color={theme.colors.muted} />
+            )}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.name}>{profile?.display_name ?? 'Guest'}</Text>
+            <Text style={styles.sub}>{email ?? 'Not signed in'}</Text>
+          </View>
+          {!profile && (
+            <TouchableOpacity style={styles.signin} onPress={() => navigation.navigate('Auth')}>
+              <Text style={styles.signinText}>Sign in</Text>
+            </TouchableOpacity>
           )}
         </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.name}>{profile?.display_name ?? 'Guest'}</Text>
-          <Text style={styles.sub}>{email ?? 'Not signed in'}</Text>
+
+        <View style={styles.list}>
+          {ROWS.map((r) => (
+            <TouchableOpacity key={r.route} style={styles.row} onPress={() => navigation.navigate(r.route)}>
+              <Ionicons name={r.icon as any} size={20} color={theme.colors.foreground} />
+              <Text style={styles.rowLabel}>{r.label}</Text>
+              <Ionicons name="chevron-forward" size={18} color={theme.colors.muted} />
+            </TouchableOpacity>
+          ))}
         </View>
-        {!profile && (
-          <TouchableOpacity style={styles.signin} onPress={() => navigation.navigate('Auth')}>
-            <Text style={styles.signinText}>Sign in</Text>
+
+        {profile && (
+          <TouchableOpacity style={styles.signout} onPress={() => Alert.alert('Sign out', 'Are you sure?', [
+            { text: 'Cancel' },
+            { text: 'Sign out', style: 'destructive', onPress: signOut },
+          ])}>
+            <Text style={styles.signoutText}>Sign out</Text>
           </TouchableOpacity>
         )}
-      </View>
-
-      <View style={styles.list}>
-        {ROWS.map((r) => (
-          <TouchableOpacity
-            key={r.path}
-            style={styles.row}
-            onPress={() => navigation.navigate('WebFallback', { path: r.path, title: r.label })}
-          >
-            <Ionicons name={r.icon as any} size={20} color={theme.colors.foreground} />
-            <Text style={styles.rowLabel}>{r.label}</Text>
-            <Ionicons name="chevron-forward" size={18} color={theme.colors.muted} />
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {profile && (
-        <TouchableOpacity style={styles.signout} onPress={() => Alert.alert('Sign out', 'Are you sure?', [
-          { text: 'Cancel' },
-          { text: 'Sign out', style: 'destructive', onPress: signOut },
-        ])}>
-          <Text style={styles.signoutText}>Sign out</Text>
-        </TouchableOpacity>
-      )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
