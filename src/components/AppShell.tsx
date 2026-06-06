@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, Link, useLocation, useSearchParams } from "react-router-dom";
-import { House, Search, LayoutGrid, Heart, CircleUser, ShoppingBag, ShoppingCart, Bell, MessageCircle, Navigation, Menu, Store, Briefcase, Wrench, Building2, Car, Landmark, Factory, Newspaper, Hotel, Truck, X, Home, Sparkles, Camera } from "lucide-react";
+import { Search, Bell, Navigation, Menu, Store, Briefcase, Wrench, Building2, Car, Landmark, Factory, Newspaper, Hotel, Truck, X, Home, Sparkles, Camera, ShoppingCart } from "lucide-react";
+import { IoHome, IoHomeOutline, IoBagHandle, IoBagHandleOutline, IoChatbubble, IoChatbubbleOutline, IoHeart, IoHeartOutline, IoPerson, IoPersonOutline } from "react-icons/io5";
+import type { IconType } from "react-icons";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
