@@ -166,12 +166,12 @@ export default function Driver() {
   const inActive = ride && ["accepted", "arriving", "in_progress"].includes(ride.status);
 
   // Gating: must register driver profile first
-  if (dpLoading) return <div className="bg-zinc-950 text-zinc-50 min-h-[calc(100dvh-3.5rem)] flex items-center justify-center text-sm">Loading driver mode…</div>;
+  if (dpLoading) return <div className="rides-theme text-foreground min-h-[calc(100dvh-3.5rem)] flex items-center justify-center text-sm">Loading driver mode…</div>;
 
   if (!dp) {
     return (
-      <div className="bg-zinc-950 text-zinc-50 min-h-[calc(100dvh-3.5rem)] p-5 flex flex-col">
-        <button onClick={() => navigate("/rides")} className="self-start h-9 px-3 rounded-full bg-zinc-900 border border-zinc-100/15 flex items-center gap-1.5 text-xs font-bold">
+      <div className="rides-theme text-foreground min-h-[calc(100dvh-3.5rem)] p-5 flex flex-col">
+        <button onClick={() => navigate("/rides")} className="self-start h-9 px-3 rounded-full rides-glass-soft flex items-center gap-1.5 text-xs font-bold">
           <ArrowLeft className="w-3.5 h-3.5" /> Back to rides
         </button>
         <div className="flex-1 flex flex-col items-center justify-center text-center max-w-md mx-auto">
@@ -179,10 +179,10 @@ export default function Driver() {
             <Navigation className="w-7 h-7" />
           </span>
           <h2 className="mt-5 text-2xl font-black">Register as a ride driver</h2>
-          <p className="mt-2 text-sm text-zinc-400">
+          <p className="mt-2 text-sm text-muted-foreground">
             This is for ride-hailing only — driving passengers. If you want to deliver goods or packages, register separately as a <Link to="/store/services/logistics" className="text-emerald-400 underline">courier</Link>.
           </p>
-          <Link to="/store/services/driver" className="mt-6 h-12 px-6 rounded-full bg-emerald-400 text-zinc-950 text-sm font-bold flex items-center gap-2 shadow-elevated">
+          <Link to="/store/services/driver" className="mt-6 h-12 px-6 rounded-full rides-cta text-white text-sm font-bold flex items-center gap-2 shadow-elevated">
             <ShieldCheck className="w-4 h-4" /> Register now
           </Link>
         </div>
@@ -193,7 +193,7 @@ export default function Driver() {
   const ClassIcon = CLASS_META[vClass]?.icon ?? Car;
 
   return (
-    <div className="bg-zinc-950 text-zinc-50 min-h-[calc(100dvh-3.5rem)]">
+    <div className="rides-theme text-foreground min-h-[calc(100dvh-3.5rem)]">
       {/* Hero */}
       <div className="relative">
         <div className="h-[40vh] min-h-[260px]">
@@ -209,11 +209,11 @@ export default function Driver() {
         <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
           <button
             onClick={() => navigate("/rides")}
-            className="h-9 px-3 rounded-full bg-zinc-950/85 backdrop-blur border border-zinc-100/15 flex items-center gap-1.5 text-xs font-bold pointer-events-auto"
+            className="h-9 px-3 rounded-full rides-glass flex items-center gap-1.5 text-xs font-bold pointer-events-auto"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Rider mode
           </button>
-          <span className="px-3 h-9 rounded-full bg-zinc-950/85 backdrop-blur border border-zinc-100/15 flex items-center gap-2 text-xs font-bold pointer-events-auto">
+          <span className="px-3 h-9 rounded-full rides-glass flex items-center gap-2 text-xs font-bold pointer-events-auto">
             <span className={`w-2 h-2 rounded-full ${online ? "bg-emerald-400" : "bg-zinc-500"}`} />
             {online ? "ONLINE" : "OFFLINE"}
           </span>
@@ -221,27 +221,27 @@ export default function Driver() {
       </div>
 
       <div className="relative -mt-6 z-10 px-3">
-        <div className="rounded-3xl bg-zinc-900 border border-zinc-100/10 shadow-elevated overflow-hidden">
+        <div className="rounded-3xl rides-glass-soft border border-border shadow-elevated overflow-hidden">
           {!inActive ? (
             <div className="p-4 space-y-4">
               {/* Driver identity card */}
-              <div className="flex items-start gap-3 rounded-2xl bg-zinc-950 border border-zinc-100/10 p-3 overflow-hidden">
-                <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-zinc-900 shrink-0">
+              <div className="flex items-start gap-3 rounded-2xl bg-zinc-950 border border-border p-3 overflow-hidden">
+                <div className="relative w-16 h-16 rounded-xl overflow-hidden rides-glass-soft shrink-0">
                   {dp.vehicle_photo
                     ? <img src={dp.vehicle_photo} alt="" className="w-full h-full object-cover" />
-                    : <ClassIcon className="w-6 h-6 m-auto h-full text-zinc-500" />}
+                    : <ClassIcon className="w-6 h-6 m-auto h-full text-muted-foreground" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-emerald-400">REGISTERED · {vClass}</p>
                   <p className="text-sm font-bold mt-0.5 truncate">{dp.display_name ?? "Driver"}</p>
-                  <p className="text-[11px] text-zinc-400 truncate">{vehicleLabel || "Vehicle"} · {dp.vehicle_year ?? ""}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">{vehicleLabel || "Vehicle"} · {dp.vehicle_year ?? ""}</p>
                   <div className="mt-1 flex items-center gap-1.5">
                     <span className="px-1.5 py-0.5 rounded bg-zinc-50 text-zinc-950 text-[10px] font-mono font-black tracking-wider">{dp.vehicle_plate}</span>
-                    <span className="text-[10px] text-zinc-500 inline-flex items-center gap-0.5"><Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" /> {Number(dp.rating ?? 5).toFixed(1)} · {dp.trips ?? 0} trips</span>
+                    <span className="text-[10px] text-muted-foreground inline-flex items-center gap-0.5"><Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" /> {Number(dp.rating ?? 5).toFixed(1)} · {dp.trips ?? 0} trips</span>
                   </div>
                 </div>
                 {dp.plate_photo && (
-                  <img src={dp.plate_photo} alt="" className="w-12 h-12 rounded-lg object-cover border border-zinc-100/15" />
+                  <img src={dp.plate_photo} alt="" className="w-12 h-12 rounded-lg object-cover border border-border" />
                 )}
               </div>
 
@@ -252,7 +252,7 @@ export default function Driver() {
               {/* Online toggle */}
               <button
                 onClick={online ? goOffline : goOnline}
-                className={`w-full h-14 rounded-2xl font-black text-base flex items-center justify-center gap-2 shadow-elevated transition ${online ? "bg-zinc-50 text-zinc-950" : "bg-emerald-400 text-zinc-950"}`}
+                className={`w-full h-14 rounded-2xl font-black text-base flex items-center justify-center gap-2 shadow-elevated transition ${online ? "bg-zinc-50 text-zinc-950" : "rides-cta text-white"}`}
               >
                 <Power className="w-5 h-5" />
                 {online ? "Go offline" : "Go online"}
@@ -279,11 +279,11 @@ export default function Driver() {
           <div className="mt-5">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-bold tracking-wider uppercase">Incoming requests</h3>
-              <span className="text-[11px] text-zinc-400">{requests.length} within 12km</span>
+              <span className="text-[11px] text-muted-foreground">{requests.length} within 12km</span>
             </div>
             <div className="space-y-2">
               {requests.length === 0 ? (
-                <div className="rounded-2xl bg-zinc-900 border border-zinc-100/10 p-6 text-center text-xs text-zinc-400 flex flex-col items-center gap-2">
+                <div className="rounded-2xl rides-glass-soft border border-border p-6 text-center text-xs text-muted-foreground flex flex-col items-center gap-2">
                   <Inbox className="w-6 h-6 opacity-50" />
                   Waiting for nearby riders…
                 </div>
@@ -299,7 +299,7 @@ export default function Driver() {
         {!online && (
           <Link
             to="/rides"
-            className="mt-5 mb-8 block rounded-2xl bg-zinc-900 border border-zinc-100/10 p-4 text-center text-xs font-semibold text-zinc-400"
+            className="mt-5 mb-8 block rounded-2xl rides-glass-soft border border-border p-4 text-center text-xs font-semibold text-muted-foreground"
           >
             Want to ride instead? <span className="text-emerald-400 font-bold">Open rider mode →</span>
           </Link>
@@ -325,7 +325,7 @@ function ActiveTripPanel({
         <RideChat rideId={ride.id} myUserId={myUserId} counterpartName="Rider" />
       </div>
 
-      <div className="rounded-xl bg-zinc-950 border border-zinc-100/10 p-3 text-xs space-y-1.5">
+      <div className="rounded-xl bg-zinc-950 border border-border p-3 text-xs space-y-1.5">
         <div className="flex items-start gap-2"><span className="w-2 h-2 mt-1.5 rounded-full bg-emerald-400" /> <span className="flex-1">{ride.pickup_address}</span></div>
         <div className="flex items-start gap-2"><span className="w-2 h-2 mt-1.5 rotate-45 bg-rose-400" /> <span className="flex-1">{ride.dropoff_address}</span></div>
       </div>
@@ -340,11 +340,11 @@ function ActiveTripPanel({
         {ride.status === "accepted" && (
           <>
             <button onClick={() => onAdvance("arriving")} className="h-11 rounded-xl bg-zinc-50 text-zinc-950 text-sm font-bold">I'm on the way</button>
-            <button onClick={() => onAdvance("in_progress")} className="h-11 rounded-xl bg-emerald-400 text-zinc-950 text-sm font-bold">Start trip</button>
+            <button onClick={() => onAdvance("in_progress")} className="h-11 rounded-xl rides-cta text-white text-sm font-bold">Start trip</button>
           </>
         )}
         {ride.status === "arriving" && (
-          <button onClick={() => onAdvance("in_progress")} className="col-span-2 h-11 rounded-xl bg-emerald-400 text-zinc-950 text-sm font-bold">Start trip</button>
+          <button onClick={() => onAdvance("in_progress")} className="col-span-2 h-11 rounded-xl rides-cta text-white text-sm font-bold">Start trip</button>
         )}
         {ride.status === "in_progress" && (
           <button onClick={() => onAdvance("completed")} className="col-span-2 h-11 rounded-xl bg-rose-400 text-zinc-950 text-sm font-bold">Complete trip</button>
@@ -363,19 +363,19 @@ function RequestCard({
   const [counter, setCounter] = useState<number>(req.rider_offer);
 
   return (
-    <div className="rounded-2xl bg-zinc-900 border border-zinc-100/10 p-3 space-y-2 animate-fade-in">
+    <div className="rounded-2xl rides-glass-soft border border-border p-3 space-y-2 animate-fade-in">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-zinc-500">
+          <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground">
             {req.vehicle_class} · {req.distance_km.toFixed(1)} km · {distFromMe.toFixed(1)} km away
           </p>
           <p className="text-xs font-bold mt-1 truncate flex items-center gap-1"><MapPin className="w-3 h-3 text-emerald-400" />{req.pickup_address.split(",")[0]}</p>
-          <p className="text-[11px] text-zinc-400 truncate flex items-center gap-1"><MapPin className="w-3 h-3 text-rose-400" />{req.dropoff_address.split(",")[0]}</p>
+          <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1"><MapPin className="w-3 h-3 text-rose-400" />{req.dropoff_address.split(",")[0]}</p>
         </div>
         <div className="text-right shrink-0">
-          <p className="text-[9px] font-mono uppercase tracking-wider text-zinc-500">RIDER OFFERS</p>
+          <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground">RIDER OFFERS</p>
           <p className="text-lg font-black tabular-nums">${req.rider_offer.toFixed(2)}</p>
-          <p className="text-[10px] text-zinc-500">sug ${suggested.toFixed(2)}</p>
+          <p className="text-[10px] text-muted-foreground">sug ${suggested.toFixed(2)}</p>
         </div>
       </div>
 
@@ -385,7 +385,7 @@ function RequestCard({
           step={0.5}
           value={counter}
           onChange={(e) => setCounter(Number(e.target.value))}
-          className="w-24 h-9 px-2 rounded-lg bg-zinc-950 border border-zinc-100/10 text-sm font-bold text-center"
+          className="w-24 h-9 px-2 rounded-lg bg-zinc-950 border border-border text-sm font-bold text-center"
         />
         <button
           onClick={() => onSend(req, req.rider_offer)}
@@ -395,7 +395,7 @@ function RequestCard({
         </button>
         <button
           onClick={() => onSend(req, counter)}
-          className="h-9 px-3 rounded-lg bg-emerald-400 text-zinc-950 text-xs font-bold flex items-center gap-1"
+          className="h-9 px-3 rounded-lg rides-cta text-white text-xs font-bold flex items-center gap-1"
         >
           <Send className="w-3 h-3" /> Bid
         </button>
@@ -406,9 +406,9 @@ function RequestCard({
 
 function Stat({ label, value, icon: Icon }: { label: string; value: string; icon: typeof Clock }) {
   return (
-    <div className="rounded-xl bg-zinc-950 border border-zinc-100/10 p-2 text-center">
+    <div className="rounded-xl bg-zinc-950 border border-border p-2 text-center">
       <Icon className="w-3.5 h-3.5 mx-auto text-emerald-400" />
-      <p className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 mt-0.5">{label}</p>
+      <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground mt-0.5">{label}</p>
       <p className="text-sm font-black capitalize">{value}</p>
     </div>
   );
