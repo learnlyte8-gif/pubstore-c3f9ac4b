@@ -204,12 +204,14 @@ function ScrollProgress() {
 
 function TabItem({
   to,
-  icon: Icon,
+  iconOutline: IconOutline,
+  iconFilled: IconFilled,
   label,
   badge,
 }: {
   to: string;
-  icon: typeof Home;
+  iconOutline: IconType;
+  iconFilled: IconType;
   label: string;
   badge?: number;
 }) {
@@ -217,16 +219,17 @@ function TabItem({
     <li className="flex-1 min-w-0">
       <NavLink
         to={to}
-        className="flex flex-col items-center justify-center gap-1 h-full select-none"
+        className="flex flex-col items-center justify-center gap-0.5 h-full select-none"
         aria-label={label}
       >
         {({ isActive }) => (
           <>
-            <span className="relative flex items-center justify-center h-6 w-6">
-              <Icon
-                className={`w-[22px] h-[22px] ${isActive ? "text-[hsl(24_100%_56%)]" : "text-foreground/60"}`}
-                strokeWidth={isActive ? 2.4 : 2}
-              />
+            <span className="relative flex items-center justify-center h-7 w-7">
+              {isActive ? (
+                <IconFilled className="w-[26px] h-[26px] text-[hsl(24_100%_56%)]" />
+              ) : (
+                <IconOutline className="w-[26px] h-[26px] text-foreground/55" />
+              )}
               {badge !== undefined && badge > 0 && (
                 <span className="absolute -top-1 -right-2 min-w-[15px] h-[15px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-background">
                   {badge > 99 ? "99+" : badge}
@@ -235,7 +238,7 @@ function TabItem({
             </span>
             <span
               className={`text-[10px] leading-none tracking-tight ${
-                isActive ? "text-[hsl(24_100%_56%)] font-semibold" : "text-foreground/60 font-medium"
+                isActive ? "text-[hsl(24_100%_56%)] font-semibold" : "text-foreground/55 font-medium"
               }`}
             >
               {label}
