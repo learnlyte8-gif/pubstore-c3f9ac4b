@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, Link, useLocation, useSearchParams } from "react-router-dom";
-import { House, Search, LayoutGrid, Heart, CircleUser, ShoppingBag, ShoppingCart, Bell, MessageCircle, Navigation, Menu, Store, Briefcase, Wrench, Building2, Car, Landmark, Factory, Newspaper, Hotel, Truck, X, Home, Sparkles, Camera } from "lucide-react";
+import { Search, Bell, Navigation, Menu, Store, Briefcase, Wrench, Building2, Car, Landmark, Factory, Newspaper, Hotel, Truck, X, Home, Sparkles, Camera, ShoppingCart } from "lucide-react";
+import { IoHome, IoHomeOutline, IoBagHandle, IoBagHandleOutline, IoChatbubble, IoChatbubbleOutline, IoHeart, IoHeartOutline, IoPerson, IoPersonOutline } from "react-icons/io5";
+import type { IconType } from "react-icons";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -142,25 +144,24 @@ export default function AppShell() {
 
       <main
         className="flex-1 max-w-2xl w-full mx-auto"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 84px)" }}
+        style={{ paddingBottom: "64px" }}
       >
         <div key={location.pathname} className="page-transition">
           <Outlet />
         </div>
       </main>
 
-      {/* Bottom nav — flush to bottom edge */}
+      {/* Bottom nav — flush to bottom edge, iOS-style icons */}
       <nav
-        className="fixed bottom-0 inset-x-0 z-40 bg-background border-t border-border shadow-[0_-4px_16px_-4px_hsl(0_0%_0%_/_0.08)]"
+        className="fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border"
         aria-label="Primary"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <ul className="relative flex flex-row items-stretch gap-0.5 max-w-2xl mx-auto px-1 h-14">
-          <TabItem to="/home" icon={House} label="Home" />
-          <TabItem to="/categories" icon={ShoppingBag} label="Shop" />
-          <TabItem to="/messages" icon={MessageCircle} label="Chats" badge={chatsWithUnread} />
-          <TabItem to="/wishlist" icon={Heart} label="Saved" badge={wishlist.length} />
-          <TabItem to="/profile" icon={CircleUser} label="You" />
+        <ul className="relative flex flex-row items-stretch gap-0.5 max-w-2xl mx-auto px-1 h-[56px]">
+          <TabItem to="/home" iconOutline={IoHomeOutline} iconFilled={IoHome} label="Home" />
+          <TabItem to="/categories" iconOutline={IoBagHandleOutline} iconFilled={IoBagHandle} label="Shop" />
+          <TabItem to="/messages" iconOutline={IoChatbubbleOutline} iconFilled={IoChatbubble} label="Chats" badge={chatsWithUnread} />
+          <TabItem to="/wishlist" iconOutline={IoHeartOutline} iconFilled={IoHeart} label="Saved" badge={wishlist.length} />
+          <TabItem to="/profile" iconOutline={IoPersonOutline} iconFilled={IoPerson} label="You" />
         </ul>
       </nav>
 
@@ -203,12 +204,14 @@ function ScrollProgress() {
 
 function TabItem({
   to,
-  icon: Icon,
+  iconOutline: IconOutline,
+  iconFilled: IconFilled,
   label,
   badge,
 }: {
   to: string;
-  icon: typeof Home;
+  iconOutline: IconType;
+  iconFilled: IconType;
   label: string;
   badge?: number;
 }) {
@@ -216,16 +219,17 @@ function TabItem({
     <li className="flex-1 min-w-0">
       <NavLink
         to={to}
-        className="flex flex-col items-center justify-center gap-1 h-full select-none"
+        className="flex flex-col items-center justify-center gap-0.5 h-full select-none"
         aria-label={label}
       >
         {({ isActive }) => (
           <>
-            <span className="relative flex items-center justify-center h-6 w-6">
-              <Icon
-                className={`w-[22px] h-[22px] ${isActive ? "text-[hsl(24_100%_56%)]" : "text-foreground/60"}`}
-                strokeWidth={isActive ? 2.4 : 2}
-              />
+            <span className="relative flex items-center justify-center h-7 w-7">
+              {isActive ? (
+                <IconFilled className="w-[26px] h-[26px] text-[hsl(24_100%_56%)]" />
+              ) : (
+                <IconOutline className="w-[26px] h-[26px] text-foreground/55" />
+              )}
               {badge !== undefined && badge > 0 && (
                 <span className="absolute -top-1 -right-2 min-w-[15px] h-[15px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-background">
                   {badge > 99 ? "99+" : badge}
@@ -234,7 +238,7 @@ function TabItem({
             </span>
             <span
               className={`text-[10px] leading-none tracking-tight ${
-                isActive ? "text-[hsl(24_100%_56%)] font-semibold" : "text-foreground/60 font-medium"
+                isActive ? "text-[hsl(24_100%_56%)] font-semibold" : "text-foreground/55 font-medium"
               }`}
             >
               {label}
