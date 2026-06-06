@@ -5,7 +5,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { HomeScreen } from '@/screens/HomeScreen';
 import { CategoriesScreen } from '@/screens/CategoriesScreen';
 import { MessagesScreen } from '@/screens/MessagesScreen';
-import { WishlistScreen } from '@/screens/WishlistScreen';
+import { MoreScreen } from '@/screens/MoreScreen';
 import { ProfileScreen } from '@/screens/ProfileScreen';
 import { theme } from '@/config/theme';
 
@@ -30,8 +30,8 @@ export function RootTabs() {
           const map: Record<string, [string, string]> = {
             Home: ['home', 'home-outline'],
             Categories: ['bag-handle', 'bag-handle-outline'],
+            Explore: ['apps', 'apps-outline'],
             Messages: ['chatbubble', 'chatbubble-outline'],
-            Wishlist: ['heart', 'heart-outline'],
             Profile: ['person', 'person-outline'],
           };
           const [filled, outline] = map[route.name] ?? ['ellipse', 'ellipse-outline'];
@@ -41,8 +41,8 @@ export function RootTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Categories" component={CategoriesScreen} />
+      <Tab.Screen name="Explore" component={MoreScreen} />
       <Tab.Screen name="Messages" component={MessagesScreen} />
-      <Tab.Screen name="Wishlist" component={WishlistScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
