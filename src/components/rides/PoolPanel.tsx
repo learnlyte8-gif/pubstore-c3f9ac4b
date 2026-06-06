@@ -244,7 +244,7 @@ function HostMode({ userId, pickup, dropoff }: { userId: string | null; pickup: 
 
   return (
     <div className="space-y-3">
-      <div className="rounded-2xl bg-muted/40 border border-border p-3 space-y-2">
+      <div className="rounded-2xl rides-glass-soft p-3 space-y-2">
         <div className="flex items-center gap-2">
           <MapPin className="w-3.5 h-3.5 text-emerald-500" />
           <span className="text-[11px] truncate">{pickup?.address ?? "Set pickup above"}</span>
@@ -258,19 +258,20 @@ function HostMode({ userId, pickup, dropoff }: { userId: string | null; pickup: 
       <div className="grid grid-cols-2 gap-2">
         <button
           onClick={() => setHostKind("peer")}
-          className={`p-2.5 rounded-xl border text-left ${hostKind === "peer" ? "border-emerald-500 bg-emerald-500/10" : "border-border"}`}
+          className={`rides-card p-2.5 text-left ${hostKind === "peer" ? "rides-card-active" : ""}`}
         >
-          <div className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-emerald-600" /><span className="text-[11px] font-bold">Peer / carpool</span></div>
+          <div className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-[hsl(var(--rides-mint))]" /><span className="text-[11px] font-bold">Peer / carpool</span></div>
           <p className="text-[10px] text-muted-foreground mt-0.5">Split fuel with riders going your way</p>
         </button>
         <button
           onClick={() => setHostKind("driver")}
-          className={`p-2.5 rounded-xl border text-left ${hostKind === "driver" ? "border-sky-500 bg-sky-500/10" : "border-border"}`}
+          className={`rides-card p-2.5 text-left ${hostKind === "driver" ? "rides-card-active" : ""}`}
         >
-          <div className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-sky-600" /><span className="text-[11px] font-bold">Pro driver</span></div>
+          <div className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-[hsl(var(--rides-mint))]" /><span className="text-[11px] font-bold">Pro driver</span></div>
           <p className="text-[10px] text-muted-foreground mt-0.5">Offer a shared commercial ride</p>
         </button>
       </div>
+
 
       <label className="block">
         <span className="text-[10px] font-bold tracking-wider text-muted-foreground">DEPARTURE</span>
