@@ -89,10 +89,10 @@ function FindMode({
   return (
     <div className="space-y-3">
       {pickup && dropoff && matches.length > 0 && (
-        <div className="rounded-2xl bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent border border-emerald-500/30 p-3">
+        <div className="rounded-2xl rides-glass-soft p-3 border border-[hsl(var(--rides-mint)/0.3)]">
           <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="w-4 h-4 text-emerald-600" />
-            <p className="text-[11px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+            <Sparkles className="w-4 h-4 text-[hsl(var(--rides-mint))]" />
+            <p className="rides-label !text-[hsl(var(--rides-mint))]">
               {matches.length} match{matches.length > 1 ? "es" : ""} on your route
             </p>
           </div>
@@ -101,6 +101,7 @@ function FindMode({
           </div>
         </div>
       )}
+
 
       {!pickup || !dropoff ? (
         <p className="text-xs text-muted-foreground text-center py-2">Set your pickup & drop-off above to see route matches.</p>
@@ -153,11 +154,11 @@ function TripCard({ trip, userId, pickup, dropoff, highlight }: {
   const total = (trip.seat_price * seats).toFixed(2);
 
   return (
-    <div className={`rounded-2xl border p-3 ${highlight ? "border-emerald-500/40 bg-background" : "border-border bg-card"}`}>
+    <div className={`rides-card p-3 ${highlight ? "rides-card-active" : ""}`}>
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 mb-0.5">
-            <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${trip.host_kind === "driver" ? "bg-sky-500/15 text-sky-700 dark:text-sky-300" : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"}`}>
+            <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded rides-chip">
               {trip.host_kind === "driver" ? <><Shield className="inline w-2.5 h-2.5 mr-0.5" />Pro driver</> : <><Users className="inline w-2.5 h-2.5 mr-0.5" />Peer</>}
             </span>
             <span className="text-[10px] text-muted-foreground inline-flex items-center gap-1"><Clock className="w-3 h-3" />{fmtETA(trip.departure_at)}</span>
@@ -166,7 +167,7 @@ function TripCard({ trip, userId, pickup, dropoff, highlight }: {
           <p className="text-[11px] text-muted-foreground truncate">from {trip.origin_address}</p>
         </div>
         <div className="text-right shrink-0">
-          <p className="text-lg font-black leading-none">${trip.seat_price.toFixed(0)}</p>
+          <p className="text-lg font-black leading-none text-[hsl(var(--rides-mint))]">${trip.seat_price.toFixed(0)}</p>
           <p className="text-[9px] text-muted-foreground">per seat</p>
         </div>
       </div>
@@ -175,7 +176,7 @@ function TripCard({ trip, userId, pickup, dropoff, highlight }: {
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted">
             <Car className="w-3 h-3" />{trip.vehicle_label ?? trip.vehicle_class}
           </span>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full rides-chip font-bold">
             {trip.seats_available}/{trip.seats_total} seats
           </span>
         </div>
@@ -188,13 +189,14 @@ function TripCard({ trip, userId, pickup, dropoff, highlight }: {
           <button
             onClick={join}
             disabled={busy || trip.seats_available < 1}
-            className="h-8 px-3 rounded-full bg-primary text-primary-foreground text-[11px] font-bold disabled:opacity-50 inline-flex items-center gap-1"
+            className="h-8 px-3 rounded-full rides-cta text-[11px] inline-flex items-center gap-1"
           >
             {busy ? <CircleSpinner size={12} /> : <>Join · ${total}</>}
           </button>
         </div>
       </div>
     </div>
+
   );
 }
 
@@ -242,7 +244,7 @@ function HostMode({ userId, pickup, dropoff }: { userId: string | null; pickup: 
 
   return (
     <div className="space-y-3">
-      <div className="rounded-2xl bg-muted/40 border border-border p-3 space-y-2">
+      <div className="rounded-2xl rides-glass-soft p-3 space-y-2">
         <div className="flex items-center gap-2">
           <MapPin className="w-3.5 h-3.5 text-emerald-500" />
           <span className="text-[11px] truncate">{pickup?.address ?? "Set pickup above"}</span>
@@ -256,19 +258,20 @@ function HostMode({ userId, pickup, dropoff }: { userId: string | null; pickup: 
       <div className="grid grid-cols-2 gap-2">
         <button
           onClick={() => setHostKind("peer")}
-          className={`p-2.5 rounded-xl border text-left ${hostKind === "peer" ? "border-emerald-500 bg-emerald-500/10" : "border-border"}`}
+          className={`rides-card p-2.5 text-left ${hostKind === "peer" ? "rides-card-active" : ""}`}
         >
-          <div className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-emerald-600" /><span className="text-[11px] font-bold">Peer / carpool</span></div>
+          <div className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-[hsl(var(--rides-mint))]" /><span className="text-[11px] font-bold">Peer / carpool</span></div>
           <p className="text-[10px] text-muted-foreground mt-0.5">Split fuel with riders going your way</p>
         </button>
         <button
           onClick={() => setHostKind("driver")}
-          className={`p-2.5 rounded-xl border text-left ${hostKind === "driver" ? "border-sky-500 bg-sky-500/10" : "border-border"}`}
+          className={`rides-card p-2.5 text-left ${hostKind === "driver" ? "rides-card-active" : ""}`}
         >
-          <div className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-sky-600" /><span className="text-[11px] font-bold">Pro driver</span></div>
+          <div className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-[hsl(var(--rides-mint))]" /><span className="text-[11px] font-bold">Pro driver</span></div>
           <p className="text-[10px] text-muted-foreground mt-0.5">Offer a shared commercial ride</p>
         </button>
       </div>
+
 
       <label className="block">
         <span className="text-[10px] font-bold tracking-wider text-muted-foreground">DEPARTURE</span>
@@ -308,7 +311,8 @@ function HostMode({ userId, pickup, dropoff }: { userId: string | null; pickup: 
         className="w-full px-3 py-2 rounded-xl bg-muted/50 border border-border text-sm outline-none focus:border-primary" />
 
       <button onClick={submit} disabled={busy}
-        className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-bold text-sm shadow-elevated disabled:opacity-50 flex items-center justify-center gap-2">
+        className="w-full h-12 rounded-2xl rides-cta text-sm flex items-center justify-center gap-2">
+
         {busy ? <CircleSpinner size={16} /> : <><Plus className="w-4 h-4" /> Post trip</>}
       </button>
     </div>
@@ -344,7 +348,7 @@ function MyPool({ userId, myJoins }: { userId: string | null; myJoins: ReturnTyp
                   <p className="text-[10px] text-muted-foreground truncate">{j.pickup_address ?? "Pickup TBD"} → {j.dropoff_address ?? "TBD"}</p>
                 </div>
                 {j.status === "accepted" && !j.paid && (
-                  <Link to={`/pay/shared-trip-seat/${j.id}`} className="h-8 px-3 rounded-full bg-primary text-primary-foreground text-[11px] font-bold inline-flex items-center gap-1">
+                  <Link to={`/pay/shared-trip-seat/${j.id}`} className="h-8 px-3 rounded-full rides-cta text-[11px] inline-flex items-center gap-1">
                     Pay <ChevronRight className="w-3 h-3" />
                   </Link>
                 )}
@@ -400,7 +404,7 @@ function HostedTripRow({ trip }: { trip: SharedTrip }) {
               </div>
               {j.status === "pending" && (
                 <div className="flex items-center gap-1">
-                  <button onClick={() => decide(j.id, "accepted")} className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center"><CheckCircle2 className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => decide(j.id, "accepted")} className="w-7 h-7 rounded-full rides-cta flex items-center justify-center"><CheckCircle2 className="w-3.5 h-3.5" /></button>
                   <button onClick={() => decide(j.id, "declined")} className="w-7 h-7 rounded-full bg-muted text-foreground flex items-center justify-center"><XCircle className="w-3.5 h-3.5" /></button>
                 </div>
               )}
