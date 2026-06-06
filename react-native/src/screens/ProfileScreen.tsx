@@ -10,10 +10,11 @@ import type { Profile } from '@/types';
 
 type RouteName =
   | 'Orders' | 'Wallet' | 'Notifications' | 'Account' | 'Addresses' | 'PaymentMethods'
-  | 'Verification' | 'HelpCenter' | 'Settings' | 'Privacy' | 'MyStore';
+  | 'Verification' | 'HelpCenter' | 'Settings' | 'Privacy' | 'MyStore' | 'Wishlist';
 
 const ROWS: { icon: string; label: string; route: RouteName }[] = [
   { icon: 'receipt-outline', label: 'Orders', route: 'Orders' },
+  { icon: 'heart-outline', label: 'Wishlist', route: 'Wishlist' },
   { icon: 'wallet-outline', label: 'Wallet', route: 'Wallet' },
   { icon: 'notifications-outline', label: 'Notifications', route: 'Notifications' },
   { icon: 'storefront-outline', label: 'My store', route: 'MyStore' },

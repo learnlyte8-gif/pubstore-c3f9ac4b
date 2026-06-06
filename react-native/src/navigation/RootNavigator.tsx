@@ -20,6 +20,7 @@ import { HelpCenterScreen } from '@/screens/HelpCenterScreen';
 import { VerificationScreen } from '@/screens/VerificationScreen';
 import { PrivacyScreen } from '@/screens/PrivacyScreen';
 import { MyStoreScreen } from '@/screens/MyStoreScreen';
+import { WishlistScreen } from '@/screens/WishlistScreen';
 import { MoreScreen } from '@/screens/MoreScreen';
 import {
   RestaurantsScreen, StaysScreen, PropertiesScreen, AutoScreen, CarRentalsScreen,
@@ -35,7 +36,7 @@ export type RootStackParamList = {
   Search: undefined; Orders: undefined; Wallet: undefined; Notifications: undefined;
   Addresses: undefined; PaymentMethods: undefined; Settings: undefined;
   Account: undefined; HelpCenter: undefined; Verification: undefined;
-  Privacy: undefined; MyStore: undefined; More: undefined;
+  Privacy: undefined; MyStore: undefined; More: undefined; Wishlist: undefined;
   Restaurants: undefined; Stays: undefined; Properties: undefined; Auto: undefined;
   CarRentals: undefined; Jobs: undefined; Services: undefined; Agro: undefined;
   Industrial: undefined; Finance: undefined; News: undefined; Live: undefined;
@@ -85,6 +86,7 @@ export function RootNavigator() {
       <Stack.Screen name="Verification" component={VerificationScreen} />
       <Stack.Screen name="Privacy" component={PrivacyScreen} />
       <Stack.Screen name="MyStore" component={MyStoreScreen} />
+      <Stack.Screen name="Wishlist" component={WishlistScreen} />
 
       <Stack.Screen name="Restaurants" component={RestaurantsScreen} />
       <Stack.Screen name="Stays" component={StaysScreen} />
