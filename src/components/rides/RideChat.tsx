@@ -42,15 +42,16 @@ export default function RideChat({
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Chat with driver"
-        className="relative w-10 h-10 rounded-full bg-foreground text-background flex items-center justify-center shadow-elevated"
+        className="relative w-10 h-10 rounded-full rides-cta flex items-center justify-center"
       >
         <MessageCircle className="w-4 h-4" />
         {unread > 0 && !open && (
-          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-white text-[hsl(var(--rides-mint))] text-[10px] font-bold flex items-center justify-center ring-2 ring-[hsl(var(--rides-mint))]">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
       </button>
+
 
       {open && (
         <div className="fixed inset-0 z-50 bg-background/60 backdrop-blur-sm flex items-end sm:items-center justify-center animate-fade-in" onClick={() => setOpen(false)}>
