@@ -154,11 +154,11 @@ function TripCard({ trip, userId, pickup, dropoff, highlight }: {
   const total = (trip.seat_price * seats).toFixed(2);
 
   return (
-    <div className={`rounded-2xl border p-3 ${highlight ? "border-emerald-500/40 bg-background" : "border-border bg-card"}`}>
+    <div className={`rides-card p-3 ${highlight ? "rides-card-active" : ""}`}>
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 mb-0.5">
-            <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${trip.host_kind === "driver" ? "bg-sky-500/15 text-sky-700 dark:text-sky-300" : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"}`}>
+            <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded rides-chip">
               {trip.host_kind === "driver" ? <><Shield className="inline w-2.5 h-2.5 mr-0.5" />Pro driver</> : <><Users className="inline w-2.5 h-2.5 mr-0.5" />Peer</>}
             </span>
             <span className="text-[10px] text-muted-foreground inline-flex items-center gap-1"><Clock className="w-3 h-3" />{fmtETA(trip.departure_at)}</span>
@@ -167,7 +167,7 @@ function TripCard({ trip, userId, pickup, dropoff, highlight }: {
           <p className="text-[11px] text-muted-foreground truncate">from {trip.origin_address}</p>
         </div>
         <div className="text-right shrink-0">
-          <p className="text-lg font-black leading-none">${trip.seat_price.toFixed(0)}</p>
+          <p className="text-lg font-black leading-none text-[hsl(var(--rides-mint))]">${trip.seat_price.toFixed(0)}</p>
           <p className="text-[9px] text-muted-foreground">per seat</p>
         </div>
       </div>
@@ -176,7 +176,7 @@ function TripCard({ trip, userId, pickup, dropoff, highlight }: {
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted">
             <Car className="w-3 h-3" />{trip.vehicle_label ?? trip.vehicle_class}
           </span>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full rides-chip font-bold">
             {trip.seats_available}/{trip.seats_total} seats
           </span>
         </div>
@@ -189,13 +189,14 @@ function TripCard({ trip, userId, pickup, dropoff, highlight }: {
           <button
             onClick={join}
             disabled={busy || trip.seats_available < 1}
-            className="h-8 px-3 rounded-full bg-primary text-primary-foreground text-[11px] font-bold disabled:opacity-50 inline-flex items-center gap-1"
+            className="h-8 px-3 rounded-full rides-cta text-[11px] inline-flex items-center gap-1"
           >
             {busy ? <CircleSpinner size={12} /> : <>Join · ${total}</>}
           </button>
         </div>
       </div>
     </div>
+
   );
 }
 
