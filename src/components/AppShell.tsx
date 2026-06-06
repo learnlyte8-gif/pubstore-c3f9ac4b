@@ -142,25 +142,24 @@ export default function AppShell() {
 
       <main
         className="flex-1 max-w-2xl w-full mx-auto"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 84px)" }}
+        style={{ paddingBottom: "64px" }}
       >
         <div key={location.pathname} className="page-transition">
           <Outlet />
         </div>
       </main>
 
-      {/* Bottom nav — flush to bottom edge */}
+      {/* Bottom nav — flush to bottom edge, iOS-style icons */}
       <nav
-        className="fixed bottom-0 inset-x-0 z-40 bg-background border-t border-border shadow-[0_-4px_16px_-4px_hsl(0_0%_0%_/_0.08)]"
+        className="fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border"
         aria-label="Primary"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <ul className="relative flex flex-row items-stretch gap-0.5 max-w-2xl mx-auto px-1 h-14">
-          <TabItem to="/home" icon={House} label="Home" />
-          <TabItem to="/categories" icon={ShoppingBag} label="Shop" />
-          <TabItem to="/messages" icon={MessageCircle} label="Chats" badge={chatsWithUnread} />
-          <TabItem to="/wishlist" icon={Heart} label="Saved" badge={wishlist.length} />
-          <TabItem to="/profile" icon={CircleUser} label="You" />
+        <ul className="relative flex flex-row items-stretch gap-0.5 max-w-2xl mx-auto px-1 h-[56px]">
+          <TabItem to="/home" iconOutline={IoHomeOutline} iconFilled={IoHome} label="Home" />
+          <TabItem to="/categories" iconOutline={IoBagHandleOutline} iconFilled={IoBagHandle} label="Shop" />
+          <TabItem to="/messages" iconOutline={IoChatbubbleOutline} iconFilled={IoChatbubble} label="Chats" badge={chatsWithUnread} />
+          <TabItem to="/wishlist" iconOutline={IoHeartOutline} iconFilled={IoHeart} label="Saved" badge={wishlist.length} />
+          <TabItem to="/profile" iconOutline={IoPersonOutline} iconFilled={IoPerson} label="You" />
         </ul>
       </nav>
 
