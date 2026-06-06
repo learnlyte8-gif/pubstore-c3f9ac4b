@@ -8,6 +8,7 @@ import { ProductDetailScreen } from '@/screens/ProductDetailScreen';
 import { CartScreen } from '@/screens/CartScreen';
 import { RidesScreen } from '@/screens/RidesScreen';
 import { WebFallbackScreen } from '@/screens/WebFallbackScreen';
+import { ThreadScreen } from '@/screens/ThreadScreen';
 import { supabase } from '@/services/supabase';
 
 export type RootStackParamList = {
@@ -18,6 +19,7 @@ export type RootStackParamList = {
   ProductDetail: { id: string };
   Cart: undefined;
   Rides: undefined;
+  Thread: { conversationId: string; title?: string };
   WebFallback: { path: string; title?: string };
 };
 
@@ -53,6 +55,7 @@ export function RootNavigator() {
       <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
       <Stack.Screen name="Cart" component={CartScreen} />
       <Stack.Screen name="Rides" component={RidesScreen} />
+      <Stack.Screen name="Thread" component={ThreadScreen} />
       <Stack.Screen name="WebFallback" component={WebFallbackScreen} />
     </Stack.Navigator>
   );
