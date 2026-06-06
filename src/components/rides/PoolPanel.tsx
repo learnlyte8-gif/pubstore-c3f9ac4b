@@ -404,7 +404,7 @@ function HostedTripRow({ trip }: { trip: SharedTrip }) {
               </div>
               {j.status === "pending" && (
                 <div className="flex items-center gap-1">
-                  <button onClick={() => decide(j.id, "accepted")} className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center"><CheckCircle2 className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => decide(j.id, "accepted")} className="w-7 h-7 rounded-full rides-cta flex items-center justify-center"><CheckCircle2 className="w-3.5 h-3.5" /></button>
                   <button onClick={() => decide(j.id, "declined")} className="w-7 h-7 rounded-full bg-muted text-foreground flex items-center justify-center"><XCircle className="w-3.5 h-3.5" /></button>
                 </div>
               )}
