@@ -139,18 +139,17 @@ export default function ActiveRideMonitor() {
   return (
     <Link
       to="/rides"
-      className="fixed left-1/2 -translate-x-1/2 bottom-[5.25rem] z-[60] w-[min(92vw,420px)]
-                 flex items-center gap-3 px-3 py-2.5 rounded-2xl
-                 bg-foreground text-background shadow-xl ring-1 ring-foreground/10
+      className="rides-theme fixed left-1/2 -translate-x-1/2 bottom-[5.25rem] z-[60] w-[min(92vw,420px)]
+                 flex items-center gap-3 px-3 py-2.5 rounded-2xl rides-glass
                  active:scale-[0.99] transition"
     >
-      <span className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl bg-background/15">
+      <span className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(var(--rides-mint)/0.12)] text-[hsl(var(--rides-mint))]">
         <Car className="h-4 w-4" />
-        <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse ring-2 ring-foreground" />
+        <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[hsl(var(--rides-mint))] rides-pulse ring-2 ring-white" />
       </span>
       <div className="flex-1 min-w-0">
-        <div className="text-[12px] font-semibold leading-tight truncate">{meta.title}</div>
-        <div className="text-[11px] opacity-80 truncate">
+        <div className="text-[12px] font-semibold leading-tight truncate text-[hsl(var(--rides-fg))]" style={{ fontFamily: "'Sora', sans-serif" }}>{meta.title}</div>
+        <div className="text-[11px] truncate text-[hsl(var(--rides-muted))]">
           {ride.dropoff_address ?? "Tap to view your ride"}
           {fare ? ` · $${Number(fare).toFixed(2)}` : ""}
         </div>
@@ -159,10 +158,11 @@ export default function ActiveRideMonitor() {
         type="button"
         onClick={dismiss}
         aria-label="Dismiss"
-        className="h-7 w-7 rounded-full inline-flex items-center justify-center bg-background/10 hover:bg-background/20"
+        className="h-7 w-7 rounded-full inline-flex items-center justify-center bg-[hsl(var(--rides-surface-2))] text-[hsl(var(--rides-muted))] hover:bg-[hsl(var(--rides-border))]"
       >
         <X className="h-3.5 w-3.5" />
       </button>
     </Link>
   );
 }
+
