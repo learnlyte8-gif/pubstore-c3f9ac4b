@@ -510,7 +510,7 @@ export default function WalletPage() {
         <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
           {isLoading ? (
             <p className="p-6 text-center text-sm text-muted-foreground"><CircleSpinner size={28} /></p>
-          {(() => {
+          ) : (() => {
             const filtered = transactions.filter((t) => txTab === "all" ? true : (t.account ?? "personal") === txTab);
             if (filtered.length === 0) {
               return <p className="p-6 text-center text-sm text-muted-foreground">No {txTab === "all" ? "" : txTab + " "}transactions yet.</p>;
