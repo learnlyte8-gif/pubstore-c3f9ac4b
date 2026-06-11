@@ -25,16 +25,30 @@ interface Props {
 export default function AddAdDialog({ open, onOpenChange }: Props) {
   const qc = useQueryClient();
   const { data: supplier } = useQuery({ queryKey: ["my-supplier"], queryFn: fetchMySupplier });
+  const { data: adInfo } = useQuery({
+    queryKey: ["my-supplier-ad-info", supplier?.id],
+    queryFn: async () => {
+      if (!supplier?.id) return null;
+      const { data } = await supabase
+        .from("suppliers")
+        .select("ad_credits_used, ad_pro")
+        .eq("id", supplier.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!supplier && open,
+  });
   const { data: products = [] } = useQuery({
     queryKey: ["my-products", supplier?.id],
     queryFn: () => (supplier ? fetchProducts({ supplierId: supplier.id }) : Promise.resolve([])),
     enabled: !!supplier && open,
   });
 
-  const used = (supplier as any)?.adCreditsUsed ?? (supplier as any)?.ad_credits_used ?? 0;
-  const isPro = !!((supplier as any)?.adPro ?? (supplier as any)?.ad_pro);
+  const used = adInfo?.ad_credits_used ?? 0;
+  const isPro = !!adInfo?.ad_pro;
   const remainingFree = Math.max(0, FREE_TRIALS - used);
   const needsPayment = !isPro && remainingFree === 0;
+
 
   const [picked, setPicked] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
