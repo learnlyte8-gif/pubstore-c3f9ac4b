@@ -277,8 +277,12 @@ export const mapProduct = (p: DbProduct | DbProductWithSupplier): Product => {
     specs: Array.isArray(p.specs) ? (p.specs as { label: string; value: string }[]) : [],
     description: p.description ?? "",
     dealEndsAt: p.deal_ends_at ?? null,
+    adHasReel: !!p.ad_has_reel,
+    adHeadline: p.ad_headline ?? null,
+    adTagline: p.ad_tagline ?? null,
   };
 };
+
 
 // ---------- Mirror helpers ----------
 const masterCache = new Map<string, string>();
