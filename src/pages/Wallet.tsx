@@ -20,7 +20,7 @@ type Pending = { orderID: string; amount: number };
 type Provider = "paypal" | "pesepay" | "simulate";
 
 export default function WalletPage() {
-  const { balance, transactions, isLoading, userId, refresh } = useWallet();
+  const { balance, personalBalance, salesBalance, transactions, isLoading, userId, refresh, moveSalesToPersonal } = useWallet();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selected, setSelected] = useState<number | null>(null);
@@ -30,6 +30,11 @@ export default function WalletPage() {
   const [customAmount, setCustomAmount] = useState<string>("");
   const [sendOpen, setSendOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawAccount, setWithdrawAccount] = useState<"personal" | "sales">("personal");
+  const [txTab, setTxTab] = useState<"all" | "personal" | "sales">("all");
+  const [moveAmount, setMoveAmount] = useState("");
+  const [moving, setMoving] = useState(false);
+
 
   const { data: withdrawals = [], refetch: refetchWithdrawals } = useQuery({
     queryKey: ["withdrawals", userId],
