@@ -224,6 +224,13 @@ export default function Account() {
         </div>
       )}
 
+      {/* MyStore unique flow embedded below levels */}
+      <div className="mt-4">
+        <p className="px-5 text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">My store</p>
+        <MyStore />
+      </div>
+
+
       {/* Sections */}
       <div className="px-4 mt-6 space-y-4">
         <Section title="My Orders">
