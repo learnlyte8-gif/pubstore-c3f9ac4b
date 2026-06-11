@@ -289,3 +289,28 @@ function Row({ icon: Icon, label, hint, to }: { icon: LucideIcon; label: string;
     </Link>
   );
 }
+
+function TierProgressRow({ label, tier, points }: { label: string; tier: "bronze" | "silver" | "gold"; points: number }) {
+  const next = tier === "gold" ? null : tier === "silver" ? 300 : 100;
+  const base = tier === "silver" ? 100 : 0;
+  const pct = next ? Math.min(100, Math.max(0, ((points - base) / (next - base)) * 100)) : 100;
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold">{label}</span>
+          <TierBadge tier={tier} size="xs" />
+        </div>
+        <span className="text-[11px] text-muted-foreground tabular-nums">
+          {Math.round(points)}{next ? ` / ${next} pts` : " pts · max"}
+        </span>
+      </div>
+      <div className="h-2 rounded-full bg-muted overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-amber-400 to-amber-600 transition-all"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
