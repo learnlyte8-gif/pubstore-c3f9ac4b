@@ -111,6 +111,18 @@ export default function AppShell() {
               <span className="font-brand text-[18px] tracking-[0.02em] leading-none truncate">PUBSTORE</span>
             </Link>
 
+            {session && tierInfo && (
+              <Link
+                to="/profile"
+                aria-label={`Your level: ${tier}`}
+                className="shrink-0 active:scale-95 transition"
+              >
+                <TierBadge tier={tier} role="buyer" size="xs" />
+              </Link>
+            )}
+
+
+
 
 
             <button
