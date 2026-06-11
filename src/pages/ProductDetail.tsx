@@ -8,6 +8,8 @@ import { tierPriceFor, discountPct, type Product } from "@/data/products";
 import { useProduct, useSupplier, useTierPrices, useReviews, useProducts } from "@/hooks/useCatalog";
 import { useShop } from "@/store/shop";
 import { Button } from "@/components/ui/button";
+import AdReel from "@/components/marketplace/AdReel";
+
 import ProductGallery from "@/components/marketplace/ProductGallery";
 import SupplierCard from "@/components/marketplace/SupplierCard";
 import ProductCard from "@/components/marketplace/ProductCard";
