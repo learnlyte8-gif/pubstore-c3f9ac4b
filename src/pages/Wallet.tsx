@@ -510,29 +510,39 @@ export default function WalletPage() {
         <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
           {isLoading ? (
             <p className="p-6 text-center text-sm text-muted-foreground"><CircleSpinner size={28} /></p>
-          ) : transactions.length === 0 ? (
-            <p className="p-6 text-center text-sm text-muted-foreground">No transactions yet. Add money to get started.</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {transactions.map((t) => {
-                const isCredit = Number(t.amount) > 0;
-                return (
-                  <li key={t.id} className="flex items-center gap-3 px-4 py-3">
-                    <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${isCredit ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-destructive/15 text-destructive"}`}>
-                      {isCredit ? <ArrowDownLeft className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold truncate">{t.description ?? t.kind}</p>
-                      <p className="text-[11px] text-muted-foreground">{new Date(t.created_at).toLocaleString()}</p>
-                    </div>
-                    <p className={`text-sm font-black tabular-nums tracking-tight ${isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
-                      {isCredit ? "+" : ""}{fmt(Number(t.amount))}
-                    </p>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          {(() => {
+            const filtered = transactions.filter((t) => txTab === "all" ? true : (t.account ?? "personal") === txTab);
+            if (filtered.length === 0) {
+              return <p className="p-6 text-center text-sm text-muted-foreground">No {txTab === "all" ? "" : txTab + " "}transactions yet.</p>;
+            }
+            return (
+              <ul className="divide-y divide-border">
+                {filtered.map((t) => {
+                  const isCredit = Number(t.amount) > 0;
+                  const acct = t.account ?? "personal";
+                  return (
+                    <li key={t.id} className="flex items-center gap-3 px-4 py-3">
+                      <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${isCredit ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-destructive/15 text-destructive"}`}>
+                        {isCredit ? <ArrowDownLeft className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold truncate">{t.description ?? t.kind}</p>
+                        <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-black ${acct === "sales" ? "bg-amber-500/15 text-amber-700 dark:text-amber-300" : "bg-primary/15 text-primary"}`}>
+                            {acct}
+                          </span>
+                          {new Date(t.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                      <p className={`text-sm font-black tabular-nums tracking-tight ${isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                        {isCredit ? "+" : ""}{fmt(Number(t.amount))}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ul>
+            );
+          })()}
         </div>
       </div>
 
