@@ -20,6 +20,7 @@ import { useUnreadChats } from "@/hooks/useUnreadChats";
 import logo from "@/assets/pubstore-logo.png";
 import { useStatusBarSync } from "@/hooks/useStatusBarSync";
 import { useMyTier, type Tier } from "@/hooks/useUserTier";
+import TierBadge from "@/components/TierBadge";
 
 const TIER_HSL: Record<Tier, string> = {
   bronze: "30 65% 45%",
@@ -109,6 +110,18 @@ export default function AppShell() {
               <img src={logo} alt="" className="w-7 h-7 shrink-0" />
               <span className="font-brand text-[18px] tracking-[0.02em] leading-none truncate">PUBSTORE</span>
             </Link>
+
+            {session && tierInfo && (
+              <Link
+                to="/profile"
+                aria-label={`Your level: ${tier}`}
+                className="shrink-0 active:scale-95 transition"
+              >
+                <TierBadge tier={tier} role="buyer" size="xs" />
+              </Link>
+            )}
+
+
 
 
 

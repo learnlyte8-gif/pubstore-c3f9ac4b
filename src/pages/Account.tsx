@@ -10,6 +10,7 @@ import { useShop } from "@/store/shop";
 import { useWallet } from "@/hooks/useWallet";
 import { useMyTier } from "@/hooks/useUserTier";
 import TierBadge from "@/components/TierBadge";
+import MyStore from "@/pages/MyStore";
 
 type Profile = {
   display_name: string | null;
@@ -222,6 +223,13 @@ export default function Account() {
           </div>
         </div>
       )}
+
+      {/* MyStore unique flow embedded below levels */}
+      <div className="mt-4">
+        <p className="px-5 text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">My store</p>
+        <MyStore />
+      </div>
+
 
       {/* Sections */}
       <div className="px-4 mt-6 space-y-4">
