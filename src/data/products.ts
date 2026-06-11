@@ -193,7 +193,11 @@ type DbProduct = {
   review_count: number | null;
   sold: number | null;
   deal_ends_at?: string | null;
+  ad_has_reel?: boolean | null;
+  ad_headline?: string | null;
+  ad_tagline?: string | null;
 };
+
 
 const PLACEHOLDER_IMG = "/placeholder.svg";
 
