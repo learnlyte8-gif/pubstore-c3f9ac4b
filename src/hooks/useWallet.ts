@@ -2,13 +2,16 @@ import { useCallback, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export type WalletAccount = "personal" | "sales";
+
 export type WalletTx = {
   id: string;
-  kind: "topup" | "purchase" | "refund" | "adjustment";
+  kind: "topup" | "purchase" | "refund" | "adjustment" | "transfer_in" | "transfer_out" | "withdrawal_hold" | "payout" | "sale" | "sales_to_personal_in" | "sales_to_personal_out";
   amount: number;
   balance_after: number;
   description: string | null;
   reference: string | null;
+  account: WalletAccount;
   created_at: string;
 };
 
@@ -31,13 +34,16 @@ export function useWallet() {
   const balanceQuery = useQuery({
     queryKey: ["wallet", userId],
     enabled: !!userId,
-    queryFn: async (): Promise<number> => {
+    queryFn: async (): Promise<{ personal: number; sales: number }> => {
       const { data } = await sb
         .from("wallets")
-        .select("balance")
+        .select("balance, sales_balance")
         .eq("user_id", userId!)
         .maybeSingle();
-      return Number(data?.balance ?? 0);
+      return {
+        personal: Number(data?.balance ?? 0),
+        sales: Number(data?.sales_balance ?? 0),
+      };
     },
   });
 
@@ -50,7 +56,7 @@ export function useWallet() {
         .select("*")
         .eq("user_id", userId!)
         .order("created_at", { ascending: false })
-        .limit(30);
+        .limit(60);
       return (data ?? []) as WalletTx[];
     },
   });
@@ -60,7 +66,6 @@ export function useWallet() {
     qc.invalidateQueries({ queryKey: ["wallet-tx", userId] });
   }, [qc, userId]);
 
-  // Live updates when a tx is inserted (top-up, purchase, refund).
   useEffect(() => {
     if (!userId) return;
     const ch = supabase
@@ -74,7 +79,7 @@ export function useWallet() {
     return () => { supabase.removeChannel(ch); };
   }, [userId, refresh]);
 
-  /** Pay an existing order from the wallet. Throws on insufficient balance. */
+  /** Pay an existing order from the wallet (personal balance). */
   const payOrder = useCallback(async (orderId: string) => {
     const { data, error } = await sb.rpc("pay_order_with_wallet", { _order_id: orderId });
     if (error) throw error;
@@ -82,12 +87,27 @@ export function useWallet() {
     return data as WalletTx;
   }, [refresh]);
 
+  /** Move funds from sales balance to personal balance. */
+  const moveSalesToPersonal = useCallback(async (amount: number) => {
+    const { error } = await sb.rpc("move_sales_to_personal", { _amount: amount });
+    if (error) throw error;
+    refresh();
+  }, [refresh]);
+
+  const personal = balanceQuery.data?.personal ?? 0;
+  const sales = balanceQuery.data?.sales ?? 0;
+
   return {
     userId,
-    balance: balanceQuery.data ?? 0,
+    /** Personal balance (top-ups, transfers, refunds). Used at checkout & transfers. */
+    balance: personal,
+    personalBalance: personal,
+    salesBalance: sales,
+    totalBalance: personal + sales,
     isLoading: balanceQuery.isLoading,
     transactions: txQuery.data ?? [],
     refresh,
     payOrder,
+    moveSalesToPersonal,
   };
 }
