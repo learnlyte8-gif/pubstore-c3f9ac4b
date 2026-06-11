@@ -41,7 +41,7 @@ export default function AppShell() {
   const { info: tierInfo } = useMyTier();
   const tier: Tier = tierInfo?.buyer_tier ?? "bronze";
   const tierHsl = TIER_HSL[tier];
-  const headerGradient = `linear-gradient(135deg, hsl(var(--primary) / 0.14) 0%, hsl(var(--background)) 45%, hsl(${tierHsl} / 0.22) 100%)`;
+  const headerGradient = `linear-gradient(135deg, hsl(var(--primary) / 0.45) 0%, hsl(var(--background)) 55%, hsl(${tierHsl} / 0.65) 100%)`;
   
   
 
