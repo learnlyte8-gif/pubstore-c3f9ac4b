@@ -19,8 +19,19 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY")!;
-const VAPID_SUBJECT =
-  Deno.env.get("VAPID_SUBJECT") ?? "mailto:hello@pubstore.world";
+// Apple Web Push (BadJwtToken) is extremely strict about the VAPID `sub` claim:
+// it MUST start with `mailto:` or `https://`. Sanitize whatever the secret holds
+// so a bare email or stray whitespace doesn't break every iOS notification.
+function normalizeVapidSubject(raw: string | undefined): string {
+  const fallback = "mailto:hello@pubstore.world";
+  const v = (raw ?? "").trim();
+  if (!v) return fallback;
+  if (v.startsWith("mailto:") || v.startsWith("https://")) return v;
+  if (v.startsWith("http://")) return "https://" + v.slice("http://".length);
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return `mailto:${v}`;
+  return fallback;
+}
+const VAPID_SUBJECT = normalizeVapidSubject(Deno.env.get("VAPID_SUBJECT"));
 
 function base64UrlToBuffer(value: string) {
   const padding = "=".repeat((4 - (value.length % 4)) % 4);
