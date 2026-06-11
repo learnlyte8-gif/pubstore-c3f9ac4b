@@ -10,11 +10,15 @@ export function useStatusBarSync() {
   useEffect(() => {
     const apply = async () => {
       const styles = getComputedStyle(document.documentElement);
-      const bg = styles.getPropertyValue("--background").trim(); // "0 0% 100%"
-      if (!bg) return;
-      const hsl = `hsl(${bg})`;
-      // Convert to hex for theme-color (some browsers reject hsl())
-      const hex = hslStringToHex(bg) || "#ffffff";
+      // Allow overrides via --statusbar (full color) or --statusbar-hsl (triplet).
+      const override = styles.getPropertyValue("--statusbar").trim();
+      const overrideHsl = styles.getPropertyValue("--statusbar-hsl").trim();
+      const bg = overrideHsl || styles.getPropertyValue("--background").trim();
+      if (!bg && !override) return;
+      const hsl = override || `hsl(${bg})`;
+      const hex = override.startsWith("#")
+        ? override
+        : hslStringToHex(bg) || "#ffffff";
 
       // Remove media-scoped theme-color metas to avoid conflicts.
       document
