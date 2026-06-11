@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Promo3DCarousel from "@/components/marketplace/Promo3DCarousel";
 import ProductCard from "@/components/marketplace/ProductCard";
+import AdReel from "@/components/marketplace/AdReel";
+
 import TopSuppliers from "@/components/marketplace/TopSuppliers";
 import VerticalFeed from "@/components/marketplace/VerticalFeed";
 import LiveStatsBanner from "@/components/marketplace/LiveStatsBanner";
