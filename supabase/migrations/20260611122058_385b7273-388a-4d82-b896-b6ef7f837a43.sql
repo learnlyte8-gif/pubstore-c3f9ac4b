@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.apply_wallet_transaction(uuid, text, numeric, text, text);
