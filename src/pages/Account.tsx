@@ -10,6 +10,7 @@ import { useShop } from "@/store/shop";
 import { useWallet } from "@/hooks/useWallet";
 import { useMyTier } from "@/hooks/useUserTier";
 import TierBadge from "@/components/TierBadge";
+import MyStore from "@/pages/MyStore";
 
 type Profile = {
   display_name: string | null;
