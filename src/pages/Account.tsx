@@ -224,10 +224,24 @@ export default function Account() {
         </div>
       )}
 
-      {/* MyStore unique flow embedded below levels */}
-      <div className="mt-4">
-        <p className="px-5 text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">My store</p>
-        <MyStore />
+      {/* MyStore unique entry below levels */}
+      <div className="px-4 mt-4">
+        <Link
+          to="/store"
+          className="group relative block overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/10 via-card to-accent/20 p-4 shadow-card hover:shadow-elevated transition"
+        >
+          <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-primary/20 blur-2xl" />
+          <div className="relative flex items-center gap-3">
+            <span className="w-11 h-11 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shadow-soft">
+              <Store className="w-5 h-5" strokeWidth={2.2} />
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-black tracking-tight">Open MyStore</p>
+              <p className="text-[11px] text-muted-foreground truncate">Manage products, orders & analytics</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition" />
+          </div>
+        </Link>
       </div>
 
 
