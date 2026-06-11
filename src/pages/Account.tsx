@@ -29,6 +29,7 @@ export default function Account() {
   const [isGuest, setIsGuest] = useState(false);
   const { wishlist, cartCount } = useShop();
   const { balance, transactions } = useWallet();
+  const { info: tierInfo } = useMyTier();
 
   useEffect(() => {
     (async () => {
