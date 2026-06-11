@@ -5175,60 +5175,33 @@ export type Database = {
     }
     Functions: {
       _send_product_suggestions: { Args: never; Returns: undefined }
-      apply_wallet_transaction:
-        | {
-            Args: {
-              _amount: number
-              _description?: string
-              _kind: string
-              _reference?: string
-              _user_id: string
-            }
-            Returns: {
-              account: string
-              amount: number
-              balance_after: number
-              created_at: string
-              description: string | null
-              id: string
-              kind: string
-              reference: string | null
-              user_id: string
-            }
-            SetofOptions: {
-              from: "*"
-              to: "wallet_transactions"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
-        | {
-            Args: {
-              _account?: string
-              _amount: number
-              _description?: string
-              _kind: string
-              _reference?: string
-              _user_id: string
-            }
-            Returns: {
-              account: string
-              amount: number
-              balance_after: number
-              created_at: string
-              description: string | null
-              id: string
-              kind: string
-              reference: string | null
-              user_id: string
-            }
-            SetofOptions: {
-              from: "*"
-              to: "wallet_transactions"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
+      apply_wallet_transaction: {
+        Args: {
+          _account?: string
+          _amount: number
+          _description?: string
+          _kind: string
+          _reference?: string
+          _user_id: string
+        }
+        Returns: {
+          account: string
+          amount: number
+          balance_after: number
+          created_at: string
+          description: string | null
+          id: string
+          kind: string
+          reference: string | null
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "wallet_transactions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       cancel_withdrawal_request: {
         Args: { _id: string }
         Returns: {
