@@ -672,6 +672,8 @@ function ProductsView() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showCatPicker, setShowCatPicker] = useState(false);
   const [working, setWorking] = useState(false);
+  const [adOpen, setAdOpen] = useState(false);
+
 
   const toggle = (id: string) => {
     setSelected((prev) => {
