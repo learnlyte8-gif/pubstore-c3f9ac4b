@@ -179,10 +179,11 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
             </span>
           )}
           {product.adHasReel && (
-            <span className="absolute top-1.5 right-1.5 inline-flex items-center gap-0.5 bg-gradient-to-r from-fuchsia-500 to-primary text-white text-[9px] font-bold px-1.5 py-0.5 rounded animate-pulse">
+            <span className={`absolute ${off > 0 ? "top-7" : "top-1.5"} left-1.5 inline-flex items-center gap-0.5 bg-gradient-to-r from-fuchsia-500 to-primary text-white text-[9px] font-bold px-1.5 py-0.5 rounded animate-pulse`}>
               <Sparkles className="w-2.5 h-2.5" /> Reel
             </span>
           )}
+
 
           {product.moq && product.moq > 1 && (
             <span className="absolute bottom-1.5 left-1.5 bg-background/90 backdrop-blur text-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-border inline-flex items-center gap-0.5">
