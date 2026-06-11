@@ -3,13 +3,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Smartphone, Landmark, CreditCard, ArrowUpRight, Loader2 } from "lucide-react";
+import { Smartphone, Landmark, CreditCard, ArrowUpRight, Loader2, Wallet, Store } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const sb = supabase as any;
 
 type Method = "ecocash" | "onemoney" | "bank" | "paypal";
+type Account = "personal" | "sales";
 
 const METHODS: { id: Method; label: string; hint: string; icon: typeof Smartphone; placeholder: string }[] = [
   { id: "ecocash", label: "EcoCash", hint: "Mobile money", icon: Smartphone, placeholder: "077 123 4567" },
@@ -19,8 +20,16 @@ const METHODS: { id: Method; label: string; hint: string; icon: typeof Smartphon
 ];
 
 export default function WithdrawDialog({
-  open, onOpenChange, balance, onSubmitted,
-}: { open: boolean; onOpenChange: (v: boolean) => void; balance: number; onSubmitted?: () => void }) {
+  open, onOpenChange, personalBalance, salesBalance, defaultAccount = "personal", onSubmitted,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  personalBalance: number;
+  salesBalance: number;
+  defaultAccount?: Account;
+  onSubmitted?: () => void;
+}) {
+  const [account, setAccount] = useState<Account>(defaultAccount);
   const [method, setMethod] = useState<Method>("ecocash");
   const [amount, setAmount] = useState("");
   const [destination, setDestination] = useState("");
@@ -29,16 +38,18 @@ export default function WithdrawDialog({
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    if (open) setAccount(defaultAccount);
     if (!open) { setAmount(""); setDestination(""); setAccountName(""); setNotes(""); }
-  }, [open]);
+  }, [open, defaultAccount]);
 
   const current = METHODS.find((m) => m.id === method)!;
+  const balance = account === "sales" ? salesBalance : personalBalance;
   const numAmount = Number(amount);
   const valid = Number.isFinite(numAmount) && numAmount >= 5 && numAmount <= balance && destination.trim().length >= 3;
 
   const submit = async () => {
     if (!valid) {
-      if (numAmount > balance) toast.error("Amount exceeds your balance");
+      if (numAmount > balance) toast.error(`Amount exceeds your ${account} balance`);
       else toast.error("Please complete the form (min $5)");
       return;
     }
@@ -50,9 +61,10 @@ export default function WithdrawDialog({
         _destination: destination.trim(),
         _account_name: accountName.trim() || null,
         _notes: notes.trim() || null,
+        _account: account,
       });
       if (error) throw error;
-      toast.success(`Withdrawal of $${numAmount.toFixed(2)} requested`);
+      toast.success(`Withdrawal of $${numAmount.toFixed(2)} from ${account} requested`);
       onOpenChange(false);
       onSubmitted?.();
     } catch (e: any) {
@@ -64,7 +76,7 @@ export default function WithdrawDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
@@ -73,11 +85,42 @@ export default function WithdrawDialog({
             Request withdrawal
           </DialogTitle>
           <DialogDescription>
-            Available balance · <span className="font-bold text-foreground tabular-nums">${balance.toFixed(2)}</span>
+            Choose which balance to withdraw from. Personal and sales funds are kept separate.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Account picker */}
+          <div>
+            <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Withdraw from</Label>
+            <div className="grid grid-cols-2 gap-2 mt-1.5">
+              {([
+                { id: "personal" as const, label: "Personal", hint: "Top-ups & transfers", icon: Wallet, bal: personalBalance },
+                { id: "sales" as const, label: "Sales", hint: "Earnings from sales", icon: Store, bal: salesBalance },
+              ]).map((a) => {
+                const Icon = a.icon;
+                const active = account === a.id;
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => setAccount(a.id)}
+                    className={`p-3 rounded-xl border text-left transition ${active ? "border-primary bg-primary/10 ring-2 ring-primary/30" : "border-border bg-muted/40"}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`w-7 h-7 rounded-lg flex items-center justify-center ${active ? "bg-primary/20 text-primary" : "bg-background"}`}>
+                        <Icon className="w-3.5 h-3.5" />
+                      </span>
+                      <span className="text-xs font-black">{a.label}</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1">{a.hint}</p>
+                    <p className="text-sm font-black tabular-nums mt-0.5">${a.bal.toFixed(2)}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div>
             <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Payout method</Label>
             <div className="grid grid-cols-2 gap-2 mt-1.5">
@@ -122,7 +165,7 @@ export default function WithdrawDialog({
                 className="pl-7 font-black tabular-nums"
               />
             </div>
-            <div className="flex gap-1.5 mt-2">
+            <div className="flex gap-1.5 mt-2 flex-wrap">
               {[10, 25, 50, 100].filter((q) => q <= balance).map((q) => (
                 <button key={q} type="button" onClick={() => setAmount(String(q))} className="px-2.5 h-7 rounded-full text-[11px] font-bold bg-muted hover:bg-primary/10">
                   ${q}
@@ -130,7 +173,7 @@ export default function WithdrawDialog({
               ))}
               {balance >= 5 && (
                 <button type="button" onClick={() => setAmount(balance.toFixed(2))} className="px-2.5 h-7 rounded-full text-[11px] font-bold bg-primary/10 text-primary">
-                  All
+                  All ${balance.toFixed(2)}
                 </button>
               )}
             </div>
@@ -152,7 +195,7 @@ export default function WithdrawDialog({
           </div>
 
           <p className="text-[11px] text-muted-foreground">
-            Funds are held on your wallet immediately. Payouts usually clear within 1–3 business days. You can cancel a pending request for a full refund.
+            Funds are held on your {account} balance immediately. Payouts usually clear within 1–3 business days. You can cancel a pending request for a full refund to the same balance.
           </p>
 
           <div className="flex gap-2">
