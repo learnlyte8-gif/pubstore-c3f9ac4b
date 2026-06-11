@@ -142,6 +142,7 @@ const Home = () => {
             </Link>
           )}
 
+          {/* Product-dependent rails: show skeleton while loading, empty state if no products */}
           {isLoading ? (
             <HomeRailsSkeleton />
           ) : products.length === 0 ? (
@@ -203,14 +204,9 @@ const Home = () => {
                 </section>
               )}
 
-              <JobsRail />
-
               <section className="px-4 mt-6">
                 <RecommendationStrip />
               </section>
-
-
-
 
               {suppliers.length > 0 && (
                 <section className="px-4 mt-6">
@@ -237,33 +233,28 @@ const Home = () => {
                 <SectionHeader icon={Award} title="Brand spotlight" subtitle="Featured collections" />
                 <BrandSpotlight />
               </section>
-
-              <NewsRail />
-
-              <RestaurantsRail />
-
-              <StaysRail />
-
-
-              <AutoRail />
-
-              <ServicesRail />
-
-              <CarRentalsRail />
-
-              <PropertiesRail />
-
-              <FinanceRail />
-
-              <IndustrialRail />
-
-              <AgroRail />
-
-              <section className="px-4 mt-6">
-                <SectionHeader icon={LayoutGrid} title="Explore catalog" subtitle="Mixed picks, ads & ideas" />
-                <MixedCatalogGrid products={products.slice(6)} hero={products[0]} />
-              </section>
             </>
+          )}
+
+          {/* Non-product rails — always render, independent of products query.
+              Each rail handles its own loading / empty state (returns null if empty). */}
+          <JobsRail />
+          <NewsRail />
+          <RestaurantsRail />
+          <StaysRail />
+          <AutoRail />
+          <ServicesRail />
+          <CarRentalsRail />
+          <PropertiesRail />
+          <FinanceRail />
+          <IndustrialRail />
+          <AgroRail />
+
+          {!isLoading && products.length > 0 && (
+            <section className="px-4 mt-6">
+              <SectionHeader icon={LayoutGrid} title="Explore catalog" subtitle="Mixed picks, ads & ideas" />
+              <MixedCatalogGrid products={products.slice(6)} hero={products[0]} />
+            </section>
           )}
         </div>
       )}
