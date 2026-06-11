@@ -238,36 +238,54 @@ export default function WalletPage() {
           <div className="rounded-2xl bg-primary-foreground/10 backdrop-blur-md border border-primary-foreground/20 p-4 shadow-elevated">
             <div className="flex items-center gap-2 mb-1.5">
               <Wallet className="w-4 h-4" />
-              <p className="text-[11px] font-bold uppercase tracking-wider opacity-90">Available balance</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider opacity-90">Personal balance</p>
             </div>
-            <p className="text-4xl font-black tracking-tighter tabular-nums leading-none">{fmt(balance)}</p>
-            <p className="text-[11px] opacity-75 mt-2">Use at checkout on any product, any supplier.</p>
+            <p className="text-4xl font-black tracking-tighter tabular-nums leading-none">{fmt(personalBalance)}</p>
+            <p className="text-[11px] opacity-75 mt-2">Top-ups & transfers. Use at checkout on any product.</p>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 mt-3">
+          <div className="rounded-2xl bg-primary-foreground/10 backdrop-blur-md border border-primary-foreground/20 p-4 shadow-elevated mt-2">
+            <div className="flex items-center gap-2 mb-1.5">
+              <Store className="w-4 h-4" />
+              <p className="text-[11px] font-bold uppercase tracking-wider opacity-90">Sales balance</p>
+            </div>
+            <p className="text-3xl font-black tracking-tighter tabular-nums leading-none">{fmt(salesBalance)}</p>
+            <p className="text-[11px] opacity-75 mt-2">Earnings from sales. Withdraw or move to personal.</p>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2 mt-3">
             <button
               onClick={() => setSendOpen(true)}
-              disabled={!userId}
-              className="h-11 rounded-xl bg-primary-foreground text-primary font-black text-xs flex items-center justify-center gap-1 disabled:opacity-50 shadow-soft"
+              disabled={!userId || personalBalance <= 0}
+              className="h-11 rounded-xl bg-primary-foreground text-primary font-black text-[11px] flex items-center justify-center gap-1 disabled:opacity-50 shadow-soft"
             >
               <Send className="w-3.5 h-3.5" /> Send
             </button>
             <a
               href="#add-money"
-              className="h-11 rounded-xl bg-primary-foreground/15 backdrop-blur border border-primary-foreground/30 text-primary-foreground font-black text-xs flex items-center justify-center gap-1"
+              className="h-11 rounded-xl bg-primary-foreground/15 backdrop-blur border border-primary-foreground/30 text-primary-foreground font-black text-[11px] flex items-center justify-center gap-1"
             >
               <Plus className="w-3.5 h-3.5" /> Add
             </a>
             <button
-              onClick={() => setWithdrawOpen(true)}
-              disabled={!userId || balance < 5}
-              className="h-11 rounded-xl bg-primary-foreground/15 backdrop-blur border border-primary-foreground/30 text-primary-foreground font-black text-xs flex items-center justify-center gap-1 disabled:opacity-40"
+              onClick={() => { setWithdrawAccount(salesBalance >= 5 ? "sales" : "personal"); setWithdrawOpen(true); }}
+              disabled={!userId || (personalBalance < 5 && salesBalance < 5)}
+              className="h-11 rounded-xl bg-primary-foreground/15 backdrop-blur border border-primary-foreground/30 text-primary-foreground font-black text-[11px] flex items-center justify-center gap-1 disabled:opacity-40"
             >
               <Banknote className="w-3.5 h-3.5" /> Withdraw
             </button>
+            <a
+              href="#move-funds"
+              className="h-11 rounded-xl bg-primary-foreground/15 backdrop-blur border border-primary-foreground/30 text-primary-foreground font-black text-[11px] flex items-center justify-center gap-1"
+              aria-disabled={salesBalance <= 0}
+              style={salesBalance <= 0 ? { opacity: 0.4, pointerEvents: "none" } : undefined}
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5" /> Move
+            </a>
           </div>
         </div>
       </div>
+
 
       <SendMoneyDialog
         open={sendOpen}
