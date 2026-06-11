@@ -143,13 +143,16 @@ export default function Account() {
                 )}
               </div>
               <p className="text-[11px] opacity-80 truncate">{email}</p>
-              <div className="mt-1.5 flex items-center gap-1.5">
+              <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
                 <span className="px-2 py-0.5 rounded-full bg-primary-foreground/15 backdrop-blur text-[10px] font-bold uppercase tracking-wider">
                   {role}
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-primary-foreground/15 backdrop-blur text-[10px] font-bold flex items-center gap-1">
-                  <Sparkles className="w-2.5 h-2.5" /> Member
-                </span>
+                {tierInfo && (
+                  <TierBadge tier={tierInfo.buyer_tier} role="buyer" size="xs" className="bg-primary-foreground/20 border-primary-foreground/30 text-primary-foreground" />
+                )}
+                {tierInfo && role === "supplier" && (
+                  <TierBadge tier={tierInfo.supplier_tier} role="supplier" size="xs" className="bg-primary-foreground/20 border-primary-foreground/30 text-primary-foreground" />
+                )}
               </div>
             </div>
 
