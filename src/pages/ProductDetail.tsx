@@ -140,6 +140,13 @@ export default function ProductDetail() {
 
       <ProductGallery images={product.gallery ?? [product.image]} alt={product.title} />
 
+      {product.adHasReel && (
+        <div className="px-4 pt-3">
+          <AdReel product={product} />
+        </div>
+      )}
+
+
       <section className="px-4 pt-3">
         <div className="flex items-baseline gap-2">
           <span className="text-3xl font-bold text-destructive">{fmt(unitPrice)}</span>
