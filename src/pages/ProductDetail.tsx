@@ -8,6 +8,8 @@ import { tierPriceFor, discountPct, type Product } from "@/data/products";
 import { useProduct, useSupplier, useTierPrices, useReviews, useProducts } from "@/hooks/useCatalog";
 import { useShop } from "@/store/shop";
 import { Button } from "@/components/ui/button";
+import AdReel from "@/components/marketplace/AdReel";
+
 import ProductGallery from "@/components/marketplace/ProductGallery";
 import SupplierCard from "@/components/marketplace/SupplierCard";
 import ProductCard from "@/components/marketplace/ProductCard";
@@ -137,6 +139,13 @@ export default function ProductDetail() {
       )}
 
       <ProductGallery images={product.gallery ?? [product.image]} alt={product.title} />
+
+      {product.adHasReel && (
+        <div className="px-4 pt-3">
+          <AdReel product={product} />
+        </div>
+      )}
+
 
       <section className="px-4 pt-3">
         <div className="flex items-baseline gap-2">

@@ -102,7 +102,12 @@ export type Product = {
   description?: string;
   reviewList?: Review[];
   dealEndsAt?: string | null;
+  /** AI-generated ad reel + copy (see generate-ad edge function). */
+  adHasReel?: boolean;
+  adHeadline?: string | null;
+  adTagline?: string | null;
 };
+
 
 // ---------- Categories ----------
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -188,7 +193,11 @@ type DbProduct = {
   review_count: number | null;
   sold: number | null;
   deal_ends_at?: string | null;
+  ad_has_reel?: boolean | null;
+  ad_headline?: string | null;
+  ad_tagline?: string | null;
 };
+
 
 const PLACEHOLDER_IMG = "/placeholder.svg";
 
@@ -268,8 +277,12 @@ export const mapProduct = (p: DbProduct | DbProductWithSupplier): Product => {
     specs: Array.isArray(p.specs) ? (p.specs as { label: string; value: string }[]) : [],
     description: p.description ?? "",
     dealEndsAt: p.deal_ends_at ?? null,
+    adHasReel: !!p.ad_has_reel,
+    adHeadline: p.ad_headline ?? null,
+    adTagline: p.ad_tagline ?? null,
   };
 };
+
 
 // ---------- Mirror helpers ----------
 const masterCache = new Map<string, string>();
@@ -318,7 +331,7 @@ export async function fetchProducts(opts: {
     // Narrow the column set so we never pull large `description`/`specs` blobs
     // for list views — list cards only need a handful of fields.
     .select(
-      "id, supplier_id, title, image, gallery, price, original_price, category_slug, badge, free_shipping, moq, unit, lead_time, ship_from, rating, review_count, sold, deal_ends_at, suppliers!inner(name, verified, gold, country, location_address, latitude, longitude, trade_type)"
+      "id, supplier_id, title, image, gallery, price, original_price, category_slug, badge, free_shipping, moq, unit, lead_time, ship_from, rating, review_count, sold, deal_ends_at, ad_has_reel, ad_headline, ad_tagline, suppliers!inner(name, verified, gold, country, location_address, latitude, longitude, trade_type)"
     )
     .eq("active", true);
   if (opts.category) q = q.eq("category_slug", opts.category);

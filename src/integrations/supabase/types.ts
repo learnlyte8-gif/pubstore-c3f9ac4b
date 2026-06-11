@@ -2989,6 +2989,10 @@ export type Database = {
       products: {
         Row: {
           active: boolean | null
+          ad_generated_at: string | null
+          ad_has_reel: boolean
+          ad_headline: string | null
+          ad_tagline: string | null
           badge: string | null
           category_slug: string | null
           created_at: string
@@ -3019,6 +3023,10 @@ export type Database = {
         }
         Insert: {
           active?: boolean | null
+          ad_generated_at?: string | null
+          ad_has_reel?: boolean
+          ad_headline?: string | null
+          ad_tagline?: string | null
           badge?: string | null
           category_slug?: string | null
           created_at?: string
@@ -3049,6 +3057,10 @@ export type Database = {
         }
         Update: {
           active?: boolean | null
+          ad_generated_at?: string | null
+          ad_has_reel?: boolean
+          ad_headline?: string | null
+          ad_tagline?: string | null
           badge?: string | null
           category_slug?: string | null
           created_at?: string
@@ -4548,6 +4560,8 @@ export type Database = {
       suppliers: {
         Row: {
           about: string | null
+          ad_credits_used: number
+          ad_pro: boolean
           banner: string | null
           business_type: string | null
           categories: string[]
@@ -4581,6 +4595,8 @@ export type Database = {
         }
         Insert: {
           about?: string | null
+          ad_credits_used?: number
+          ad_pro?: boolean
           banner?: string | null
           business_type?: string | null
           categories?: string[]
@@ -4614,6 +4630,8 @@ export type Database = {
         }
         Update: {
           about?: string | null
+          ad_credits_used?: number
+          ad_pro?: boolean
           banner?: string | null
           business_type?: string | null
           categories?: string[]

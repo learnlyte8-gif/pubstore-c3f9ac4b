@@ -724,3 +724,9 @@
 .rides-theme input { color: hsl(var(--rides-fg)); }
 .rides-theme input::placeholder { color: hsl(var(--rides-muted) / 0.7); }
 
+
+/* AI Ad Reel: gentle Ken-Burns zoom that gives the still image a "video" feel. */
+@keyframes reel-zoom {
+  0%   { transform: scale(1)    translate(0%, 0%); }
+  100% { transform: scale(1.12) translate(-2%, -2%); }
+}

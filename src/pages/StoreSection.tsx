@@ -13,6 +13,8 @@ import LocationPicker from "@/components/LocationPicker";
 import { useImportJob, type BulkCandidate, type ImportedProduct, type MarkupMode } from "@/store/importJob";
 import ImageUpload from "@/components/ImageUpload";
 import { uploadProductImages } from "@/lib/uploadProductImages";
+import AddAdDialog from "@/components/store/AddAdDialog";
+
 
 const titles: Record<string, { title: string; sub: string }> = {
   products: { title: "My products", sub: "Manage your catalog" },
@@ -670,6 +672,8 @@ function ProductsView() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showCatPicker, setShowCatPicker] = useState(false);
   const [working, setWorking] = useState(false);
+  const [adOpen, setAdOpen] = useState(false);
+
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -729,17 +733,29 @@ function ProductsView() {
 
   return (
     <div className="px-4 py-4 space-y-3 ">
+      <AddAdDialog open={adOpen} onOpenChange={setAdOpen} />
       {!selectMode ? (
         <div className="flex gap-2">
           <Button asChild className="flex-1 h-11">
             <Link to="/store/products/new"><Plus className="w-4 h-4 mr-2" /> Add product</Link>
           </Button>
           {products.length > 0 && (
+            <Button
+              variant="outline"
+              className="h-11 border-primary/40 text-primary hover:bg-primary/10"
+              onClick={() => setAdOpen(true)}
+              title="Create AI ad"
+            >
+              <Sparkles className="w-4 h-4 mr-1.5" /> Add ad
+            </Button>
+          )}
+          {products.length > 0 && (
             <Button variant="outline" className="h-11" onClick={() => setSelectMode(true)}>
               <CheckSquare className="w-4 h-4 mr-1.5" /> Select
             </Button>
           )}
         </div>
+
       ) : (
         <div className="flex items-center justify-between bg-primary/5 border border-primary/30 rounded-xl px-3 h-11">
           <button onClick={toggleAll} className="flex items-center gap-2 text-sm font-bold text-primary">
