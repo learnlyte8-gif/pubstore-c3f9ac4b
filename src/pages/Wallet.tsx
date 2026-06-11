@@ -298,7 +298,9 @@ export default function WalletPage() {
       <WithdrawDialog
         open={withdrawOpen}
         onOpenChange={setWithdrawOpen}
-        balance={balance}
+        personalBalance={personalBalance}
+        salesBalance={salesBalance}
+        defaultAccount={withdrawAccount}
         onSubmitted={() => { refresh(); refetchWithdrawals(); }}
       />
 
