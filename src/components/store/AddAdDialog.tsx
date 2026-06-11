@@ -79,6 +79,8 @@ export default function AddAdDialog({ open, onOpenChange }: Props) {
     qc.invalidateQueries({ queryKey: ["my-products"] });
     qc.invalidateQueries({ queryKey: ["products"] });
     qc.invalidateQueries({ queryKey: ["my-supplier"] });
+    qc.invalidateQueries({ queryKey: ["my-supplier-ad-info"] });
+
     close();
   };
 
