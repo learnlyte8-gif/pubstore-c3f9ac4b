@@ -4983,6 +4983,7 @@ export type Database = {
       }
       wallet_transactions: {
         Row: {
+          account: string
           amount: number
           balance_after: number
           created_at: string
@@ -4993,6 +4994,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account?: string
           amount: number
           balance_after?: number
           created_at?: string
@@ -5003,6 +5005,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          account?: string
           amount?: number
           balance_after?: number
           created_at?: string
@@ -5019,6 +5022,7 @@ export type Database = {
           balance: number
           created_at: string
           currency: string
+          sales_balance: number
           updated_at: string
           user_id: string
         }
@@ -5026,6 +5030,7 @@ export type Database = {
           balance?: number
           created_at?: string
           currency?: string
+          sales_balance?: number
           updated_at?: string
           user_id: string
         }
@@ -5033,6 +5038,7 @@ export type Database = {
           balance?: number
           created_at?: string
           currency?: string
+          sales_balance?: number
           updated_at?: string
           user_id?: string
         }
@@ -5093,6 +5099,7 @@ export type Database = {
       }
       withdrawal_requests: {
         Row: {
+          account: string
           account_name: string | null
           admin_note: string | null
           amount: number
@@ -5110,6 +5117,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account?: string
           account_name?: string | null
           admin_note?: string | null
           amount: number
@@ -5127,6 +5135,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          account?: string
           account_name?: string | null
           admin_note?: string | null
           amount?: number
@@ -5151,34 +5160,64 @@ export type Database = {
     }
     Functions: {
       _send_product_suggestions: { Args: never; Returns: undefined }
-      apply_wallet_transaction: {
-        Args: {
-          _amount: number
-          _description?: string
-          _kind: string
-          _reference?: string
-          _user_id: string
-        }
-        Returns: {
-          amount: number
-          balance_after: number
-          created_at: string
-          description: string | null
-          id: string
-          kind: string
-          reference: string | null
-          user_id: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "wallet_transactions"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+      apply_wallet_transaction:
+        | {
+            Args: {
+              _amount: number
+              _description?: string
+              _kind: string
+              _reference?: string
+              _user_id: string
+            }
+            Returns: {
+              account: string
+              amount: number
+              balance_after: number
+              created_at: string
+              description: string | null
+              id: string
+              kind: string
+              reference: string | null
+              user_id: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "wallet_transactions"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: {
+              _account?: string
+              _amount: number
+              _description?: string
+              _kind: string
+              _reference?: string
+              _user_id: string
+            }
+            Returns: {
+              account: string
+              amount: number
+              balance_after: number
+              created_at: string
+              description: string | null
+              id: string
+              kind: string
+              reference: string | null
+              user_id: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "wallet_transactions"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
       cancel_withdrawal_request: {
         Args: { _id: string }
         Returns: {
+          account: string
           account_name: string | null
           admin_note: string | null
           amount: number
@@ -5262,9 +5301,11 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      move_sales_to_personal: { Args: { _amount: number }; Returns: Json }
       pay_order_with_wallet: {
         Args: { _order_id: string }
         Returns: {
+          account: string
           amount: number
           balance_after: number
           created_at: string
@@ -5365,38 +5406,74 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      request_wallet_withdrawal: {
-        Args: {
-          _account_name?: string
-          _amount: number
-          _destination: string
-          _method: string
-          _notes?: string
-        }
-        Returns: {
-          account_name: string | null
-          admin_note: string | null
-          amount: number
-          created_at: string
-          destination: string
-          hold_tx_id: string | null
-          id: string
-          method: string
-          notes: string | null
-          payout_tx_id: string | null
-          processed_at: string | null
-          reference: string
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "withdrawal_requests"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+      request_wallet_withdrawal:
+        | {
+            Args: {
+              _account_name?: string
+              _amount: number
+              _destination: string
+              _method: string
+              _notes?: string
+            }
+            Returns: {
+              account: string
+              account_name: string | null
+              admin_note: string | null
+              amount: number
+              created_at: string
+              destination: string
+              hold_tx_id: string | null
+              id: string
+              method: string
+              notes: string | null
+              payout_tx_id: string | null
+              processed_at: string | null
+              reference: string
+              status: string
+              updated_at: string
+              user_id: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "withdrawal_requests"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: {
+              _account?: string
+              _account_name?: string
+              _amount: number
+              _destination: string
+              _method: string
+              _notes?: string
+            }
+            Returns: {
+              account: string
+              account_name: string | null
+              admin_note: string | null
+              amount: number
+              created_at: string
+              destination: string
+              hold_tx_id: string | null
+              id: string
+              method: string
+              notes: string | null
+              payout_tx_id: string | null
+              processed_at: string | null
+              reference: string
+              status: string
+              updated_at: string
+              user_id: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "withdrawal_requests"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
       resolve_master_supplier: {
         Args: { _supplier_id: string }
         Returns: string
@@ -5404,6 +5481,7 @@ export type Database = {
       transfer_wallet_funds: {
         Args: { _amount: number; _note?: string; _recipient_id: string }
         Returns: {
+          account: string
           amount: number
           balance_after: number
           created_at: string
