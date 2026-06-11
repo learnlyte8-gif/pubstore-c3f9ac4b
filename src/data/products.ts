@@ -102,7 +102,12 @@ export type Product = {
   description?: string;
   reviewList?: Review[];
   dealEndsAt?: string | null;
+  /** AI-generated ad reel + copy (see generate-ad edge function). */
+  adHasReel?: boolean;
+  adHeadline?: string | null;
+  adTagline?: string | null;
 };
+
 
 // ---------- Categories ----------
 const ICON_MAP: Record<string, LucideIcon> = {
