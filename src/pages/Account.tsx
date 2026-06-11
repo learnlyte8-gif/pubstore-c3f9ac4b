@@ -203,6 +203,26 @@ export default function Account() {
         </div>
       </div>
 
+      {/* Tier progress */}
+      {tierInfo && (
+        <div className="px-4 mt-4">
+          <div className="bg-card rounded-2xl border border-border shadow-card p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Your levels</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Earned from activity, verification, purchases & sales</p>
+              </div>
+            </div>
+            <TierProgressRow label="Buyer" tier={tierInfo.buyer_tier} points={tierInfo.buyer_points} />
+            {role === "supplier" && (
+              <div className="mt-3">
+                <TierProgressRow label="Supplier" tier={tierInfo.supplier_tier} points={tierInfo.supplier_points} />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Sections */}
       <div className="px-4 mt-6 space-y-4">
         <Section title="My Orders">
