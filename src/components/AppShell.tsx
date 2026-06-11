@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { NavLink, Outlet, Link, useLocation, useSearchParams } from "react-router-dom";
+import { NavLink, Outlet, Link, useLocation, useSearchParams, useNavigate } from "react-router-dom";
+import { useCategories } from "@/hooks/useCatalog";
 import { Search, Bell, Navigation, Menu, Store, Briefcase, Wrench, Building2, Car, Landmark, Factory, Newspaper, Hotel, Truck, X, Home, Sparkles, Camera, ShoppingCart } from "lucide-react";
 import { IoHome, IoHomeOutline, IoBagHandle, IoBagHandleOutline, IoChatbubble, IoChatbubbleOutline, IoHeart, IoHeartOutline, IoPerson, IoPersonOutline } from "react-icons/io5";
 import type { IconType } from "react-icons";
@@ -404,12 +405,23 @@ function RailDrawer() {
 
 function HomeFeedTabs() {
   const [params, setParams] = useSearchParams();
-  const active = (params.get("feed") as "home" | "fyp" | "following") || "home";
-  const TABS: { id: "home" | "fyp" | "following"; label: string }[] = [
+  const navigate = useNavigate();
+  const { data: categories = [] } = useCategories();
+  const activeFeed = (params.get("feed") as "home" | "fyp" | "following") || "home";
+  const activeCat = params.get("cat");
+  const active = activeCat ? `cat:${activeCat}` : activeFeed;
+
+  const BASE_TABS = [
     { id: "home", label: "Home" },
     { id: "fyp", label: "For you" },
     { id: "following", label: "Following" },
+  ] as const;
+
+  const TABS = [
+    ...BASE_TABS.map((t) => ({ id: t.id as string, label: t.label, kind: "feed" as const })),
+    ...categories.map((c) => ({ id: `cat:${c.id}`, label: c.name, kind: "cat" as const, slug: c.id })),
   ];
+
   const containerRef = useRef<HTMLDivElement>(null);
   const btnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
@@ -421,21 +433,30 @@ function HomeFeedTabs() {
     const update = () => {
       const elRect = el.getBoundingClientRect();
       const parentRect = parent.getBoundingClientRect();
-      setIndicator({ left: elRect.left - parentRect.left, width: elRect.width });
+      setIndicator({
+        left: elRect.left - parentRect.left + parent.scrollLeft,
+        width: elRect.width,
+      });
     };
     update();
+    el.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
     const ro = new ResizeObserver(update);
     ro.observe(el);
     ro.observe(parent);
     window.addEventListener("resize", update);
-    return () => { ro.disconnect(); window.removeEventListener("resize", update); };
-  }, [active]);
+    parent.addEventListener("scroll", update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+      parent.removeEventListener("scroll", update);
+    };
+  }, [active, categories.length]);
 
   return (
     <div
       ref={containerRef}
       role="tablist"
-      className="relative flex items-center gap-4 mr-auto min-w-0 overflow-hidden"
+      className="relative flex items-center gap-4 mr-auto min-w-0 overflow-x-auto scrollbar-none"
     >
       {TABS.map((t) => {
         const isActive = active === t.id;
@@ -446,12 +467,17 @@ function HomeFeedTabs() {
             role="tab"
             aria-selected={isActive}
             onClick={() => {
+              if (t.kind === "cat") {
+                navigate(`/categories?cat=${encodeURIComponent(t.slug)}`);
+                return;
+              }
               const next = new URLSearchParams(params);
+              next.delete("cat");
               if (t.id === "home") next.delete("feed");
               else next.set("feed", t.id);
               setParams(next, { replace: true });
             }}
-            className={`relative shrink-0 text-[13px] font-bold leading-none py-1.5 transition-colors ${
+            className={`relative shrink-0 text-[13px] font-bold leading-none py-1.5 whitespace-nowrap transition-colors ${
               isActive ? "text-foreground" : "text-muted-foreground"
             }`}
           >
@@ -467,5 +493,6 @@ function HomeFeedTabs() {
     </div>
   );
 }
+
 
 
