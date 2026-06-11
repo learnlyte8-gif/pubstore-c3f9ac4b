@@ -266,6 +266,15 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
             {displayBadge}
           </span>
         )}
+        {product.adHasReel && (
+          <span
+            className={`absolute ${displayBadge ? "top-9" : "top-2"} left-2 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-gradient-to-r from-fuchsia-500 to-primary text-white shadow-soft animate-pulse`}
+            title="AI ad reel"
+          >
+            <Sparkles className="w-3 h-3" /> Reel
+          </span>
+        )}
+
         {off > 0 && (
           <span className="absolute top-2 right-10 bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded">
             -{off}%
