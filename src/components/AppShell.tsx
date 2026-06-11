@@ -19,6 +19,13 @@ import TapsonAssistant from "@/components/TapsonAssistant";
 import { useUnreadChats } from "@/hooks/useUnreadChats";
 import logo from "@/assets/pubstore-logo.png";
 import { useStatusBarSync } from "@/hooks/useStatusBarSync";
+import { useMyTier, type Tier } from "@/hooks/useUserTier";
+
+const TIER_HSL: Record<Tier, string> = {
+  bronze: "30 65% 45%",
+  silver: "215 16% 65%",
+  gold: "43 96% 56%",
+};
 
 let shellNotifChannelNonce = 0;
 
