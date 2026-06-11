@@ -195,7 +195,7 @@ export default function Account() {
       </div>
 
       {/* Stats card overlapping the header */}
-      <div className="px-4 -mt-10 relative z-10">
+      <div className="px-4 mt-4 relative z-10">
         <div className="bg-card rounded-2xl border border-border shadow-elevated grid grid-cols-3 divide-x divide-border">
           <Stat label="Orders" value={0} to="/orders" />
           <Stat label="Wishlist" value={wishlist.length} to="/wishlist" />
