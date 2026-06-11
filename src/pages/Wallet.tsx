@@ -318,7 +318,12 @@ export default function WalletPage() {
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold truncate capitalize">{w.method} · {w.destination}</p>
-                    <p className="text-[11px] text-muted-foreground capitalize">{w.status} · {new Date(w.created_at).toLocaleDateString()}</p>
+                    <p className="text-[11px] text-muted-foreground capitalize">
+                      <span className={`inline-block px-1.5 py-0.5 rounded mr-1 text-[9px] font-black ${w.account === "sales" ? "bg-amber-500/15 text-amber-700 dark:text-amber-300" : "bg-primary/15 text-primary"}`}>
+                        {w.account ?? "personal"}
+                      </span>
+                      {w.status} · {new Date(w.created_at).toLocaleDateString()}
+                    </p>
                   </div>
                   <p className="text-sm font-black tabular-nums">${Number(w.amount).toFixed(2)}</p>
                   {pending && (
