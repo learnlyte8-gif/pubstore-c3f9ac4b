@@ -217,7 +217,25 @@ const Home = () => {
                 </section>
               )}
 
+              {(() => {
+                const reels = products.filter((p) => p.adHasReel).slice(0, 12);
+                if (reels.length === 0) return null;
+                return (
+                  <section className="px-4 mt-6">
+                    <SectionHeader icon={Sparkles} title="Reels" subtitle="AI ads from sellers you might love" />
+                    <div className="flex gap-3 overflow-x-auto -mx-4 px-4 mt-3 pb-2 scrollbar-none snap-x">
+                      {reels.map((p) => (
+                        <div key={p.id} className="snap-start">
+                          <AdReel product={p} variant="tile" />
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                );
+              })()}
+
               <section className="px-4 mt-6">
+
                 <SectionHeader icon={Sparkles} title="For you" subtitle="Ranked by your interests, follows & activity" />
                 <div className="grid grid-cols-2 gap-3 mt-3">
                   {(() => {
