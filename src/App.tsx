@@ -93,6 +93,7 @@ const App = () => (
             offset={`calc(env(safe-area-inset-top) + 10px)`}
             mobileOffset={`calc(env(safe-area-inset-top) + 10px)`}
             gap={8}
+            swipeDirections={["top"]}
             toastOptions={{
               duration: 3800,
               unstyled: false,

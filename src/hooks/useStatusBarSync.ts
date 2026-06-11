@@ -51,7 +51,7 @@ export function useStatusBarSync() {
 
     // Re-apply when light/dark class flips on <html>.
     const obs = new MutationObserver(() => apply());
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
 
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     mq.addEventListener?.("change", apply);

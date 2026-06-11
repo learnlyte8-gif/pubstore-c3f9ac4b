@@ -124,7 +124,7 @@ function showSuggestion(s: Suggestion, navigate: (to: string) => void) {
     (id) => (
       <button
         onClick={() => { toast.dismiss(id); navigate(s.link); }}
-        className="w-[calc(100vw-24px)] max-w-sm flex items-stretch gap-3 p-2.5 rounded-2xl bg-background/95 backdrop-blur-xl border border-border/60 shadow-[0_12px_32px_-10px_hsl(0_0%_0%/0.35)] active:scale-[0.98] transition text-left"
+        className="w-full flex items-stretch gap-3 p-2.5 rounded-2xl bg-background/95 backdrop-blur-xl border border-border/60 shadow-[0_12px_32px_-10px_hsl(0_0%_0%/0.35)] active:scale-[0.98] transition text-left"
       >
         <div className={`relative w-14 h-14 rounded-xl bg-gradient-to-br ${meta.tint} overflow-hidden shrink-0 flex items-center justify-center`}>
           {s.image ? (
@@ -151,7 +151,7 @@ function showSuggestion(s: Suggestion, navigate: (to: string) => void) {
         </span>
       </button>
     ),
-    { duration: 6500, position: "top-center" }
+    { duration: 6500, position: "top-center", unstyled: true, className: "!w-[calc(100vw-24px)] !max-w-sm !left-1/2 !-translate-x-1/2" }
   );
 }
 
