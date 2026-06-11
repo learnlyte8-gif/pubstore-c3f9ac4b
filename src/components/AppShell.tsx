@@ -42,6 +42,28 @@ export default function AppShell() {
   const tier: Tier = tierInfo?.buyer_tier ?? "bronze";
   const tierHsl = TIER_HSL[tier];
   const headerGradient = `linear-gradient(135deg, hsl(var(--primary) / 0.45) 0%, hsl(var(--background)) 55%, hsl(${tierHsl} / 0.65) 100%)`;
+
+  // Match the phone status bar to the header's top-left color (primary @ 0.45 over background).
+  useEffect(() => {
+    const apply = () => {
+      const cs = getComputedStyle(document.documentElement);
+      const primary = cs.getPropertyValue("--primary").trim();
+      const bg = cs.getPropertyValue("--background").trim();
+      const p = hslTripletToRgb(primary);
+      const b = hslTripletToRgb(bg);
+      if (!p || !b) return;
+      const a = 0.45;
+      const r = Math.round(p[0] * a + b[0] * (1 - a));
+      const g = Math.round(p[1] * a + b[1] * (1 - a));
+      const bl = Math.round(p[2] * a + b[2] * (1 - a));
+      const hex = `#${[r, g, bl].map((n) => n.toString(16).padStart(2, "0")).join("")}`;
+      document.documentElement.style.setProperty("--statusbar", hex);
+    };
+    apply();
+    const obs = new MutationObserver(apply);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, [tier]);
   
   
 
@@ -186,6 +208,25 @@ export default function AppShell() {
       <InstallPrompt />
     </div>
   );
+}
+
+function hslTripletToRgb(triplet: string): [number, number, number] | null {
+  const m = triplet.match(/([\d.]+)\s+([\d.]+)%\s+([\d.]+)%/);
+  if (!m) return null;
+  const h = parseFloat(m[1]);
+  const s = parseFloat(m[2]) / 100;
+  const l = parseFloat(m[3]) / 100;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const mm = l - c / 2;
+  let r = 0, g = 0, b = 0;
+  if (h < 60) [r, g, b] = [c, x, 0];
+  else if (h < 120) [r, g, b] = [x, c, 0];
+  else if (h < 180) [r, g, b] = [0, c, x];
+  else if (h < 240) [r, g, b] = [0, x, c];
+  else if (h < 300) [r, g, b] = [x, 0, c];
+  else [r, g, b] = [c, 0, x];
+  return [(r + mm) * 255, (g + mm) * 255, (b + mm) * 255];
 }
 
 function ScrollProgress() {
