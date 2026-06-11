@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, Loader2, ShieldCheck, Zap, Smartphone, CreditCard, Send, Wrench, Banknote, Clock, XCircle } from "lucide-react";
+import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, ShieldCheck, Zap, Smartphone, CreditCard, Send, Wrench, Banknote, Clock, XCircle, Store, ArrowRightLeft } from "lucide-react";
 import SendMoneyDialog from "@/components/wallet/SendMoneyDialog";
 import WithdrawDialog from "@/components/wallet/WithdrawDialog";
 import { useQuery } from "@tanstack/react-query";
@@ -20,7 +20,7 @@ type Pending = { orderID: string; amount: number };
 type Provider = "paypal" | "pesepay" | "simulate";
 
 export default function WalletPage() {
-  const { balance, transactions, isLoading, userId, refresh } = useWallet();
+  const { balance, personalBalance, salesBalance, transactions, isLoading, userId, refresh, moveSalesToPersonal } = useWallet();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selected, setSelected] = useState<number | null>(null);
@@ -30,6 +30,11 @@ export default function WalletPage() {
   const [customAmount, setCustomAmount] = useState<string>("");
   const [sendOpen, setSendOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawAccount, setWithdrawAccount] = useState<"personal" | "sales">("personal");
+  const [txTab, setTxTab] = useState<"all" | "personal" | "sales">("all");
+  const [moveAmount, setMoveAmount] = useState("");
+  const [moving, setMoving] = useState(false);
+
 
   const { data: withdrawals = [], refetch: refetchWithdrawals } = useQuery({
     queryKey: ["withdrawals", userId],
@@ -233,36 +238,54 @@ export default function WalletPage() {
           <div className="rounded-2xl bg-primary-foreground/10 backdrop-blur-md border border-primary-foreground/20 p-4 shadow-elevated">
             <div className="flex items-center gap-2 mb-1.5">
               <Wallet className="w-4 h-4" />
-              <p className="text-[11px] font-bold uppercase tracking-wider opacity-90">Available balance</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider opacity-90">Personal balance</p>
             </div>
-            <p className="text-4xl font-black tracking-tighter tabular-nums leading-none">{fmt(balance)}</p>
-            <p className="text-[11px] opacity-75 mt-2">Use at checkout on any product, any supplier.</p>
+            <p className="text-4xl font-black tracking-tighter tabular-nums leading-none">{fmt(personalBalance)}</p>
+            <p className="text-[11px] opacity-75 mt-2">Top-ups & transfers. Use at checkout on any product.</p>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 mt-3">
+          <div className="rounded-2xl bg-primary-foreground/10 backdrop-blur-md border border-primary-foreground/20 p-4 shadow-elevated mt-2">
+            <div className="flex items-center gap-2 mb-1.5">
+              <Store className="w-4 h-4" />
+              <p className="text-[11px] font-bold uppercase tracking-wider opacity-90">Sales balance</p>
+            </div>
+            <p className="text-3xl font-black tracking-tighter tabular-nums leading-none">{fmt(salesBalance)}</p>
+            <p className="text-[11px] opacity-75 mt-2">Earnings from sales. Withdraw or move to personal.</p>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2 mt-3">
             <button
               onClick={() => setSendOpen(true)}
-              disabled={!userId}
-              className="h-11 rounded-xl bg-primary-foreground text-primary font-black text-xs flex items-center justify-center gap-1 disabled:opacity-50 shadow-soft"
+              disabled={!userId || personalBalance <= 0}
+              className="h-11 rounded-xl bg-primary-foreground text-primary font-black text-[11px] flex items-center justify-center gap-1 disabled:opacity-50 shadow-soft"
             >
               <Send className="w-3.5 h-3.5" /> Send
             </button>
             <a
               href="#add-money"
-              className="h-11 rounded-xl bg-primary-foreground/15 backdrop-blur border border-primary-foreground/30 text-primary-foreground font-black text-xs flex items-center justify-center gap-1"
+              className="h-11 rounded-xl bg-primary-foreground/15 backdrop-blur border border-primary-foreground/30 text-primary-foreground font-black text-[11px] flex items-center justify-center gap-1"
             >
               <Plus className="w-3.5 h-3.5" /> Add
             </a>
             <button
-              onClick={() => setWithdrawOpen(true)}
-              disabled={!userId || balance < 5}
-              className="h-11 rounded-xl bg-primary-foreground/15 backdrop-blur border border-primary-foreground/30 text-primary-foreground font-black text-xs flex items-center justify-center gap-1 disabled:opacity-40"
+              onClick={() => { setWithdrawAccount(salesBalance >= 5 ? "sales" : "personal"); setWithdrawOpen(true); }}
+              disabled={!userId || (personalBalance < 5 && salesBalance < 5)}
+              className="h-11 rounded-xl bg-primary-foreground/15 backdrop-blur border border-primary-foreground/30 text-primary-foreground font-black text-[11px] flex items-center justify-center gap-1 disabled:opacity-40"
             >
               <Banknote className="w-3.5 h-3.5" /> Withdraw
             </button>
+            <a
+              href="#move-funds"
+              className="h-11 rounded-xl bg-primary-foreground/15 backdrop-blur border border-primary-foreground/30 text-primary-foreground font-black text-[11px] flex items-center justify-center gap-1"
+              aria-disabled={salesBalance <= 0}
+              style={salesBalance <= 0 ? { opacity: 0.4, pointerEvents: "none" } : undefined}
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5" /> Move
+            </a>
           </div>
         </div>
       </div>
+
 
       <SendMoneyDialog
         open={sendOpen}
@@ -275,7 +298,9 @@ export default function WalletPage() {
       <WithdrawDialog
         open={withdrawOpen}
         onOpenChange={setWithdrawOpen}
-        balance={balance}
+        personalBalance={personalBalance}
+        salesBalance={salesBalance}
+        defaultAccount={withdrawAccount}
         onSubmitted={() => { refresh(); refetchWithdrawals(); }}
       />
 
@@ -293,7 +318,12 @@ export default function WalletPage() {
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold truncate capitalize">{w.method} · {w.destination}</p>
-                    <p className="text-[11px] text-muted-foreground capitalize">{w.status} · {new Date(w.created_at).toLocaleDateString()}</p>
+                    <p className="text-[11px] text-muted-foreground capitalize">
+                      <span className={`inline-block px-1.5 py-0.5 rounded mr-1 text-[9px] font-black ${w.account === "sales" ? "bg-amber-500/15 text-amber-700 dark:text-amber-300" : "bg-primary/15 text-primary"}`}>
+                        {w.account ?? "personal"}
+                      </span>
+                      {w.status} · {new Date(w.created_at).toLocaleDateString()}
+                    </p>
                   </div>
                   <p className="text-sm font-black tabular-nums">${Number(w.amount).toFixed(2)}</p>
                   {pending && (
@@ -405,35 +435,114 @@ export default function WalletPage() {
         <Perk icon={Sparkles} title="No hidden fees" desc="Every cent goes to your order." />
       </div>
 
+      {/* Move sales → personal */}
+      <div id="move-funds" className="px-4 mt-4 scroll-mt-4">
+        <div className="bg-card rounded-2xl border border-border shadow-card p-4">
+          <div className="flex items-center gap-1.5 mb-1">
+            <ArrowRightLeft className="w-4 h-4 text-primary" />
+            <p className="text-sm font-black tracking-tight">Move sales → personal</p>
+          </div>
+          <p className="text-[11px] text-muted-foreground mb-3">
+            Sales balance: <span className="font-black tabular-nums text-foreground">{fmt(salesBalance)}</span>. Move earnings to your personal balance to spend at checkout or withdraw flexibly.
+          </p>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-black text-muted-foreground">$</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                min={0.01}
+                step="0.01"
+                placeholder="0.00"
+                value={moveAmount}
+                onChange={(e) => setMoveAmount(e.target.value)}
+                disabled={moving || salesBalance <= 0}
+                className="h-11 w-full rounded-xl border border-border bg-muted/40 pl-7 pr-3 text-sm font-black tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary disabled:opacity-50"
+              />
+            </div>
+            <Button
+              variant="outline"
+              className="h-11 px-3"
+              disabled={moving || salesBalance <= 0}
+              onClick={() => setMoveAmount(salesBalance.toFixed(2))}
+            >
+              All
+            </Button>
+            <Button
+              className="h-11 px-4"
+              disabled={moving || salesBalance <= 0}
+              onClick={async () => {
+                const amt = Math.round(Number(moveAmount) * 100) / 100;
+                if (!Number.isFinite(amt) || amt <= 0) { toast.error("Enter an amount"); return; }
+                if (amt > salesBalance) { toast.error("Exceeds sales balance"); return; }
+                setMoving(true);
+                try {
+                  await moveSalesToPersonal(amt);
+                  toast.success(`Moved ${fmt(amt)} to personal balance`);
+                  setMoveAmount("");
+                } catch (e: any) {
+                  toast.error(e?.message ?? "Could not move funds");
+                } finally { setMoving(false); }
+              }}
+            >
+              {moving ? <CircleSpinner size={16} /> : "Move"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* Transactions */}
       <div className="px-4 mt-6">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2 px-1">Activity</p>
+        <div className="flex items-center justify-between mb-2 px-1">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Activity</p>
+          <div className="flex gap-1 bg-muted rounded-full p-0.5">
+            {(["all", "personal", "sales"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setTxTab(tab)}
+                className={`px-2.5 h-6 rounded-full text-[10px] font-black capitalize transition ${txTab === tab ? "bg-card shadow-soft text-foreground" : "text-muted-foreground"}`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
           {isLoading ? (
             <p className="p-6 text-center text-sm text-muted-foreground"><CircleSpinner size={28} /></p>
-          ) : transactions.length === 0 ? (
-            <p className="p-6 text-center text-sm text-muted-foreground">No transactions yet. Add money to get started.</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {transactions.map((t) => {
-                const isCredit = Number(t.amount) > 0;
-                return (
-                  <li key={t.id} className="flex items-center gap-3 px-4 py-3">
-                    <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${isCredit ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-destructive/15 text-destructive"}`}>
-                      {isCredit ? <ArrowDownLeft className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold truncate">{t.description ?? t.kind}</p>
-                      <p className="text-[11px] text-muted-foreground">{new Date(t.created_at).toLocaleString()}</p>
-                    </div>
-                    <p className={`text-sm font-black tabular-nums tracking-tight ${isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
-                      {isCredit ? "+" : ""}{fmt(Number(t.amount))}
-                    </p>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          ) : (() => {
+            const filtered = transactions.filter((t) => txTab === "all" ? true : (t.account ?? "personal") === txTab);
+            if (filtered.length === 0) {
+              return <p className="p-6 text-center text-sm text-muted-foreground">No {txTab === "all" ? "" : txTab + " "}transactions yet.</p>;
+            }
+            return (
+              <ul className="divide-y divide-border">
+                {filtered.map((t) => {
+                  const isCredit = Number(t.amount) > 0;
+                  const acct = t.account ?? "personal";
+                  return (
+                    <li key={t.id} className="flex items-center gap-3 px-4 py-3">
+                      <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${isCredit ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-destructive/15 text-destructive"}`}>
+                        {isCredit ? <ArrowDownLeft className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold truncate">{t.description ?? t.kind}</p>
+                        <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-black ${acct === "sales" ? "bg-amber-500/15 text-amber-700 dark:text-amber-300" : "bg-primary/15 text-primary"}`}>
+                            {acct}
+                          </span>
+                          {new Date(t.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                      <p className={`text-sm font-black tabular-nums tracking-tight ${isCredit ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                        {isCredit ? "+" : ""}{fmt(Number(t.amount))}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ul>
+            );
+          })()}
         </div>
       </div>
 
