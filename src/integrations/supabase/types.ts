@@ -3091,6 +3091,8 @@ export type Database = {
         Row: {
           address: string | null
           avatar_url: string | null
+          buyer_points: number
+          buyer_tier: string
           contact: string | null
           created_at: string
           display_name: string | null
@@ -3098,6 +3100,9 @@ export type Database = {
           interests: string[]
           phone: string | null
           profile_completed: boolean
+          supplier_points: number
+          supplier_tier: string
+          tier_updated_at: string | null
           updated_at: string
           user_id: string
           username: string | null
@@ -3105,6 +3110,8 @@ export type Database = {
         Insert: {
           address?: string | null
           avatar_url?: string | null
+          buyer_points?: number
+          buyer_tier?: string
           contact?: string | null
           created_at?: string
           display_name?: string | null
@@ -3112,6 +3119,9 @@ export type Database = {
           interests?: string[]
           phone?: string | null
           profile_completed?: boolean
+          supplier_points?: number
+          supplier_tier?: string
+          tier_updated_at?: string | null
           updated_at?: string
           user_id: string
           username?: string | null
@@ -3119,6 +3129,8 @@ export type Database = {
         Update: {
           address?: string | null
           avatar_url?: string | null
+          buyer_points?: number
+          buyer_tier?: string
           contact?: string | null
           created_at?: string
           display_name?: string | null
@@ -3126,6 +3138,9 @@ export type Database = {
           interests?: string[]
           phone?: string | null
           profile_completed?: boolean
+          supplier_points?: number
+          supplier_tier?: string
+          tier_updated_at?: string | null
           updated_at?: string
           user_id?: string
           username?: string | null
@@ -5241,6 +5256,16 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_user_tier_info: {
+        Args: { _user_id: string }
+        Returns: {
+          buyer_points: number
+          buyer_tier: string
+          next_threshold: number
+          supplier_points: number
+          supplier_tier: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -5406,6 +5431,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      recompute_user_tier: { Args: { _user_id: string }; Returns: undefined }
       request_wallet_withdrawal:
         | {
             Args: {
@@ -5478,6 +5504,7 @@ export type Database = {
         Args: { _supplier_id: string }
         Returns: string
       }
+      tier_from_points: { Args: { _pts: number }; Returns: string }
       transfer_wallet_funds: {
         Args: { _amount: number; _note?: string; _recipient_id: string }
         Returns: {

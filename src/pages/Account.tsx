@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useShop } from "@/store/shop";
 import { useWallet } from "@/hooks/useWallet";
+import { useMyTier } from "@/hooks/useUserTier";
+import TierBadge from "@/components/TierBadge";
 
 type Profile = {
   display_name: string | null;
@@ -27,6 +29,7 @@ export default function Account() {
   const [isGuest, setIsGuest] = useState(false);
   const { wishlist, cartCount } = useShop();
   const { balance, transactions } = useWallet();
+  const { info: tierInfo } = useMyTier();
 
   useEffect(() => {
     (async () => {
@@ -140,13 +143,16 @@ export default function Account() {
                 )}
               </div>
               <p className="text-[11px] opacity-80 truncate">{email}</p>
-              <div className="mt-1.5 flex items-center gap-1.5">
+              <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
                 <span className="px-2 py-0.5 rounded-full bg-primary-foreground/15 backdrop-blur text-[10px] font-bold uppercase tracking-wider">
                   {role}
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-primary-foreground/15 backdrop-blur text-[10px] font-bold flex items-center gap-1">
-                  <Sparkles className="w-2.5 h-2.5" /> Member
-                </span>
+                {tierInfo && (
+                  <TierBadge tier={tierInfo.buyer_tier} role="buyer" size="xs" className="bg-primary-foreground/20 border-primary-foreground/30 text-primary-foreground" />
+                )}
+                {tierInfo && role === "supplier" && (
+                  <TierBadge tier={tierInfo.supplier_tier} role="supplier" size="xs" className="bg-primary-foreground/20 border-primary-foreground/30 text-primary-foreground" />
+                )}
               </div>
             </div>
 
@@ -196,6 +202,26 @@ export default function Account() {
           <Stat label="Cart" value={cartCount} to="/cart" />
         </div>
       </div>
+
+      {/* Tier progress */}
+      {tierInfo && (
+        <div className="px-4 mt-4">
+          <div className="bg-card rounded-2xl border border-border shadow-card p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Your levels</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Earned from activity, verification, purchases & sales</p>
+              </div>
+            </div>
+            <TierProgressRow label="Buyer" tier={tierInfo.buyer_tier} points={tierInfo.buyer_points} />
+            {role === "supplier" && (
+              <div className="mt-3">
+                <TierProgressRow label="Supplier" tier={tierInfo.supplier_tier} points={tierInfo.supplier_points} />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Sections */}
       <div className="px-4 mt-6 space-y-4">
@@ -261,5 +287,30 @@ function Row({ icon: Icon, label, hint, to }: { icon: LucideIcon; label: string;
       </div>
       <ChevronRight className="w-4 h-4 text-muted-foreground" />
     </Link>
+  );
+}
+
+function TierProgressRow({ label, tier, points }: { label: string; tier: "bronze" | "silver" | "gold"; points: number }) {
+  const next = tier === "gold" ? null : tier === "silver" ? 300 : 100;
+  const base = tier === "silver" ? 100 : 0;
+  const pct = next ? Math.min(100, Math.max(0, ((points - base) / (next - base)) * 100)) : 100;
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold">{label}</span>
+          <TierBadge tier={tier} size="xs" />
+        </div>
+        <span className="text-[11px] text-muted-foreground tabular-nums">
+          {Math.round(points)}{next ? ` / ${next} pts` : " pts · max"}
+        </span>
+      </div>
+      <div className="h-2 rounded-full bg-muted overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-amber-400 to-amber-600 transition-all"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
   );
 }
