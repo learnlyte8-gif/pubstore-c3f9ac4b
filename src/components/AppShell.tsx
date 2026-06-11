@@ -210,6 +210,25 @@ export default function AppShell() {
   );
 }
 
+function hslTripletToRgb(triplet: string): [number, number, number] | null {
+  const m = triplet.match(/([\d.]+)\s+([\d.]+)%\s+([\d.]+)%/);
+  if (!m) return null;
+  const h = parseFloat(m[1]);
+  const s = parseFloat(m[2]) / 100;
+  const l = parseFloat(m[3]) / 100;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const mm = l - c / 2;
+  let r = 0, g = 0, b = 0;
+  if (h < 60) [r, g, b] = [c, x, 0];
+  else if (h < 120) [r, g, b] = [x, c, 0];
+  else if (h < 180) [r, g, b] = [0, c, x];
+  else if (h < 240) [r, g, b] = [0, x, c];
+  else if (h < 300) [r, g, b] = [x, 0, c];
+  else [r, g, b] = [c, 0, x];
+  return [(r + mm) * 255, (g + mm) * 255, (b + mm) * 255];
+}
+
 function ScrollProgress() {
   const [pct, setPct] = useState(0);
   useEffect(() => {
