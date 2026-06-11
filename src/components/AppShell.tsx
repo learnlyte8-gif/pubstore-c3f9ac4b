@@ -42,6 +42,28 @@ export default function AppShell() {
   const tier: Tier = tierInfo?.buyer_tier ?? "bronze";
   const tierHsl = TIER_HSL[tier];
   const headerGradient = `linear-gradient(135deg, hsl(var(--primary) / 0.45) 0%, hsl(var(--background)) 55%, hsl(${tierHsl} / 0.65) 100%)`;
+
+  // Match the phone status bar to the header's top-left color (primary @ 0.45 over background).
+  useEffect(() => {
+    const apply = () => {
+      const cs = getComputedStyle(document.documentElement);
+      const primary = cs.getPropertyValue("--primary").trim();
+      const bg = cs.getPropertyValue("--background").trim();
+      const p = hslTripletToRgb(primary);
+      const b = hslTripletToRgb(bg);
+      if (!p || !b) return;
+      const a = 0.45;
+      const r = Math.round(p[0] * a + b[0] * (1 - a));
+      const g = Math.round(p[1] * a + b[1] * (1 - a));
+      const bl = Math.round(p[2] * a + b[2] * (1 - a));
+      const hex = `#${[r, g, bl].map((n) => n.toString(16).padStart(2, "0")).join("")}`;
+      document.documentElement.style.setProperty("--statusbar", hex);
+    };
+    apply();
+    const obs = new MutationObserver(apply);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, [tier]);
   
   
 
