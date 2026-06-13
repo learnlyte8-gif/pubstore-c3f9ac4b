@@ -1,59 +1,89 @@
-# Restaurants vertical + universal media uploads
 
-## 1. Database (one migration)
+# PUBSTORE Ads Engine
 
-New tables in `public`:
+A self-serve ad platform like Google Ads, scoped to the marketplace. Suppliers boost their own products (or other promo content) with wallet-funded campaigns. Buyers see ads in 4 placements; some give loyalty points back.
 
-- **`restaurants`** — `id, supplier_id, owner_user_id, name, slug, cuisine, description, cover, gallery text[], video_url, city, country, address, lat, lng, phone, whatsapp, hours jsonb, price_level int (1-4), rating, review_count, delivery_enabled bool, reservation_enabled bool, min_order numeric, delivery_fee numeric, prep_time_minutes int, active bool, featured bool, created_at, updated_at`
-- **`menu_categories`** — `id, restaurant_id, name, sort_order`
-- **`menu_items`** — `id, restaurant_id, category_id, name, description, price, currency, image, gallery text[], video_url, tags text[], spicy bool, vegetarian bool, available bool, sort_order`
-- **`food_orders`** — `id, buyer_id, restaurant_id, items jsonb, subtotal, delivery_fee, total, currency, status (pending/accepted/preparing/out_for_delivery/delivered/cancelled), delivery_address, lat, lng, contact_phone, notes, ref_code, paid bool, paid_at, payment_tx_id, created_at, updated_at`
-- **`table_reservations`** — `id, guest_id, restaurant_id, party_size, reserved_for timestamptz, contact_name, contact_phone, notes, status (pending/confirmed/declined/cancelled/completed), created_at, updated_at`
+## 1. Database (new tables)
 
-All with: `GRANT`s (anon read on public-listing tables; authenticated full on user-owned rows; service_role all), RLS enabled, policies (public read for active restaurants/menus, owner writes via `supplier_id` lookup, buyers read own orders/reservations, restaurant owner reads incoming orders/reservations and can update status).
+- **ad_campaigns** — owner_id, supplier_id, product_id, name, placement (`banner`|`inline`|`interstitial`|`rewarded`), pricing_mode (`flat_boost`|`cpc`), daily_budget, max_bid_cpc, total_spent, status (`draft`|`active`|`paused`|`exhausted`|`ended`), starts_at, ends_at, creative (jsonb: headline, tagline, image, video, cta), targeting (jsonb: categories[], countries[], cities[], interests[]).
+- **ad_campaign_stats** — daily rollup per campaign: date, impressions, clicks, conversions, spend, points_paid_out.
+- **ad_events** — raw log: campaign_id, user_id (nullable), event (`impression`|`click`|`reward_view`|`conversion`), placement, charged, created_at. Auto-aggregated nightly.
+- **loyalty_points** — user_id, balance, lifetime_earned.
+- **loyalty_ledger** — user_id, delta, reason, reference, created_at.
 
-Add: triggers for `updated_at`, notification triggers mirroring existing `notify_new_stay_booking` / `notify_stay_booking_status` patterns for both `food_orders` and `table_reservations`, plus extend `pay_service_action_with_wallet` to accept `_kind = 'food-order'`.
+All with proper GRANTs + RLS (owner manages own campaigns; events insert via security-definer RPC; loyalty read-only for owner).
 
-Storage bucket: `restaurant-media` (public).
+## 2. Pricing model (hybrid)
 
-## 2. Universal media uploader
+- **Flat boost**: pick placement + daily budget (e.g. $1, $5, $20/day). Wallet is debited once per day at midnight UTC for active flat campaigns; ad served until daily impression cap hit.
+- **CPC auction** (banner + interstitial premium slots): each request picks the eligible campaign with the highest `max_bid_cpc`; wallet charged per click via `apply_wallet_transaction` (kind: `ad_click`). Daily budget caps spend; campaign auto-pauses on exhaustion.
 
-New component **`src/components/MediaUpload.tsx`**:
-- Accepts `images: string[]`, `video: string | null`, `onChange({images, video})`, `maxImages = 6`, `bucket`, `folder`.
-- Drag-to-reorder thumbnails, remove button, "add more" tile (disabled at limit).
-- One video slot: 60 MB cap, mp4/webm/quicktime, shows `<video>` preview with replace/remove.
-- Reuses Supabase storage upload pattern from `uploadProductImages.ts`.
+## 3. Server logic (edge functions + RPC)
 
-Wire into every create/edit form that currently has a single cover/image input:
-- `PostTaskForm` (Services)
-- `BecomeSupplier` / `SupplierOnboarding`
-- `MyStore` product editor (already multi-image, just add video slot)
-- `StoreActions` editors for: stays, vehicles, car-rentals, properties, finance, industrial, agro, jobs
-- New Restaurants editor
+- `ads-serve` (edge fn) — input: placement, user context (category, country, interests). Returns ranked eligible campaigns. Uses targeting filters + bid/boost ranking + frequency capping (no more than 1 impression of the same ad per user per 10 min).
+- `ads-track` (edge fn) — records impression/click; on click for CPC, calls `charge_ad_click` RPC which debits supplier wallet and increments stats atomically.
+- `ads-reward` (edge fn) — on completed rewarded view (≥10s watched), credits user loyalty points (e.g. 5 pts per ad, max 5/day) and charges advertiser a fixed `$0.05` per view.
+- `ads-daily-cron` — scheduled (pg_cron + http_post): debits flat-boost daily budgets, resets daily caps, marks `exhausted`/`ended`.
 
-Add `video_url text` column to every listing table that doesn't have one (stays, vehicles, car_rentals, properties, finance_products, industrial_listings, agro_listings, service_providers, service_requests, job_postings, products if missing).
+## 4. Frontend
 
-## 3. Restaurants UI
+### Advertiser (My Store)
+- New section **My Store → Ads** with:
+  - Dashboard: spend, impressions, CTR, points awarded per campaign.
+  - "New campaign" wizard (4 steps): product → placement → creative (AI-prefill from product) → budget + targeting → review.
+  - Pause/resume, edit budget, view stats.
 
-- **`src/pages/Restaurants.tsx`** — list with cuisine/city filters, cards (cover, rating, price level, delivery badge).
-- **`src/pages/RestaurantDetail.tsx`** — hero gallery + video, info, tabs: Menu / Reserve / Reviews. Menu grouped by category, "Add to cart" per item.
-- **`src/components/restaurants/MenuItemCard.tsx`**, **`FoodCartSheet.tsx`** (slide-up cart, checkout → creates `food_orders` row → wallet pay link), **`ReservationDialog.tsx`** (date, time, party size).
-- **`src/pages/StoreSection.tsx`** add "Restaurants" management section: list owner's restaurants, edit, add menu items, view incoming orders + reservations with accept/decline.
-- Add route entries in `src/App.tsx`; add Restaurants tile to `CategoryGrid` / `DepartmentsBar` on Home.
+### Buyer
+- `useAd(placement, context)` hook — calls `ads-serve`, handles impression beacon on mount, click beacon on tap.
+- `<BannerAdSlot />` — replaces current trending-only `BannerAd` with real ad rotation (falls back to trending if no fill).
+- `<InlineAdCard />` — sponsored card injected every 6 items in Home/For You/category grids; marked "Sponsored".
+- `<InterstitialAdManager />` — shows full-screen ad once per session after 3 navigations or on app foreground; skippable after 3s.
+- `<RewardedAdSheet />` — opt-in "Watch ad, earn 5 points" CTA in Wallet + Home reels strip; uses existing `AdReel` 15s player; rewards on completion.
 
-## 4. Data layer
+### Loyalty
+- `LoyaltyBalance` card in `/wallet` page showing points + history.
+- "Redeem points" → coupon (existing `coupons` table) at e.g. 100 pts = $1 off.
 
-New `src/data/restaurants.ts` with `fetchRestaurants`, `fetchRestaurant`, `fetchMenu`, `createFoodOrder`, `createReservation`, owner-side fetchers.
+## 5. Files
 
-## 5. Technical details
+**New**
+- `supabase/migrations/<ts>_ads_engine.sql`
+- `supabase/functions/ads-serve/index.ts`
+- `supabase/functions/ads-track/index.ts`
+- `supabase/functions/ads-reward/index.ts`
+- `supabase/functions/ads-daily-cron/index.ts`
+- `src/hooks/useAds.ts`, `src/hooks/useLoyalty.ts`
+- `src/components/ads/BannerAdSlot.tsx`, `InlineAdCard.tsx`, `InterstitialAdManager.tsx`, `RewardedAdSheet.tsx`, `SponsoredBadge.tsx`
+- `src/pages/ads/AdsDashboard.tsx`, `AdCampaignWizard.tsx`, `AdCampaignDetail.tsx`
+- `src/components/wallet/LoyaltyCard.tsx`
 
-- Reuse existing `inquiryGate` / wallet payment flow for food order checkout (`/pay/food-order/:id` route handled by `PayAction`).
-- Realtime subscription on `food_orders` for restaurant owners (mirrors driver/rides pattern).
-- Image upload paths: `${user.id}/restaurants/${restaurant_id}/...`; video paths same folder, `.mp4/.webm`.
-- Video display uses native `<video controls playsInline preload="metadata">`.
-- All new colors via existing semantic tokens — no new palette.
+**Modified**
+- `src/pages/MyStore.tsx` + `StoreSection.tsx` — add "Ads" entry.
+- `src/pages/Home.tsx` — interlace `InlineAdCard`, mount `InterstitialAdManager`, replace/augment `BannerAd`.
+- `src/pages/ProductDetail.tsx` + category pages — `InlineAdCard` injection.
+- `src/pages/Wallet.tsx` — `LoyaltyCard`.
+- `src/App.tsx` — route additions.
 
-## Out of scope
-- Stripe/PayPal for food orders (uses existing wallet pay).
-- Live courier dispatch for food (status updates only; reuse existing logistics if user wants later).
-- Reviews specific to restaurants (reuse existing `reviews` table by `target_type`).
+## 6. Targeting & ranking (technical)
+
+```text
+serve(placement, ctx):
+  candidates = active campaigns where
+    placement match
+    AND (targeting.categories empty OR ctx.category in targeting.categories)
+    AND (targeting.countries empty OR ctx.country in targeting.countries)
+    AND (targeting.interests empty OR overlap(ctx.interests, targeting.interests))
+    AND today_spend < daily_budget
+    AND NOT seen by user in last 10 min
+  rank:
+    cpc:   ORDER BY max_bid_cpc DESC, random()
+    flat:  ORDER BY (daily_budget - spent_today) DESC, random()
+  return top 1 (or top N for inline)
+```
+
+## 7. Out of scope (v1)
+
+- External ad networks (AdMob/Meta Audience).
+- Real video generation — rewarded uses existing `AdReel` Ken-Burns reel.
+- Stripe billing for ads — wallet only (matches existing PUBSTORE Pay).
+- A/B creative testing & detailed audience analytics — basic stats only.
