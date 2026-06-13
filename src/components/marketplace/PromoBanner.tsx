@@ -3,6 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { ShoppingBag, Sparkles, Flame, BedDouble, Car, Factory, Newspaper, Radio, Crown, Navigation, Wrench, Home as HomeIcon, Truck, Banknote, Key } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import promoCarRentals from "@/assets/promo-car-rentals.jpg";
+import promoRides from "@/assets/promo-rides.jpg";
+import promoLogistics from "@/assets/promo-logistics.jpg";
+import promoWelcome from "@/assets/promo-welcome.jpg";
 
 type Slide = {
   key: string;
