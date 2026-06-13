@@ -314,14 +314,6 @@ export default function ProductDetail() {
         </section>
       )}
 
-      {gated && supplier && (
-        <div className="fixed bottom-[7.5rem] lg:bottom-[5rem] inset-x-0 z-30 px-3 pointer-events-none">
-          <div className="max-w-2xl mx-auto rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 px-3 py-2 text-[11px] flex items-center gap-2 pointer-events-auto">
-            <ShieldCheck className="w-4 h-4 shrink-0" />
-            <span>Trade Assurance: the supplier must approve your inquiry before you can add this to cart. You'll be notified in chat.</span>
-          </div>
-        </div>
-      )}
 
       <div className="fixed bottom-14 lg:bottom-0 inset-x-0 z-30 safe-bottom pointer-events-none">
         <div className="max-w-2xl mx-auto px-3 py-2.5 flex items-center gap-2 pointer-events-auto">
