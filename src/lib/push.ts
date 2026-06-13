@@ -3,6 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 
 let vapidPublicKeyPromise: Promise<string> | null = null;
 
+const getCurrentUserId = async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.user?.id ?? null;
+};
+
 const isIOS = () =>
   typeof navigator !== "undefined" &&
   (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
@@ -61,7 +66,8 @@ async function getVapidPublicKey(): Promise<string> {
 }
 
 async function ensureRegistration(): Promise<ServiceWorkerRegistration> {
-  const existing = await navigator.serviceWorker.getRegistration("/sw.js");
+  await navigator.serviceWorker.ready.catch(() => undefined);
+  const existing = await navigator.serviceWorker.getRegistration("/") || await navigator.serviceWorker.getRegistration("/sw.js");
   if (existing) return existing;
   return navigator.serviceWorker.register("/sw.js", { scope: "/" });
 }
@@ -107,8 +113,8 @@ export async function subscribeToPush(): Promise<{ ok: boolean; reason?: string 
     };
   }
   if (!isPushSupported()) return { ok: false, reason: "Notifications are not supported on this device." };
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { ok: false, reason: "Sign in first." };
+  const userId = await getCurrentUserId();
+  if (!userId) return { ok: false, reason: "Sign in first." };
 
   const permission = await Notification.requestPermission();
   if (permission !== "granted") return { ok: false, reason: "Permission denied" };
@@ -144,7 +150,7 @@ export async function subscribeToPush(): Promise<{ ok: boolean; reason?: string 
   // Upsert by endpoint
   const { error } = await supabase.from("push_subscriptions").upsert(
     {
-      user_id: user.id,
+      user_id: userId,
       endpoint,
       p256dh,
       auth,
@@ -160,7 +166,7 @@ export async function subscribeToPush(): Promise<{ ok: boolean; reason?: string 
 /** Unsubscribe from this device and remove the row from the DB. */
 export async function unsubscribeFromPush(): Promise<{ ok: boolean }> {
   if (!isPushSupported()) return { ok: false };
-  const reg = await navigator.serviceWorker.getRegistration("/sw.js");
+  const reg = await navigator.serviceWorker.getRegistration("/") || await navigator.serviceWorker.getRegistration("/sw.js");
   const sub = await reg?.pushManager.getSubscription();
   if (sub) {
     const endpoint = sub.endpoint;

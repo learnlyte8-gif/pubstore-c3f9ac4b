@@ -73,7 +73,8 @@ export default function NotificationPreferences() {
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) { navigate("/auth"); return; }
       setUserId(user.id);
       const { data } = await supabase
