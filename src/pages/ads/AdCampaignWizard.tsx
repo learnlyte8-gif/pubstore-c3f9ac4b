@@ -102,7 +102,7 @@ export default function AdCampaignWizard() {
   };
 
   return (
-    <div className="pb-8">
+    <div className="pb-40">
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b">
         <div className="flex items-center gap-3 px-4 h-14">
           <Link to="/store/ads" className="w-9 h-9 -ml-2 rounded-full flex items-center justify-center hover:bg-muted">
