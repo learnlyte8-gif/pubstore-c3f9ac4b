@@ -39,7 +39,7 @@ export function useUserTier(userId?: string | null) {
 export function useMyTier() {
   const [uid, setUid] = useState<string | null | undefined>(undefined);
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUid(data.user?.id ?? null));
+    supabase.auth.getSession().then(({ data }) => setUid(data.session?.user?.id ?? null));
   }, []);
   return useUserTier(uid);
 }
