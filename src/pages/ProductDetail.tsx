@@ -315,8 +315,8 @@ export default function ProductDetail() {
       )}
 
 
-      <div className="fixed bottom-14 lg:bottom-0 inset-x-0 z-30 safe-bottom pointer-events-none">
-        <div className="max-w-2xl mx-auto px-3 py-2.5 flex items-center gap-2 pointer-events-auto">
+      <div className="fixed bottom-14 lg:bottom-0 inset-x-0 z-30 pointer-events-none">
+        <div className="max-w-2xl mx-auto px-3 pb-1 pt-0 flex items-center gap-2 pointer-events-auto">
           {supplier && (
             <Link
               to={`/supplier/${supplier.id}`}
