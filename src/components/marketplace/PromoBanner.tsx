@@ -158,7 +158,7 @@ async function buildSlides(): Promise<Slide[]> {
     subtitle: "Self-drive rentals — daily, weekly, monthly.",
     cta: "Browse fleet", to: "/car-rentals",
     bg: "from-orange-600 via-amber-600 to-yellow-500",
-    image: null, icon: Key,
+    image: promoCarRentals, icon: Key,
   });
 
   // Always advertise the rides system
@@ -168,7 +168,7 @@ async function buildSlides(): Promise<Slide[]> {
     subtitle: "Set your price. Real drivers nearby.",
     cta: "Open rides", to: "/rides",
     bg: "from-emerald-500 via-teal-500 to-cyan-600",
-    image: null, icon: Navigation,
+    image: promoRides, icon: Navigation,
   });
 
   // Always advertise logistics
@@ -178,7 +178,7 @@ async function buildSlides(): Promise<Slide[]> {
     subtitle: "Bike, car, van or truck — drivers bid on your delivery.",
     cta: "Request delivery", to: "/logistics",
     bg: "from-orange-600 via-red-600 to-rose-600",
-    image: null, icon: Truck,
+    image: promoLogistics, icon: Truck,
   });
 
   // Shuffle to mix verticals (but keep deal/live early)
