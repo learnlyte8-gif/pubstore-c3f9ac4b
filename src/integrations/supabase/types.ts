@@ -14,6 +14,172 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_campaign_stats: {
+        Row: {
+          campaign_id: string
+          clicks: number
+          conversions: number
+          date: string
+          id: string
+          impressions: number
+          points_awarded: number
+          spend: number
+        }
+        Insert: {
+          campaign_id: string
+          clicks?: number
+          conversions?: number
+          date?: string
+          id?: string
+          impressions?: number
+          points_awarded?: number
+          spend?: number
+        }
+        Update: {
+          campaign_id?: string
+          clicks?: number
+          conversions?: number
+          date?: string
+          id?: string
+          impressions?: number
+          points_awarded?: number
+          spend?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_campaign_stats_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_campaigns: {
+        Row: {
+          clicks: number
+          created_at: string
+          creative: Json
+          daily_budget: number
+          ends_at: string | null
+          id: string
+          impressions: number
+          max_bid_cpc: number
+          name: string
+          owner_id: string
+          placement: Database["public"]["Enums"]["ad_placement"]
+          pricing_mode: Database["public"]["Enums"]["ad_pricing_mode"]
+          product_id: string | null
+          spent_today: number
+          spent_today_date: string
+          starts_at: string
+          status: Database["public"]["Enums"]["ad_status"]
+          supplier_id: string | null
+          targeting: Json
+          total_spent: number
+          updated_at: string
+        }
+        Insert: {
+          clicks?: number
+          created_at?: string
+          creative?: Json
+          daily_budget?: number
+          ends_at?: string | null
+          id?: string
+          impressions?: number
+          max_bid_cpc?: number
+          name: string
+          owner_id: string
+          placement: Database["public"]["Enums"]["ad_placement"]
+          pricing_mode?: Database["public"]["Enums"]["ad_pricing_mode"]
+          product_id?: string | null
+          spent_today?: number
+          spent_today_date?: string
+          starts_at?: string
+          status?: Database["public"]["Enums"]["ad_status"]
+          supplier_id?: string | null
+          targeting?: Json
+          total_spent?: number
+          updated_at?: string
+        }
+        Update: {
+          clicks?: number
+          created_at?: string
+          creative?: Json
+          daily_budget?: number
+          ends_at?: string | null
+          id?: string
+          impressions?: number
+          max_bid_cpc?: number
+          name?: string
+          owner_id?: string
+          placement?: Database["public"]["Enums"]["ad_placement"]
+          pricing_mode?: Database["public"]["Enums"]["ad_pricing_mode"]
+          product_id?: string | null
+          spent_today?: number
+          spent_today_date?: string
+          starts_at?: string
+          status?: Database["public"]["Enums"]["ad_status"]
+          supplier_id?: string | null
+          targeting?: Json
+          total_spent?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_campaigns_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_campaigns_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_events: {
+        Row: {
+          campaign_id: string
+          charged: number
+          created_at: string
+          event: Database["public"]["Enums"]["ad_event_kind"]
+          id: string
+          placement: Database["public"]["Enums"]["ad_placement"]
+          user_id: string | null
+        }
+        Insert: {
+          campaign_id: string
+          charged?: number
+          created_at?: string
+          event: Database["public"]["Enums"]["ad_event_kind"]
+          id?: string
+          placement: Database["public"]["Enums"]["ad_placement"]
+          user_id?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          charged?: number
+          created_at?: string
+          event?: Database["public"]["Enums"]["ad_event_kind"]
+          id?: string
+          placement?: Database["public"]["Enums"]["ad_placement"]
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       addresses: {
         Row: {
           city: string | null
@@ -2312,6 +2478,54 @@ export type Database = {
           updated_at?: string
           vehicle_type?: string
           weight_kg?: number | null
+        }
+        Relationships: []
+      }
+      loyalty_ledger: {
+        Row: {
+          created_at: string
+          delta: number
+          id: string
+          reason: string
+          reference: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delta: number
+          id?: string
+          reason: string
+          reference?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delta?: number
+          id?: string
+          reason?: string
+          reference?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      loyalty_points: {
+        Row: {
+          balance: number
+          lifetime_earned: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          lifetime_earned?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          lifetime_earned?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -5192,6 +5406,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _ad_reset_daily: { Args: { _id: string }; Returns: undefined }
       _send_product_suggestions: { Args: never; Returns: undefined }
       apply_wallet_transaction: {
         Args: {
@@ -5423,6 +5638,7 @@ export type Database = {
         }
       }
       recompute_user_tier: { Args: { _user_id: string }; Returns: undefined }
+      redeem_loyalty_points: { Args: { _points: number }; Returns: Json }
       request_wallet_withdrawal:
         | {
             Args: {
@@ -5495,7 +5711,34 @@ export type Database = {
         Args: { _supplier_id: string }
         Returns: string
       }
+      reward_ad_view: { Args: { _campaign_id: string }; Returns: Json }
+      serve_ad: {
+        Args: {
+          _category?: string
+          _country?: string
+          _interests?: string[]
+          _limit?: number
+          _placement: Database["public"]["Enums"]["ad_placement"]
+        }
+        Returns: {
+          creative: Json
+          id: string
+          max_bid_cpc: number
+          placement: Database["public"]["Enums"]["ad_placement"]
+          pricing_mode: Database["public"]["Enums"]["ad_pricing_mode"]
+          product_id: string
+          supplier_id: string
+        }[]
+      }
       tier_from_points: { Args: { _pts: number }; Returns: string }
+      track_ad_event: {
+        Args: {
+          _campaign_id: string
+          _event: Database["public"]["Enums"]["ad_event_kind"]
+          _placement: Database["public"]["Enums"]["ad_placement"]
+        }
+        Returns: Json
+      }
       transfer_wallet_funds: {
         Args: { _amount: number; _note?: string; _recipient_id: string }
         Returns: {
@@ -5518,6 +5761,10 @@ export type Database = {
       }
     }
     Enums: {
+      ad_event_kind: "impression" | "click" | "reward_view" | "conversion"
+      ad_placement: "banner" | "inline" | "interstitial" | "rewarded"
+      ad_pricing_mode: "flat_boost" | "cpc"
+      ad_status: "draft" | "active" | "paused" | "exhausted" | "ended"
       app_role: "supplier" | "buyer" | "admin"
       conversation_kind: "buyer_supplier" | "dm" | "group_buy"
       group_buy_role: "owner" | "member" | "invited"
@@ -5662,6 +5909,10 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      ad_event_kind: ["impression", "click", "reward_view", "conversion"],
+      ad_placement: ["banner", "inline", "interstitial", "rewarded"],
+      ad_pricing_mode: ["flat_boost", "cpc"],
+      ad_status: ["draft", "active", "paused", "exhausted", "ended"],
       app_role: ["supplier", "buyer", "admin"],
       conversation_kind: ["buyer_supplier", "dm", "group_buy"],
       group_buy_role: ["owner", "member", "invited"],
