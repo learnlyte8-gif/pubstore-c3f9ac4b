@@ -192,7 +192,7 @@ const FALLBACK: Slide[] = [{
   title: "Welcome to PUBSTORE",
   subtitle: "Source verified suppliers worldwide",
   cta: "Explore", to: "/categories",
-  bg: GRADIENTS[0], icon: ShoppingBag,
+  bg: GRADIENTS[0], image: promoWelcome, icon: ShoppingBag,
 }];
 
 export default function PromoBanner() {
