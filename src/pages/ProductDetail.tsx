@@ -323,26 +323,43 @@ export default function ProductDetail() {
         </div>
       )}
 
-      <div className="fixed bottom-14 lg:bottom-0 inset-x-0 z-30 bg-background border-t safe-bottom">
-        <div className="max-w-2xl mx-auto px-3 py-2.5 flex items-center gap-2">
+      <div className="fixed bottom-14 lg:bottom-0 inset-x-0 z-30 safe-bottom pointer-events-none">
+        <div className="max-w-2xl mx-auto px-3 py-2.5 flex items-center gap-2 pointer-events-auto">
           {supplier && (
-            <Link to={`/supplier/${supplier.id}`} className="flex flex-col items-center justify-center w-12 h-12 text-[10px] text-muted-foreground hover:text-foreground">
-              <Store className="w-5 h-5" /><span>Store</span>
+            <Link
+              to={`/supplier/${supplier.id}`}
+              className="flex flex-col items-center justify-center w-12 h-12 rounded-full text-[10px] text-foreground bg-background/40 backdrop-blur-xl backdrop-saturate-150 border border-white/30 dark:border-white/10 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.6)]"
+            >
+              <Store className="w-5 h-5" /><span className="leading-none mt-0.5">Store</span>
             </Link>
           )}
-          <Link to="/messages" className="flex flex-col items-center justify-center w-12 h-12 text-[10px] text-muted-foreground hover:text-foreground">
-            <MessageCircle className="w-5 h-5" /><span>Chat</span>
+          <Link
+            to="/messages"
+            className="flex flex-col items-center justify-center w-12 h-12 rounded-full text-[10px] text-foreground bg-background/40 backdrop-blur-xl backdrop-saturate-150 border border-white/30 dark:border-white/10 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.6)]"
+          >
+            <MessageCircle className="w-5 h-5" /><span className="leading-none mt-0.5">Chat</span>
           </Link>
           {gated ? (
-            <Button onClick={() => setInquiryOpen(true)} className="flex-1 h-12 rounded-full font-semibold gap-1.5">
+            <Button
+              onClick={() => setInquiryOpen(true)}
+              className="flex-1 h-12 rounded-full font-semibold gap-1.5 bg-foreground/90 backdrop-blur-xl text-background border border-white/20 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.25)]"
+            >
               <ShieldCheck className="w-4 h-4" /> Inquire to unlock checkout
             </Button>
           ) : (
             <>
-              <Button onClick={handleAdd} variant="outline" className="flex-1 h-12 rounded-full font-semibold gap-1.5">
+              <Button
+                onClick={handleAdd}
+                className="flex-1 h-12 rounded-full font-semibold gap-1.5 bg-background/40 backdrop-blur-xl backdrop-saturate-150 text-foreground border border-white/30 dark:border-white/10 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.6)] hover:bg-background/60"
+              >
                 <ShoppingCart className="w-4 h-4" /> Add
               </Button>
-              <Button onClick={handleBuy} className="flex-1 h-12 rounded-full font-semibold">Buy now</Button>
+              <Button
+                onClick={handleBuy}
+                className="flex-1 h-12 rounded-full font-semibold bg-foreground/90 backdrop-blur-xl text-background border border-white/20 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.25)] hover:bg-foreground"
+              >
+                Buy now
+              </Button>
             </>
           )}
         </div>
