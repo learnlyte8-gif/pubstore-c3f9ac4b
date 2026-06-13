@@ -12,6 +12,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Promo3DCarousel from "@/components/marketplace/Promo3DCarousel";
 import ProductCard from "@/components/marketplace/ProductCard";
 import AdReel from "@/components/marketplace/AdReel";
+import InlineAdCard from "@/components/ads/InlineAdCard";
 
 import TopSuppliers from "@/components/marketplace/TopSuppliers";
 import VerticalFeed from "@/components/marketplace/VerticalFeed";
@@ -411,6 +412,8 @@ function MixedCatalogGrid({ products, hero }: { products: import("@/data/product
       ),
     },
     { after: 13, span: 1, node: <PromoTile key="promo-new" product={newSeed} variant="new" /> },
+    { after: 7, span: 1, node: <InlineAdCard key="ad-inline-1" /> },
+    { after: 14, span: 1, node: <InlineAdCard key="ad-inline-2" /> },
     {
       after: 16, span: 2, node: (
         <CategoryCallout

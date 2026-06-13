@@ -61,6 +61,9 @@ import UserProfile from "./pages/UserProfile.tsx";
 import GroupBuyDetail from "./pages/GroupBuyDetail.tsx";
 import PayAction from "./pages/PayAction.tsx";
 import Restaurants from "./pages/Restaurants.tsx";
+import AdsDashboard from "./pages/ads/AdsDashboard.tsx";
+import AdCampaignWizard from "./pages/ads/AdCampaignWizard.tsx";
+import InterstitialAdManager from "./components/ads/InterstitialAdManager.tsx";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -113,6 +116,7 @@ const App = () => (
           />
           <BrowserRouter>
             <ScrollToTop />
+            <InterstitialAdManager />
             <Routes>
 
               <Route path="/" element={<Splash />} />
@@ -138,6 +142,8 @@ const App = () => (
                 <Route path="/store" element={<MyStore />} />
                 <Route path="/store/actions" element={<StoreActions />} />
                 <Route path="/store/analytics" element={<StoreAnalytics />} />
+                <Route path="/store/ads" element={<AdsDashboard />} />
+                <Route path="/store/ads/new" element={<AdCampaignWizard />} />
                 <Route path="/store/:section" element={<StoreSection />} />
                 <Route path="/store/:section/:sub" element={<StoreSection />} />
                 <Route path="/addresses" element={<Addresses />} />

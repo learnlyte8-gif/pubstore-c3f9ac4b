@@ -224,6 +224,7 @@ export default function MyStore() {
         </Section>
 
         <Section title="Grow">
+          <Row icon={Megaphone} label="PUBSTORE Ads" hint="Banner, feed, full-screen & rewarded reels" to="/store/ads" />
           <Row icon={Megaphone} label="Promotions & coupons" hint="Boost sales" to="/store/promote" />
           <Row icon={BarChart3} label="Analytics & insights" hint="Traffic, conversion" to="/store/analytics" />
           <Row icon={Star} label="Reviews" hint="Buyer feedback" to="/store/reviews" />
