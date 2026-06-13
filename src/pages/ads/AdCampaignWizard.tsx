@@ -257,7 +257,7 @@ export default function AdCampaignWizard() {
         )}
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 bg-background/95 backdrop-blur border-t p-3 flex gap-2 z-30">
+      <div className="fixed inset-x-0 bottom-16 bg-background/95 backdrop-blur border-t p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex gap-2 z-30">
         {step > 0 && <Button variant="outline" className="flex-1" onClick={() => setStep((s) => s - 1)}>Back</Button>}
         {step < 3 ? (
           <Button
