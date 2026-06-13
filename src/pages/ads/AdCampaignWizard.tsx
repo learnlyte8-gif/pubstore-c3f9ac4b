@@ -102,7 +102,7 @@ export default function AdCampaignWizard() {
   };
 
   return (
-    <div className="pb-8">
+    <div className="pb-40">
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b">
         <div className="flex items-center gap-3 px-4 h-14">
           <Link to="/store/ads" className="w-9 h-9 -ml-2 rounded-full flex items-center justify-center hover:bg-muted">
@@ -257,7 +257,7 @@ export default function AdCampaignWizard() {
         )}
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 bg-background/95 backdrop-blur border-t p-3 flex gap-2 z-30">
+      <div className="fixed inset-x-0 bottom-16 bg-background/95 backdrop-blur border-t p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex gap-2 z-30">
         {step > 0 && <Button variant="outline" className="flex-1" onClick={() => setStep((s) => s - 1)}>Back</Button>}
         {step < 3 ? (
           <Button
