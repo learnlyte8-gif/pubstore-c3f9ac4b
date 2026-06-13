@@ -334,7 +334,7 @@ export default function ProductDetail() {
           {gated ? (
             <Button
               onClick={() => setInquiryOpen(true)}
-              className="flex-1 h-12 rounded-full font-semibold gap-1.5 bg-foreground/90 backdrop-blur-xl text-background border border-white/20 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.25)]"
+              className="flex-1 h-12 rounded-full font-semibold gap-1.5 bg-background/40 backdrop-blur-xl backdrop-saturate-150 text-foreground border border-white/30 dark:border-white/10 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.6)] hover:bg-background/60"
             >
               <ShieldCheck className="w-4 h-4" /> Inquire to unlock checkout
             </Button>
