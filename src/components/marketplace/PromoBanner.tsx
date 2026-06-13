@@ -3,6 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { ShoppingBag, Sparkles, Flame, BedDouble, Car, Factory, Newspaper, Radio, Crown, Navigation, Wrench, Home as HomeIcon, Truck, Banknote, Key } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import promoCarRentals from "@/assets/promo-car-rentals.jpg";
+import promoRides from "@/assets/promo-rides.jpg";
+import promoLogistics from "@/assets/promo-logistics.jpg";
+import promoWelcome from "@/assets/promo-welcome.jpg";
 
 type Slide = {
   key: string;
@@ -154,7 +158,7 @@ async function buildSlides(): Promise<Slide[]> {
     subtitle: "Self-drive rentals — daily, weekly, monthly.",
     cta: "Browse fleet", to: "/car-rentals",
     bg: "from-orange-600 via-amber-600 to-yellow-500",
-    image: null, icon: Key,
+    image: promoCarRentals, icon: Key,
   });
 
   // Always advertise the rides system
@@ -164,7 +168,7 @@ async function buildSlides(): Promise<Slide[]> {
     subtitle: "Set your price. Real drivers nearby.",
     cta: "Open rides", to: "/rides",
     bg: "from-emerald-500 via-teal-500 to-cyan-600",
-    image: null, icon: Navigation,
+    image: promoRides, icon: Navigation,
   });
 
   // Always advertise logistics
@@ -174,7 +178,7 @@ async function buildSlides(): Promise<Slide[]> {
     subtitle: "Bike, car, van or truck — drivers bid on your delivery.",
     cta: "Request delivery", to: "/logistics",
     bg: "from-orange-600 via-red-600 to-rose-600",
-    image: null, icon: Truck,
+    image: promoLogistics, icon: Truck,
   });
 
   // Shuffle to mix verticals (but keep deal/live early)
@@ -188,7 +192,7 @@ const FALLBACK: Slide[] = [{
   title: "Welcome to PUBSTORE",
   subtitle: "Source verified suppliers worldwide",
   cta: "Explore", to: "/categories",
-  bg: GRADIENTS[0], icon: ShoppingBag,
+  bg: GRADIENTS[0], image: promoWelcome, icon: ShoppingBag,
 }];
 
 export default function PromoBanner() {
@@ -211,23 +215,29 @@ export default function PromoBanner() {
       <Link
         to={s.to}
         key={s.key}
-        className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${s.bg} h-32 px-5 flex items-center transition-all duration-700 shadow-elevated animate-fade-in`}
+        className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${s.bg} h-40 flex items-stretch transition-all duration-700 shadow-elevated animate-fade-in`}
       >
         {s.image && (
-          <img src={s.image} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" loading="lazy" />
+          <img
+            src={s.image}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            loading="lazy"
+          />
         )}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-transparent" />
-        <div className="relative text-white max-w-[62%] z-10">
-          <p className="text-[10px] font-bold uppercase tracking-wider opacity-90 flex items-center gap-1">
+        {/* Legibility scrim — strong on the left where the copy sits */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/45 to-black/10" />
+        <div className="relative z-10 flex-1 px-5 py-4 flex flex-col justify-center text-white max-w-[68%]">
+          <p className="text-[10px] font-bold uppercase tracking-wider opacity-95 flex items-center gap-1">
             <Sparkles className="w-3 h-3" /> {s.kind}
           </p>
-          <h3 className="text-xl font-bold leading-tight mt-0.5 line-clamp-1">{s.title}</h3>
-          <p className="text-xs opacity-95 mt-0.5 line-clamp-2">{s.subtitle}</p>
-          <span className="mt-2 inline-block bg-white text-foreground text-xs font-semibold px-3 py-1.5 rounded-full">
+          <h3 className="text-xl font-bold leading-tight mt-0.5 line-clamp-1 drop-shadow-md">{s.title}</h3>
+          <p className="text-xs opacity-95 mt-0.5 line-clamp-2 drop-shadow">{s.subtitle}</p>
+          <span className="mt-2 inline-flex w-fit items-center gap-1 bg-white text-foreground text-xs font-semibold px-3 py-1.5 rounded-full shadow-md">
+            <Icon className="w-3.5 h-3.5" />
             {s.cta}
           </span>
         </div>
-        <Icon className="absolute right-5 top-1/2 -translate-y-1/2 w-20 h-20 text-white/30 z-0" strokeWidth={1.4} />
         {slides.length > 1 && (
           <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">
             {slides.slice(0, Math.min(slides.length, 10)).map((_, idx) => (
