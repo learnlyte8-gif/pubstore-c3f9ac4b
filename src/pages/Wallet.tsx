@@ -4,6 +4,7 @@ import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Wallet, Plus, ArrowDownLeft, ArrowUpRight, Sparkles, ShieldCheck, Zap, Smartphone, CreditCard, Send, Wrench, Banknote, Clock, XCircle, Store, ArrowRightLeft } from "lucide-react";
 import SendMoneyDialog from "@/components/wallet/SendMoneyDialog";
 import WithdrawDialog from "@/components/wallet/WithdrawDialog";
+import LoyaltyCard from "@/components/wallet/LoyaltyCard";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -285,6 +286,11 @@ export default function WalletPage() {
           </div>
         </div>
       </div>
+
+      <div className="px-4 mt-4">
+        <LoyaltyCard />
+      </div>
+
 
 
       <SendMoneyDialog
