@@ -36,6 +36,9 @@ CREATE TABLE public.notification_preferences (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+GRANT SELECT, INSERT, UPDATE ON public.notification_preferences TO authenticated;
+GRANT ALL ON public.notification_preferences TO service_role;
+
 ALTER TABLE public.notification_preferences ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Own prefs select" ON public.notification_preferences
@@ -90,6 +93,9 @@ CREATE TABLE public.push_subscriptions (
 
 CREATE INDEX idx_push_subs_user ON public.push_subscriptions(user_id);
 
+GRANT SELECT, INSERT, DELETE, UPDATE ON public.push_subscriptions TO authenticated;
+GRANT ALL ON public.push_subscriptions TO service_role;
+
 ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Own push subs select" ON public.push_subscriptions
@@ -110,6 +116,9 @@ CREATE TABLE public.weekly_digest_log (
   product_count INTEGER NOT NULL DEFAULT 0,
   UNIQUE (user_id, week_start)
 );
+
+GRANT SELECT ON public.weekly_digest_log TO authenticated;
+GRANT ALL ON public.weekly_digest_log TO service_role;
 
 ALTER TABLE public.weekly_digest_log ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Own digest log select" ON public.weekly_digest_log
