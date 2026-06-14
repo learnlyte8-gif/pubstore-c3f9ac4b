@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Truck, Package, Plus, Star, Handshake, MapPin, Send, Check, X, Clock,
+  Truck, Package, Plus, Star, Handshake, Send, Check,
   CheckCircle2, PackageCheck, MessageCircle, Inbox,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
