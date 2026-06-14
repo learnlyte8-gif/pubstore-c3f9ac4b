@@ -27,23 +27,54 @@ async function ensureNativePermission(): Promise<boolean> {
 }
 
 async function showNativeNotification(s: Suggestion) {
+  // 1) Capacitor native (iOS/Android app shells)
   try {
-    const ok = await ensureNativePermission();
-    if (!ok) return false;
+    if (isNative) {
+      const ok = await ensureNativePermission();
+      if (ok) {
+        const meta = KIND_META[s.kind];
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              id: Math.floor(Math.random() * 2_000_000_000),
+              title: `PUBSTORE · ${meta.label}`,
+              body: s.subtitle ? `${s.title} — ${s.subtitle}` : s.title,
+              schedule: { at: new Date(Date.now() + 500) },
+              smallIcon: "ic_stat_icon_config_sample",
+              largeIcon: s.image || undefined,
+              extra: { url: s.link },
+            },
+          ],
+        });
+        return true;
+      }
+    }
+  } catch { /* fall through */ }
+
+  // 2) Web — service worker showNotification (same strategy as ActiveRideMonitor).
+  //    This works on iOS Safari PWA (installed to Home Screen) and all desktop browsers,
+  //    even when the tab is backgrounded.
+  try {
+    if (typeof Notification === "undefined") return false;
+    if (Notification.permission === "default") {
+      try { await Notification.requestPermission(); } catch { /* ignore */ }
+    }
+    if (Notification.permission !== "granted") return false;
     const meta = KIND_META[s.kind];
-    await LocalNotifications.schedule({
-      notifications: [
-        {
-          id: Math.floor(Math.random() * 2_000_000_000),
-          title: `PUBSTORE · ${meta.label}`,
-          body: s.subtitle ? `${s.title} — ${s.subtitle}` : s.title,
-          schedule: { at: new Date(Date.now() + 500) },
-          smallIcon: "ic_stat_icon_config_sample",
-          largeIcon: s.image || undefined,
-          extra: { url: s.link },
-        },
-      ],
-    });
+    const title = `PUBSTORE · ${meta.label}`;
+    const body = s.subtitle ? `${s.title} — ${s.subtitle}` : s.title;
+    const reg = "serviceWorker" in navigator ? await navigator.serviceWorker.getRegistration() : null;
+    if (reg) {
+      await reg.showNotification(title, {
+        body,
+        icon: "/icons/icon-192.png",
+        badge: "/icons/icon-192.png",
+        tag: `pubstore-suggestion-${s.kind}`,
+        data: { url: s.link },
+      });
+      return true;
+    }
+    new Notification(title, { body, icon: "/icons/icon-192.png", tag: `pubstore-suggestion-${s.kind}` });
     return true;
   } catch {
     return false;
