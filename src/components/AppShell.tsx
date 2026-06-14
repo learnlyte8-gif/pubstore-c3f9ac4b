@@ -33,6 +33,19 @@ let shellNotifChannelNonce = 0;
 
 const makeShellNotifChannelName = (uid: string) => `shell-notif:${uid}:${++shellNotifChannelNonce}`;
 
+function formatCompact(n: number): string {
+  const abs = Math.abs(n);
+  if (abs < 1000) return n.toFixed(2);
+  const sign = n < 0 ? "-" : "";
+  const fmt = (v: number, suffix: string) => {
+    const s = v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2);
+    return `${sign}${s.replace(/\.?0+$/, "")}${suffix}`;
+  };
+  if (abs < 1_000_000) return fmt(abs / 1_000, "k");
+  if (abs < 1_000_000_000) return fmt(abs / 1_000_000, "M");
+  return fmt(abs / 1_000_000_000, "B");
+}
+
 export default function AppShell() {
   const [session, setSession] = useState<Session | null>(null);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
