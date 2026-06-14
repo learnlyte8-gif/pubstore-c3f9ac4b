@@ -191,13 +191,22 @@ export default function AppShell() {
             >
               <Camera className="w-[18px] h-[18px]" strokeWidth={2.2} />
             </Link>
-            <Link
-              to="/search"
-              aria-label="Search"
-              className="shrink-0 h-7 px-3 rounded-md bg-[hsl(24_100%_56%)] text-white text-[11px] font-bold flex items-center active:scale-95 transition"
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event("tapson:open"))}
+              aria-label="Ask Tapson"
+              className="group relative shrink-0 flex items-center gap-1 h-7 pl-1.5 pr-2.5 rounded-md text-foreground active:scale-95 transition overflow-hidden
+                         bg-white/10 dark:bg-white/5 backdrop-blur-xl
+                         ring-1 ring-inset ring-white/40
+                         shadow-[0_4px_12px_-6px_hsl(0_0%_0%/0.3),0_1px_0_0_hsl(0_0%_100%/0.5)_inset]"
             >
-              Search
-            </Link>
+              <span className="pointer-events-none absolute inset-x-1 top-0 h-1/2 rounded-t-md bg-gradient-to-b from-white/55 to-transparent opacity-80" />
+              <span className="pointer-events-none absolute inset-0 rounded-md bg-[radial-gradient(120%_60%_at_30%_0%,hsl(0_0%_100%/0.35),transparent_60%)]" />
+              <span className="pointer-events-none absolute -inset-y-2 -left-8 w-8 rotate-12 bg-gradient-to-r from-transparent via-white/70 to-transparent blur-sm opacity-70 animate-[shimmer_2.8s_ease-in-out_infinite]" />
+              <Sparkles className="relative w-3.5 h-3.5" strokeWidth={2.6} />
+              <span className="relative text-[11px] font-bold tracking-tight">Tapson</span>
+            </button>
+
           </div>
 
           {location.pathname === "/home" && <HomeFeedTabs />}
