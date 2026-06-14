@@ -91,6 +91,11 @@ export default {
           "20%": { opacity: "1" },
           "100%": { transform: "translateY(-220px) scale(1.2) rotate(15deg)", opacity: "0" },
         },
+        shimmer: {
+          "0%": { transform: "translateX(0) rotate(12deg)", opacity: "0" },
+          "40%": { opacity: "0.9" },
+          "100%": { transform: "translateX(260px) rotate(12deg)", opacity: "0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -98,6 +103,7 @@ export default {
         "fade-in": "fade-in 0.3s ease-out",
         marquee: "marquee 30s linear infinite",
         "float-up": "float-up 1.8s ease-out forwards",
+        shimmer: "shimmer 2.8s ease-in-out infinite",
       },
     },
   },
