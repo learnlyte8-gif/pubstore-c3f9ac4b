@@ -129,21 +129,6 @@ const Home = () => {
         <div className="animate-fade-in">
           <Promo3DCarousel />
           <HomeMenuDrawer />
-          {walletUserId && (
-            <Link to="/wallet" className="mx-4 mt-3 flex items-center gap-3 rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/70 text-primary-foreground p-3.5 shadow-elevated relative overflow-hidden">
-              <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-primary-foreground/10 blur-2xl" />
-              <span className="relative w-10 h-10 rounded-xl bg-primary-foreground/20 backdrop-blur flex items-center justify-center">
-                <WalletIcon className="w-5 h-5" />
-              </span>
-              <div className="relative flex-1 min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-wider opacity-85">PUBSTORE Pay</p>
-                <p className="text-xl font-black tracking-tighter tabular-nums leading-none">${balance.toFixed(2)}</p>
-              </div>
-              <span className="relative h-8 px-3 rounded-full bg-primary-foreground text-primary text-xs font-black flex items-center gap-1 shadow-card">
-                <Plus className="w-3 h-3" strokeWidth={3} /> Top up
-              </span>
-            </Link>
-          )}
 
           {/* Product-dependent rails: show skeleton while loading, empty state if no products */}
           {isLoading ? (
