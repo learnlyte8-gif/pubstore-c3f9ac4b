@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, Link, useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import { useCategories } from "@/hooks/useCatalog";
-import { Search, Bell, Navigation, Menu, Store, Briefcase, Wrench, Building2, Car, Landmark, Factory, Newspaper, Hotel, Truck, X, Home, Sparkles, Camera, ShoppingCart } from "lucide-react";
+import { Search, Bell, Navigation, Menu, Store, Briefcase, Wrench, Building2, Car, Landmark, Factory, Newspaper, Hotel, Truck, X, Home, Sparkles, Camera, ShoppingCart, Wallet as WalletIcon } from "lucide-react";
 import { IoHome, IoHomeOutline, IoBagHandle, IoBagHandleOutline, IoChatbubble, IoChatbubbleOutline, IoHeart, IoHeartOutline, IoPerson, IoPersonOutline } from "react-icons/io5";
 import type { IconType } from "react-icons";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
