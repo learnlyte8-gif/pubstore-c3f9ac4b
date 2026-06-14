@@ -39,7 +39,7 @@ export default function FlashDeals() {
             <TimeBox v={pad(s)} />
           </div>
         </div>
-        <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1 -mx-1 px-1">
+        <div className="flex gap-1 overflow-x-auto scrollbar-none pb-1 -mx-1 px-1">
           {FLASH_DEALS.map((p) => (
             <ProductCard key={p.id} product={p} variant="compact" />
           ))}
