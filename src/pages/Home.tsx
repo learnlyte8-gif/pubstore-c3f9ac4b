@@ -165,28 +165,6 @@ const Home = () => {
                 </section>
               )}
 
-              {(() => {
-                // Prefer products with AI-generated reels; fall back to top sellers
-                // so the section is never empty while sellers are still opting in.
-                const withReels = products.filter((p) => p.adHasReel);
-                const fallback = [...products]
-                  .sort((a, b) => (b.sold ?? 0) - (a.sold ?? 0))
-                  .filter((p) => !withReels.some((r) => r.id === p.id));
-                const reels = [...withReels, ...fallback].slice(0, 12);
-                if (reels.length === 0) return null;
-                return (
-                  <section className="px-4 mt-6">
-                    <SectionHeader icon={Sparkles} title="Reels" subtitle="AI ads from sellers you might love" />
-                    <div className="flex gap-3 overflow-x-auto -mx-4 px-4 mt-3 pb-2 scrollbar-none snap-x">
-                      {reels.map((p) => (
-                        <div key={p.id} className="snap-start">
-                          <AdReel product={p} variant="tile" />
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                );
-              })()}
 
               <section className="px-4 mt-6">
 
