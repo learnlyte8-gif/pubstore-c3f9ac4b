@@ -41,6 +41,7 @@ export default function AppShell() {
   const location = useLocation();
   useStatusBarSync();
   const { info: tierInfo } = useMyTier();
+  const { balance, userId: walletUserId } = useWallet();
   const tier: Tier = tierInfo?.buyer_tier ?? "bronze";
   const tierHsl = TIER_HSL[tier];
   const headerGradient = `linear-gradient(135deg, hsl(var(--primary) / 0.45) 0%, hsl(var(--background)) 55%, hsl(${tierHsl} / 0.65) 100%)`;
