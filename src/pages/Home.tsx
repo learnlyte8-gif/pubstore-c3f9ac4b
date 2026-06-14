@@ -147,7 +147,7 @@ const Home = () => {
               {trending.length > 0 && (
                 <section className="px-4 mt-6">
                   <SectionHeader icon={TrendingUp} title="Trending now" subtitle="Most ordered this week" />
-                  <div className="flex gap-3 overflow-x-auto scrollbar-none mt-3 -mx-1 px-1 pb-1">
+                  <div className="flex gap-1 overflow-x-auto scrollbar-none mt-3 -mx-1 px-1 pb-1">
                     {trending.map((p) => (<ProductCard key={p.id} product={p} variant="compact" />))}
                   </div>
                 </section>
@@ -169,7 +169,7 @@ const Home = () => {
               <section className="px-4 mt-6">
 
                 <SectionHeader icon={Sparkles} title="For you" subtitle="Ranked by your interests, follows & activity" />
-                <div className="grid grid-cols-2 gap-3 mt-3">
+                <div className="grid grid-cols-2 gap-1 mt-3">
                   {(() => {
                     const rankedIds = (forYouProducts as any[]).map((p) => p.id);
                     const byId = new Map(products.map((p) => [p.id, p]));
@@ -397,7 +397,7 @@ function MixedCatalogGrid({ products, hero }: { products: import("@/data/product
     if (!placeProduct()) break;
   }
 
-  return <div className="grid grid-cols-2 gap-3 mt-3">{cells}</div>;
+  return <div className="grid grid-cols-2 gap-1 mt-3">{cells}</div>;
 }
 
 function FollowingTab() {
@@ -460,7 +460,7 @@ function FollowingTab() {
             No products yet from the suppliers you follow.
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-3 mt-3">
+          <div className="grid grid-cols-2 gap-1 mt-3">
             {products.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}

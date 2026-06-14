@@ -16,7 +16,7 @@ export default function RecommendationStrip({ title = "Because you browsed", sub
           <p className="text-[10px] text-muted-foreground">{subtitle}</p>
         </div>
       </div>
-      <div className="flex gap-2.5 overflow-x-auto scrollbar-none -mx-1 px-1 pb-1">
+      <div className="flex gap-1 overflow-x-auto scrollbar-none -mx-1 px-1 pb-1">
         {data.map((p) => (
           <ProductCard key={`rec-${p.id}`} product={p} variant="compact" />
         ))}

@@ -169,7 +169,7 @@ export default function Supplier() {
           {products.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-12">No products listed yet.</p>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-1">
               {products.map((p) => <ProductCard key={p.id} product={p} />)}
             </div>
           )}
