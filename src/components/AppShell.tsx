@@ -154,7 +154,7 @@ export default function AppShell() {
           <div className="h-10 flex items-center gap-2">
             <RailDrawer />
             <Link to="/home" className="flex items-baseline gap-1 min-w-0 active:opacity-70 transition" aria-label="PUBSTORE home">
-              <span className="text-[11px] font-bold tracking-wider leading-none text-foreground/70" aria-label="Country">
+              <span className="font-black text-base tracking-tight leading-none text-[hsl(142_72%_42%)]" aria-label="Country">
                 {countryCode}
               </span>
               <span className="font-black text-base tracking-tight leading-none">PUBSTORE</span>
