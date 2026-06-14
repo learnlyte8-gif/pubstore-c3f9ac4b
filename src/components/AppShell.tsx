@@ -149,7 +149,7 @@ export default function AppShell() {
               >
                 <WalletIcon className="w-4 h-4" strokeWidth={2.2} />
                 <span className="text-[12px] font-bold tabular-nums tracking-tight">
-                  ${balance.toFixed(2)}
+                  ${formatCompact(balance)}
                 </span>
               </Link>
             )}
