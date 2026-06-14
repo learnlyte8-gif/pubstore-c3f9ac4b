@@ -121,23 +121,20 @@ export default function AppShell() {
           {/* Row 1: brand + Tapson + action icons */}
           <div className="h-10 flex items-center gap-2">
             <RailDrawer />
-            <Link to="/home" className="flex items-center min-w-0 active:opacity-70 transition" aria-label="PUBSTORE home">
-              <img src={logo} alt="PUBSTORE" className="w-7 h-7 shrink-0" />
+            <Link to="/home" className="flex items-baseline min-w-0 active:opacity-70 transition" aria-label="PUBSTORE home">
+              <span className="font-black text-base tracking-tight leading-none">PUBSTORE</span>
+              {session && tierInfo && (
+                <span
+                  className="ml-0.5 text-[9px] font-bold uppercase tracking-wider leading-none align-sub"
+                  style={{ color: `hsl(${tierHsl})` }}
+                  aria-label={`Buyer level: ${tier}`}
+                >
+                  {tier}
+                </span>
+              )}
             </Link>
 
             <div className="mr-auto" />
-
-
-
-            {session && tierInfo && (
-              <Link
-                to="/profile"
-                aria-label={`Your level: ${tier}`}
-                className="shrink-0 active:scale-95 transition"
-              >
-                <TierBadge tier={tier} role="buyer" size="xs" />
-              </Link>
-            )}
 
 
 
