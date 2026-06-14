@@ -46,6 +46,37 @@ function formatCompact(n: number): string {
   return fmt(abs / 1_000_000_000, "B");
 }
 
+function useCountryCode(): string {
+  const [code, setCode] = useState<string>(() => {
+    try {
+      const cached = localStorage.getItem("user_country_code_v1");
+      if (cached) return cached;
+      const loc = new Intl.Locale(navigator.language);
+      // @ts-ignore
+      const region: string | undefined = loc.region ?? loc.maximize?.().region;
+      if (region) return region.toUpperCase();
+    } catch { /* ignore */ }
+    return "ZW";
+  });
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch("https://ipapi.co/json/");
+        if (!r.ok) return;
+        const j = await r.json();
+        const cc = (j?.country_code || j?.country) as string | undefined;
+        if (cc && !cancelled) {
+          setCode(cc.toUpperCase());
+          try { localStorage.setItem("user_country_code_v1", cc.toUpperCase()); } catch { /* ignore */ }
+        }
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  return code;
+}
+
 export default function AppShell() {
   const [session, setSession] = useState<Session | null>(null);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
