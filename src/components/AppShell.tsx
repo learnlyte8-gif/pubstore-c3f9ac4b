@@ -112,19 +112,9 @@ export default function AppShell() {
               <img src={logo} alt="PUBSTORE" className="w-7 h-7 shrink-0" />
             </Link>
 
-            {session && (
-              <Link
-                to="/wallet"
-                aria-label="PUBSTORE Pay wallet"
-                className="mr-auto ml-1 shrink-0 flex items-center gap-1 h-8 pl-1.5 pr-2.5 rounded-full bg-gradient-to-br from-emerald-600 to-emerald-500 text-white shadow-pop active:scale-95 transition"
-              >
-                <span className="w-5 h-5 rounded-full bg-white/25 backdrop-blur flex items-center justify-center">
-                  <WalletIcon className="w-3 h-3" strokeWidth={2.6} />
-                </span>
-                <span className="text-[11px] font-bold tracking-tight">Pay</span>
-              </Link>
-            )}
-            {!session && <div className="mr-auto" />}
+            <div className="mr-auto" />
+
+
 
             {session && tierInfo && (
               <Link
