@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, Link, useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import { useCategories } from "@/hooks/useCatalog";
-import { Search, Bell, Navigation, Menu, Store, Briefcase, Wrench, Building2, Car, Landmark, Factory, Newspaper, Hotel, Truck, X, Home, Sparkles, Camera, ShoppingCart } from "lucide-react";
+import { Search, Bell, Navigation, Menu, Store, Briefcase, Wrench, Building2, Car, Landmark, Factory, Newspaper, Hotel, Truck, X, Home, Sparkles, Camera, ShoppingCart, Wallet as WalletIcon } from "lucide-react";
 import { IoHome, IoHomeOutline, IoBagHandle, IoBagHandleOutline, IoChatbubble, IoChatbubbleOutline, IoHeart, IoHeartOutline, IoPerson, IoPersonOutline } from "react-icons/io5";
 import type { IconType } from "react-icons";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -106,10 +106,23 @@ export default function AppShell() {
           {/* Row 1: brand + Tapson + action icons */}
           <div className="h-10 flex items-center gap-2">
             <RailDrawer />
-            <Link to="/home" className="flex items-center gap-1.5 min-w-0 mr-auto active:opacity-70 transition" aria-label="PUBSTORE home">
-              <img src={logo} alt="" className="w-7 h-7 shrink-0" />
-              <span className="font-brand text-[18px] tracking-[0.02em] leading-none truncate">PUBSTORE</span>
+            <Link to="/home" className="flex items-center min-w-0 active:opacity-70 transition" aria-label="PUBSTORE home">
+              <img src={logo} alt="PUBSTORE" className="w-7 h-7 shrink-0" />
             </Link>
+
+            {session && (
+              <Link
+                to="/wallet"
+                aria-label="PUBSTORE Pay wallet"
+                className="mr-auto ml-1 shrink-0 flex items-center gap-1 h-8 pl-1.5 pr-2.5 rounded-full bg-gradient-to-br from-emerald-600 to-emerald-500 text-white shadow-pop active:scale-95 transition"
+              >
+                <span className="w-5 h-5 rounded-full bg-white/25 backdrop-blur flex items-center justify-center">
+                  <WalletIcon className="w-3 h-3" strokeWidth={2.6} />
+                </span>
+                <span className="text-[11px] font-bold tracking-tight">Pay</span>
+              </Link>
+            )}
+            {!session && <div className="mr-auto" />}
 
             {session && tierInfo && (
               <Link
