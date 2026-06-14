@@ -169,7 +169,7 @@ const Home = () => {
               <section className="px-4 mt-6">
 
                 <SectionHeader icon={Sparkles} title="For you" subtitle="Ranked by your interests, follows & activity" />
-                <div className="grid grid-cols-2 gap-3 mt-3">
+                <div className="grid grid-cols-2 gap-1 mt-3">
                   {(() => {
                     const rankedIds = (forYouProducts as any[]).map((p) => p.id);
                     const byId = new Map(products.map((p) => [p.id, p]));
