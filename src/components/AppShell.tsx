@@ -141,6 +141,19 @@ export default function AppShell() {
               <span className="text-[11px] font-bold tracking-tight">Tapson</span>
             </button>
 
+            {walletUserId && (
+              <Link
+                to="/wallet"
+                aria-label="PUBSTORE Pay wallet"
+                className="shrink-0 flex items-center gap-1 h-8 px-1 text-foreground active:scale-95 transition"
+              >
+                <WalletIcon className="w-4 h-4" strokeWidth={2.2} />
+                <span className="text-[12px] font-bold tabular-nums tracking-tight">
+                  ${balance.toFixed(2)}
+                </span>
+              </Link>
+            )}
+
             <div className="flex items-center gap-0.5 shrink-0">
               <Link to="/notifications" aria-label="Notifications" className="relative p-2 rounded-full active:scale-90 active:bg-muted transition">
                 <Bell className="w-[22px] h-[22px]" strokeWidth={1.8} />
