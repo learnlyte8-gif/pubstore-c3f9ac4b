@@ -397,7 +397,7 @@ function MixedCatalogGrid({ products, hero }: { products: import("@/data/product
     if (!placeProduct()) break;
   }
 
-  return <div className="grid grid-cols-2 gap-3 mt-3">{cells}</div>;
+  return <div className="grid grid-cols-2 gap-1 mt-3">{cells}</div>;
 }
 
 function FollowingTab() {
