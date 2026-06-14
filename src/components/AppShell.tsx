@@ -21,6 +21,7 @@ import logo from "@/assets/pubstore-logo.png";
 import { useStatusBarSync } from "@/hooks/useStatusBarSync";
 import { useMyTier, type Tier } from "@/hooks/useUserTier";
 import TierBadge from "@/components/TierBadge";
+import { useWallet } from "@/hooks/useWallet";
 
 const TIER_HSL: Record<Tier, string> = {
   bronze: "30 65% 45%",
@@ -40,6 +41,7 @@ export default function AppShell() {
   const location = useLocation();
   useStatusBarSync();
   const { info: tierInfo } = useMyTier();
+  const { balance, userId: walletUserId } = useWallet();
   const tier: Tier = tierInfo?.buyer_tier ?? "bronze";
   const tierHsl = TIER_HSL[tier];
   const headerGradient = `linear-gradient(135deg, hsl(var(--primary) / 0.45) 0%, hsl(var(--background)) 55%, hsl(${tierHsl} / 0.65) 100%)`;
@@ -110,19 +112,9 @@ export default function AppShell() {
               <img src={logo} alt="PUBSTORE" className="w-7 h-7 shrink-0" />
             </Link>
 
-            {session && (
-              <Link
-                to="/wallet"
-                aria-label="PUBSTORE Pay wallet"
-                className="mr-auto ml-1 shrink-0 flex items-center gap-1 h-8 pl-1.5 pr-2.5 rounded-full bg-gradient-to-br from-emerald-600 to-emerald-500 text-white shadow-pop active:scale-95 transition"
-              >
-                <span className="w-5 h-5 rounded-full bg-white/25 backdrop-blur flex items-center justify-center">
-                  <WalletIcon className="w-3 h-3" strokeWidth={2.6} />
-                </span>
-                <span className="text-[11px] font-bold tracking-tight">Pay</span>
-              </Link>
-            )}
-            {!session && <div className="mr-auto" />}
+            <div className="mr-auto" />
+
+
 
             {session && tierInfo && (
               <Link
@@ -148,6 +140,19 @@ export default function AppShell() {
               </span>
               <span className="text-[11px] font-bold tracking-tight">Tapson</span>
             </button>
+
+            {walletUserId && (
+              <Link
+                to="/wallet"
+                aria-label="PUBSTORE Pay wallet"
+                className="shrink-0 flex items-center gap-1 h-8 px-1 text-foreground active:scale-95 transition"
+              >
+                <WalletIcon className="w-4 h-4" strokeWidth={2.2} />
+                <span className="text-[12px] font-bold tabular-nums tracking-tight">
+                  ${balance.toFixed(2)}
+                </span>
+              </Link>
+            )}
 
             <div className="flex items-center gap-0.5 shrink-0">
               <Link to="/notifications" aria-label="Notifications" className="relative p-2 rounded-full active:scale-90 active:bg-muted transition">
