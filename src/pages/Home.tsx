@@ -147,7 +147,7 @@ const Home = () => {
               {trending.length > 0 && (
                 <section className="px-4 mt-6">
                   <SectionHeader icon={TrendingUp} title="Trending now" subtitle="Most ordered this week" />
-                  <div className="flex gap-3 overflow-x-auto scrollbar-none mt-3 -mx-1 px-1 pb-1">
+                  <div className="flex gap-1 overflow-x-auto scrollbar-none mt-3 -mx-1 px-1 pb-1">
                     {trending.map((p) => (<ProductCard key={p.id} product={p} variant="compact" />))}
                   </div>
                 </section>
