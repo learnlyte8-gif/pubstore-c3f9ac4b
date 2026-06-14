@@ -308,7 +308,7 @@ export default function ProductDetail() {
       {related.length > 0 && (
         <section className="px-4 mt-6">
           <p className="text-base font-bold mb-3">You may also like</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-1">
             {related.map((p) => (<ProductCard key={p.id} product={p} />))}
           </div>
         </section>
