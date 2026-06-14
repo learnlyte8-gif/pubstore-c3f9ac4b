@@ -460,7 +460,7 @@ function FollowingTab() {
             No products yet from the suppliers you follow.
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-3 mt-3">
+          <div className="grid grid-cols-2 gap-1 mt-3">
             {products.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
