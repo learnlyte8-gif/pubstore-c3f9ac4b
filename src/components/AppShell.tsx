@@ -46,6 +46,37 @@ function formatCompact(n: number): string {
   return fmt(abs / 1_000_000_000, "B");
 }
 
+function useCountryCode(): string {
+  const [code, setCode] = useState<string>(() => {
+    try {
+      const cached = localStorage.getItem("user_country_code_v1");
+      if (cached) return cached;
+      const loc = new Intl.Locale(navigator.language);
+      // @ts-ignore
+      const region: string | undefined = loc.region ?? loc.maximize?.().region;
+      if (region) return region.toUpperCase();
+    } catch { /* ignore */ }
+    return "ZW";
+  });
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch("https://ipapi.co/json/");
+        if (!r.ok) return;
+        const j = await r.json();
+        const cc = (j?.country_code || j?.country) as string | undefined;
+        if (cc && !cancelled) {
+          setCode(cc.toUpperCase());
+          try { localStorage.setItem("user_country_code_v1", cc.toUpperCase()); } catch { /* ignore */ }
+        }
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  return code;
+}
+
 export default function AppShell() {
   const [session, setSession] = useState<Session | null>(null);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
@@ -57,6 +88,7 @@ export default function AppShell() {
   const { balance, userId: walletUserId } = useWallet();
   const tier: Tier = tierInfo?.buyer_tier ?? "bronze";
   const tierHsl = TIER_HSL[tier];
+  const countryCode = useCountryCode();
   const headerGradient = `linear-gradient(135deg, hsl(var(--primary) / 0.45) 0%, hsl(var(--background)) 55%, hsl(${tierHsl} / 0.65) 100%)`;
 
   // Match the phone status bar to the header's top-left color (primary @ 0.45 over background).
@@ -121,7 +153,10 @@ export default function AppShell() {
           {/* Row 1: brand + Tapson + action icons */}
           <div className="h-10 flex items-center gap-2">
             <RailDrawer />
-            <Link to="/home" className="flex items-baseline min-w-0 active:opacity-70 transition" aria-label="PUBSTORE home">
+            <Link to="/home" className="flex items-baseline gap-1 min-w-0 active:opacity-70 transition" aria-label="PUBSTORE home">
+              <span className="text-[11px] font-bold tracking-wider leading-none text-foreground/70" aria-label="Country">
+                {countryCode}
+              </span>
               <span className="font-black text-base tracking-tight leading-none">PUBSTORE</span>
               {session && tierInfo && (
                 <span
