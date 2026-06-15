@@ -349,27 +349,10 @@ export default function WalletPage() {
           </div>
 
 
-          <div className="grid grid-cols-3 gap-2">
-            {TOPUP_AMOUNTS.map((a) => (
-              <button
-                key={a}
-                onClick={() => startCheckout(a)}
-                disabled={redirecting || capturing}
-                className={`h-14 rounded-xl border transition flex items-center justify-center font-black text-base tabular-nums tracking-tight disabled:opacity-50 ${
-                  selected === a
-                    ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/30"
-                    : "border-border bg-muted/40 hover:bg-primary/10 hover:border-primary/40"
-                }`}
-              >
-                {redirecting && selected === a ? <CircleSpinner size={16} /> : fmt(a)}
-              </button>
-            ))}
-          </div>
-
           {/* Custom amount */}
-          <div className="mt-3">
+          <div>
             <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5 block">
-              Or enter custom amount
+              Enter amount
             </label>
             <div className="flex gap-2">
               <div className="relative flex-1">
