@@ -18,7 +18,7 @@ const PENDING_KEY = "pubstore.paypal.pending";
 const sb = supabase as any;
 
 type Pending = { orderID: string; amount: number };
-type Provider = "paypal" | "pesepay" | "simulate";
+type Provider = "paypal" | "pesepay";
 
 export default function WalletPage() {
   const { balance, personalBalance, salesBalance, transactions, isLoading, userId, refresh, moveSalesToPersonal } = useWallet();
