@@ -339,10 +339,13 @@ export default function WalletPage() {
             <p className="text-sm font-black tracking-tight">Add money</p>
           </div>
 
-          {/* Provider picker */}
-          <div className="grid grid-cols-2 gap-2 mb-3">
-            <ProviderBtn active={provider === "pesepay"} onClick={() => setProvider("pesepay")} icon={Smartphone} label="Pesepay" sub="EcoCash · OneMoney · Visa" />
-            <ProviderBtn active={provider === "paypal"} onClick={() => setProvider("paypal")} icon={CreditCard} label="PayPal" sub="Cards & PayPal" />
+          {/* Provider picker — Pesepay rails + PayPal */}
+          <div className="grid grid-cols-5 gap-2 mb-3">
+            <BrandTile active={provider === "ecocash"} onClick={() => setProvider("ecocash")} label="EcoCash" brand="ecocash" />
+            <BrandTile active={provider === "onemoney"} onClick={() => setProvider("onemoney")} label="OneMoney" brand="onemoney" />
+            <BrandTile active={provider === "visa"} onClick={() => setProvider("visa")} label="Visa" brand="visa" />
+            <BrandTile active={provider === "mastercard"} onClick={() => setProvider("mastercard")} label="Mastercard" brand="mastercard" />
+            <BrandTile active={provider === "paypal"} onClick={() => setProvider("paypal")} label="PayPal" brand="paypal" />
           </div>
 
 
