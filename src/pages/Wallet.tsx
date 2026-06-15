@@ -18,7 +18,8 @@ const PENDING_KEY = "pubstore.paypal.pending";
 const sb = supabase as any;
 
 type Pending = { orderID: string; amount: number };
-type Provider = "paypal" | "pesepay";
+type Provider = "paypal" | "ecocash" | "onemoney" | "visa" | "mastercard";
+const PESEPAY_PROVIDERS: Provider[] = ["ecocash", "onemoney", "visa", "mastercard"];
 
 export default function WalletPage() {
   const { balance, personalBalance, salesBalance, transactions, isLoading, userId, refresh, moveSalesToPersonal } = useWallet();
@@ -27,7 +28,7 @@ export default function WalletPage() {
   const [selected, setSelected] = useState<number | null>(null);
   const [redirecting, setRedirecting] = useState(false);
   const [capturing, setCapturing] = useState(false);
-  const [provider, setProvider] = useState<Provider>("pesepay");
+  const [provider, setProvider] = useState<Provider>("ecocash");
   const [customAmount, setCustomAmount] = useState<string>("");
   const [sendOpen, setSendOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
@@ -176,7 +177,7 @@ export default function WalletPage() {
         return;
       }
 
-      if (provider === "pesepay") {
+      if (PESEPAY_PROVIDERS.includes(provider)) {
         const { data, error } = await sb.functions.invoke("pesepay-create-payment", {
           body: { purpose: "wallet_topup", amount, returnUrl: `${origin}/wallet?pesepay_ref=PENDING` },
         });
@@ -338,10 +339,13 @@ export default function WalletPage() {
             <p className="text-sm font-black tracking-tight">Add money</p>
           </div>
 
-          {/* Provider picker */}
-          <div className="grid grid-cols-2 gap-2 mb-3">
-            <ProviderBtn active={provider === "pesepay"} onClick={() => setProvider("pesepay")} icon={Smartphone} label="Pesepay" sub="EcoCash · OneMoney · Visa" />
-            <ProviderBtn active={provider === "paypal"} onClick={() => setProvider("paypal")} icon={CreditCard} label="PayPal" sub="Cards & PayPal" />
+          {/* Provider picker — Pesepay rails + PayPal */}
+          <div className="grid grid-cols-5 gap-2 mb-3">
+            <BrandTile active={provider === "ecocash"} onClick={() => setProvider("ecocash")} label="EcoCash" brand="ecocash" />
+            <BrandTile active={provider === "onemoney"} onClick={() => setProvider("onemoney")} label="OneMoney" brand="onemoney" />
+            <BrandTile active={provider === "visa"} onClick={() => setProvider("visa")} label="Visa" brand="visa" />
+            <BrandTile active={provider === "mastercard"} onClick={() => setProvider("mastercard")} label="Mastercard" brand="mastercard" />
+            <BrandTile active={provider === "paypal"} onClick={() => setProvider("paypal")} label="PayPal" brand="paypal" />
           </div>
 
 
@@ -578,5 +582,71 @@ function Perk({ icon: Icon, title, desc }: { icon: typeof Zap; title: string; de
       <p className="text-xs font-black tracking-tight">{title}</p>
       <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{desc}</p>
     </div>
+  );
+}
+
+type Brand = "ecocash" | "onemoney" | "visa" | "mastercard" | "paypal";
+
+function BrandMark({ brand }: { brand: Brand }) {
+  switch (brand) {
+    case "ecocash":
+      // EcoCash — red roundel with white "E"
+      return (
+        <svg viewBox="0 0 32 32" className="w-7 h-7" aria-hidden>
+          <circle cx="16" cy="16" r="16" fill="#E30613" />
+          <path d="M11 9h10v3.6h-6.4v2.6H20v3.4h-5.4v2.8H21V25H11z" fill="#fff" />
+        </svg>
+      );
+    case "onemoney":
+      // OneMoney — yellow tile with red "1" (NetOne palette)
+      return (
+        <svg viewBox="0 0 32 32" className="w-7 h-7" aria-hidden>
+          <rect width="32" height="32" rx="6" fill="#FFCB05" />
+          <path d="M14.5 8h3.6v16h-3.8V12.2l-2.6.9V9.8z" fill="#D7282F" />
+        </svg>
+      );
+    case "visa":
+      return (
+        <svg viewBox="0 0 48 32" className="w-9 h-7" aria-hidden>
+          <rect width="48" height="32" rx="5" fill="#1A1F71" />
+          <path fill="#fff" d="M18.6 21.4l2.1-10.8h3.3l-2.1 10.8zM33 10.8c-.7-.3-1.8-.6-3.2-.6-3.5 0-6 1.8-6 4.5 0 2 1.8 3 3.2 3.7 1.4.7 1.9 1.1 1.9 1.7 0 .9-1.1 1.4-2.2 1.4-1.5 0-2.3-.2-3.5-.7l-.5-.2-.5 3c.9.4 2.5.7 4.2.7 3.7 0 6.1-1.8 6.2-4.6 0-1.5-1-2.7-3.1-3.7-1.3-.6-2-1-2-1.7 0-.6.7-1.2 2.1-1.2 1.2 0 2.1.2 2.8.5l.3.2zm8.5-.2h-2.6c-.8 0-1.4.2-1.8 1.1l-5 9.7h3.6s.6-1.5.7-1.9h4.4c.1.4.4 1.9.4 1.9h3.2zm-4.1 6.6c.3-.7 1.3-3.4 1.3-3.4 0 .1.3-.7.5-1.2l.2 1.1.8 3.5zM15.8 10.6L12.4 18l-.4-1.7c-.6-1.9-2.5-4-4.6-5l3.2 10.1h3.6l5.4-10.8z"/>
+          <path fill="#F7B600" d="M9.4 10.6H4l-.1.3c4.2 1 7 3.4 8.1 6.4l-1.2-5.6c-.2-.9-.7-1.1-1.4-1.1z"/>
+        </svg>
+      );
+    case "mastercard":
+      return (
+        <svg viewBox="0 0 48 32" className="w-9 h-7" aria-hidden>
+          <rect width="48" height="32" rx="5" fill="#0A0A0A" />
+          <circle cx="20" cy="16" r="7" fill="#EB001B" />
+          <circle cx="28" cy="16" r="7" fill="#F79E1B" />
+          <path d="M24 10.8a7 7 0 0 0 0 10.4 7 7 0 0 0 0-10.4z" fill="#FF5F00" />
+        </svg>
+      );
+    case "paypal":
+      return (
+        <svg viewBox="0 0 32 32" className="w-7 h-7" aria-hidden>
+          <rect width="32" height="32" rx="6" fill="#fff" stroke="#E5E7EB" />
+          <path fill="#003087" d="M11.4 24.5l.5-3.1H8.3l2.1-13h6c2.7 0 4.5 1.3 4.2 3.8-.4 3.5-2.6 5.2-5.9 5.2h-1.9l-.6 3.7-.4 3.4z"/>
+          <path fill="#0070E0" d="M22.6 13.4c-.3 3.5-2.6 5.2-5.9 5.2h-1.9l-1 6h-2.4l-.4 3.4h3.8l.5-3.1h2.1c3.5 0 6.2-1.7 6.7-5.6.3-2.3-.6-4.1-1.5-5.9z"/>
+        </svg>
+      );
+  }
+}
+
+function BrandTile({
+  active, onClick, label, brand,
+}: { active: boolean; onClick: () => void; label: string; brand: Brand }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`h-[68px] rounded-xl border px-1.5 py-2 flex flex-col items-center justify-center gap-1 transition ${
+        active
+          ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+          : "border-border bg-card hover:bg-primary/5 hover:border-primary/40"
+      }`}
+    >
+      <BrandMark brand={brand} />
+      <span className="block text-[9px] font-black tracking-tight truncate w-full text-center">{label}</span>
+    </button>
   );
 }
