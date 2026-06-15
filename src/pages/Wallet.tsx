@@ -28,7 +28,7 @@ export default function WalletPage() {
   const [selected, setSelected] = useState<number | null>(null);
   const [redirecting, setRedirecting] = useState(false);
   const [capturing, setCapturing] = useState(false);
-  const [provider, setProvider] = useState<Provider>("pesepay");
+  const [provider, setProvider] = useState<Provider>("ecocash");
   const [customAmount, setCustomAmount] = useState<string>("");
   const [sendOpen, setSendOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
