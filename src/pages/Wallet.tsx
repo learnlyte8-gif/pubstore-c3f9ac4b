@@ -177,7 +177,7 @@ export default function WalletPage() {
         return;
       }
 
-      if (provider === "pesepay") {
+      if (PESEPAY_PROVIDERS.includes(provider)) {
         const { data, error } = await sb.functions.invoke("pesepay-create-payment", {
           body: { purpose: "wallet_topup", amount, returnUrl: `${origin}/wallet?pesepay_ref=PENDING` },
         });
