@@ -18,7 +18,7 @@ const PENDING_KEY = "pubstore.paypal.pending";
 const sb = supabase as any;
 
 type Pending = { orderID: string; amount: number };
-type Provider = "paypal" | "pesepay" | "simulate";
+type Provider = "paypal" | "pesepay";
 
 export default function WalletPage() {
   const { balance, personalBalance, salesBalance, transactions, isLoading, userId, refresh, moveSalesToPersonal } = useWallet();
@@ -197,30 +197,6 @@ export default function WalletPage() {
     }
   };
 
-  /** Instant test deposit — no external payment gateway. */
-  const simulateDeposit = async (amount: number) => {
-    if (!userId) { toast.error("Sign in first"); return; }
-    setSelected(amount);
-    setRedirecting(true);
-    try {
-      const { error } = await sb.rpc("apply_wallet_transaction", {
-        _user_id: userId,
-        _kind: "topup",
-        _amount: amount,
-        _description: `Simulated top-up of ${fmt(amount)}`,
-        _reference: `sim-${Date.now()}`,
-      });
-      if (error) throw error;
-
-      toast.success(`Simulated +${fmt(amount)} added to wallet`);
-      refresh();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Simulation failed");
-    } finally {
-      setRedirecting(false);
-      setSelected(null);
-    }
-  };
 
   return (
     <div className="pb-12">
@@ -363,10 +339,9 @@ export default function WalletPage() {
           </div>
 
           {/* Provider picker */}
-          <div className="grid grid-cols-3 gap-2 mb-3">
+          <div className="grid grid-cols-2 gap-2 mb-3">
             <ProviderBtn active={provider === "pesepay"} onClick={() => setProvider("pesepay")} icon={Smartphone} label="Pesepay" sub="EcoCash · OneMoney · Visa" />
             <ProviderBtn active={provider === "paypal"} onClick={() => setProvider("paypal")} icon={CreditCard} label="PayPal" sub="Cards & PayPal" />
-            <ProviderBtn active={provider === "simulate"} onClick={() => setProvider("simulate")} icon={Wrench} label="Simulate" sub="Test deposit" />
           </div>
 
 
@@ -374,7 +349,7 @@ export default function WalletPage() {
             {TOPUP_AMOUNTS.map((a) => (
               <button
                 key={a}
-                onClick={() => (provider === "simulate" ? simulateDeposit(a) : startCheckout(a))}
+                onClick={() => startCheckout(a)}
                 disabled={redirecting || capturing}
                 className={`h-14 rounded-xl border transition flex items-center justify-center font-black text-base tabular-nums tracking-tight disabled:opacity-50 ${
                   selected === a
@@ -417,11 +392,7 @@ export default function WalletPage() {
                     return;
                   }
                   const rounded = Math.round(amt * 100) / 100;
-                  if (provider === "simulate") {
-                    simulateDeposit(rounded);
-                  } else {
-                    startCheckout(rounded);
-                  }
+                  startCheckout(rounded);
                 }}
               >
                 {redirecting && selected !== null && !TOPUP_AMOUNTS.includes(selected) ? <CircleSpinner size={16} /> : "Add"}
