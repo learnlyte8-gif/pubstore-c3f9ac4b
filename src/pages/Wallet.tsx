@@ -18,7 +18,8 @@ const PENDING_KEY = "pubstore.paypal.pending";
 const sb = supabase as any;
 
 type Pending = { orderID: string; amount: number };
-type Provider = "paypal" | "pesepay";
+type Provider = "paypal" | "ecocash" | "onemoney" | "visa" | "mastercard";
+const PESEPAY_PROVIDERS: Provider[] = ["ecocash", "onemoney", "visa", "mastercard"];
 
 export default function WalletPage() {
   const { balance, personalBalance, salesBalance, transactions, isLoading, userId, refresh, moveSalesToPersonal } = useWallet();
