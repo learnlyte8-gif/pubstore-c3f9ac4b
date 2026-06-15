@@ -392,11 +392,7 @@ export default function WalletPage() {
                     return;
                   }
                   const rounded = Math.round(amt * 100) / 100;
-                  if (provider === "simulate") {
-                    simulateDeposit(rounded);
-                  } else {
-                    startCheckout(rounded);
-                  }
+                  startCheckout(rounded);
                 }}
               >
                 {redirecting && selected !== null && !TOPUP_AMOUNTS.includes(selected) ? <CircleSpinner size={16} /> : "Add"}
