@@ -150,6 +150,13 @@ export default function Auth() {
               autoComplete="email"
               className="h-12 bg-input border-border text-sm rounded-md"
             />
+            <PhoneInput
+              country={country}
+              onCountryChange={setCountry}
+              value={phone}
+              onChange={setPhone}
+              placeholder="Phone number (optional)"
+            />
             <Button
               type="submit"
               disabled={loading}
