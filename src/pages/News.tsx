@@ -1,4 +1,5 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { useQuery } from "@tanstack/react-query";
 import { fetchNews, fetchNewsArticle } from "@/data/verticals";
 import { ArrowLeft, Clock3, Newspaper } from "lucide-react";
@@ -76,6 +77,13 @@ function NewsIndex() {
 
   return (
     <div className="pb-10">
+      <Helmet>
+        <title>News — PUBSTORE editorial</title>
+        <meta name="description" content="Editorial news across marketplace, industrial, automotive and stays on PUBSTORE." />
+        <link rel="canonical" href="https://pubstore.app/news" />
+        <meta property="og:url" content="https://pubstore.app/news" />
+        <meta property="og:title" content="News — PUBSTORE editorial" />
+      </Helmet>
       {/* Masthead */}
       <header className="px-4 pt-6 border-b-4 border-double border-foreground pb-3">
         <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-muted-foreground text-center">
@@ -196,6 +204,26 @@ function NewsArticleView({ slug }: { slug: string }) {
 
   return (
     <article className="pb-12 animate-fade-in">
+      <Helmet>
+        <title>{`${article.title} — PUBSTORE News`}</title>
+        <meta name="description" content={(article.dek ?? article.title).slice(0, 155)} />
+        <link rel="canonical" href={`https://pubstore.app/news/${article.slug}`} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={`https://pubstore.app/news/${article.slug}`} />
+        <meta property="og:title" content={article.title} />
+        <meta property="og:description" content={(article.dek ?? article.title).slice(0, 155)} />
+        {article.cover && <meta property="og:image" content={article.cover} />}
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "NewsArticle",
+          headline: article.title,
+          image: article.cover ? [article.cover] : undefined,
+          datePublished: article.published_at,
+          author: { "@type": "Person", name: article.author ?? "Editorial" },
+          publisher: { "@type": "Organization", name: "PUBSTORE", logo: { "@type": "ImageObject", url: "https://pubstore.app/icons/icon-512.png" } },
+          articleSection: article.category,
+        })}</script>
+      </Helmet>
       <button onClick={() => navigate(-1)} className="mx-4 mt-3 inline-flex items-center gap-1 text-xs font-bold text-muted-foreground hover:text-foreground">
         <ArrowLeft className="w-3.5 h-3.5" /> Back
       </button>

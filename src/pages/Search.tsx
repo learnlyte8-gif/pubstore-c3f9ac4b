@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Search as SearchIcon, SlidersHorizontal, X, Star, Truck, Sparkles, ArrowRight, History, TrendingUp, Package, Wrench, Home as HomeIcon, Banknote, Car, BedDouble, Factory, Newspaper, Store as StoreIcon, Navigation, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -192,6 +193,14 @@ export default function SearchPage() {
   };
   return (
     <div className="pb-8">
+      <Helmet>
+        <title>Search products, services & suppliers — PUBSTORE</title>
+        <meta name="description" content="Universal search across products, services, stays, vehicles, jobs and news on PUBSTORE." />
+        <link rel="canonical" href="https://pubstore.app/search" />
+        <meta property="og:url" content="https://pubstore.app/search" />
+        <meta property="og:title" content="Search — PUBSTORE" />
+      </Helmet>
+      <h1 className="sr-only">Search PUBSTORE</h1>
       <form onSubmit={onSubmit} className="sticky top-14 z-20 bg-background/95 backdrop-blur border-b px-4 py-3 flex items-center gap-2 shadow-soft">
         <div className="flex-1 relative">
           <SearchIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
