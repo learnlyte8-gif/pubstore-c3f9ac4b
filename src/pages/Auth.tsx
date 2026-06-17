@@ -11,7 +11,7 @@ import logo from "@/assets/pubstore-logo.png";
 import ShoppingBackdrop from "@/components/ShoppingBackdrop";
 
 const emailSchema = z.string().trim().email({ message: "Enter a valid email" }).max(255);
-const codeSchema = z.string().trim().regex(/^\d{6}$/, { message: "Enter the 6-digit code" });
+const codeSchema = z.string().trim().regex(/^\d{8}$/, { message: "Enter the 8-digit code" });
 
 type Step = "email" | "code";
 
@@ -154,7 +154,7 @@ export default function Auth() {
               {loading ? <CircleSpinner size={20} /> : "Send code"}
             </Button>
             <p className="text-[11px] text-muted-foreground text-center pt-2">
-              We'll email you a 6-digit code — no password needed.
+              We'll email you a 8-digit code — no password needed.
             </p>
           </form>
         ) : (
@@ -165,15 +165,15 @@ export default function Auth() {
             <Input
               inputMode="numeric"
               autoComplete="one-time-code"
-              maxLength={6}
+              maxLength={8}
               value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              placeholder="6-digit code"
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
+              placeholder="8-digit code"
               className="h-12 bg-input border-border text-center text-lg tracking-[0.5em] font-bold rounded-md"
             />
             <Button
               type="submit"
-              disabled={loading || code.length !== 6}
+              disabled={loading || code.length !== 8}
               className="w-full h-12 mt-3 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-lg disabled:opacity-60"
             >
               {loading ? <CircleSpinner size={20} /> : "Verify & continue"}
