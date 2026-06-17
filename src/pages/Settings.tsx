@@ -1,17 +1,36 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Bell, Globe, Moon, Sun, Monitor, DollarSign, Languages, Smartphone, Palette, ChevronRight, Sparkles, Check } from "lucide-react";
+import { ArrowLeft, Bell, Globe, Moon, Sun, Monitor, DollarSign, Languages, Smartphone, Palette, ChevronRight, Sparkles, Check, MessageCircle } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { INTERESTS } from "@/data/interests";
 import { useMyInterests } from "@/hooks/useInterests";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 
 export default function Settings() {
   const { theme, setTheme } = useTheme();
   const [currency, setCurrency] = useState("USD");
   const [language, setLanguage] = useState("English");
   const { interests, save: saveInterests, userId } = useMyInterests();
+  const [testingWa, setTestingWa] = useState(false);
+
+  const sendTestWhatsApp = async () => {
+    setTestingWa(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("test-whatsapp");
+      if (error || (data as any)?.error) {
+        toast.error((data as any)?.error || error?.message || "Couldn't send test");
+      } else {
+        toast.success("Test WhatsApp sent — check your phone");
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't send test");
+    } finally {
+      setTestingWa(false);
+    }
+  };
 
   const toggleInterest = async (item: string) => {
     if (!userId) {
@@ -99,6 +118,16 @@ export default function Settings() {
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </Link>
+          <div className="flex items-center gap-3 px-4 py-3.5">
+            <span className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center"><MessageCircle className="w-4.5 h-4.5" /></span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">Test WhatsApp</p>
+              <p className="text-[11px] text-muted-foreground">Send a test message to the phone on your profile</p>
+            </div>
+            <Button size="sm" onClick={sendTestWhatsApp} disabled={testingWa}>
+              {testingWa ? "Sending…" : "Send test"}
+            </Button>
+          </div>
         </Section>
 
         <Section title="Region">

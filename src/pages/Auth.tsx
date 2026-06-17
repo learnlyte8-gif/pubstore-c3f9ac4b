@@ -101,7 +101,7 @@ export default function Auth() {
     if (!parsed.success) return toast.error(parsed.error.issues[0].message);
     setLoading(true);
     try {
-      const { error } = await supabase.auth.verifyOtp({
+      const { data: verifyData, error } = await supabase.auth.verifyOtp({
         email: email.trim(),
         token: parsed.data,
         type: "email",
@@ -109,6 +109,17 @@ export default function Auth() {
       if (error) {
         return toast.error(error.message.includes("expired") ? "Code expired — request a new one" : "Invalid code");
       }
+
+      // Persist phone for both new and returning users (handle_new_user only fires on create)
+      const phoneDigits = phone.replace(/\D/g, "");
+      const uid = verifyData?.user?.id;
+      if (uid && phoneDigits) {
+        const phoneE164 = toE164(country.dial, phoneDigits);
+        await supabase
+          .from("profiles")
+          .upsert({ user_id: uid, phone: phoneE164 }, { onConflict: "user_id" });
+      }
+
       toast.success("Welcome to PUBSTORE 🎉");
     } finally {
       setLoading(false);
