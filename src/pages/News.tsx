@@ -1,4 +1,5 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { useQuery } from "@tanstack/react-query";
 import { fetchNews, fetchNewsArticle } from "@/data/verticals";
 import { ArrowLeft, Clock3, Newspaper } from "lucide-react";

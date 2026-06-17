@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft, Heart, Share2, Star, Truck, ShieldCheck, Minus, Plus, MessageCircle, ShoppingCart, Store, Globe, Package,
@@ -104,6 +105,26 @@ export default function ProductDetail() {
 
   return (
     <div className=" -mt-px">
+      <Helmet>
+        <title>{`${product.title} — PUBSTORE`}</title>
+        <meta name="description" content={(product.description ?? product.title).slice(0, 155)} />
+        <link rel="canonical" href={`https://pubstore.app/product/${product.id}`} />
+        <meta property="og:type" content="product" />
+        <meta property="og:url" content={`https://pubstore.app/product/${product.id}`} />
+        <meta property="og:title" content={product.title} />
+        <meta property="og:description" content={(product.description ?? product.title).slice(0, 155)} />
+        {product.image && <meta property="og:image" content={product.image} />}
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: product.title,
+          image: product.gallery ?? [product.image],
+          description: product.description ?? product.title,
+          sku: product.id,
+          aggregateRating: product.reviews > 0 ? { "@type": "AggregateRating", ratingValue: product.rating, reviewCount: product.reviews } : undefined,
+          offers: { "@type": "Offer", price: unitPrice, priceCurrency: "USD", availability: "https://schema.org/InStock", url: `https://pubstore.app/product/${product.id}` },
+        })}</script>
+      </Helmet>
       <div className="sticky top-12 z-30 bg-background/90 backdrop-blur border-b px-2 py-2 flex items-center justify-between">
         <button onClick={() => navigate(-1)} aria-label="Back" className="w-9 h-9 rounded-full hover:bg-muted flex items-center justify-center"><ArrowLeft className="w-5 h-5" /></button>
         <div className="flex items-center gap-1">
