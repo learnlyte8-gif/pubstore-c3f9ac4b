@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
 import {
   TrendingUp, Sparkles, LayoutGrid, Building2, Compass, Users, Home as HomeIcon, Store as StoreIcon,
@@ -122,6 +123,14 @@ const Home = () => {
 
   return (
     <div className="pb-6">
+      <Helmet>
+        <title>PUBSTORE — Shop, share & discover across verticals</title>
+        <meta name="description" content="Browse a personalized feed of products, suppliers, news, stays, jobs and more on PUBSTORE — the social shop." />
+        <link rel="canonical" href="https://pubstore.app/home" />
+        <meta property="og:url" content="https://pubstore.app/home" />
+        <meta property="og:title" content="PUBSTORE — Shop, share & discover across verticals" />
+      </Helmet>
+      <h1 className="sr-only">PUBSTORE — Shop, share and discover across verticals</h1>
 
 
 
