@@ -1,10 +1,11 @@
 project_id = "ccprnnqxpnrkdrfsudjc"
 
-[functions.paypal-public-config]
-verify_jwt = false
-
-[functions.pesepay-result]
-verify_jwt = false
-
-[functions.image-search]
-verify_jwt = false
+[functions]
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.image-search]
+    verify_jwt = false
+  [functions.paypal-public-config]
+    verify_jwt = false
+  [functions.pesepay-result]
+    verify_jwt = false
