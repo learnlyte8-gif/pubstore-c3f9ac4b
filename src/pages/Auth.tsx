@@ -4,7 +4,6 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import logo from "@/assets/pubstore-logo.png";
@@ -24,7 +23,6 @@ export default function Auth() {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
-  const [oauthLoading, setOauthLoading] = useState(false);
   const [resendIn, setResendIn] = useState(0);
 
   useEffect(() => {
@@ -98,19 +96,6 @@ export default function Auth() {
     }
   };
 
-  const handleGoogle = async () => {
-    setOauthLoading(true);
-    try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}${redirectTo}`,
-      });
-      if (result.error) toast.error(result.error.message ?? "Google sign-in failed");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
-      setOauthLoading(false);
-    }
-  };
 
   return (
     <main className="relative min-h-[100dvh] bg-background flex flex-col items-center justify-between px-6 py-10 sm:py-14 overflow-hidden">
@@ -148,7 +133,7 @@ export default function Auth() {
             />
             <Button
               type="submit"
-              disabled={loading || oauthLoading}
+              disabled={loading}
               className="w-full h-12 mt-3 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-lg disabled:opacity-60"
             >
               {loading ? <CircleSpinner size={20} /> : "Send code"}
@@ -198,28 +183,6 @@ export default function Auth() {
           </form>
         )}
 
-        <div className="flex items-center gap-4 my-6 animate-fade-up" style={{ animationDelay: "120ms" }}>
-          <div className="h-px flex-1 bg-border" />
-          <span className="text-xs font-semibold text-muted-foreground uppercase">or</span>
-          <div className="h-px flex-1 bg-border" />
-        </div>
-
-        <button
-          type="button"
-          onClick={handleGoogle}
-          disabled={oauthLoading || loading}
-          className="w-full h-12 flex items-center justify-center gap-3 text-sm font-semibold text-primary hover:opacity-80 transition-opacity animate-fade-up"
-          style={{ animationDelay: "160ms" }}
-        >
-          {oauthLoading ? (
-            <CircleSpinner size={20} />
-          ) : (
-            <>
-              <GoogleIcon />
-              Continue with Google
-            </>
-          )}
-        </button>
       </div>
 
       <div className="relative w-full max-w-sm mt-8">
@@ -233,10 +196,3 @@ export default function Auth() {
   );
 }
 
-function GoogleIcon() {
-  return (
-    <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.24 1.4-1.7 4.1-5.5 4.1-3.3 0-6-2.7-6-6.1S8.7 6 12 6c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.5 14.6 2.5 12 2.5 6.8 2.5 2.5 6.8 2.5 12S6.8 21.5 12 21.5c6.9 0 9.5-4.8 9.5-7.4 0-.5-.05-.9-.13-1.3H12z" />
-    </svg>
-  );
-}
