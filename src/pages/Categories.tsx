@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { LayoutGrid, ChevronRight, ChevronLeft, UtensilsCrossed } from "lucide-react";
 import ProductCard from "@/components/marketplace/ProductCard";
