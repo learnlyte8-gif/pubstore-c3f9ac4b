@@ -71,6 +71,15 @@ export default function Categories() {
   };
 
   return (
+    <>
+      <Helmet>
+        <title>Browse categories — PUBSTORE marketplace</title>
+        <meta name="description" content="Explore the full PUBSTORE catalog by category and subcategory — products, suppliers and verticals." />
+        <link rel="canonical" href="https://pubstore.app/categories" />
+        <meta property="og:url" content="https://pubstore.app/categories" />
+        <meta property="og:title" content="Browse categories — PUBSTORE" />
+      </Helmet>
+      <h1 className="sr-only">Browse PUBSTORE categories</h1>
     <div
       className="flex h-[calc(100dvh-3.5rem-4rem)] lg:h-[calc(100dvh-3.5rem)] relative"
       onPointerDown={bumpActivity}
