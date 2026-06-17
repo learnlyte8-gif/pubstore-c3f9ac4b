@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Bell, Mail, Smartphone, Store, Radio, Package, MessageCircle,
   FileText, TrendingDown, RefreshCcw, Sparkles, Heart, Newspaper, AlertCircle,
+  Phone, Copy, Check,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -33,6 +34,11 @@ type Prefs = {
   email_orders: boolean;
   email_rfq: boolean;
   email_weekly_digest: boolean;
+  whatsapp_enabled: boolean;
+  whatsapp_orders: boolean;
+  whatsapp_sales: boolean;
+  whatsapp_inquiries: boolean;
+  whatsapp_sandbox_joined: boolean;
 };
 
 const ROWS: { key: keyof Prefs; label: string; icon: LucideIcon; channel: "inapp" | "push" | "email" }[] = [
@@ -70,6 +76,8 @@ export default function NotificationPreferences() {
     supported: false, permission: "default", subscribed: false, iosNeedsInstall: false,
   });
   const [saving, setSaving] = useState<string | null>(null);
+  const [phone, setPhone] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -77,17 +85,18 @@ export default function NotificationPreferences() {
       const user = session?.user;
       if (!user) { navigate("/auth"); return; }
       setUserId(user.id);
-      const { data } = await supabase
-        .from("notification_preferences").select("*")
-        .eq("user_id", user.id).maybeSingle();
+      const [{ data }, { data: prof }] = await Promise.all([
+        supabase.from("notification_preferences").select("*").eq("user_id", user.id).maybeSingle(),
+        supabase.from("profiles").select("phone").eq("user_id", user.id).maybeSingle(),
+      ]);
       if (data) setPrefs(data as unknown as Prefs);
       else {
-        // Backstop in case the trigger missed somehow
         const { data: created } = await supabase
           .from("notification_preferences").insert({ user_id: user.id })
           .select("*").single();
         if (created) setPrefs(created as unknown as Prefs);
       }
+      setPhone((prof as any)?.phone ?? null);
       setPushState(await getPushState());
       setLoading(false);
     })();
@@ -197,6 +206,102 @@ export default function NotificationPreferences() {
               </p>
             )}
           </Section>
+
+          {/* WhatsApp section */}
+          <div>
+            <div className="flex items-center gap-2 px-1 mb-2">
+              <MessageCircle className="w-4 h-4 text-emerald-600" />
+              <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">WhatsApp</p>
+              <span className="text-[10px] text-muted-foreground">· Sent to your phone</span>
+            </div>
+            <div className="bg-card rounded-2xl border shadow-card overflow-hidden">
+              <div className="px-4 py-4 bg-emerald-50/60 dark:bg-emerald-950/20 border-b">
+                <div className="flex items-start gap-3">
+                  <span className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <MessageCircle className="w-5 h-5" />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold">Get PUBSTORE alerts on WhatsApp</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Order updates, new sales, and inquiry replies — and you can chat back here from WhatsApp.
+                    </p>
+                    <div className="mt-2 flex items-center gap-2 text-[11px]">
+                      <Phone className="w-3.5 h-3.5 text-muted-foreground" />
+                      {phone ? (
+                        <span className="font-mono">{phone}</span>
+                      ) : (
+                        <span className="text-amber-600">Add your phone number in Account first.</span>
+                      )}
+                    </div>
+                    <div className="mt-3 flex items-center gap-3">
+                      <Switch
+                        checked={prefs.whatsapp_enabled}
+                        disabled={!phone}
+                        onCheckedChange={(v) => update("whatsapp_enabled", v)}
+                      />
+                      <span className="text-xs font-semibold">
+                        {prefs.whatsapp_enabled ? "Enabled" : "Enable WhatsApp notifications"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {prefs.whatsapp_enabled && !prefs.whatsapp_sandbox_joined && (
+                  <div className="mt-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 p-3">
+                    <p className="text-[11px] font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5" /> One-time sandbox setup
+                    </p>
+                    <p className="text-[11px] text-amber-900/80 dark:text-amber-200/80 mt-1 leading-relaxed">
+                      We're on Twilio's WhatsApp sandbox. Open WhatsApp on the phone above and send the
+                      message <span className="font-mono font-bold">join &lt;your-sandbox-code&gt;</span> to{" "}
+                      <span className="font-mono font-bold">+1 415 523 8886</span>. After Twilio replies, we'll
+                      activate this automatically.
+                    </p>
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        onClick={async () => {
+                          await navigator.clipboard.writeText("+14155238886");
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 1500);
+                        }}
+                        className="inline-flex items-center gap-1 px-2 h-7 rounded-full bg-white dark:bg-amber-900/40 border border-amber-200 dark:border-amber-800 text-[11px] font-bold"
+                      >
+                        {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                        Copy number
+                      </button>
+                      <a
+                        href="https://wa.me/14155238886"
+                        target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-2 h-7 rounded-full bg-emerald-500 text-white text-[11px] font-bold"
+                      >
+                        Open WhatsApp
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {prefs.whatsapp_enabled && prefs.whatsapp_sandbox_joined && (
+                  <p className="mt-3 text-[11px] text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5" /> Sandbox connected — you're all set.
+                  </p>
+                )}
+              </div>
+
+              <div className="divide-y">
+                <Row icon={Package} label="Order updates (placed, shipped, delivered)"
+                  checked={prefs.whatsapp_orders && prefs.whatsapp_enabled} saving={saving === "whatsapp_orders"}
+                  disabled={!prefs.whatsapp_enabled}
+                  onChange={(v) => update("whatsapp_orders", v)} />
+                <Row icon={Store} label="New sales on my listings"
+                  checked={prefs.whatsapp_sales && prefs.whatsapp_enabled} saving={saving === "whatsapp_sales"}
+                  disabled={!prefs.whatsapp_enabled}
+                  onChange={(v) => update("whatsapp_sales", v)} />
+                <Row icon={MessageCircle} label="Inquiries, RFQs, property & finance requests"
+                  checked={prefs.whatsapp_inquiries && prefs.whatsapp_enabled} saving={saving === "whatsapp_inquiries"}
+                  disabled={!prefs.whatsapp_enabled}
+                  onChange={(v) => update("whatsapp_inquiries", v)} />
+              </div>
+            </div>
+          </div>
 
           <Section title="Email" subtitle="Sent to your inbox" icon={Mail}>
             {emailRows.map((r) => (

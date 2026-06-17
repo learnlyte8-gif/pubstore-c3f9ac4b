@@ -21,3 +21,7 @@ project_id = "ccprnnqxpnrkdrfsudjc"
     verify_jwt = false
   [functions.dispatch-order-email]
     verify_jwt = false
+  [functions.dispatch-whatsapp-notification]
+    verify_jwt = false
+  [functions.twilio-whatsapp-inbound]
+    verify_jwt = false

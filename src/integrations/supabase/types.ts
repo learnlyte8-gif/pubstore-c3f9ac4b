@@ -2860,6 +2860,11 @@ export type Database = {
           push_wishlist_restock: boolean
           updated_at: string
           user_id: string
+          whatsapp_enabled: boolean
+          whatsapp_inquiries: boolean
+          whatsapp_orders: boolean
+          whatsapp_sales: boolean
+          whatsapp_sandbox_joined: boolean
         }
         Insert: {
           created_at?: string
@@ -2886,6 +2891,11 @@ export type Database = {
           push_wishlist_restock?: boolean
           updated_at?: string
           user_id: string
+          whatsapp_enabled?: boolean
+          whatsapp_inquiries?: boolean
+          whatsapp_orders?: boolean
+          whatsapp_sales?: boolean
+          whatsapp_sandbox_joined?: boolean
         }
         Update: {
           created_at?: string
@@ -2912,6 +2922,11 @@ export type Database = {
           push_wishlist_restock?: boolean
           updated_at?: string
           user_id?: string
+          whatsapp_enabled?: boolean
+          whatsapp_inquiries?: boolean
+          whatsapp_orders?: boolean
+          whatsapp_sales?: boolean
+          whatsapp_sandbox_joined?: boolean
         }
         Relationships: []
       }
@@ -5426,6 +5441,87 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_inbound_log: {
+        Row: {
+          body: string | null
+          conversation_id: string | null
+          created_at: string
+          from_phone: string
+          id: string
+          matched_user_id: string | null
+          raw: Json | null
+          ref_tag: string | null
+          to_phone: string | null
+          twilio_sid: string | null
+        }
+        Insert: {
+          body?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          from_phone: string
+          id?: string
+          matched_user_id?: string | null
+          raw?: Json | null
+          ref_tag?: string | null
+          to_phone?: string | null
+          twilio_sid?: string | null
+        }
+        Update: {
+          body?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          from_phone?: string
+          id?: string
+          matched_user_id?: string | null
+          raw?: Json | null
+          ref_tag?: string | null
+          to_phone?: string | null
+          twilio_sid?: string | null
+        }
+        Relationships: []
+      }
+      whatsapp_send_log: {
+        Row: {
+          body: string | null
+          created_at: string
+          entity_id: string | null
+          error: string | null
+          event: string
+          id: string
+          ref_tag: string | null
+          status: string
+          to_phone: string
+          twilio_sid: string | null
+          user_id: string | null
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          entity_id?: string | null
+          error?: string | null
+          event: string
+          id?: string
+          ref_tag?: string | null
+          status: string
+          to_phone: string
+          twilio_sid?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          entity_id?: string | null
+          error?: string | null
+          event?: string
+          id?: string
+          ref_tag?: string | null
+          status?: string
+          to_phone?: string
+          twilio_sid?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       wishlist_items: {
         Row: {
           created_at: string
@@ -5518,6 +5614,10 @@ export type Database = {
     }
     Functions: {
       _ad_reset_daily: { Args: { _id: string }; Returns: undefined }
+      _dispatch_whatsapp: {
+        Args: { entity_id: string; event: string }
+        Returns: undefined
+      }
       _send_product_suggestions: { Args: never; Returns: undefined }
       apply_wallet_transaction: {
         Args: {
