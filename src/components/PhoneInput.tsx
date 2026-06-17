@@ -87,7 +87,7 @@ export const COUNTRIES: Country[] = [
   { name: "New Zealand", iso2: "NZ", dial: "64", flag: "🇳🇿" },
 ];
 
-export const DEFAULT_COUNTRY = COUNTRIES.find((c) => c.iso2 === "US")!;
+export const DEFAULT_COUNTRY = COUNTRIES.find((c) => c.iso2 === "ZW")!;
 
 interface PhoneInputProps {
   country: Country;
