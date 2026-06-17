@@ -8,9 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import logo from "@/assets/pubstore-logo.png";
 import ShoppingBackdrop from "@/components/ShoppingBackdrop";
+import { PhoneInput, DEFAULT_COUNTRY, toE164, type Country } from "@/components/PhoneInput";
 
 const emailSchema = z.string().trim().email({ message: "Enter a valid email" }).max(255);
 const codeSchema = z.string().trim().regex(/^\d{8}$/, { message: "Enter the 8-digit code" });
+const phoneDigitsSchema = z.string().regex(/^\d{6,15}$/, { message: "Enter a valid phone number" });
 
 type Step = "email" | "code";
 
@@ -21,6 +23,8 @@ export default function Auth() {
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY);
+  const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [resendIn, setResendIn] = useState(0);
@@ -57,14 +61,29 @@ export default function Auth() {
     e?.preventDefault();
     const parsed = emailSchema.safeParse(email);
     if (!parsed.success) return toast.error(parsed.error.issues[0].message);
+
+    const phoneDigits = phone.replace(/\D/g, "");
+    let phoneE164: string | undefined;
+    if (phoneDigits) {
+      const phoneOk = phoneDigitsSchema.safeParse(phoneDigits);
+      if (!phoneOk.success) return toast.error(phoneOk.error.issues[0].message);
+      phoneE164 = toE164(country.dial, phoneDigits);
+    }
+
     setLoading(true);
     try {
+      const metadata: Record<string, unknown> = {};
+      if (name.trim()) metadata.display_name = name.trim();
+      if (phoneE164) {
+        metadata.phone = phoneE164;
+        metadata.phone_country = country.iso2;
+      }
       const { error } = await supabase.auth.signInWithOtp({
         email: parsed.data,
         options: {
           shouldCreateUser: true,
           emailRedirectTo: `${window.location.origin}/home`,
-          data: name.trim() ? { display_name: name.trim() } : undefined,
+          data: Object.keys(metadata).length ? metadata : undefined,
         },
       });
       if (error) return toast.error(error.message);
