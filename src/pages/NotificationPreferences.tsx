@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Bell, Mail, Smartphone, Store, Radio, Package, MessageCircle,
   FileText, TrendingDown, RefreshCcw, Sparkles, Heart, Newspaper, AlertCircle,
+  Phone, Copy, Check,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -33,6 +34,11 @@ type Prefs = {
   email_orders: boolean;
   email_rfq: boolean;
   email_weekly_digest: boolean;
+  whatsapp_enabled: boolean;
+  whatsapp_orders: boolean;
+  whatsapp_sales: boolean;
+  whatsapp_inquiries: boolean;
+  whatsapp_sandbox_joined: boolean;
 };
 
 const ROWS: { key: keyof Prefs; label: string; icon: LucideIcon; channel: "inapp" | "push" | "email" }[] = [
