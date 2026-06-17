@@ -1,0 +1,32 @@
+# PUBSTORE
+
+> PUBSTORE is the social shop where products, stories and people meet. Discover, share and buy across verticals in one beautiful feed — marketplace, news, stays, autos, jobs, services and more.
+
+PUBSTORE blends a B2B/B2C marketplace with social discovery. Buyers browse curated products, follow suppliers, read editorial news, book stays, hire rides, find jobs, request quotes and pay through an integrated wallet. Suppliers open a store, run live streams, place ads, and reach buyers across multiple verticals.
+
+## Pages
+
+- [Home](/home): Personalized feed of products, suppliers, news and verticals.
+- [Categories](/categories): Browse the full catalog by category and subcategory.
+- [Search](/search): Universal search across products, services, stays, vehicles, jobs and news.
+- [News](/news): Editorial news across marketplace, industrial, automotive and stays.
+- [Stays](/stays): Short-term stays and hospitality listings.
+- [Auto](/auto): New and used vehicles for sale.
+- [Car rentals](/car-rentals): Cars available to rent.
+- [Industrial](/industrial): Industrial equipment and machinery.
+- [Agro](/agro): Agricultural products, inputs and equipment.
+- [Rides](/rides): On-demand rides and shared trips.
+- [Services](/services): Local services marketplace.
+- [Properties](/properties): Property listings for sale and rent.
+- [Logistics](/logistics): Freight, shipping and last-mile logistics.
+- [Finance](/finance): Loans, insurance and financial products.
+- [Jobs](/jobs): Job listings and professional network.
+- [Restaurants](/restaurants): Restaurants and food ordering.
+- [Live](/live): Live shopping streams from suppliers.
+- [RFQ](/rfq): Request a quote from suppliers.
+- [Help center](/help): Support articles and FAQs.
+- [Privacy](/privacy): Privacy policy.
+
+## Optional
+
+- [Become a supplier](/become-supplier): Open a store on PUBSTORE.
