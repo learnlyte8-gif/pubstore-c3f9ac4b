@@ -77,6 +77,13 @@ function NewsIndex() {
 
   return (
     <div className="pb-10">
+      <Helmet>
+        <title>News — PUBSTORE editorial</title>
+        <meta name="description" content="Editorial news across marketplace, industrial, automotive and stays on PUBSTORE." />
+        <link rel="canonical" href="https://pubstore.app/news" />
+        <meta property="og:url" content="https://pubstore.app/news" />
+        <meta property="og:title" content="News — PUBSTORE editorial" />
+      </Helmet>
       {/* Masthead */}
       <header className="px-4 pt-6 border-b-4 border-double border-foreground pb-3">
         <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-muted-foreground text-center">
