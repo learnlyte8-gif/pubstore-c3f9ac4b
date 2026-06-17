@@ -117,10 +117,7 @@ export default function Auth() {
         const phoneE164 = toE164(country.dial, phoneDigits);
         await supabase
           .from("profiles")
-          .upsert(
-            { user_id: uid, phone: phoneE164, phone_country: country.iso2 },
-            { onConflict: "user_id" },
-          );
+          .upsert({ user_id: uid, phone: phoneE164 }, { onConflict: "user_id" });
       }
 
       toast.success("Welcome to PUBSTORE 🎉");
