@@ -41,6 +41,7 @@ import Placeholder from "./pages/Placeholder.tsx";
 import Wallet from "./pages/Wallet.tsx";
 import Verification from "./pages/Verification.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import Unsubscribe from "./pages/Unsubscribe.tsx";
 import News from "./pages/News.tsx";
 import Stays from "./pages/Stays.tsx";
 import Auto from "./pages/Auto.tsx";
@@ -188,6 +189,7 @@ const App = () => (
               </Route>
               <Route path="/index" element={<Navigate to="/home" replace />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="/unsubscribe" element={<Unsubscribe />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
