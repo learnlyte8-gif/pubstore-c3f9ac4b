@@ -76,6 +76,8 @@ export default function NotificationPreferences() {
     supported: false, permission: "default", subscribed: false, iosNeedsInstall: false,
   });
   const [saving, setSaving] = useState<string | null>(null);
+  const [phone, setPhone] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -83,17 +85,18 @@ export default function NotificationPreferences() {
       const user = session?.user;
       if (!user) { navigate("/auth"); return; }
       setUserId(user.id);
-      const { data } = await supabase
-        .from("notification_preferences").select("*")
-        .eq("user_id", user.id).maybeSingle();
+      const [{ data }, { data: prof }] = await Promise.all([
+        supabase.from("notification_preferences").select("*").eq("user_id", user.id).maybeSingle(),
+        supabase.from("profiles").select("phone").eq("user_id", user.id).maybeSingle(),
+      ]);
       if (data) setPrefs(data as unknown as Prefs);
       else {
-        // Backstop in case the trigger missed somehow
         const { data: created } = await supabase
           .from("notification_preferences").insert({ user_id: user.id })
           .select("*").single();
         if (created) setPrefs(created as unknown as Prefs);
       }
+      setPhone((prof as any)?.phone ?? null);
       setPushState(await getPushState());
       setLoading(false);
     })();
