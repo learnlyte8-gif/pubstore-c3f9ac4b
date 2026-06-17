@@ -14,6 +14,23 @@ export default function Settings() {
   const [currency, setCurrency] = useState("USD");
   const [language, setLanguage] = useState("English");
   const { interests, save: saveInterests, userId } = useMyInterests();
+  const [testingWa, setTestingWa] = useState(false);
+
+  const sendTestWhatsApp = async () => {
+    setTestingWa(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("test-whatsapp");
+      if (error || (data as any)?.error) {
+        toast.error((data as any)?.error || error?.message || "Couldn't send test");
+      } else {
+        toast.success("Test WhatsApp sent — check your phone");
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't send test");
+    } finally {
+      setTestingWa(false);
+    }
+  };
 
   const toggleInterest = async (item: string) => {
     if (!userId) {
