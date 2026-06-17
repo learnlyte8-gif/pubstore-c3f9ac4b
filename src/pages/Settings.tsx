@@ -118,6 +118,16 @@ export default function Settings() {
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </Link>
+          <div className="flex items-center gap-3 px-4 py-3.5">
+            <span className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center"><MessageCircle className="w-4.5 h-4.5" /></span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">Test WhatsApp</p>
+              <p className="text-[11px] text-muted-foreground">Send a test message to the phone on your profile</p>
+            </div>
+            <Button size="sm" onClick={sendTestWhatsApp} disabled={testingWa}>
+              {testingWa ? "Sending…" : "Send test"}
+            </Button>
+          </div>
         </Section>
 
         <Section title="Region">
