@@ -1686,6 +1686,12 @@ function ShippingView() {
     else { toast.success("Default shipping updated"); qc.invalidateQueries({ queryKey: ["shipping-partnerships"] }); }
   };
 
+  const respond = async (id: string, status: "active" | "declined") => {
+    const { error } = await supabase.from("supplier_courier_partnerships" as any).update({ status }).eq("id", id);
+    if (error) toast.error(error.message);
+    else { toast.success(status === "active" ? "Partnership accepted" : "Declined"); qc.invalidateQueries({ queryKey: ["shipping-partnerships"] }); }
+  };
+
   const removePartnership = async (id: string) => {
     if (!confirm("Remove this courier partnership?")) return;
     const { error } = await supabase.from("supplier_courier_partnerships" as any).delete().eq("id", id);
