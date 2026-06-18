@@ -1852,6 +1852,35 @@ function ProfileView() {
         </div>
       </div>
 
+      {/* Verticals — what services this store provides */}
+      <div data-step="verticals">
+        <p className="text-xs font-bold mb-1 text-muted-foreground uppercase tracking-wide">
+          What do you provide? <span className="text-muted-foreground/70 normal-case">({form.verticals.length} selected)</span>
+        </p>
+        <p className="text-[11px] text-muted-foreground mb-2">
+          Pick the services your store offers — only those will appear in MyStore.
+        </p>
+        <div className="grid grid-cols-2 gap-1.5">
+          {VERTICALS.filter((v) => v.forSupplier).map((v) => {
+            const active = form.verticals.includes(v.slug);
+            const Icon = v.icon;
+            return (
+              <button
+                key={v.slug}
+                type="button"
+                onClick={() => toggleVertical(v.slug)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-left text-xs font-bold border transition ${
+                  active ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border"
+                }`}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                <span className="truncate">{v.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <Button type="submit" disabled={saving} className="w-full h-12">{saving ? "Saving…" : "Save changes"}</Button>
     </form>
   );
