@@ -1686,6 +1686,12 @@ function ShippingView() {
     else { toast.success("Default shipping updated"); qc.invalidateQueries({ queryKey: ["shipping-partnerships"] }); }
   };
 
+  const respond = async (id: string, status: "active" | "declined") => {
+    const { error } = await supabase.from("supplier_courier_partnerships" as any).update({ status }).eq("id", id);
+    if (error) toast.error(error.message);
+    else { toast.success(status === "active" ? "Partnership accepted" : "Declined"); qc.invalidateQueries({ queryKey: ["shipping-partnerships"] }); }
+  };
+
   const removePartnership = async (id: string) => {
     if (!confirm("Remove this courier partnership?")) return;
     const { error } = await supabase.from("supplier_courier_partnerships" as any).delete().eq("id", id);
@@ -1768,6 +1774,21 @@ function ShippingView() {
                     </div>
                   </div>
                   <div className="flex gap-2 mt-3">
+                    {p.status === "pending" && p.initiated_by === "courier" && (
+                      <>
+                        <button onClick={() => respond(p.id, "active")} className="flex-1 h-9 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1">
+                          <Check className="w-3.5 h-3.5" /> Accept request
+                        </button>
+                        <button onClick={() => respond(p.id, "declined")} className="h-9 px-3 rounded-full border text-xs font-bold">
+                          Decline
+                        </button>
+                      </>
+                    )}
+                    {p.status === "pending" && p.initiated_by === "supplier" && (
+                      <span className="flex-1 h-9 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[11px] font-bold flex items-center justify-center">
+                        Waiting for courier to accept
+                      </span>
+                    )}
                     {p.status === "active" && !p.is_default && (
                       <button onClick={() => setDefault(p.id)} className="flex-1 h-9 rounded-full border text-xs font-bold flex items-center justify-center gap-1">
                         <Check className="w-3.5 h-3.5" /> Set as default
@@ -3334,6 +3355,35 @@ function CourierServiceView() {
     },
   });
 
+  // Discover suppliers — couriers can proactively request to partner.
+  const [supplierSearch, setSupplierSearch] = useState("");
+  const { data: discoverSuppliers = [] } = useQuery({
+    queryKey: ["courier-discover-suppliers", userId, supplierSearch, partnerships.length],
+    enabled: !!userId && !!profile,
+    queryFn: async () => {
+      let q = supabase.from("suppliers").select("id,name,logo,country,categories,owner_id").limit(20).order("created_at", { ascending: false });
+      if (supplierSearch.trim()) q = q.ilike("name", `%${supplierSearch}%`);
+      const { data } = await q;
+      const taken = new Set(partnerships.map((p: any) => p.supplier_id));
+      return ((data ?? []) as any[]).filter((s) => !taken.has(s.id) && s.owner_id !== userId);
+    },
+  });
+
+  const requestPartnership = async (supplierId: string) => {
+    if (!userId) return;
+    const { error } = await supabase.from("supplier_courier_partnerships" as any).insert({
+      supplier_id: supplierId,
+      courier_user_id: userId,
+      initiated_by: "courier",
+      message: "I'd like to handle deliveries for your store.",
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Partnership request sent");
+    qc.invalidateQueries({ queryKey: ["my-courier-partnerships"] });
+    qc.invalidateQueries({ queryKey: ["courier-discover-suppliers"] });
+  };
+
+
   const updatePartnership = async (id: string, status: string) => {
     const { error } = await supabase.from("supplier_courier_partnerships" as any).update({ status }).eq("id", id);
     if (error) toast.error(error.message);
@@ -3562,6 +3612,42 @@ function CourierServiceView() {
               ))}
             </div>
           )}
+
+          {/* Discover suppliers to partner with */}
+          <div className="mt-5">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Discover suppliers</p>
+            <div className="relative mb-2">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                value={supplierSearch}
+                onChange={(e) => setSupplierSearch(e.target.value)}
+                placeholder="Search suppliers by name"
+                className="w-full h-11 pl-9 pr-3 rounded-xl border bg-background text-sm"
+              />
+            </div>
+            {discoverSuppliers.length === 0 ? (
+              <div className="rounded-2xl border border-dashed p-4 text-xs text-center text-muted-foreground">
+                No suppliers match — try another name.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {discoverSuppliers.map((s: any) => (
+                  <div key={s.id} className="bg-card border rounded-2xl p-3 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-muted overflow-hidden shrink-0">
+                      {s.logo && <img src={s.logo} alt="" className="w-full h-full object-cover" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm truncate">{s.name}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">{s.country ?? ""} {Array.isArray(s.categories) && s.categories.length ? `· ${s.categories.slice(0,2).join(", ")}` : ""}</p>
+                    </div>
+                    <Button size="sm" onClick={() => requestPartnership(s.id)} className="h-9 text-[11px]">
+                      <Handshake className="w-3.5 h-3.5 mr-1" /> Request
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

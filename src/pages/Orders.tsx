@@ -9,6 +9,7 @@ import { useShop } from "@/store/shop";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import CircleSpinner from "@/components/CircleSpinner";
+import CourierTrackingCard from "@/components/CourierTrackingCard";
 
 type OrderStatus = "awaiting_payment" | "placed" | "processing" | "shipped" | "delivered" | "cancelled";
 
@@ -35,6 +36,8 @@ type Order = {
   coupon_code?: string | null;
   total: number;
   supplier_id: string;
+  delivery_courier_user_id?: string | null;
+  delivery_option_label?: string | null;
   escrow_status?: "none" | "held" | "released" | "refunded" | "disputed";
   escrow_amount?: number;
   escrow_released_at?: string | null;
@@ -278,6 +281,14 @@ function OrderDetail({
             <p className="text-xs text-destructive">This order was cancelled.</p>
           </div>
         )}
+
+        {order.delivery_courier_user_id && order.status !== "cancelled" && order.status !== "delivered" && (
+          <CourierTrackingCard
+            courierUserId={order.delivery_courier_user_id}
+            courierLabel={order.delivery_option_label}
+          />
+        )}
+
 
         {order.supplier && (
           <div className="rounded-2xl bg-card border border-border shadow-card p-4 mt-3">
