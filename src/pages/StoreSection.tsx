@@ -3212,8 +3212,14 @@ function CourierServiceView() {
     service_areas: "",
     city: "",
     country: "",
+    currency: "USD",
     base_fee: "",
     per_km_fee: "",
+    min_fee: "",
+    free_delivery_above: "",
+    weight_tiers: [] as WeightTier[],
+    distance_discounts: [] as DistanceDiscount[],
+    rate_notes: "",
     vehicle_photo: "",
     plate_photo: "",
     selfie_photo: "",
@@ -3224,6 +3230,8 @@ function CourierServiceView() {
     active: true,
   });
   const [hydrated, setHydrated] = useState(false);
+  const [previewDistance, setPreviewDistance] = useState(10);
+  const [previewWeight, setPreviewWeight] = useState(5);
 
   useEffect(() => {
     if (profile && !hydrated) {
@@ -3242,8 +3250,14 @@ function CourierServiceView() {
         service_areas: (profile.service_areas ?? []).join(", "),
         city: profile.city ?? "",
         country: profile.country ?? "",
+        currency: profile.currency ?? "USD",
         base_fee: profile.base_fee ?? "",
         per_km_fee: profile.per_km_fee ?? "",
+        min_fee: profile.min_fee ?? "",
+        free_delivery_above: profile.free_delivery_above ?? "",
+        weight_tiers: Array.isArray(profile.weight_tiers) ? profile.weight_tiers : [],
+        distance_discounts: Array.isArray(profile.distance_discounts) ? profile.distance_discounts : [],
+        rate_notes: profile.rate_notes ?? "",
         vehicle_photo: profile.vehicle_photo ?? "",
         plate_photo: profile.plate_photo ?? "",
         selfie_photo: profile.selfie_photo ?? "",
@@ -3256,6 +3270,7 @@ function CourierServiceView() {
       setHydrated(true);
     }
   }, [profile, hydrated]);
+
 
   const [busy, setBusy] = useState(false);
   const save = async () => {
