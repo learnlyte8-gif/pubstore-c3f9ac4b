@@ -12,6 +12,7 @@
 // the resulting ciphertext base64-encoded into a single `payload` field.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { pesepayRequest } from "../_shared/pesepay-http.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
