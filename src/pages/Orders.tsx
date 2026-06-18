@@ -35,6 +35,8 @@ type Order = {
   coupon_code?: string | null;
   total: number;
   supplier_id: string;
+  delivery_courier_user_id?: string | null;
+  delivery_option_label?: string | null;
   escrow_status?: "none" | "held" | "released" | "refunded" | "disputed";
   escrow_amount?: number;
   escrow_released_at?: string | null;
