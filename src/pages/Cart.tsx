@@ -119,7 +119,7 @@ export default function Cart() {
             isSelf: true,
           });
         }
-        const supplierParts = (parts ?? []).filter((p: any) => p.supplier_id === s.id);
+        const supplierParts = parts.filter((p) => p.supplier_id === s.id);
         for (const p of supplierParts) {
           const c = partCourierMap.get(p.courier_user_id);
           if (!c) continue;
