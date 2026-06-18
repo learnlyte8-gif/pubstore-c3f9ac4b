@@ -1599,20 +1599,243 @@ function ReviewsView() {
   );
 }
 function ShippingView() {
+  const qc = useQueryClient();
+  const { data: supplier } = useQuery({ queryKey: ["my-supplier"], queryFn: fetchMySupplier });
+  const [userId, setUserId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+
+  useEffect(() => { supabase.auth.getUser().then(({ data: { user } }) => setUserId(user?.id ?? null)); }, []);
+
+  // Is the supplier also a courier? If so we'll surface self-delivery as default.
+  const { data: myCourier } = useQuery({
+    queryKey: ["my-courier-profile", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await supabase.from("courier_profiles" as any).select("*").eq("user_id", userId!).maybeSingle();
+      return data as any;
+    },
+  });
+
+  // Existing partnerships for this supplier with the courier profile joined in.
+  const { data: partnerships = [] } = useQuery({
+    queryKey: ["shipping-partnerships", supplier?.id],
+    enabled: !!supplier?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("supplier_courier_partnerships" as any)
+        .select("*")
+        .eq("supplier_id", supplier!.id)
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: false });
+      const rows = (data ?? []) as any[];
+      const courierIds = rows.map((r) => r.courier_user_id);
+      if (courierIds.length === 0) return rows;
+      const { data: profiles } = await supabase
+        .from("courier_profiles" as any)
+        .select("*")
+        .in("user_id", courierIds);
+      const map = new Map((profiles ?? []).map((p: any) => [p.user_id, p]));
+      return rows.map((r) => ({ ...r, courier: map.get(r.courier_user_id) ?? null }));
+    },
+  });
+
+  // Discover couriers open to partnerships, excluding ones already partnered.
+  const { data: discover = [] } = useQuery({
+    queryKey: ["shipping-discover", supplier?.id, search],
+    enabled: !!supplier?.id,
+    queryFn: async () => {
+      let q = supabase
+        .from("courier_profiles" as any)
+        .select("*")
+        .eq("active", true)
+        .eq("offers_supplier_partnerships", true)
+        .order("rating", { ascending: false })
+        .limit(20);
+      if (search.trim()) q = q.or(`company_name.ilike.%${search}%,display_name.ilike.%${search}%,city.ilike.%${search}%`);
+      const { data } = await q;
+      const taken = new Set(partnerships.map((p: any) => p.courier_user_id));
+      return ((data ?? []) as any[]).filter((c) => !taken.has(c.user_id) && c.user_id !== userId);
+    },
+  });
+
+  const invite = async (courierUserId: string) => {
+    if (!supplier?.id) return;
+    const { error } = await supabase.from("supplier_courier_partnerships" as any).insert({
+      supplier_id: supplier.id,
+      courier_user_id: courierUserId,
+      initiated_by: "supplier",
+      message: "We'd like to partner with you for our deliveries.",
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Partnership request sent");
+    qc.invalidateQueries({ queryKey: ["shipping-partnerships"] });
+    qc.invalidateQueries({ queryKey: ["shipping-discover"] });
+  };
+
+  const setDefault = async (id: string) => {
+    if (!supplier?.id) return;
+    // Clear any existing default first (partial unique index would block otherwise).
+    await supabase.from("supplier_courier_partnerships" as any)
+      .update({ is_default: false })
+      .eq("supplier_id", supplier.id)
+      .eq("is_default", true);
+    const { error } = await supabase.from("supplier_courier_partnerships" as any)
+      .update({ is_default: true })
+      .eq("id", id);
+    if (error) toast.error(error.message);
+    else { toast.success("Default shipping updated"); qc.invalidateQueries({ queryKey: ["shipping-partnerships"] }); }
+  };
+
+  const removePartnership = async (id: string) => {
+    if (!confirm("Remove this courier partnership?")) return;
+    const { error } = await supabase.from("supplier_courier_partnerships" as any).delete().eq("id", id);
+    if (error) toast.error(error.message);
+    else { toast.success("Removed"); qc.invalidateQueries({ queryKey: ["shipping-partnerships"] }); qc.invalidateQueries({ queryKey: ["shipping-discover"] }); }
+  };
+
+  if (!supplier) {
+    return <div className="p-8 text-center text-sm text-muted-foreground">Create your store first to manage shipping.</div>;
+  }
+
+  const hasDefault = partnerships.some((p: any) => p.is_default && p.status === "active");
+
   return (
-    <div className="px-4 py-4 space-y-3">
-      {[
-        { name: "Standard", time: "7-15 days", cost: "$4.99", carriers: "DHL, UPS" },
-        { name: "Express", time: "3-5 days", cost: "$14.99", carriers: "FedEx" },
-      ].map((s) => (
-        <div key={s.name} className="bg-card rounded-2xl border shadow-card p-4">
-          <div className="flex items-center gap-3">
-            <span className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center"><Truck className="w-5 h-5" /></span>
-            <div className="flex-1"><p className="font-bold text-sm">{s.name}</p><p className="text-[11px] text-muted-foreground">{s.time} · {s.carriers}</p></div>
-            <p className="font-bold text-sm">{s.cost}</p>
+    <div className="px-4 py-4 space-y-5">
+      {/* Self-delivery banner — if supplier also provides courier services */}
+      <div className="rounded-2xl border bg-gradient-to-br from-primary/10 to-transparent p-4">
+        <div className="flex items-center gap-3">
+          <span className="w-11 h-11 rounded-xl bg-primary text-primary-foreground flex items-center justify-center"><Truck className="w-5 h-5" /></span>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm flex items-center gap-1.5">
+              Self-delivery
+              {myCourier && !hasDefault && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground">DEFAULT</span>}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              {myCourier
+                ? "You also provide logistics — buyers see you as the default delivery option."
+                : "Also offer courier services? Register and we'll set you as the default shipping option for your store."}
+            </p>
           </div>
+          <Link to="/store/services/logistics" className="px-3 h-9 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center gap-1 shrink-0">
+            {myCourier ? "Edit rates" : "Set up"}
+          </Link>
         </div>
-      ))}
+        {myCourier && (
+          <p className="text-[11px] text-muted-foreground mt-2 pl-14">{summarizeRate(courierToRate(myCourier))}</p>
+        )}
+      </div>
+
+      {/* My partnerships */}
+      <div>
+        <div className="flex items-center justify-between mb-2 px-1">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">My courier partnerships</p>
+          <span className="text-[10px] text-muted-foreground">{partnerships.length} total</span>
+        </div>
+        {partnerships.length === 0 ? (
+          <div className="rounded-2xl border border-dashed p-5 text-center">
+            <Handshake className="w-6 h-6 mx-auto text-muted-foreground mb-2" />
+            <p className="text-sm font-bold">No partnerships yet</p>
+            <p className="text-[11px] text-muted-foreground mt-1">Invite a courier below — buyers will see the active options at checkout.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {partnerships.map((p: any) => {
+              const c = p.courier;
+              const rate = c ? courierToRate(c) : null;
+              return (
+                <div key={p.id} className="bg-card border rounded-2xl p-3 shadow-card">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-muted overflow-hidden shrink-0">
+                      {c?.vehicle_photo && <img src={c.vehicle_photo} alt="" className="w-full h-full object-cover" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm truncate flex items-center gap-1.5">
+                        {c?.company_name || c?.display_name || "Courier"}
+                        {p.is_default && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground">DEFAULT</span>}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground capitalize truncate">
+                        {c?.vehicle_type?.replace("_", " ") ?? "—"} {c?.max_weight_kg ? `· up to ${c.max_weight_kg}kg` : ""} {c?.city ? `· ${c.city}` : ""}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1 text-[10px]">
+                        <span className={`px-2 py-0.5 rounded-full font-bold capitalize ${
+                          p.status === "active" ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                          : p.status === "pending" ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                          : p.status === "paused" ? "bg-muted text-muted-foreground"
+                          : "bg-rose-500/15 text-rose-700 dark:text-rose-400"
+                        }`}>{p.status}</span>
+                        {rate && <span className="text-muted-foreground truncate">{summarizeRate(rate)}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-3">
+                    {p.status === "active" && !p.is_default && (
+                      <button onClick={() => setDefault(p.id)} className="flex-1 h-9 rounded-full border text-xs font-bold flex items-center justify-center gap-1">
+                        <Check className="w-3.5 h-3.5" /> Set as default
+                      </button>
+                    )}
+                    {p.is_default && (
+                      <span className="flex-1 h-9 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center gap-1">
+                        <BadgeCheck className="w-3.5 h-3.5" /> Default at checkout
+                      </span>
+                    )}
+                    <button onClick={() => removePartnership(p.id)} className="w-9 h-9 rounded-full hover:bg-destructive/10 text-destructive flex items-center justify-center">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Discover couriers */}
+      <div>
+        <div className="flex items-center justify-between mb-2 px-1">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Discover couriers</p>
+        </div>
+        <div className="relative mb-2">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name or city"
+            className="w-full h-11 pl-9 pr-3 rounded-xl border bg-background text-sm"
+          />
+        </div>
+        {discover.length === 0 ? (
+          <div className="rounded-2xl border border-dashed p-5 text-center text-xs text-muted-foreground">
+            No couriers match. Try a different search or invite couriers to join PUBSTORE.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {discover.map((c: any) => {
+              const rate = courierToRate(c);
+              return (
+                <div key={c.id} className="bg-card border rounded-2xl p-3 shadow-card flex gap-3">
+                  <div className="w-14 h-14 rounded-xl bg-muted overflow-hidden shrink-0">
+                    {c.vehicle_photo && <img src={c.vehicle_photo} alt="" className="w-full h-full object-cover" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm truncate">{c.company_name || c.display_name || "Courier"}</p>
+                    <p className="text-[11px] text-muted-foreground capitalize truncate">
+                      {c.vehicle_type?.replace("_", " ")} {c.max_weight_kg ? `· up to ${c.max_weight_kg}kg` : ""} {c.city ? `· ${c.city}` : ""}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">{summarizeRate(rate)}</p>
+                    <div className="flex items-center gap-2 text-[11px] mt-1">
+                      <span className="flex items-center gap-0.5"><Star className="w-3 h-3 fill-amber-400 text-amber-400" />{Number(c.rating ?? 5).toFixed(1)}</span>
+                      <span className="text-muted-foreground">{c.deliveries_completed ?? 0} deliveries</span>
+                    </div>
+                  </div>
+                  <Button size="sm" onClick={() => invite(c.user_id)} className="h-9 self-start text-[11px] shrink-0">
+                    <Handshake className="w-3.5 h-3.5 mr-1" /> Invite
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
