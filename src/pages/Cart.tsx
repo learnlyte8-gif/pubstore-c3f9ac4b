@@ -92,12 +92,13 @@ export default function Cart() {
         : { data: [] as any[] };
       const ownerCourierMap = new Map((ownerCouriers ?? []).map((c: any) => [c.user_id, c]));
 
-      const { data: parts } = await supabase
+      const { data: partsRaw } = await supabase
         .from("supplier_courier_partnerships" as any)
         .select("*")
         .in("supplier_id", supplierIds)
         .eq("status", "active");
-      const partCourierIds = (parts ?? []).map((p: any) => p.courier_user_id);
+      const parts: any[] = (partsRaw as any[]) ?? [];
+      const partCourierIds = parts.map((p) => p.courier_user_id);
       const { data: partCouriers } = partCourierIds.length
         ? await supabase.from("courier_profiles" as any).select("*").in("user_id", partCourierIds)
         : { data: [] as any[] };
