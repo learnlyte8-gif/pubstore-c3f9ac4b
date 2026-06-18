@@ -40,8 +40,14 @@ export default function BecomeSupplier() {
       await supabase.from("user_roles").delete().eq("user_id", user.id).eq("role", "supplier");
       await supabase.from("user_roles").insert({ user_id: user.id, role: "supplier" });
 
+      // Seed supplier verticals from the buyer's onboarding picks so MyStore
+      // immediately shows just the relevant tools.
+      const { data: prof } = await supabase
+        .from("profiles").select("verticals").eq("user_id", user.id).maybeSingle();
+      const seededVerticals = ((prof as any)?.verticals ?? []) as string[];
+
       // Create supplier row
-      const { error: supErr } = await supabase.from("suppliers").insert({
+      const { error: supErr } = await (supabase.from("suppliers") as any).insert({
         owner_id: user.id,
         name: form.name.trim(),
         country: form.country.trim() || null,
@@ -54,6 +60,7 @@ export default function BecomeSupplier() {
         response_time: "≤ 24h",
         on_time_delivery: 100,
         years_active: 0,
+        verticals: seededVerticals,
       });
       if (supErr) throw supErr;
 

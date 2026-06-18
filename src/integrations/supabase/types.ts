@@ -3434,6 +3434,7 @@ export type Database = {
           updated_at: string
           user_id: string
           username: string | null
+          verticals: string[]
         }
         Insert: {
           address?: string | null
@@ -3453,6 +3454,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           username?: string | null
+          verticals?: string[]
         }
         Update: {
           address?: string | null
@@ -3472,6 +3474,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           username?: string | null
+          verticals?: string[]
         }
         Relationships: []
       }
@@ -4906,6 +4909,7 @@ export type Database = {
           trade_type: string
           updated_at: string
           verified: boolean | null
+          verticals: string[]
           website: string | null
           years_active: number | null
         }
@@ -4941,6 +4945,7 @@ export type Database = {
           trade_type?: string
           updated_at?: string
           verified?: boolean | null
+          verticals?: string[]
           website?: string | null
           years_active?: number | null
         }
@@ -4976,6 +4981,7 @@ export type Database = {
           trade_type?: string
           updated_at?: string
           verified?: boolean | null
+          verticals?: string[]
           website?: string | null
           years_active?: number | null
         }

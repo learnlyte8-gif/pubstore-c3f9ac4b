@@ -41,6 +41,8 @@ import SupplierCard from "@/components/marketplace/SupplierCard";
 import { useProducts, useSuppliers } from "@/hooks/useCatalog";
 import { useFollowingFeed, useFollowingSupplierIds, useAuthUserId } from "@/hooks/useFollowing";
 import { useMyInterests, useWishlistInterestSlugs, interestsToSlugs, prioritizeByCategories, useRecentSearchSlugs, rankByAffinity } from "@/hooks/useInterests";
+import { useMyVerticals } from "@/hooks/useMyVerticals";
+import { wantsVertical } from "@/data/verticalsCatalog";
 import { usePersonalizedFeed } from "@/hooks/useSocial";
 import { useClickAffinity, useRefreshFeed } from "@/hooks/usePersonalizationLog";
 import { useTradeMode } from "@/hooks/useTradeMode";
@@ -64,6 +66,8 @@ const Home = () => {
 
 
   const { interests } = useMyInterests();
+  const { verticals } = useMyVerticals();
+  const showShop = wantsVertical(verticals, "shop");
   const wishlistSlugs = useWishlistInterestSlugs();
   const { slugs: searchSlugs, tokens: searchTokens } = useRecentSearchSlugs();
   const { counts: clickCounts, tokens: clickTokens } = useClickAffinity();
@@ -139,8 +143,8 @@ const Home = () => {
           <Promo3DCarousel />
           <HomeMenuDrawer />
 
-          {/* Product-dependent rails: show skeleton while loading, empty state if no products */}
-          {isLoading ? (
+          {/* Product-dependent rails — only when the buyer wants the marketplace */}
+          {showShop && (isLoading ? (
             <HomeRailsSkeleton />
           ) : products.length === 0 ? (
             <div className="px-4 mt-4">
@@ -195,23 +199,23 @@ const Home = () => {
                 <BrandSpotlight />
               </section>
             </>
-          )}
+          ))}
 
-          {/* Non-product rails — always render, independent of products query.
-              Each rail handles its own loading / empty state (returns null if empty). */}
-          <JobsRail />
-          <NewsRail />
-          <RestaurantsRail />
-          <StaysRail />
-          <AutoRail />
-          <ServicesRail />
-          <CarRentalsRail />
-          <PropertiesRail />
-          <FinanceRail />
-          <IndustrialRail />
-          <AgroRail />
+          {/* Non-product rails — each gated by the user's vertical preferences.
+              Empty preferences = show everything (back-compat). */}
+          {wantsVertical(verticals, "jobs") && <JobsRail />}
+          {wantsVertical(verticals, "news") && <NewsRail />}
+          {wantsVertical(verticals, "restaurants") && <RestaurantsRail />}
+          {wantsVertical(verticals, "stays") && <StaysRail />}
+          {wantsVertical(verticals, "vehicles") && <AutoRail />}
+          {wantsVertical(verticals, "services") && <ServicesRail />}
+          {wantsVertical(verticals, "car_rentals") && <CarRentalsRail />}
+          {wantsVertical(verticals, "properties") && <PropertiesRail />}
+          {wantsVertical(verticals, "finance") && <FinanceRail />}
+          {wantsVertical(verticals, "industrial") && <IndustrialRail />}
+          {wantsVertical(verticals, "agro") && <AgroRail />}
 
-          {!isLoading && products.length > 0 && (
+          {showShop && !isLoading && products.length > 0 && (
             <section className="px-4 mt-6">
               <SectionHeader icon={LayoutGrid} title="Explore catalog" subtitle="Mixed picks, ads & ideas" />
               <MixedCatalogGrid products={products.slice(6)} hero={products[0]} />

@@ -6,6 +6,7 @@ const KEYS = {
   cart: "pubstore.guest.cart",
   wishlist: "pubstore.guest.wishlist",
   interests: "pubstore.guest.interests",
+  verticals: "pubstore.guest.verticals",
   onboarded: "pubstore.guest.onboarded",
 } as const;
 
@@ -69,6 +70,11 @@ export const guestWishlist = {
 export const guestInterests = {
   get: (): string[] => read<string[]>(KEYS.interests, []),
   set: (items: string[]) => write(KEYS.interests, items),
+};
+
+export const guestVerticals = {
+  get: (): string[] => read<string[]>(KEYS.verticals, []),
+  set: (items: string[]) => write(KEYS.verticals, items),
 };
 
 export const guestOnboarded = {

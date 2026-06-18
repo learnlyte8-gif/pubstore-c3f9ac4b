@@ -3,7 +3,7 @@ import CircleSpinner from "@/components/CircleSpinner";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Loader2, Check, X, Store, ShoppingBag, ArrowRight, ArrowLeft, Sparkles } from "lucide-react";
+import { Loader2, Check, X, Store, ShoppingBag, ArrowRight, ArrowLeft, Sparkles, Compass } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import logo from "@/assets/pubstore-logo.png";
 import ShoppingBackdrop from "@/components/ShoppingBackdrop";
-import { guestInterests, guestOnboarded } from "@/lib/guest";
+import { guestInterests, guestOnboarded, guestVerticals } from "@/lib/guest";
+import { VERTICALS, type VerticalSlug } from "@/data/verticalsCatalog";
 
 type Role = "supplier" | "buyer";
 
@@ -39,6 +40,7 @@ const finalSchema = z.object({
     .max(30)
     .regex(/^[+0-9 ()\-]+$/, "Only digits, spaces, +, -, ()"),
   interests: z.array(z.string()).min(1, "Pick at least one interest").max(8, "Max 8"),
+  verticals: z.array(z.string()).min(1, "Pick at least one service"),
 });
 
 export default function Onboarding() {
@@ -50,6 +52,7 @@ export default function Onboarding() {
 
   const [role, setRole] = useState<Role | null>(null);
   const [username, setUsername] = useState("");
+  const [verticals, setVerticals] = useState<string[]>(() => guestVerticals.get());
   const [interests, setInterests] = useState<string[]>(() => guestInterests.get());
   const [address, setAddress] = useState("");
   const [contact, setContact] = useState("");
@@ -69,11 +72,12 @@ export default function Onboarding() {
       if (session) {
         const { data } = await supabase
           .from("profiles")
-          .select("profile_completed,interests")
+          .select("profile_completed,interests,verticals")
           .eq("user_id", session.user.id)
           .maybeSingle();
-        if (data?.profile_completed) navigate("/home", { replace: true });
+        if ((data as any)?.profile_completed) navigate("/home", { replace: true });
         if (data?.interests?.length) setInterests(data.interests);
+        if ((data as any)?.verticals?.length) setVerticals((data as any).verticals);
       }
     });
     return () => {
@@ -112,21 +116,33 @@ export default function Onboarding() {
     );
   };
 
-  // Guests: 1 step (interests). Authenticated: full 4-step flow.
-  const totalSteps = userId ? 4 : 1;
+  const toggleVertical = (slug: string) => {
+    setVerticals((prev) => (prev.includes(slug) ? prev.filter((x) => x !== slug) : [...prev, slug]));
+  };
+
+  // Guests: 2 steps (verticals → interests). Authed: 5-step flow.
   const guestStep = !userId;
+  const totalSteps = guestStep ? 2 : 5;
+  // Step indices (authed): 0 role · 1 username · 2 verticals · 3 interests · 4 address
+  // Step indices (guest):  0 verticals · 1 interests
 
   const canNext = useMemo(() => {
-    if (guestStep) return interests.length > 0;
+    if (guestStep) {
+      if (step === 0) return verticals.length > 0;
+      if (step === 1) return interests.length > 0;
+      return false;
+    }
     if (step === 0) return role !== null;
     if (step === 1) return available === true && !checking && !usernameError;
-    if (step === 2) return interests.length > 0;
-    if (step === 3) return address.trim().length >= 5 && /^[+0-9 ()\-]+$/.test(contact) && contact.trim().length >= 7;
+    if (step === 2) return verticals.length > 0;
+    if (step === 3) return interests.length > 0;
+    if (step === 4) return address.trim().length >= 5 && /^[+0-9 ()\-]+$/.test(contact) && contact.trim().length >= 7;
     return false;
-  }, [guestStep, step, role, available, checking, usernameError, interests, address, contact]);
+  }, [guestStep, step, role, available, checking, usernameError, verticals, interests, address, contact]);
 
   const finishGuest = () => {
     guestInterests.set(interests);
+    guestVerticals.set(verticals);
     guestOnboarded.set(true);
     toast.success("All set 🎉", { description: "Your feed is personalized." });
     navigate("/home", { replace: true });
@@ -134,23 +150,23 @@ export default function Onboarding() {
 
   const handleSubmit = async () => {
     if (!userId || !role) return;
-    const parsed = finalSchema.safeParse({ role, username, address, contact, interests });
+    const parsed = finalSchema.safeParse({ role, username, address, contact, interests, verticals });
     if (!parsed.success) return toast.error(parsed.error.issues[0].message);
 
     setSubmitting(true);
     try {
-      const { error: profErr } = await supabase
-        .from("profiles")
+      const { error: profErr } = await (supabase.from("profiles") as any)
         .update({
           username: parsed.data.username,
           address: parsed.data.address,
           contact: parsed.data.contact,
           interests: parsed.data.interests,
+          verticals: parsed.data.verticals,
           profile_completed: true,
         })
         .eq("user_id", userId);
       if (profErr) {
-        if (profErr.code === "23505") return toast.error("Username already taken");
+        if ((profErr as any).code === "23505") return toast.error("Username already taken");
         throw profErr;
       }
 
@@ -169,13 +185,13 @@ export default function Onboarding() {
     }
   };
 
+  const lastStep = totalSteps - 1;
   const next = () => {
-    if (guestStep) return finishGuest();
-    if (step < 3) setStep(step + 1);
+    if (step < lastStep) setStep(step + 1);
+    else if (guestStep) finishGuest();
     else handleSubmit();
   };
   const back = () => {
-    if (guestStep) return navigate("/home");
     if (step > 0) setStep(step - 1);
     else navigate("/home");
   };
@@ -187,6 +203,12 @@ export default function Onboarding() {
       </main>
     );
   }
+
+  const showRole       = !guestStep && step === 0;
+  const showUsername   = !guestStep && step === 1;
+  const showVerticals  = (guestStep && step === 0) || (!guestStep && step === 2);
+  const showInterests  = (guestStep && step === 1) || (!guestStep && step === 3);
+  const showAddress    = !guestStep && step === 4;
 
   return (
     <main className="relative min-h-[100dvh] bg-background flex flex-col px-6 py-8 overflow-hidden">
@@ -202,7 +224,7 @@ export default function Onboarding() {
           <span className="font-brand text-lg tracking-wide">PUBSTORE</span>
         </div>
         <span className="text-xs text-muted-foreground tabular-nums">
-          {guestStep ? "1/1" : `${step + 1}/4`}
+          {step + 1}/{totalSteps}
         </span>
       </div>
 
@@ -210,62 +232,12 @@ export default function Onboarding() {
       <div className="relative h-1 bg-muted rounded-full overflow-hidden mb-8">
         <div
           className="h-full bg-foreground transition-all duration-500"
-          style={{ width: `${(((guestStep ? 0 : step) + 1) / totalSteps) * 100}%` }}
+          style={{ width: `${((step + 1) / totalSteps) * 100}%` }}
         />
       </div>
 
       <div className="relative flex-1 max-w-md w-full mx-auto flex flex-col">
-        {/* GUEST: only interests */}
-        {guestStep && (
-          <section className="animate-fade-up">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                <Sparkles className="w-5 h-5" />
-              </span>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                Welcome
-              </span>
-            </div>
-            <h1 className="text-2xl font-bold mb-1">What are you into?</h1>
-            <p className="text-sm text-muted-foreground mb-6">
-              Pick a few — we'll personalize your feed instantly. No account needed.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {INTERESTS.map((item) => {
-                const active = interests.includes(item);
-                return (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => toggleInterest(item)}
-                    className={`px-4 py-2 rounded-full text-sm border transition ${
-                      active
-                        ? "bg-foreground text-background border-foreground"
-                        : "bg-transparent text-foreground border-border hover:border-foreground/40"
-                    }`}
-                  >
-                    {item}
-                  </button>
-                );
-              })}
-            </div>
-            <p className="mt-4 text-xs text-muted-foreground">{interests.length}/8 selected</p>
-
-            <button
-              type="button"
-              onClick={() => {
-                guestOnboarded.set(true);
-                navigate("/home", { replace: true });
-              }}
-              className="mt-6 text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
-            >
-              Skip for now
-            </button>
-          </section>
-        )}
-
-        {/* AUTHED FLOW (legacy) */}
-        {!guestStep && step === 0 && (
+        {showRole && (
           <section className="animate-fade-up">
             <h1 className="text-2xl font-bold mb-1">Welcome 👋</h1>
             <p className="text-sm text-muted-foreground mb-6">How will you use PUBSTORE?</p>
@@ -288,7 +260,7 @@ export default function Onboarding() {
           </section>
         )}
 
-        {!guestStep && step === 1 && (
+        {showUsername && (
           <section className="animate-fade-up">
             <h1 className="text-2xl font-bold mb-1">Pick a username</h1>
             <p className="text-sm text-muted-foreground mb-6">This is how people will find you.</p>
@@ -324,11 +296,71 @@ export default function Onboarding() {
           </section>
         )}
 
-        {!guestStep && step === 2 && (
+        {showVerticals && (
           <section className="animate-fade-up">
-            <h1 className="text-2xl font-bold mb-1">Your interests</h1>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                <Compass className="w-5 h-5" />
+              </span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                Personalize
+              </span>
+            </div>
+            <h1 className="text-2xl font-bold mb-1">
+              {role === "supplier" ? "What do you provide?" : "What are you looking for?"}
+            </h1>
             <p className="text-sm text-muted-foreground mb-6">
-              Pick up to 8 — we'll personalize your feed.
+              {role === "supplier"
+                ? "Pick the services your store will offer — we'll unlock just those tools in MyStore."
+                : "Pick the services you want in your feed — marketplace, food, agro, stays, jobs and more."}
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {VERTICALS.map((v) => {
+                const active = verticals.includes(v.slug);
+                const Icon = v.icon;
+                return (
+                  <button
+                    key={v.slug}
+                    type="button"
+                    onClick={() => toggleVertical(v.slug)}
+                    className={`text-left p-3 rounded-xl border transition flex items-start gap-2.5 ${
+                      active
+                        ? "bg-foreground/[0.04] border-foreground"
+                        : "bg-transparent border-border hover:border-foreground/40"
+                    }`}
+                  >
+                    <span className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${
+                      active ? "bg-foreground text-background" : "bg-muted text-foreground"
+                    }`}>
+                      <Icon className="w-4 h-4" />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold leading-tight truncate">{v.label}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">{v.hint}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-4 text-xs text-muted-foreground">
+              {verticals.length} selected · you can change this anytime in Settings
+            </p>
+          </section>
+        )}
+
+        {showInterests && (
+          <section className="animate-fade-up">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                <Sparkles className="w-5 h-5" />
+              </span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                Interests
+              </span>
+            </div>
+            <h1 className="text-2xl font-bold mb-1">What are you into?</h1>
+            <p className="text-sm text-muted-foreground mb-6">
+              Pick up to 8 — we'll fine-tune the product feed.
             </p>
             <div className="flex flex-wrap gap-2">
               {INTERESTS.map((item) => {
@@ -350,10 +382,24 @@ export default function Onboarding() {
               })}
             </div>
             <p className="mt-4 text-xs text-muted-foreground">{interests.length}/8 selected</p>
+
+            {guestStep && (
+              <button
+                type="button"
+                onClick={() => {
+                  guestVerticals.set(verticals);
+                  guestOnboarded.set(true);
+                  navigate("/home", { replace: true });
+                }}
+                className="mt-6 text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+              >
+                Skip for now
+              </button>
+            )}
           </section>
         )}
 
-        {!guestStep && step === 3 && (
+        {showAddress && (
           <section className="animate-fade-up space-y-5">
             <div>
               <h1 className="text-2xl font-bold mb-1">Almost done</h1>
@@ -394,10 +440,12 @@ export default function Onboarding() {
           >
             {submitting ? (
               <CircleSpinner size={20} />
-            ) : guestStep ? (
-              <span className="inline-flex items-center gap-2">Start exploring <ArrowRight className="w-4 h-4" /></span>
-            ) : step === 3 ? (
-              "Finish"
+            ) : step === lastStep ? (
+              guestStep ? (
+                <span className="inline-flex items-center gap-2">Start exploring <ArrowRight className="w-4 h-4" /></span>
+              ) : (
+                "Finish"
+              )
             ) : (
               <span className="inline-flex items-center gap-2">Continue <ArrowRight className="w-4 h-4" /></span>
             )}

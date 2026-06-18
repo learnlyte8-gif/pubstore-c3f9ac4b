@@ -14,6 +14,7 @@ import { useImportJob, type BulkCandidate, type ImportedProduct, type MarkupMode
 import ImageUpload from "@/components/ImageUpload";
 import { uploadProductImages } from "@/lib/uploadProductImages";
 import AddAdDialog from "@/components/store/AddAdDialog";
+import { VERTICALS } from "@/data/verticalsCatalog";
 
 
 const titles: Record<string, { title: string; sub: string }> = {
@@ -1623,6 +1624,7 @@ function ProfileView() {
     businessType: "", phone: "", email: "", website: "",
     tradeType: "both" as "retail" | "wholesale" | "both",
     categories: [] as string[],
+    verticals: [] as string[],
   });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<"logo" | "banner" | null>(null);
@@ -1646,6 +1648,7 @@ function ProfileView() {
       website: supplier.website || "",
       tradeType: (supplier.tradeType ?? "both"),
       categories: supplier.categories || [],
+      verticals: (supplier as any).verticals || [],
     });
   }, [supplier]);
 
@@ -1695,6 +1698,13 @@ function ProfileView() {
     }));
   };
 
+  const toggleVertical = (slug: string) => {
+    setForm((f) => ({
+      ...f,
+      verticals: f.verticals.includes(slug) ? f.verticals.filter((v) => v !== slug) : [...f.verticals, slug],
+    }));
+  };
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supplier) return;
@@ -1707,6 +1717,7 @@ function ProfileView() {
       website: form.website || null,
       trade_type: form.tradeType || "both",
       categories: form.categories,
+      verticals: form.verticals,
     }).eq("id", supplier.id);
     setSaving(false);
     if (error) toast.error(error.message); else { toast.success("Saved"); qc.invalidateQueries({ queryKey: ["my-supplier"] }); }
@@ -1835,6 +1846,35 @@ function ProfileView() {
               <button key={c.id} type="button" onClick={() => toggleCategory(c.id)}
                 className={`px-3 py-1.5 rounded-full text-xs font-bold border ${active ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border"}`}>
                 {c.name}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Verticals — what services this store provides */}
+      <div data-step="verticals">
+        <p className="text-xs font-bold mb-1 text-muted-foreground uppercase tracking-wide">
+          What do you provide? <span className="text-muted-foreground/70 normal-case">({form.verticals.length} selected)</span>
+        </p>
+        <p className="text-[11px] text-muted-foreground mb-2">
+          Pick the services your store offers — only those will appear in MyStore.
+        </p>
+        <div className="grid grid-cols-2 gap-1.5">
+          {VERTICALS.filter((v) => v.forSupplier).map((v) => {
+            const active = form.verticals.includes(v.slug);
+            const Icon = v.icon;
+            return (
+              <button
+                key={v.slug}
+                type="button"
+                onClick={() => toggleVertical(v.slug)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-left text-xs font-bold border transition ${
+                  active ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border"
+                }`}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                <span className="truncate">{v.label}</span>
               </button>
             );
           })}
