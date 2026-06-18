@@ -3612,6 +3612,42 @@ function CourierServiceView() {
               ))}
             </div>
           )}
+
+          {/* Discover suppliers to partner with */}
+          <div className="mt-5">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Discover suppliers</p>
+            <div className="relative mb-2">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                value={supplierSearch}
+                onChange={(e) => setSupplierSearch(e.target.value)}
+                placeholder="Search suppliers by name"
+                className="w-full h-11 pl-9 pr-3 rounded-xl border bg-background text-sm"
+              />
+            </div>
+            {discoverSuppliers.length === 0 ? (
+              <div className="rounded-2xl border border-dashed p-4 text-xs text-center text-muted-foreground">
+                No suppliers match — try another name.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {discoverSuppliers.map((s: any) => (
+                  <div key={s.id} className="bg-card border rounded-2xl p-3 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-muted overflow-hidden shrink-0">
+                      {s.logo && <img src={s.logo} alt="" className="w-full h-full object-cover" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm truncate">{s.name}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">{s.country ?? ""} {Array.isArray(s.categories) && s.categories.length ? `· ${s.categories.slice(0,2).join(", ")}` : ""}</p>
+                    </div>
+                    <Button size="sm" onClick={() => requestPartnership(s.id)} className="h-9 text-[11px]">
+                      <Handshake className="w-3.5 h-3.5 mr-1" /> Request
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
