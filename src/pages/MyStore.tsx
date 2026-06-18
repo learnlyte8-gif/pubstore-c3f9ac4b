@@ -231,18 +231,36 @@ export default function MyStore() {
         </Section>
 
         <Section title="Services & verticals">
-          <Row icon={UtensilsCrossed} label="Restaurants & food" hint="Menus, delivery, table reservations" to="/restaurants" manageTo="/restaurants" />
-          <Row icon={Sprout} label="Agro listings" hint="Produce, machinery, inputs, livestock, projects" to="/store/services/agro" manageTo="/store/services/agro?tab=actions" />
-          <Row icon={BedDouble} label="Stays & B&B" hint="List rooms, hotels, factory tours" to="/store/services/stays" manageTo="/store/services/stays?tab=actions" />
-          <Row icon={Car} label="Vehicles" hint="Cars, EVs, trucks, bikes, parts" to="/store/services/vehicles" manageTo="/store/services/vehicles?tab=actions" />
-          <Row icon={Factory} label="Industrial listings" hint="Machinery, materials, capacity" to="/store/services/industrial" manageTo="/store/services/industrial?tab=actions" />
-          <Row icon={Navigation} label="Ride driver" hint="Register your car · earn driving passengers" to="/store/services/driver" manageTo="/store/services/driver?tab=actions" />
-          <Row icon={Wrench} label="Local services" hint="Plumbing, electrical, tutoring, freelance" to="/store/services/pros" manageTo="/store/services/pros?tab=actions" />
-          <Row icon={HomeIcon} label="Real estate" hint="Rent or sell apartments, houses, land" to="/store/services/properties" manageTo="/store/services/properties?tab=actions" />
-          <Row icon={Truck} label="Courier / logistics" hint="Deliveries, freight, partner with suppliers" to="/store/services/logistics" manageTo="/store/services/logistics?tab=actions" />
-          <Row icon={Banknote} label="Finance products" hint="Loans, vehicle financing, insurance" to="/store/services/finance" manageTo="/store/services/finance?tab=actions" />
-          <Row icon={Car} label="Car rentals" hint="Self-drive listings, mileage, rules & penalties" to="/store/services/car-rentals" manageTo="/store/services/car-rentals?tab=actions" />
-          {canImport && <Row icon={Newspaper} label="News & editorial" hint="Publish articles · admin" to="/store/services/news" manageTo="/store/services/news?tab=actions" />}
+          {(() => {
+            const offers = (supplier as any)?.verticals as string[] | undefined;
+            const wants = (slug: string) => !offers || offers.length === 0 || offers.includes(slug);
+            const rows = [
+              { slug: "restaurants", el: <Row key="r" icon={UtensilsCrossed} label="Restaurants & food" hint="Menus, delivery, table reservations" to="/restaurants" manageTo="/restaurants" /> },
+              { slug: "agro",        el: <Row key="a" icon={Sprout} label="Agro listings" hint="Produce, machinery, inputs, livestock, projects" to="/store/services/agro" manageTo="/store/services/agro?tab=actions" /> },
+              { slug: "stays",       el: <Row key="s" icon={BedDouble} label="Stays & B&B" hint="List rooms, hotels, factory tours" to="/store/services/stays" manageTo="/store/services/stays?tab=actions" /> },
+              { slug: "vehicles",    el: <Row key="v" icon={Car} label="Vehicles" hint="Cars, EVs, trucks, bikes, parts" to="/store/services/vehicles" manageTo="/store/services/vehicles?tab=actions" /> },
+              { slug: "industrial",  el: <Row key="i" icon={Factory} label="Industrial listings" hint="Machinery, materials, capacity" to="/store/services/industrial" manageTo="/store/services/industrial?tab=actions" /> },
+              { slug: "rides",       el: <Row key="d" icon={Navigation} label="Ride driver" hint="Register your car · earn driving passengers" to="/store/services/driver" manageTo="/store/services/driver?tab=actions" /> },
+              { slug: "services",    el: <Row key="ls" icon={Wrench} label="Local services" hint="Plumbing, electrical, tutoring, freelance" to="/store/services/pros" manageTo="/store/services/pros?tab=actions" /> },
+              { slug: "properties",  el: <Row key="p" icon={HomeIcon} label="Real estate" hint="Rent or sell apartments, houses, land" to="/store/services/properties" manageTo="/store/services/properties?tab=actions" /> },
+              { slug: "shop",        el: <Row key="l" icon={Truck} label="Courier / logistics" hint="Deliveries, freight, partner with suppliers" to="/store/services/logistics" manageTo="/store/services/logistics?tab=actions" /> },
+              { slug: "finance",     el: <Row key="f" icon={Banknote} label="Finance products" hint="Loans, vehicle financing, insurance" to="/store/services/finance" manageTo="/store/services/finance?tab=actions" /> },
+              { slug: "car_rentals", el: <Row key="cr" icon={Car} label="Car rentals" hint="Self-drive listings, mileage, rules & penalties" to="/store/services/car-rentals" manageTo="/store/services/car-rentals?tab=actions" /> },
+            ];
+            const visible = rows.filter((r) => wants(r.slug));
+            return (
+              <>
+                {visible.map((r) => r.el)}
+                {canImport && <Row icon={Newspaper} label="News & editorial" hint="Publish articles · admin" to="/store/services/news" manageTo="/store/services/news?tab=actions" />}
+                <Link
+                  to="/store/profile?step=verticals"
+                  className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-primary hover:bg-muted/40 transition"
+                >
+                  <Sparkles className="w-4 h-4" /> Change what you provide
+                </Link>
+              </>
+            );
+          })()}
         </Section>
 
         <Section title="Storefront">
