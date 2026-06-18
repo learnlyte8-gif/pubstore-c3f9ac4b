@@ -66,6 +66,8 @@ const Home = () => {
 
 
   const { interests } = useMyInterests();
+  const { verticals } = useMyVerticals();
+  const showShop = wantsVertical(verticals, "shop");
   const wishlistSlugs = useWishlistInterestSlugs();
   const { slugs: searchSlugs, tokens: searchTokens } = useRecentSearchSlugs();
   const { counts: clickCounts, tokens: clickTokens } = useClickAffinity();
