@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS verticals text[] NOT NULL DEFAULT '{}'::text[]; ALTER TABLE public.suppliers ADD COLUMN IF NOT EXISTS verticals text[] NOT NULL DEFAULT '{}'::text[];
