@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, MapPin, Tag, X, CheckCircle2, Wallet, Smartphone, CreditCard, Banknote, ShieldCheck, Loader2 } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, MapPin, Tag, X, CheckCircle2, Wallet, Smartphone, CreditCard, Banknote, ShieldCheck, Loader2, Truck, BadgeCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useShop } from "@/store/shop";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWallet } from "@/hooks/useWallet";
 import { getEdgeFunctionErrorMessage } from "@/lib/edgeFunctionError";
 import { useVerification } from "@/hooks/useVerification";
+import { useQuery } from "@tanstack/react-query";
+import { courierToRate, quoteCourierRate, summarizeRate } from "@/lib/courierRates";
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
 
