@@ -892,18 +892,23 @@ export type Database = {
           country: string | null
           cover_photo: string | null
           created_at: string
+          currency: string
           deliveries_completed: number
           display_name: string | null
+          distance_discounts: Json
           email: string | null
+          free_delivery_above: number | null
           id: string
           insurance_photo: string | null
           license_photo: string | null
           max_volume_m3: number | null
           max_weight_kg: number | null
+          min_fee: number | null
           offers_supplier_partnerships: boolean
           per_km_fee: number | null
           phone: string | null
           plate_photo: string | null
+          rate_notes: string | null
           rating: number
           selfie_photo: string | null
           service_areas: string[]
@@ -915,6 +920,7 @@ export type Database = {
           vehicle_plate: string | null
           vehicle_type: string
           verified: boolean
+          weight_tiers: Json
           whatsapp: string | null
         }
         Insert: {
@@ -926,18 +932,23 @@ export type Database = {
           country?: string | null
           cover_photo?: string | null
           created_at?: string
+          currency?: string
           deliveries_completed?: number
           display_name?: string | null
+          distance_discounts?: Json
           email?: string | null
+          free_delivery_above?: number | null
           id?: string
           insurance_photo?: string | null
           license_photo?: string | null
           max_volume_m3?: number | null
           max_weight_kg?: number | null
+          min_fee?: number | null
           offers_supplier_partnerships?: boolean
           per_km_fee?: number | null
           phone?: string | null
           plate_photo?: string | null
+          rate_notes?: string | null
           rating?: number
           selfie_photo?: string | null
           service_areas?: string[]
@@ -949,6 +960,7 @@ export type Database = {
           vehicle_plate?: string | null
           vehicle_type?: string
           verified?: boolean
+          weight_tiers?: Json
           whatsapp?: string | null
         }
         Update: {
@@ -960,18 +972,23 @@ export type Database = {
           country?: string | null
           cover_photo?: string | null
           created_at?: string
+          currency?: string
           deliveries_completed?: number
           display_name?: string | null
+          distance_discounts?: Json
           email?: string | null
+          free_delivery_above?: number | null
           id?: string
           insurance_photo?: string | null
           license_photo?: string | null
           max_volume_m3?: number | null
           max_weight_kg?: number | null
+          min_fee?: number | null
           offers_supplier_partnerships?: boolean
           per_km_fee?: number | null
           phone?: string | null
           plate_photo?: string | null
+          rate_notes?: string | null
           rating?: number
           selfie_photo?: string | null
           service_areas?: string[]
@@ -983,6 +1000,7 @@ export type Database = {
           vehicle_plate?: string | null
           vehicle_type?: string
           verified?: boolean
+          weight_tiers?: Json
           whatsapp?: string | null
         }
         Relationships: []
@@ -3014,6 +3032,8 @@ export type Database = {
           buyer_id: string
           coupon_code: string | null
           created_at: string
+          delivery_courier_user_id: string | null
+          delivery_option_label: string | null
           discount: number
           dispute_opened_at: string | null
           dispute_reason: string | null
@@ -3040,6 +3060,8 @@ export type Database = {
           buyer_id: string
           coupon_code?: string | null
           created_at?: string
+          delivery_courier_user_id?: string | null
+          delivery_option_label?: string | null
           discount?: number
           dispute_opened_at?: string | null
           dispute_reason?: string | null
@@ -3066,6 +3088,8 @@ export type Database = {
           buyer_id?: string
           coupon_code?: string | null
           created_at?: string
+          delivery_courier_user_id?: string | null
+          delivery_option_label?: string | null
           discount?: number
           dispute_opened_at?: string | null
           dispute_reason?: string | null
@@ -4831,6 +4855,7 @@ export type Database = {
           currency: string
           id: string
           initiated_by: string
+          is_default: boolean
           message: string | null
           notes: string | null
           service_areas: string[]
@@ -4845,6 +4870,7 @@ export type Database = {
           currency?: string
           id?: string
           initiated_by?: string
+          is_default?: boolean
           message?: string | null
           notes?: string | null
           service_areas?: string[]
@@ -4859,6 +4885,7 @@ export type Database = {
           currency?: string
           id?: string
           initiated_by?: string
+          is_default?: boolean
           message?: string | null
           notes?: string | null
           service_areas?: string[]
@@ -5843,6 +5870,8 @@ export type Database = {
           buyer_id: string
           coupon_code: string | null
           created_at: string
+          delivery_courier_user_id: string | null
+          delivery_option_label: string | null
           discount: number
           dispute_opened_at: string | null
           dispute_reason: string | null
