@@ -567,6 +567,57 @@ export default function Cart() {
         )}
       </div>
 
+      {/* Delivery options per supplier */}
+      <div className="mx-4 mt-4 rounded-2xl border bg-card p-3">
+        <div className="flex items-center gap-2 mb-2">
+          <Truck className="w-4 h-4 text-primary" />
+          <p className="text-xs font-bold">Delivery options</p>
+        </div>
+        <div className="space-y-3">
+          {supplierIds.map((sid) => {
+            const opts = deliveryOptionsBySupplier[sid] ?? [];
+            const group = supplierGroups.get(sid);
+            const supplierName = group?.items[0]?.product.supplierName ?? "Supplier";
+            const fee = shippingBySupplier[sid]?.fee ?? 0;
+            return (
+              <div key={sid} className="rounded-xl border p-2.5">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[11px] font-bold text-muted-foreground truncate">{supplierName}</p>
+                  <p className="text-[11px] font-bold text-destructive">{fee === 0 ? "FREE" : fmt(fee)}</p>
+                </div>
+                <div className="space-y-1.5">
+                  {opts.map((opt) => {
+                    const active = deliveryPicks[sid] === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setDeliveryPicks((prev) => ({ ...prev, [sid]: opt.id }))}
+                        className={`w-full text-left rounded-lg border p-2.5 flex items-start gap-2 transition ${
+                          active ? "border-primary bg-primary/5 ring-2 ring-primary/30" : "border-border bg-background"
+                        }`}
+                      >
+                        <span className={`w-4 h-4 rounded-full border-2 mt-0.5 shrink-0 flex items-center justify-center ${active ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                          {active && <span className="w-1.5 h-1.5 rounded-full bg-background" />}
+                        </span>
+                        <span className="flex-1 min-w-0">
+                          <span className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold truncate">{opt.label}</span>
+                            {opt.isSelf && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground">SELF</span>}
+                            {opt.isDefault && !opt.isSelf && <BadgeCheck className="w-3 h-3 text-primary" />}
+                          </span>
+                          <span className="block text-[10px] text-muted-foreground truncate">{opt.sub}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Payment method picker */}
       <div className="mx-4 mt-4 rounded-2xl border bg-card p-3">
         <p className="text-xs font-bold mb-2">Payment method</p>
