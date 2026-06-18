@@ -156,17 +156,14 @@ Deno.serve(async (req) => {
 
     const encrypted = await encryptPayload(JSON.stringify(innerPayload), encryptionKey);
 
-    const initRes = await fetch(PESEPAY_INITIATE, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "authorization": integrationKey,
-      },
-      body: JSON.stringify({ payload: encrypted }),
-    });
-    const initJson = await initRes.json().catch(() => ({}));
-    if (!initRes.ok) {
-      console.error("pesepay initiate failed", initRes.status, initJson);
+    const initRes = await pesepayRequest(PESEPAY_INITIATE, "POST", {
+      "Content-Type": "application/json",
+      "authorization": integrationKey,
+    }, JSON.stringify({ payload: encrypted }));
+    let initJson: any = {};
+    try { initJson = JSON.parse(initRes.body); } catch { /* non-json */ }
+    if (initRes.status < 200 || initRes.status >= 300) {
+      console.error("pesepay initiate failed", initRes.status, initRes.body);
       return json({ error: initJson?.message || "Pesepay rejected the request" }, 502);
     }
 
