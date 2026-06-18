@@ -62,9 +62,129 @@ export default function Cart() {
     return m;
   }, [cartProducts]);
 
+  const supplierIds = useMemo(() => Array.from(supplierGroups.keys()), [supplierGroups]);
+
+  // Fetch delivery options per supplier: their own self-delivery (if they're a courier)
+  // plus any active courier partnerships. Default partnership is pre-selected.
+  const { data: deliveryOptionsBySupplier = {} } = useQuery({
+    queryKey: ["cart-delivery-options", supplierIds.join(",")],
+    enabled: supplierIds.length > 0,
+    queryFn: async () => {
+      const result: Record<string, DeliveryOption[]> = {};
+      const { data: suppliers } = await supabase
+        .from("suppliers")
+        .select("id, owner_id, name, logo")
+        .in("id", supplierIds);
+      const ownerIds = (suppliers ?? []).map((s: any) => s.owner_id).filter(Boolean);
+      const { data: ownerCouriers } = ownerIds.length
+        ? await supabase.from("courier_profiles" as any).select("*").in("user_id", ownerIds)
+        : { data: [] as any[] };
+      const ownerCourierMap = new Map((ownerCouriers ?? []).map((c: any) => [c.user_id, c]));
+
+      const { data: parts } = await supabase
+        .from("supplier_courier_partnerships" as any)
+        .select("*")
+        .in("supplier_id", supplierIds)
+        .eq("status", "active");
+      const partCourierIds = (parts ?? []).map((p: any) => p.courier_user_id);
+      const { data: partCouriers } = partCourierIds.length
+        ? await supabase.from("courier_profiles" as any).select("*").in("user_id", partCourierIds)
+        : { data: [] as any[] };
+      const partCourierMap = new Map((partCouriers ?? []).map((c: any) => [c.user_id, c]));
+
+      for (const s of (suppliers ?? []) as any[]) {
+        const opts: DeliveryOption[] = [];
+        const selfCourier = ownerCourierMap.get(s.owner_id);
+        if (selfCourier) {
+          opts.push({
+            id: `self-${s.id}`,
+            supplierId: s.id,
+            courierUserId: selfCourier.user_id,
+            label: `${s.name} (self-delivery)`,
+            sub: summarizeRate(courierToRate(selfCourier)),
+            courier: selfCourier,
+            isDefault: true,
+            isSelf: true,
+          });
+        }
+        const supplierParts = (parts ?? []).filter((p: any) => p.supplier_id === s.id);
+        for (const p of supplierParts) {
+          const c = partCourierMap.get(p.courier_user_id);
+          if (!c) continue;
+          opts.push({
+            id: p.id,
+            supplierId: s.id,
+            courierUserId: p.courier_user_id,
+            label: c.company_name || c.display_name || "Courier",
+            sub: summarizeRate(courierToRate(c)),
+            courier: c,
+            isDefault: !selfCourier && !!p.is_default,
+          });
+        }
+        if (opts.length === 0) {
+          opts.push({
+            id: `flat-${s.id}`,
+            supplierId: s.id,
+            courierUserId: null,
+            label: "Standard shipping",
+            sub: "Flat $4.99 · free over $25",
+            courier: null,
+            isDefault: true,
+          });
+        }
+        result[s.id] = opts;
+      }
+      return result;
+    },
+  });
+
+  // The buyer's pick per supplier (option id).
+  const [deliveryPicks, setDeliveryPicks] = useState<Record<string, string>>({});
+  useEffect(() => {
+    setDeliveryPicks((prev) => {
+      const next = { ...prev };
+      for (const sid of supplierIds) {
+        const opts = deliveryOptionsBySupplier[sid] ?? [];
+        if (opts.length === 0) continue;
+        if (!next[sid] || !opts.find((o) => o.id === next[sid])) {
+          next[sid] = (opts.find((o) => o.isDefault) ?? opts[0]).id;
+        }
+      }
+      return next;
+    });
+  }, [supplierIds, deliveryOptionsBySupplier]);
+
+  // Compute shipping fee per supplier from picked option using courier rate quote.
+  const shippingBySupplier = useMemo(() => {
+    const map: Record<string, { fee: number; label: string; courierUserId: string | null }> = {};
+    for (const [sid, group] of supplierGroups) {
+      const opts = deliveryOptionsBySupplier[sid] ?? [];
+      const pickId = deliveryPicks[sid] ?? opts[0]?.id;
+      const opt = opts.find((o) => o.id === pickId) ?? opts[0];
+      const subtotalAfterDiscount = Math.max(0, group.subtotal - (coupons.find((c) => c.supplierId === sid)?.discount ?? 0));
+      let fee: number;
+      if (!opt) {
+        fee = subtotalAfterDiscount > 25 || subtotalAfterDiscount === 0 ? 0 : 4.99;
+      } else if (!opt.courier) {
+        fee = subtotalAfterDiscount > 25 || subtotalAfterDiscount === 0 ? 0 : 4.99;
+      } else {
+        // Default to a nominal 5km / 1kg estimate when no geo/weight data is available.
+        const totalWeight = group.items.reduce((s, it) => s + it.qty, 0);
+        const quote = quoteCourierRate(courierToRate(opt.courier), {
+          distanceKm: 5,
+          weightKg: Math.max(1, totalWeight),
+          orderSubtotal: subtotalAfterDiscount,
+        });
+        fee = quote.amount;
+      }
+      map[sid] = { fee, label: opt?.label ?? "Standard shipping", courierUserId: opt?.courierUserId ?? null };
+    }
+    return map;
+  }, [supplierGroups, deliveryPicks, deliveryOptionsBySupplier, coupons]);
+
   const totalDiscount = coupons.reduce((s, c) => s + c.discount, 0);
   const discountedSubtotal = Math.max(0, cartTotal - totalDiscount);
-  const shipping = discountedSubtotal > 25 || discountedSubtotal === 0 ? 0 : 4.99;
+  const shipping = Object.values(shippingBySupplier).reduce((s, v) => s + v.fee, 0);
   const total = discountedSubtotal + shipping;
 
   useEffect(() => {
