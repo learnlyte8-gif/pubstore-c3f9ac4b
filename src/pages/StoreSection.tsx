@@ -14,6 +14,7 @@ import { useImportJob, type BulkCandidate, type ImportedProduct, type MarkupMode
 import ImageUpload from "@/components/ImageUpload";
 import { uploadProductImages } from "@/lib/uploadProductImages";
 import AddAdDialog from "@/components/store/AddAdDialog";
+import { VERTICALS } from "@/data/verticalsCatalog";
 
 
 const titles: Record<string, { title: string; sub: string }> = {
