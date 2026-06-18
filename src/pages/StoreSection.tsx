@@ -1774,6 +1774,21 @@ function ShippingView() {
                     </div>
                   </div>
                   <div className="flex gap-2 mt-3">
+                    {p.status === "pending" && p.initiated_by === "courier" && (
+                      <>
+                        <button onClick={() => respond(p.id, "active")} className="flex-1 h-9 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1">
+                          <Check className="w-3.5 h-3.5" /> Accept request
+                        </button>
+                        <button onClick={() => respond(p.id, "declined")} className="h-9 px-3 rounded-full border text-xs font-bold">
+                          Decline
+                        </button>
+                      </>
+                    )}
+                    {p.status === "pending" && p.initiated_by === "supplier" && (
+                      <span className="flex-1 h-9 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[11px] font-bold flex items-center justify-center">
+                        Waiting for courier to accept
+                      </span>
+                    )}
                     {p.status === "active" && !p.is_default && (
                       <button onClick={() => setDefault(p.id)} className="flex-1 h-9 rounded-full border text-xs font-bold flex items-center justify-center gap-1">
                         <Check className="w-3.5 h-3.5" /> Set as default
