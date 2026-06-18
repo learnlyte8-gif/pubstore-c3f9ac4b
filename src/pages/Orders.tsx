@@ -282,6 +282,14 @@ function OrderDetail({
           </div>
         )}
 
+        {order.delivery_courier_user_id && order.status !== "cancelled" && order.status !== "delivered" && (
+          <CourierTrackingCard
+            courierUserId={order.delivery_courier_user_id}
+            courierLabel={order.delivery_option_label}
+          />
+        )}
+
+
         {order.supplier && (
           <div className="rounded-2xl bg-card border border-border shadow-card p-4 mt-3">
             <div className="flex items-center gap-2.5">
