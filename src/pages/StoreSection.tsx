@@ -1624,6 +1624,7 @@ function ProfileView() {
     businessType: "", phone: "", email: "", website: "",
     tradeType: "both" as "retail" | "wholesale" | "both",
     categories: [] as string[],
+    verticals: [] as string[],
   });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<"logo" | "banner" | null>(null);
@@ -1647,6 +1648,7 @@ function ProfileView() {
       website: supplier.website || "",
       tradeType: (supplier.tradeType ?? "both"),
       categories: supplier.categories || [],
+      verticals: (supplier as any).verticals || [],
     });
   }, [supplier]);
 
@@ -1696,6 +1698,13 @@ function ProfileView() {
     }));
   };
 
+  const toggleVertical = (slug: string) => {
+    setForm((f) => ({
+      ...f,
+      verticals: f.verticals.includes(slug) ? f.verticals.filter((v) => v !== slug) : [...f.verticals, slug],
+    }));
+  };
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supplier) return;
@@ -1708,6 +1717,7 @@ function ProfileView() {
       website: form.website || null,
       trade_type: form.tradeType || "both",
       categories: form.categories,
+      verticals: form.verticals,
     }).eq("id", supplier.id);
     setSaving(false);
     if (error) toast.error(error.message); else { toast.success("Saved"); qc.invalidateQueries({ queryKey: ["my-supplier"] }); }
