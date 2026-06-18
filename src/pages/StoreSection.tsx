@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import ServiceActionsTab from "@/components/marketplace/ServiceActionsTab";
-import { ArrowLeft, Plus, TrendingUp, Eye, ShoppingBag, DollarSign, Star, Megaphone, Truck, Package, Settings, Image as ImageIcon, X, Loader2, Link2, Download, Sparkles, Percent, Check, Pencil, Trash2, CheckSquare, Square, Tag, EyeOff } from "lucide-react";
+import { ArrowLeft, Plus, TrendingUp, Eye, ShoppingBag, DollarSign, Star, Megaphone, Truck, Package, Settings, Image as ImageIcon, X, Loader2, Link2, Download, Sparkles, Percent, Check, Pencil, Trash2, CheckSquare, Square, Tag, EyeOff, Handshake, Search, MapPin, Weight, Route, BadgeCheck } from "lucide-react";
+import { courierToRate, quoteCourierRate, summarizeRate, type WeightTier, type DistanceDiscount } from "@/lib/courierRates";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -1598,20 +1599,243 @@ function ReviewsView() {
   );
 }
 function ShippingView() {
+  const qc = useQueryClient();
+  const { data: supplier } = useQuery({ queryKey: ["my-supplier"], queryFn: fetchMySupplier });
+  const [userId, setUserId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+
+  useEffect(() => { supabase.auth.getUser().then(({ data: { user } }) => setUserId(user?.id ?? null)); }, []);
+
+  // Is the supplier also a courier? If so we'll surface self-delivery as default.
+  const { data: myCourier } = useQuery({
+    queryKey: ["my-courier-profile", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await supabase.from("courier_profiles" as any).select("*").eq("user_id", userId!).maybeSingle();
+      return data as any;
+    },
+  });
+
+  // Existing partnerships for this supplier with the courier profile joined in.
+  const { data: partnerships = [] } = useQuery({
+    queryKey: ["shipping-partnerships", supplier?.id],
+    enabled: !!supplier?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("supplier_courier_partnerships" as any)
+        .select("*")
+        .eq("supplier_id", supplier!.id)
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: false });
+      const rows = (data ?? []) as any[];
+      const courierIds = rows.map((r) => r.courier_user_id);
+      if (courierIds.length === 0) return rows;
+      const { data: profiles } = await supabase
+        .from("courier_profiles" as any)
+        .select("*")
+        .in("user_id", courierIds);
+      const map = new Map((profiles ?? []).map((p: any) => [p.user_id, p]));
+      return rows.map((r) => ({ ...r, courier: map.get(r.courier_user_id) ?? null }));
+    },
+  });
+
+  // Discover couriers open to partnerships, excluding ones already partnered.
+  const { data: discover = [] } = useQuery({
+    queryKey: ["shipping-discover", supplier?.id, search],
+    enabled: !!supplier?.id,
+    queryFn: async () => {
+      let q = supabase
+        .from("courier_profiles" as any)
+        .select("*")
+        .eq("active", true)
+        .eq("offers_supplier_partnerships", true)
+        .order("rating", { ascending: false })
+        .limit(20);
+      if (search.trim()) q = q.or(`company_name.ilike.%${search}%,display_name.ilike.%${search}%,city.ilike.%${search}%`);
+      const { data } = await q;
+      const taken = new Set(partnerships.map((p: any) => p.courier_user_id));
+      return ((data ?? []) as any[]).filter((c) => !taken.has(c.user_id) && c.user_id !== userId);
+    },
+  });
+
+  const invite = async (courierUserId: string) => {
+    if (!supplier?.id) return;
+    const { error } = await supabase.from("supplier_courier_partnerships" as any).insert({
+      supplier_id: supplier.id,
+      courier_user_id: courierUserId,
+      initiated_by: "supplier",
+      message: "We'd like to partner with you for our deliveries.",
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Partnership request sent");
+    qc.invalidateQueries({ queryKey: ["shipping-partnerships"] });
+    qc.invalidateQueries({ queryKey: ["shipping-discover"] });
+  };
+
+  const setDefault = async (id: string) => {
+    if (!supplier?.id) return;
+    // Clear any existing default first (partial unique index would block otherwise).
+    await supabase.from("supplier_courier_partnerships" as any)
+      .update({ is_default: false })
+      .eq("supplier_id", supplier.id)
+      .eq("is_default", true);
+    const { error } = await supabase.from("supplier_courier_partnerships" as any)
+      .update({ is_default: true })
+      .eq("id", id);
+    if (error) toast.error(error.message);
+    else { toast.success("Default shipping updated"); qc.invalidateQueries({ queryKey: ["shipping-partnerships"] }); }
+  };
+
+  const removePartnership = async (id: string) => {
+    if (!confirm("Remove this courier partnership?")) return;
+    const { error } = await supabase.from("supplier_courier_partnerships" as any).delete().eq("id", id);
+    if (error) toast.error(error.message);
+    else { toast.success("Removed"); qc.invalidateQueries({ queryKey: ["shipping-partnerships"] }); qc.invalidateQueries({ queryKey: ["shipping-discover"] }); }
+  };
+
+  if (!supplier) {
+    return <div className="p-8 text-center text-sm text-muted-foreground">Create your store first to manage shipping.</div>;
+  }
+
+  const hasDefault = partnerships.some((p: any) => p.is_default && p.status === "active");
+
   return (
-    <div className="px-4 py-4 space-y-3">
-      {[
-        { name: "Standard", time: "7-15 days", cost: "$4.99", carriers: "DHL, UPS" },
-        { name: "Express", time: "3-5 days", cost: "$14.99", carriers: "FedEx" },
-      ].map((s) => (
-        <div key={s.name} className="bg-card rounded-2xl border shadow-card p-4">
-          <div className="flex items-center gap-3">
-            <span className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center"><Truck className="w-5 h-5" /></span>
-            <div className="flex-1"><p className="font-bold text-sm">{s.name}</p><p className="text-[11px] text-muted-foreground">{s.time} · {s.carriers}</p></div>
-            <p className="font-bold text-sm">{s.cost}</p>
+    <div className="px-4 py-4 space-y-5">
+      {/* Self-delivery banner — if supplier also provides courier services */}
+      <div className="rounded-2xl border bg-gradient-to-br from-primary/10 to-transparent p-4">
+        <div className="flex items-center gap-3">
+          <span className="w-11 h-11 rounded-xl bg-primary text-primary-foreground flex items-center justify-center"><Truck className="w-5 h-5" /></span>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm flex items-center gap-1.5">
+              Self-delivery
+              {myCourier && !hasDefault && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground">DEFAULT</span>}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              {myCourier
+                ? "You also provide logistics — buyers see you as the default delivery option."
+                : "Also offer courier services? Register and we'll set you as the default shipping option for your store."}
+            </p>
           </div>
+          <Link to="/store/services/logistics" className="px-3 h-9 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center gap-1 shrink-0">
+            {myCourier ? "Edit rates" : "Set up"}
+          </Link>
         </div>
-      ))}
+        {myCourier && (
+          <p className="text-[11px] text-muted-foreground mt-2 pl-14">{summarizeRate(courierToRate(myCourier))}</p>
+        )}
+      </div>
+
+      {/* My partnerships */}
+      <div>
+        <div className="flex items-center justify-between mb-2 px-1">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">My courier partnerships</p>
+          <span className="text-[10px] text-muted-foreground">{partnerships.length} total</span>
+        </div>
+        {partnerships.length === 0 ? (
+          <div className="rounded-2xl border border-dashed p-5 text-center">
+            <Handshake className="w-6 h-6 mx-auto text-muted-foreground mb-2" />
+            <p className="text-sm font-bold">No partnerships yet</p>
+            <p className="text-[11px] text-muted-foreground mt-1">Invite a courier below — buyers will see the active options at checkout.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {partnerships.map((p: any) => {
+              const c = p.courier;
+              const rate = c ? courierToRate(c) : null;
+              return (
+                <div key={p.id} className="bg-card border rounded-2xl p-3 shadow-card">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-muted overflow-hidden shrink-0">
+                      {c?.vehicle_photo && <img src={c.vehicle_photo} alt="" className="w-full h-full object-cover" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm truncate flex items-center gap-1.5">
+                        {c?.company_name || c?.display_name || "Courier"}
+                        {p.is_default && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground">DEFAULT</span>}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground capitalize truncate">
+                        {c?.vehicle_type?.replace("_", " ") ?? "—"} {c?.max_weight_kg ? `· up to ${c.max_weight_kg}kg` : ""} {c?.city ? `· ${c.city}` : ""}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1 text-[10px]">
+                        <span className={`px-2 py-0.5 rounded-full font-bold capitalize ${
+                          p.status === "active" ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                          : p.status === "pending" ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                          : p.status === "paused" ? "bg-muted text-muted-foreground"
+                          : "bg-rose-500/15 text-rose-700 dark:text-rose-400"
+                        }`}>{p.status}</span>
+                        {rate && <span className="text-muted-foreground truncate">{summarizeRate(rate)}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-3">
+                    {p.status === "active" && !p.is_default && (
+                      <button onClick={() => setDefault(p.id)} className="flex-1 h-9 rounded-full border text-xs font-bold flex items-center justify-center gap-1">
+                        <Check className="w-3.5 h-3.5" /> Set as default
+                      </button>
+                    )}
+                    {p.is_default && (
+                      <span className="flex-1 h-9 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center gap-1">
+                        <BadgeCheck className="w-3.5 h-3.5" /> Default at checkout
+                      </span>
+                    )}
+                    <button onClick={() => removePartnership(p.id)} className="w-9 h-9 rounded-full hover:bg-destructive/10 text-destructive flex items-center justify-center">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Discover couriers */}
+      <div>
+        <div className="flex items-center justify-between mb-2 px-1">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Discover couriers</p>
+        </div>
+        <div className="relative mb-2">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name or city"
+            className="w-full h-11 pl-9 pr-3 rounded-xl border bg-background text-sm"
+          />
+        </div>
+        {discover.length === 0 ? (
+          <div className="rounded-2xl border border-dashed p-5 text-center text-xs text-muted-foreground">
+            No couriers match. Try a different search or invite couriers to join PUBSTORE.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {discover.map((c: any) => {
+              const rate = courierToRate(c);
+              return (
+                <div key={c.id} className="bg-card border rounded-2xl p-3 shadow-card flex gap-3">
+                  <div className="w-14 h-14 rounded-xl bg-muted overflow-hidden shrink-0">
+                    {c.vehicle_photo && <img src={c.vehicle_photo} alt="" className="w-full h-full object-cover" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm truncate">{c.company_name || c.display_name || "Courier"}</p>
+                    <p className="text-[11px] text-muted-foreground capitalize truncate">
+                      {c.vehicle_type?.replace("_", " ")} {c.max_weight_kg ? `· up to ${c.max_weight_kg}kg` : ""} {c.city ? `· ${c.city}` : ""}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">{summarizeRate(rate)}</p>
+                    <div className="flex items-center gap-2 text-[11px] mt-1">
+                      <span className="flex items-center gap-0.5"><Star className="w-3 h-3 fill-amber-400 text-amber-400" />{Number(c.rating ?? 5).toFixed(1)}</span>
+                      <span className="text-muted-foreground">{c.deliveries_completed ?? 0} deliveries</span>
+                    </div>
+                  </div>
+                  <Button size="sm" onClick={() => invite(c.user_id)} className="h-9 self-start text-[11px] shrink-0">
+                    <Handshake className="w-3.5 h-3.5 mr-1" /> Invite
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -2988,8 +3212,14 @@ function CourierServiceView() {
     service_areas: "",
     city: "",
     country: "",
+    currency: "USD",
     base_fee: "",
     per_km_fee: "",
+    min_fee: "",
+    free_delivery_above: "",
+    weight_tiers: [] as WeightTier[],
+    distance_discounts: [] as DistanceDiscount[],
+    rate_notes: "",
     vehicle_photo: "",
     plate_photo: "",
     selfie_photo: "",
@@ -3000,6 +3230,8 @@ function CourierServiceView() {
     active: true,
   });
   const [hydrated, setHydrated] = useState(false);
+  const [previewDistance, setPreviewDistance] = useState(10);
+  const [previewWeight, setPreviewWeight] = useState(5);
 
   useEffect(() => {
     if (profile && !hydrated) {
@@ -3018,8 +3250,14 @@ function CourierServiceView() {
         service_areas: (profile.service_areas ?? []).join(", "),
         city: profile.city ?? "",
         country: profile.country ?? "",
+        currency: profile.currency ?? "USD",
         base_fee: profile.base_fee ?? "",
         per_km_fee: profile.per_km_fee ?? "",
+        min_fee: profile.min_fee ?? "",
+        free_delivery_above: profile.free_delivery_above ?? "",
+        weight_tiers: Array.isArray(profile.weight_tiers) ? profile.weight_tiers : [],
+        distance_discounts: Array.isArray(profile.distance_discounts) ? profile.distance_discounts : [],
+        rate_notes: profile.rate_notes ?? "",
         vehicle_photo: profile.vehicle_photo ?? "",
         plate_photo: profile.plate_photo ?? "",
         selfie_photo: profile.selfie_photo ?? "",
@@ -3032,6 +3270,7 @@ function CourierServiceView() {
       setHydrated(true);
     }
   }, [profile, hydrated]);
+
 
   const [busy, setBusy] = useState(false);
   const save = async () => {
@@ -3055,8 +3294,14 @@ function CourierServiceView() {
       service_areas: form.service_areas ? form.service_areas.split(",").map((s) => s.trim()).filter(Boolean) : [],
       city: form.city || null,
       country: form.country || null,
+      currency: form.currency || "USD",
       base_fee: form.base_fee ? Number(form.base_fee) : null,
       per_km_fee: form.per_km_fee ? Number(form.per_km_fee) : null,
+      min_fee: form.min_fee ? Number(form.min_fee) : null,
+      free_delivery_above: form.free_delivery_above ? Number(form.free_delivery_above) : null,
+      weight_tiers: (form.weight_tiers || []).filter((t) => t && (t.flat || t.per_km || t.up_to_kg !== undefined)),
+      distance_discounts: (form.distance_discounts || []).filter((d) => d && (d.above_km || d.percent)),
+      rate_notes: form.rate_notes || null,
       vehicle_photo: form.vehicle_photo || null,
       plate_photo: form.plate_photo || null,
       selfie_photo: form.selfie_photo || null,
@@ -3154,9 +3399,101 @@ function CourierServiceView() {
       </div>
 
       <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground pt-2">Pricing</p>
+      <p className="text-[11px] text-muted-foreground -mt-2">Buyers see this rate when picking delivery at checkout. Add weight tiers for heavier shipments and discounts to reward long-distance routes.</p>
+
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Currency</label>
+          <select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1">
+            {["USD","ZWL","ZAR","EUR","GBP","BWP","ZMW"].map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <LabeledInput label={`Base (${form.currency})`} type="number" value={form.base_fee} onChange={(v) => setForm({ ...form, base_fee: v })} />
+        <LabeledInput label={`Per km (${form.currency})`} type="number" value={form.per_km_fee} onChange={(v) => setForm({ ...form, per_km_fee: v })} />
+      </div>
       <div className="grid grid-cols-2 gap-2">
-        <LabeledInput label="Base fee ($)" type="number" value={form.base_fee} onChange={(v) => setForm({ ...form, base_fee: v })} />
-        <LabeledInput label="Per km ($)" type="number" value={form.per_km_fee} onChange={(v) => setForm({ ...form, per_km_fee: v })} />
+        <LabeledInput label={`Minimum fee (${form.currency})`} type="number" value={form.min_fee} onChange={(v) => setForm({ ...form, min_fee: v })} />
+        <LabeledInput label={`Free over (${form.currency} subtotal)`} type="number" value={form.free_delivery_above} onChange={(v) => setForm({ ...form, free_delivery_above: v })} />
+      </div>
+
+      {/* Weight tiers */}
+      <div className="rounded-2xl border p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2"><Weight className="w-4 h-4 text-primary" /><p className="font-bold text-sm">Weight tiers</p></div>
+          <button type="button" onClick={() => setForm({ ...form, weight_tiers: [...form.weight_tiers, { up_to_kg: 5, flat: 0, per_km: Number(form.per_km_fee) || 0 }] })} className="text-xs font-bold text-primary flex items-center gap-1"><Plus className="w-3 h-3" />Add tier</button>
+        </div>
+        <p className="text-[10px] text-muted-foreground">Heavier loads cost more. Leave "Up to kg" blank for the final tier ("and above").</p>
+        {form.weight_tiers.length === 0 && <p className="text-[11px] text-muted-foreground text-center py-2">Flat per-km rate applies to all weights.</p>}
+        {form.weight_tiers.map((t, idx) => (
+          <div key={idx} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end">
+            <LabeledInput label="Up to kg" type="number" value={t.up_to_kg == null ? "" : String(t.up_to_kg)} onChange={(v) => {
+              const next = [...form.weight_tiers]; next[idx] = { ...t, up_to_kg: v === "" ? null : Number(v) }; setForm({ ...form, weight_tiers: next });
+            }} />
+            <LabeledInput label={`Flat (${form.currency})`} type="number" value={String(t.flat ?? "")} onChange={(v) => {
+              const next = [...form.weight_tiers]; next[idx] = { ...t, flat: Number(v) || 0 }; setForm({ ...form, weight_tiers: next });
+            }} />
+            <LabeledInput label={`Per km (${form.currency})`} type="number" value={String(t.per_km ?? "")} onChange={(v) => {
+              const next = [...form.weight_tiers]; next[idx] = { ...t, per_km: Number(v) || 0 }; setForm({ ...form, weight_tiers: next });
+            }} />
+            <button type="button" onClick={() => setForm({ ...form, weight_tiers: form.weight_tiers.filter((_, i) => i !== idx) })} className="w-10 h-10 rounded-full hover:bg-destructive/10 text-destructive flex items-center justify-center"><Trash2 className="w-4 h-4" /></button>
+          </div>
+        ))}
+      </div>
+
+      {/* Distance discounts */}
+      <div className="rounded-2xl border p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2"><Route className="w-4 h-4 text-primary" /><p className="font-bold text-sm">Long-distance discounts</p></div>
+          <button type="button" onClick={() => setForm({ ...form, distance_discounts: [...form.distance_discounts, { above_km: 50, percent: 10 }] })} className="text-xs font-bold text-primary flex items-center gap-1"><Plus className="w-3 h-3" />Add discount</button>
+        </div>
+        <p className="text-[10px] text-muted-foreground">Reward longer trips. Discount applies to the per-km portion only.</p>
+        {form.distance_discounts.map((d, idx) => (
+          <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
+            <LabeledInput label="Above km" type="number" value={String(d.above_km ?? "")} onChange={(v) => {
+              const next = [...form.distance_discounts]; next[idx] = { ...d, above_km: Number(v) || 0 }; setForm({ ...form, distance_discounts: next });
+            }} />
+            <LabeledInput label="% off per-km" type="number" value={String(d.percent ?? "")} onChange={(v) => {
+              const next = [...form.distance_discounts]; next[idx] = { ...d, percent: Math.min(100, Math.max(0, Number(v) || 0)) }; setForm({ ...form, distance_discounts: next });
+            }} />
+            <button type="button" onClick={() => setForm({ ...form, distance_discounts: form.distance_discounts.filter((_, i) => i !== idx) })} className="w-10 h-10 rounded-full hover:bg-destructive/10 text-destructive flex items-center justify-center"><Trash2 className="w-4 h-4" /></button>
+          </div>
+        ))}
+      </div>
+
+      {/* Live preview */}
+      <div className="rounded-2xl border bg-muted/40 p-3 space-y-2">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" />Rate preview</p>
+        <div className="grid grid-cols-2 gap-2">
+          <LabeledInput label="Test distance (km)" type="number" value={String(previewDistance)} onChange={(v) => setPreviewDistance(Number(v) || 0)} />
+          <LabeledInput label="Test weight (kg)" type="number" value={String(previewWeight)} onChange={(v) => setPreviewWeight(Number(v) || 0)} />
+        </div>
+        {(() => {
+          const quote = quoteCourierRate(
+            {
+              base_fee: form.base_fee ? Number(form.base_fee) : null,
+              per_km_fee: form.per_km_fee ? Number(form.per_km_fee) : null,
+              min_fee: form.min_fee ? Number(form.min_fee) : null,
+              free_delivery_above: form.free_delivery_above ? Number(form.free_delivery_above) : null,
+              currency: form.currency,
+              weight_tiers: form.weight_tiers,
+              distance_discounts: form.distance_discounts,
+            },
+            { distanceKm: previewDistance, weightKg: previewWeight }
+          );
+          return (
+            <div className="rounded-xl bg-card border p-3">
+              <p className="text-xl font-bold">{quote.currency} {quote.amount.toFixed(2)}</p>
+              <ul className="text-[11px] text-muted-foreground mt-1 space-y-0.5">
+                {quote.breakdown.length === 0 ? <li>No charges configured.</li> : quote.breakdown.map((b, i) => <li key={i}>· {b}</li>)}
+              </ul>
+            </div>
+          );
+        })()}
+      </div>
+
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Rate notes (shown to buyers)</label>
+        <textarea value={form.rate_notes} onChange={(e) => setForm({ ...form, rate_notes: e.target.value })} rows={2} className="w-full rounded-xl border bg-background p-3 text-sm mt-1" placeholder="e.g. After-hours surcharge applies. Free returns within 24h." />
       </div>
 
       <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground pt-2">Photos · vehicle required</p>
