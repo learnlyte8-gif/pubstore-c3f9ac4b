@@ -3399,9 +3399,101 @@ function CourierServiceView() {
       </div>
 
       <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground pt-2">Pricing</p>
+      <p className="text-[11px] text-muted-foreground -mt-2">Buyers see this rate when picking delivery at checkout. Add weight tiers for heavier shipments and discounts to reward long-distance routes.</p>
+
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Currency</label>
+          <select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1">
+            {["USD","ZWL","ZAR","EUR","GBP","BWP","ZMW"].map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <LabeledInput label={`Base (${form.currency})`} type="number" value={form.base_fee} onChange={(v) => setForm({ ...form, base_fee: v })} />
+        <LabeledInput label={`Per km (${form.currency})`} type="number" value={form.per_km_fee} onChange={(v) => setForm({ ...form, per_km_fee: v })} />
+      </div>
       <div className="grid grid-cols-2 gap-2">
-        <LabeledInput label="Base fee ($)" type="number" value={form.base_fee} onChange={(v) => setForm({ ...form, base_fee: v })} />
-        <LabeledInput label="Per km ($)" type="number" value={form.per_km_fee} onChange={(v) => setForm({ ...form, per_km_fee: v })} />
+        <LabeledInput label={`Minimum fee (${form.currency})`} type="number" value={form.min_fee} onChange={(v) => setForm({ ...form, min_fee: v })} />
+        <LabeledInput label={`Free over (${form.currency} subtotal)`} type="number" value={form.free_delivery_above} onChange={(v) => setForm({ ...form, free_delivery_above: v })} />
+      </div>
+
+      {/* Weight tiers */}
+      <div className="rounded-2xl border p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2"><Weight className="w-4 h-4 text-primary" /><p className="font-bold text-sm">Weight tiers</p></div>
+          <button type="button" onClick={() => setForm({ ...form, weight_tiers: [...form.weight_tiers, { up_to_kg: 5, flat: 0, per_km: Number(form.per_km_fee) || 0 }] })} className="text-xs font-bold text-primary flex items-center gap-1"><Plus className="w-3 h-3" />Add tier</button>
+        </div>
+        <p className="text-[10px] text-muted-foreground">Heavier loads cost more. Leave "Up to kg" blank for the final tier ("and above").</p>
+        {form.weight_tiers.length === 0 && <p className="text-[11px] text-muted-foreground text-center py-2">Flat per-km rate applies to all weights.</p>}
+        {form.weight_tiers.map((t, idx) => (
+          <div key={idx} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end">
+            <LabeledInput label="Up to kg" type="number" value={t.up_to_kg == null ? "" : String(t.up_to_kg)} onChange={(v) => {
+              const next = [...form.weight_tiers]; next[idx] = { ...t, up_to_kg: v === "" ? null : Number(v) }; setForm({ ...form, weight_tiers: next });
+            }} />
+            <LabeledInput label={`Flat (${form.currency})`} type="number" value={String(t.flat ?? "")} onChange={(v) => {
+              const next = [...form.weight_tiers]; next[idx] = { ...t, flat: Number(v) || 0 }; setForm({ ...form, weight_tiers: next });
+            }} />
+            <LabeledInput label={`Per km (${form.currency})`} type="number" value={String(t.per_km ?? "")} onChange={(v) => {
+              const next = [...form.weight_tiers]; next[idx] = { ...t, per_km: Number(v) || 0 }; setForm({ ...form, weight_tiers: next });
+            }} />
+            <button type="button" onClick={() => setForm({ ...form, weight_tiers: form.weight_tiers.filter((_, i) => i !== idx) })} className="w-10 h-10 rounded-full hover:bg-destructive/10 text-destructive flex items-center justify-center"><Trash2 className="w-4 h-4" /></button>
+          </div>
+        ))}
+      </div>
+
+      {/* Distance discounts */}
+      <div className="rounded-2xl border p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2"><Route className="w-4 h-4 text-primary" /><p className="font-bold text-sm">Long-distance discounts</p></div>
+          <button type="button" onClick={() => setForm({ ...form, distance_discounts: [...form.distance_discounts, { above_km: 50, percent: 10 }] })} className="text-xs font-bold text-primary flex items-center gap-1"><Plus className="w-3 h-3" />Add discount</button>
+        </div>
+        <p className="text-[10px] text-muted-foreground">Reward longer trips. Discount applies to the per-km portion only.</p>
+        {form.distance_discounts.map((d, idx) => (
+          <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
+            <LabeledInput label="Above km" type="number" value={String(d.above_km ?? "")} onChange={(v) => {
+              const next = [...form.distance_discounts]; next[idx] = { ...d, above_km: Number(v) || 0 }; setForm({ ...form, distance_discounts: next });
+            }} />
+            <LabeledInput label="% off per-km" type="number" value={String(d.percent ?? "")} onChange={(v) => {
+              const next = [...form.distance_discounts]; next[idx] = { ...d, percent: Math.min(100, Math.max(0, Number(v) || 0)) }; setForm({ ...form, distance_discounts: next });
+            }} />
+            <button type="button" onClick={() => setForm({ ...form, distance_discounts: form.distance_discounts.filter((_, i) => i !== idx) })} className="w-10 h-10 rounded-full hover:bg-destructive/10 text-destructive flex items-center justify-center"><Trash2 className="w-4 h-4" /></button>
+          </div>
+        ))}
+      </div>
+
+      {/* Live preview */}
+      <div className="rounded-2xl border bg-muted/40 p-3 space-y-2">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" />Rate preview</p>
+        <div className="grid grid-cols-2 gap-2">
+          <LabeledInput label="Test distance (km)" type="number" value={String(previewDistance)} onChange={(v) => setPreviewDistance(Number(v) || 0)} />
+          <LabeledInput label="Test weight (kg)" type="number" value={String(previewWeight)} onChange={(v) => setPreviewWeight(Number(v) || 0)} />
+        </div>
+        {(() => {
+          const quote = quoteCourierRate(
+            {
+              base_fee: form.base_fee ? Number(form.base_fee) : null,
+              per_km_fee: form.per_km_fee ? Number(form.per_km_fee) : null,
+              min_fee: form.min_fee ? Number(form.min_fee) : null,
+              free_delivery_above: form.free_delivery_above ? Number(form.free_delivery_above) : null,
+              currency: form.currency,
+              weight_tiers: form.weight_tiers,
+              distance_discounts: form.distance_discounts,
+            },
+            { distanceKm: previewDistance, weightKg: previewWeight }
+          );
+          return (
+            <div className="rounded-xl bg-card border p-3">
+              <p className="text-xl font-bold">{quote.currency} {quote.amount.toFixed(2)}</p>
+              <ul className="text-[11px] text-muted-foreground mt-1 space-y-0.5">
+                {quote.breakdown.length === 0 ? <li>No charges configured.</li> : quote.breakdown.map((b, i) => <li key={i}>· {b}</li>)}
+              </ul>
+            </div>
+          );
+        })()}
+      </div>
+
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Rate notes (shown to buyers)</label>
+        <textarea value={form.rate_notes} onChange={(e) => setForm({ ...form, rate_notes: e.target.value })} rows={2} className="w-full rounded-xl border bg-background p-3 text-sm mt-1" placeholder="e.g. After-hours surcharge applies. Free returns within 24h." />
       </div>
 
       <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground pt-2">Photos · vehicle required</p>
