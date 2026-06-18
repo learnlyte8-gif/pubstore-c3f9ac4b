@@ -8,6 +8,7 @@
 // just a "no-wait" confirmation path for the UI.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { pesepayRequest } from "../_shared/pesepay-http.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -68,13 +69,14 @@ Deno.serve(async (req) => {
     if (!pesepayReference) return json({ error: "pesepayReference required" }, 400);
 
     const url = `${PESEPAY_CHECK}?referenceNumber=${encodeURIComponent(pesepayReference)}`;
-    const checkRes = await fetch(url, {
-      method: "GET",
-      headers: { "authorization": integrationKey, "Content-Type": "application/json" },
+    const checkRes = await pesepayRequest(url, "GET", {
+      "authorization": integrationKey,
+      "Content-Type": "application/json",
     });
-    const checkJson = await checkRes.json().catch(() => ({}));
-    if (!checkRes.ok) {
-      console.error("pesepay check failed", checkRes.status, checkJson);
+    let checkJson: any = {};
+    try { checkJson = JSON.parse(checkRes.body); } catch { /* non-json */ }
+    if (checkRes.status < 200 || checkRes.status >= 300) {
+      console.error("pesepay check failed", checkRes.status, checkRes.body);
       return json({ error: checkJson?.message || "Pesepay check failed" }, 502);
     }
 
