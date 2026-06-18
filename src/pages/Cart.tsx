@@ -32,6 +32,17 @@ type AppliedCoupon = {
 
 type PayMethod = "wallet" | "pesepay" | "paypal" | "cod";
 
+type DeliveryOption = {
+  id: string;
+  supplierId: string;
+  courierUserId: string | null;
+  label: string;
+  sub: string;
+  courier: any;
+  isDefault: boolean;
+  isSelf?: boolean;
+};
+
 const sb = supabase as any;
 
 export default function Cart() {
