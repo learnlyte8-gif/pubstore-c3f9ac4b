@@ -309,7 +309,8 @@ export default function Cart() {
       const coupon = coupons.find((c) => c.supplierId === supplierId);
       const discount = coupon?.discount ?? 0;
       const afterDiscount = Math.max(0, subtotal - discount);
-      const ship = afterDiscount > 25 ? 0 : 4.99;
+      const shipInfo = shippingBySupplier[supplierId];
+      const ship = shipInfo?.fee ?? (afterDiscount > 25 ? 0 : 4.99);
       const orderTotal = afterDiscount + ship;
 
       const { data: order, error: orderErr } = await supabase
@@ -327,6 +328,8 @@ export default function Cart() {
           status: (statusOverride ?? "placed") as any,
           payment_method: payMethod,
           payment_status: payMethod === "cod" ? "cod" : "pending",
+          delivery_courier_user_id: shipInfo?.courierUserId ?? null,
+          delivery_option_label: shipInfo?.label ?? null,
         } as any)
         .select("id,ref_code")
         .single();
