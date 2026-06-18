@@ -8,6 +8,7 @@
 // just a "no-wait" confirmation path for the UI.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { pesepayRequest } from "../_shared/pesepay-http.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
