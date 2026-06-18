@@ -3355,6 +3355,35 @@ function CourierServiceView() {
     },
   });
 
+  // Discover suppliers — couriers can proactively request to partner.
+  const [supplierSearch, setSupplierSearch] = useState("");
+  const { data: discoverSuppliers = [] } = useQuery({
+    queryKey: ["courier-discover-suppliers", userId, supplierSearch, partnerships.length],
+    enabled: !!userId && !!profile,
+    queryFn: async () => {
+      let q = supabase.from("suppliers").select("id,name,logo,country,categories,owner_id").limit(20).order("created_at", { ascending: false });
+      if (supplierSearch.trim()) q = q.ilike("name", `%${supplierSearch}%`);
+      const { data } = await q;
+      const taken = new Set(partnerships.map((p: any) => p.supplier_id));
+      return ((data ?? []) as any[]).filter((s) => !taken.has(s.id) && s.owner_id !== userId);
+    },
+  });
+
+  const requestPartnership = async (supplierId: string) => {
+    if (!userId) return;
+    const { error } = await supabase.from("supplier_courier_partnerships" as any).insert({
+      supplier_id: supplierId,
+      courier_user_id: userId,
+      initiated_by: "courier",
+      message: "I'd like to handle deliveries for your store.",
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Partnership request sent");
+    qc.invalidateQueries({ queryKey: ["my-courier-partnerships"] });
+    qc.invalidateQueries({ queryKey: ["courier-discover-suppliers"] });
+  };
+
+
   const updatePartnership = async (id: string, status: string) => {
     const { error } = await supabase.from("supplier_courier_partnerships" as any).update({ status }).eq("id", id);
     if (error) toast.error(error.message);
