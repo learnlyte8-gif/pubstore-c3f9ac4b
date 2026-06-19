@@ -5647,6 +5647,10 @@ export type Database = {
     }
     Functions: {
       _ad_reset_daily: { Args: { _id: string }; Returns: undefined }
+      _dispatch_order_email: {
+        Args: { event: string; order_id: string; status?: string }
+        Returns: undefined
+      }
       _dispatch_whatsapp: {
         Args: { entity_id: string; event: string }
         Returns: undefined
