@@ -432,18 +432,33 @@ export default function Cart() {
       return;
     }
 
+    if (payMethod === "manual") {
+      if (!manualAvailable) {
+        toast.error("Manual payment isn't enabled for one or more suppliers in your cart");
+        return;
+      }
+      if (!manualRef.trim()) {
+        toast.error("Enter the EcoCash transaction reference you received");
+        return;
+      }
+    }
+
     setPlacing(true);
     try {
-      // Wallet & COD: orders go straight to "placed" / appropriate status.
-      if (payMethod === "wallet" || payMethod === "cod") {
-        const created = await createOrders(user.id, payMethod === "wallet" ? "placed" : "placed");
+      // Wallet & COD & manual: orders go straight to "placed".
+      if (payMethod === "wallet" || payMethod === "cod" || payMethod === "manual") {
+        const created = await createOrders(user.id, "placed");
         if (payMethod === "wallet") {
           for (const o of created) {
             await payOrder(o.id);
           }
         }
         await clearCart();
-        toast.success(payMethod === "cod" ? "Order placed · Pay on delivery" : "Order placed");
+        toast.success(
+          payMethod === "cod" ? "Order placed · Pay on delivery" :
+          payMethod === "manual" ? "Order placed · Awaiting payment confirmation" :
+          "Order placed"
+        );
         navigate("/orders");
         return;
       }
