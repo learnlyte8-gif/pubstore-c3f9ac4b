@@ -1990,6 +1990,10 @@ function ProfileView() {
       trade_type: form.tradeType || "both",
       categories: form.categories,
       verticals: form.verticals,
+      manual_payment_enabled: form.manualPayEnabled,
+      manual_payment_number: form.manualPayNumber || null,
+      manual_payment_name: form.manualPayName || null,
+      manual_payment_instructions: form.manualPayInstructions || null,
     }).eq("id", supplier.id);
     setSaving(false);
     if (error) toast.error(error.message); else { toast.success("Saved"); qc.invalidateQueries({ queryKey: ["my-supplier"] }); }
