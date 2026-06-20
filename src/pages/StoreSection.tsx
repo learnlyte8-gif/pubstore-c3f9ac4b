@@ -1870,6 +1870,10 @@ function ProfileView() {
     tradeType: "both" as "retail" | "wholesale" | "both",
     categories: [] as string[],
     verticals: [] as string[],
+    manualPayEnabled: false,
+    manualPayNumber: "",
+    manualPayName: "",
+    manualPayInstructions: "",
   });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<"logo" | "banner" | null>(null);
@@ -1894,8 +1898,31 @@ function ProfileView() {
       tradeType: (supplier.tradeType ?? "both"),
       categories: supplier.categories || [],
       verticals: (supplier as any).verticals || [],
+      manualPayEnabled: !!(supplier as any).manual_payment_enabled,
+      manualPayNumber: (supplier as any).manual_payment_number || "",
+      manualPayName: (supplier as any).manual_payment_name || "",
+      manualPayInstructions: (supplier as any).manual_payment_instructions || "",
     });
   }, [supplier]);
+
+  // Load manual payment fields directly (mapSupplier doesn't carry them)
+  useEffect(() => {
+    if (!supplier) return;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("suppliers")
+        .select("manual_payment_enabled,manual_payment_number,manual_payment_name,manual_payment_instructions")
+        .eq("id", supplier.id)
+        .maybeSingle();
+      if (data) setForm((f) => ({
+        ...f,
+        manualPayEnabled: !!data.manual_payment_enabled,
+        manualPayNumber: data.manual_payment_number || "",
+        manualPayName: data.manual_payment_name || "",
+        manualPayInstructions: data.manual_payment_instructions || "",
+      }));
+    })();
+  }, [supplier?.id]);
 
   const uploadImage = async (file: File, kind: "logo" | "banner") => {
     if (!supplier) return;
@@ -1963,6 +1990,10 @@ function ProfileView() {
       trade_type: form.tradeType || "both",
       categories: form.categories,
       verticals: form.verticals,
+      manual_payment_enabled: form.manualPayEnabled,
+      manual_payment_number: form.manualPayNumber || null,
+      manual_payment_name: form.manualPayName || null,
+      manual_payment_instructions: form.manualPayInstructions || null,
     }).eq("id", supplier.id);
     setSaving(false);
     if (error) toast.error(error.message); else { toast.success("Saved"); qc.invalidateQueries({ queryKey: ["my-supplier"] }); }
@@ -2060,6 +2091,50 @@ function ProfileView() {
           <input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="Website (optional)" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
         </div>
       </div>
+
+      {/* Manual EcoCash payment */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Manual EcoCash payment</p>
+          <label className="inline-flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.manualPayEnabled}
+              onChange={(e) => setForm({ ...form, manualPayEnabled: e.target.checked })}
+              className="w-4 h-4 accent-primary"
+            />
+            <span className="text-xs font-bold">{form.manualPayEnabled ? "Enabled" : "Disabled"}</span>
+          </label>
+        </div>
+        <p className="text-[11px] text-muted-foreground mb-2 leading-snug">
+          Let buyers pay you directly via EcoCash and submit the transaction reference for you to confirm.
+        </p>
+        <div className="space-y-2">
+          <input
+            value={form.manualPayNumber}
+            onChange={(e) => setForm({ ...form, manualPayNumber: e.target.value })}
+            placeholder="EcoCash number (e.g. 077 123 4567)"
+            className="w-full h-12 rounded-xl border bg-background px-4 text-sm"
+            disabled={!form.manualPayEnabled}
+          />
+          <input
+            value={form.manualPayName}
+            onChange={(e) => setForm({ ...form, manualPayName: e.target.value })}
+            placeholder="Recipient name (as it appears on EcoCash)"
+            className="w-full h-12 rounded-xl border bg-background px-4 text-sm"
+            disabled={!form.manualPayEnabled}
+          />
+          <textarea
+            value={form.manualPayInstructions}
+            onChange={(e) => setForm({ ...form, manualPayInstructions: e.target.value })}
+            placeholder="Instructions for buyers (optional). e.g. 'Send the exact total, then paste your EC reference.'"
+            rows={3}
+            className="w-full rounded-xl border bg-background p-4 text-sm"
+            disabled={!form.manualPayEnabled}
+          />
+        </div>
+      </div>
+
 
       {/* Trade type */}
       <div>

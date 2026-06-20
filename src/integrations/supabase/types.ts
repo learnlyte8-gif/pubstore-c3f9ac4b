@@ -3042,6 +3042,9 @@ export type Database = {
           escrow_status: string
           eta: string | null
           id: string
+          manual_payment_note: string | null
+          manual_payment_reference: string | null
+          manual_payment_submitted_at: string | null
           payment_method: string | null
           payment_reference: string | null
           payment_status: string
@@ -3070,6 +3073,9 @@ export type Database = {
           escrow_status?: string
           eta?: string | null
           id?: string
+          manual_payment_note?: string | null
+          manual_payment_reference?: string | null
+          manual_payment_submitted_at?: string | null
           payment_method?: string | null
           payment_reference?: string | null
           payment_status?: string
@@ -3098,6 +3104,9 @@ export type Database = {
           escrow_status?: string
           eta?: string | null
           id?: string
+          manual_payment_note?: string | null
+          manual_payment_reference?: string | null
+          manual_payment_submitted_at?: string | null
           payment_method?: string | null
           payment_reference?: string | null
           payment_status?: string
@@ -4922,6 +4931,10 @@ export type Database = {
           location_address: string | null
           logo: string | null
           longitude: number | null
+          manual_payment_enabled: boolean
+          manual_payment_instructions: string | null
+          manual_payment_name: string | null
+          manual_payment_number: string | null
           mirror_of: string | null
           name: string
           on_time_delivery: number | null
@@ -4958,6 +4971,10 @@ export type Database = {
           location_address?: string | null
           logo?: string | null
           longitude?: number | null
+          manual_payment_enabled?: boolean
+          manual_payment_instructions?: string | null
+          manual_payment_name?: string | null
+          manual_payment_number?: string | null
           mirror_of?: string | null
           name: string
           on_time_delivery?: number | null
@@ -4994,6 +5011,10 @@ export type Database = {
           location_address?: string | null
           logo?: string | null
           longitude?: number | null
+          manual_payment_enabled?: boolean
+          manual_payment_instructions?: string | null
+          manual_payment_name?: string | null
+          manual_payment_number?: string | null
           mirror_of?: string | null
           name?: string
           on_time_delivery?: number | null
@@ -5884,6 +5905,9 @@ export type Database = {
           escrow_status: string
           eta: string | null
           id: string
+          manual_payment_note: string | null
+          manual_payment_reference: string | null
+          manual_payment_submitted_at: string | null
           payment_method: string | null
           payment_reference: string | null
           payment_status: string

@@ -30,7 +30,15 @@ type AppliedCoupon = {
   discount: number;
 };
 
-type PayMethod = "wallet" | "pesepay" | "paypal" | "cod";
+type PayMethod = "wallet" | "pesepay" | "paypal" | "cod" | "manual";
+
+type ManualPaySettings = {
+  enabled: boolean;
+  number: string | null;
+  name: string | null;
+  instructions: string | null;
+  supplierName: string;
+};
 
 type DeliveryOption = {
   id: string;
@@ -58,6 +66,9 @@ export default function Cart() {
   const [validating, setValidating] = useState(false);
   const [coupons, setCoupons] = useState<AppliedCoupon[]>([]);
   const [payMethod, setPayMethod] = useState<PayMethod>("wallet");
+  const [manualRef, setManualRef] = useState("");
+  const [manualNote, setManualNote] = useState("");
+  
   
 
   // Group cart by supplier for coupon math
@@ -74,6 +85,32 @@ export default function Cart() {
   }, [cartProducts]);
 
   const supplierIds = useMemo(() => Array.from(supplierGroups.keys()), [supplierGroups]);
+
+  // Manual (EcoCash) payment settings per supplier
+  const { data: manualBySupplier = {} } = useQuery({
+    queryKey: ["cart-manual-pay", supplierIds.join(",")],
+    enabled: supplierIds.length > 0,
+    queryFn: async () => {
+      const out: Record<string, ManualPaySettings> = {};
+      const { data } = await sb
+        .from("suppliers")
+        .select("id,name,manual_payment_enabled,manual_payment_number,manual_payment_name,manual_payment_instructions")
+        .in("id", supplierIds);
+      for (const s of (data ?? []) as any[]) {
+        out[s.id] = {
+          enabled: !!s.manual_payment_enabled && !!s.manual_payment_number,
+          number: s.manual_payment_number,
+          name: s.manual_payment_name,
+          instructions: s.manual_payment_instructions,
+          supplierName: s.name,
+        };
+      }
+      return out;
+    },
+  });
+
+  const manualAvailable = supplierIds.length > 0 && supplierIds.every((sid) => manualBySupplier[sid]?.enabled);
+
 
   // Fetch delivery options per supplier: their own self-delivery (if they're a courier)
   // plus any active courier partnerships. Default partnership is pre-selected.
@@ -327,9 +364,15 @@ export default function Cart() {
           total: orderTotal,
           status: (statusOverride ?? "placed") as any,
           payment_method: payMethod,
-          payment_status: payMethod === "cod" ? "cod" : "pending",
+          payment_status:
+            payMethod === "cod" ? "cod" :
+            payMethod === "manual" ? "awaiting_confirmation" :
+            "pending",
           delivery_courier_user_id: shipInfo?.courierUserId ?? null,
           delivery_option_label: shipInfo?.label ?? null,
+          manual_payment_reference: payMethod === "manual" ? (manualRef.trim() || null) : null,
+          manual_payment_note: payMethod === "manual" ? (manualNote.trim() || null) : null,
+          manual_payment_submitted_at: payMethod === "manual" ? new Date().toISOString() : null,
         } as any)
         .select("id,ref_code")
         .single();
@@ -389,18 +432,33 @@ export default function Cart() {
       return;
     }
 
+    if (payMethod === "manual") {
+      if (!manualAvailable) {
+        toast.error("Manual payment isn't enabled for one or more suppliers in your cart");
+        return;
+      }
+      if (!manualRef.trim()) {
+        toast.error("Enter the EcoCash transaction reference you received");
+        return;
+      }
+    }
+
     setPlacing(true);
     try {
-      // Wallet & COD: orders go straight to "placed" / appropriate status.
-      if (payMethod === "wallet" || payMethod === "cod") {
-        const created = await createOrders(user.id, payMethod === "wallet" ? "placed" : "placed");
+      // Wallet & COD & manual: orders go straight to "placed".
+      if (payMethod === "wallet" || payMethod === "cod" || payMethod === "manual") {
+        const created = await createOrders(user.id, "placed");
         if (payMethod === "wallet") {
           for (const o of created) {
             await payOrder(o.id);
           }
         }
         await clearCart();
-        toast.success(payMethod === "cod" ? "Order placed · Pay on delivery" : "Order placed");
+        toast.success(
+          payMethod === "cod" ? "Order placed · Pay on delivery" :
+          payMethod === "manual" ? "Order placed · Awaiting payment confirmation" :
+          "Order placed"
+        );
         navigate("/orders");
         return;
       }
@@ -658,6 +716,14 @@ export default function Cart() {
             }
             insufficient={!verificationLoading && !isVerified}
           />
+          <PayOption
+            active={payMethod === "manual"}
+            onClick={() => setPayMethod("manual")}
+            icon={Smartphone}
+            label="Manual EcoCash"
+            sub={manualAvailable ? "Send & submit reference" : "Not enabled by supplier"}
+            insufficient={!manualAvailable}
+          />
         </div>
 
         {payMethod === "cod" && !verificationLoading && !isVerified && (
@@ -683,6 +749,65 @@ export default function Cart() {
           <p className="mt-3 text-[10px] text-muted-foreground leading-tight">
             You'll be redirected to Pesepay to complete payment with EcoCash, OneMoney, ZIPIT or your Visa card. We'll bring you right back when it's done.
           </p>
+        )}
+
+        {payMethod === "manual" && (
+          <div className="mt-3 space-y-3">
+            {supplierIds.map((sid) => {
+              const m = manualBySupplier[sid];
+              if (!m) return null;
+              if (!m.enabled) {
+                return (
+                  <div key={sid} className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-[11px]">
+                    <p className="font-bold">{m.supplierName}</p>
+                    <p className="text-muted-foreground mt-0.5">This supplier hasn't enabled manual payment. Pick another method.</p>
+                  </div>
+                );
+              }
+              return (
+                <div key={sid} className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-bold">Send to {m.supplierName}</p>
+                      <p className="text-sm font-extrabold">{m.number}</p>
+                      {m.name && <p className="text-[11px] text-muted-foreground">{m.name}</p>}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { navigator.clipboard.writeText(m.number || ""); toast.success("Number copied"); }}
+                      className="text-[11px] font-bold text-primary px-2 py-1 rounded-md bg-background border"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  {m.instructions && (
+                    <p className="text-[11px] text-muted-foreground whitespace-pre-line leading-snug">{m.instructions}</p>
+                  )}
+                </div>
+              );
+            })}
+
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">EcoCash reference *</label>
+              <input
+                value={manualRef}
+                onChange={(e) => setManualRef(e.target.value)}
+                placeholder="e.g. EC123ABCD45"
+                className="w-full h-11 rounded-xl border bg-background px-3 text-sm"
+              />
+              <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Message to supplier (optional)</label>
+              <textarea
+                value={manualNote}
+                onChange={(e) => setManualNote(e.target.value)}
+                rows={3}
+                placeholder="Sent $X from 077… at 14:32. Please confirm."
+                className="w-full rounded-xl border bg-background p-3 text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground leading-tight">
+                Send the payment from your EcoCash app, then paste the confirmation reference here. The supplier will verify and mark your order as paid.
+              </p>
+            </div>
+          </div>
         )}
       </div>
 
