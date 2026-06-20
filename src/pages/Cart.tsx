@@ -66,6 +66,9 @@ export default function Cart() {
   const [validating, setValidating] = useState(false);
   const [coupons, setCoupons] = useState<AppliedCoupon[]>([]);
   const [payMethod, setPayMethod] = useState<PayMethod>("wallet");
+  const [manualRef, setManualRef] = useState("");
+  const [manualNote, setManualNote] = useState("");
+  
   
 
   // Group cart by supplier for coupon math
