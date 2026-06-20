@@ -2092,6 +2092,50 @@ function ProfileView() {
         </div>
       </div>
 
+      {/* Manual EcoCash payment */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Manual EcoCash payment</p>
+          <label className="inline-flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.manualPayEnabled}
+              onChange={(e) => setForm({ ...form, manualPayEnabled: e.target.checked })}
+              className="w-4 h-4 accent-primary"
+            />
+            <span className="text-xs font-bold">{form.manualPayEnabled ? "Enabled" : "Disabled"}</span>
+          </label>
+        </div>
+        <p className="text-[11px] text-muted-foreground mb-2 leading-snug">
+          Let buyers pay you directly via EcoCash and submit the transaction reference for you to confirm.
+        </p>
+        <div className="space-y-2">
+          <input
+            value={form.manualPayNumber}
+            onChange={(e) => setForm({ ...form, manualPayNumber: e.target.value })}
+            placeholder="EcoCash number (e.g. 077 123 4567)"
+            className="w-full h-12 rounded-xl border bg-background px-4 text-sm"
+            disabled={!form.manualPayEnabled}
+          />
+          <input
+            value={form.manualPayName}
+            onChange={(e) => setForm({ ...form, manualPayName: e.target.value })}
+            placeholder="Recipient name (as it appears on EcoCash)"
+            className="w-full h-12 rounded-xl border bg-background px-4 text-sm"
+            disabled={!form.manualPayEnabled}
+          />
+          <textarea
+            value={form.manualPayInstructions}
+            onChange={(e) => setForm({ ...form, manualPayInstructions: e.target.value })}
+            placeholder="Instructions for buyers (optional). e.g. 'Send the exact total, then paste your EC reference.'"
+            rows={3}
+            className="w-full rounded-xl border bg-background p-4 text-sm"
+            disabled={!form.manualPayEnabled}
+          />
+        </div>
+      </div>
+
+
       {/* Trade type */}
       <div>
         <p className="text-xs font-bold mb-2 text-muted-foreground uppercase tracking-wide">Trade type</p>
