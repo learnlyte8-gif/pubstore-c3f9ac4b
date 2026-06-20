@@ -750,6 +750,65 @@ export default function Cart() {
             You'll be redirected to Pesepay to complete payment with EcoCash, OneMoney, ZIPIT or your Visa card. We'll bring you right back when it's done.
           </p>
         )}
+
+        {payMethod === "manual" && (
+          <div className="mt-3 space-y-3">
+            {supplierIds.map((sid) => {
+              const m = manualBySupplier[sid];
+              if (!m) return null;
+              if (!m.enabled) {
+                return (
+                  <div key={sid} className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-[11px]">
+                    <p className="font-bold">{m.supplierName}</p>
+                    <p className="text-muted-foreground mt-0.5">This supplier hasn't enabled manual payment. Pick another method.</p>
+                  </div>
+                );
+              }
+              return (
+                <div key={sid} className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-bold">Send to {m.supplierName}</p>
+                      <p className="text-sm font-extrabold">{m.number}</p>
+                      {m.name && <p className="text-[11px] text-muted-foreground">{m.name}</p>}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { navigator.clipboard.writeText(m.number || ""); toast.success("Number copied"); }}
+                      className="text-[11px] font-bold text-primary px-2 py-1 rounded-md bg-background border"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  {m.instructions && (
+                    <p className="text-[11px] text-muted-foreground whitespace-pre-line leading-snug">{m.instructions}</p>
+                  )}
+                </div>
+              );
+            })}
+
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">EcoCash reference *</label>
+              <input
+                value={manualRef}
+                onChange={(e) => setManualRef(e.target.value)}
+                placeholder="e.g. EC123ABCD45"
+                className="w-full h-11 rounded-xl border bg-background px-3 text-sm"
+              />
+              <label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Message to supplier (optional)</label>
+              <textarea
+                value={manualNote}
+                onChange={(e) => setManualNote(e.target.value)}
+                rows={3}
+                placeholder="Sent $X from 077… at 14:32. Please confirm."
+                className="w-full rounded-xl border bg-background p-3 text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground leading-tight">
+                Send the payment from your EcoCash app, then paste the confirmation reference here. The supplier will verify and mark your order as paid.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Sticky checkout bar */}
