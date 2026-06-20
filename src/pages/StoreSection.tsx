@@ -1870,6 +1870,10 @@ function ProfileView() {
     tradeType: "both" as "retail" | "wholesale" | "both",
     categories: [] as string[],
     verticals: [] as string[],
+    manualPayEnabled: false,
+    manualPayNumber: "",
+    manualPayName: "",
+    manualPayInstructions: "",
   });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<"logo" | "banner" | null>(null);
