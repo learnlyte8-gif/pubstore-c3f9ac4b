@@ -1898,8 +1898,31 @@ function ProfileView() {
       tradeType: (supplier.tradeType ?? "both"),
       categories: supplier.categories || [],
       verticals: (supplier as any).verticals || [],
+      manualPayEnabled: !!(supplier as any).manual_payment_enabled,
+      manualPayNumber: (supplier as any).manual_payment_number || "",
+      manualPayName: (supplier as any).manual_payment_name || "",
+      manualPayInstructions: (supplier as any).manual_payment_instructions || "",
     });
   }, [supplier]);
+
+  // Load manual payment fields directly (mapSupplier doesn't carry them)
+  useEffect(() => {
+    if (!supplier) return;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("suppliers")
+        .select("manual_payment_enabled,manual_payment_number,manual_payment_name,manual_payment_instructions")
+        .eq("id", supplier.id)
+        .maybeSingle();
+      if (data) setForm((f) => ({
+        ...f,
+        manualPayEnabled: !!data.manual_payment_enabled,
+        manualPayNumber: data.manual_payment_number || "",
+        manualPayName: data.manual_payment_name || "",
+        manualPayInstructions: data.manual_payment_instructions || "",
+      }));
+    })();
+  }, [supplier?.id]);
 
   const uploadImage = async (file: File, kind: "logo" | "banner") => {
     if (!supplier) return;
