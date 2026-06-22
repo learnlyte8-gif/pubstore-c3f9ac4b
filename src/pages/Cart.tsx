@@ -661,14 +661,6 @@ export default function Cart() {
             }
             insufficient={!verificationLoading && !isVerified}
           />
-          <PayOption
-            active={payMethod === "manual"}
-            onClick={() => setPayMethod("manual")}
-            icon={Smartphone}
-            label="Manual EcoCash"
-            sub={manualAvailable ? "Send & submit reference" : "Not enabled by supplier"}
-            insufficient={!manualAvailable}
-          />
         </div>
 
         {payMethod === "cod" && !verificationLoading && !isVerified && (
