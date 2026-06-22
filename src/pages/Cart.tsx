@@ -58,10 +58,6 @@ export default function Cart() {
   const [validating, setValidating] = useState(false);
   const [coupons, setCoupons] = useState<AppliedCoupon[]>([]);
   const [payMethod, setPayMethod] = useState<PayMethod>("wallet");
-  const [manualRef, setManualRef] = useState("");
-  const [manualNote, setManualNote] = useState("");
-  
-  
 
   // Group cart by supplier for coupon math
   const supplierGroups = useMemo(() => {
@@ -78,30 +74,7 @@ export default function Cart() {
 
   const supplierIds = useMemo(() => Array.from(supplierGroups.keys()), [supplierGroups]);
 
-  // Manual (EcoCash) payment settings per supplier
-  const { data: manualBySupplier = {} } = useQuery({
-    queryKey: ["cart-manual-pay", supplierIds.join(",")],
-    enabled: supplierIds.length > 0,
-    queryFn: async () => {
-      const out: Record<string, ManualPaySettings> = {};
-      const { data } = await sb
-        .from("suppliers")
-        .select("id,name,manual_payment_enabled,manual_payment_number,manual_payment_name,manual_payment_instructions")
-        .in("id", supplierIds);
-      for (const s of (data ?? []) as any[]) {
-        out[s.id] = {
-          enabled: !!s.manual_payment_enabled && !!s.manual_payment_number,
-          number: s.manual_payment_number,
-          name: s.manual_payment_name,
-          instructions: s.manual_payment_instructions,
-          supplierName: s.name,
-        };
-      }
-      return out;
-    },
-  });
 
-  const manualAvailable = supplierIds.length > 0 && supplierIds.every((sid) => manualBySupplier[sid]?.enabled);
 
 
   // Fetch delivery options per supplier: their own self-delivery (if they're a courier)
