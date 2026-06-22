@@ -65,6 +65,7 @@ import Restaurants from "./pages/Restaurants.tsx";
 import AdsDashboard from "./pages/ads/AdsDashboard.tsx";
 import AdCampaignWizard from "./pages/ads/AdCampaignWizard.tsx";
 import InterstitialAdManager from "./components/ads/InterstitialAdManager.tsx";
+import Admin from "./pages/Admin.tsx";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -186,6 +187,7 @@ const App = () => (
                 <Route path="/u/:userId" element={<UserProfile />} />
                 <Route path="/group-buy/:id" element={<GroupBuyDetail />} />
                 <Route path="/pay/:kind/:id" element={<PayAction />} />
+                <Route path="/admin" element={<Admin />} />
               </Route>
               <Route path="/index" element={<Navigate to="/home" replace />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

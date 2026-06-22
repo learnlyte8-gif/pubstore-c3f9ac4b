@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Bell, Globe, Moon, Sun, Monitor, DollarSign, Languages, Smartphone, Palette, ChevronRight, Sparkles, Check, MessageCircle } from "lucide-react";
+import { ArrowLeft, Bell, Globe, Moon, Sun, Monitor, DollarSign, Languages, Smartphone, Palette, ChevronRight, Sparkles, Check, MessageCircle, ShieldCheck } from "lucide-react";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Switch } from "@/components/ui/switch";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
@@ -14,6 +15,7 @@ export default function Settings() {
   const [currency, setCurrency] = useState("USD");
   const [language, setLanguage] = useState("English");
   const { interests, save: saveInterests, userId } = useMyInterests();
+  const { isAdmin } = useIsAdmin();
   const [testingWa, setTestingWa] = useState(false);
 
   const sendTestWhatsApp = async () => {
@@ -77,6 +79,20 @@ export default function Settings() {
             </div>
           </div>
         </Section>
+
+        {isAdmin && (
+          <Section title="Platform">
+            <Link to="/admin" className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted/40">
+              <span className="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center"><ShieldCheck className="w-4.5 h-4.5" /></span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold">Platform admin dashboard</p>
+                <p className="text-[11px] text-muted-foreground">Top-ups, withdrawals, trade assurance & review moderation</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </Link>
+          </Section>
+        )}
+
 
         <Section title="Personalization">
           <div className="px-4 py-3.5">

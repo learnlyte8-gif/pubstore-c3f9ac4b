@@ -2634,6 +2634,54 @@ export type Database = {
         }
         Relationships: []
       }
+      manual_topups: {
+        Row: {
+          admin_note: string | null
+          amount: number
+          created_at: string
+          credited_tx_id: string | null
+          id: string
+          note: string | null
+          platform_number: string | null
+          processed_at: string | null
+          processed_by: string | null
+          reference: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string | null
+          amount: number
+          created_at?: string
+          credited_tx_id?: string | null
+          id?: string
+          note?: string | null
+          platform_number?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          reference: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_note?: string | null
+          amount?: number
+          created_at?: string
+          credited_tx_id?: string | null
+          id?: string
+          note?: string | null
+          platform_number?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          reference?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       menu_categories: {
         Row: {
           created_at: string
@@ -3205,6 +3253,27 @@ export type Database = {
           purpose?: string
           status?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
         }
         Relationships: []
       }
@@ -5704,8 +5773,110 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      approve_manual_topup: {
+        Args: { _admin_note?: string; _id: string }
+        Returns: {
+          admin_note: string | null
+          amount: number
+          created_at: string
+          credited_tx_id: string | null
+          id: string
+          note: string | null
+          platform_number: string | null
+          processed_at: string | null
+          processed_by: string | null
+          reference: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "manual_topups"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      approve_withdrawal_request: {
+        Args: { _admin_note?: string; _id: string }
+        Returns: {
+          account: string
+          account_name: string | null
+          admin_note: string | null
+          amount: number
+          created_at: string
+          destination: string
+          hold_tx_id: string | null
+          id: string
+          method: string
+          notes: string | null
+          payout_tx_id: string | null
+          processed_at: string | null
+          reference: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "withdrawal_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       cancel_withdrawal_request: {
         Args: { _id: string }
+        Returns: {
+          account: string
+          account_name: string | null
+          admin_note: string | null
+          amount: number
+          created_at: string
+          destination: string
+          hold_tx_id: string | null
+          id: string
+          method: string
+          notes: string | null
+          payout_tx_id: string | null
+          processed_at: string | null
+          reference: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "withdrawal_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      decline_manual_topup: {
+        Args: { _admin_note?: string; _id: string }
+        Returns: {
+          admin_note: string | null
+          amount: number
+          created_at: string
+          credited_tx_id: string | null
+          id: string
+          note: string | null
+          platform_number: string | null
+          processed_at: string | null
+          processed_by: string | null
+          reference: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "manual_topups"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      decline_withdrawal_request: {
+        Args: { _admin_note?: string; _id: string }
         Returns: {
           account: string
           account_name: string | null
