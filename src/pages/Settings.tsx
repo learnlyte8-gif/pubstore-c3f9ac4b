@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Bell, Globe, Moon, Sun, Monitor, DollarSign, Languages, Smartphone, Palette, ChevronRight, Sparkles, Check, MessageCircle } from "lucide-react";
+import { ArrowLeft, Bell, Globe, Moon, Sun, Monitor, DollarSign, Languages, Smartphone, Palette, ChevronRight, Sparkles, Check, MessageCircle, ShieldCheck } from "lucide-react";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Switch } from "@/components/ui/switch";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
