@@ -187,6 +187,7 @@ const App = () => (
                 <Route path="/u/:userId" element={<UserProfile />} />
                 <Route path="/group-buy/:id" element={<GroupBuyDetail />} />
                 <Route path="/pay/:kind/:id" element={<PayAction />} />
+                <Route path="/admin" element={<Admin />} />
               </Route>
               <Route path="/index" element={<Navigate to="/home" replace />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
