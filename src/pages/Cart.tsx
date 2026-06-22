@@ -30,15 +30,7 @@ type AppliedCoupon = {
   discount: number;
 };
 
-type PayMethod = "wallet" | "pesepay" | "paypal" | "cod" | "manual";
-
-type ManualPaySettings = {
-  enabled: boolean;
-  number: string | null;
-  name: string | null;
-  instructions: string | null;
-  supplierName: string;
-};
+type PayMethod = "wallet" | "pesepay" | "paypal" | "cod";
 
 type DeliveryOption = {
   id: string;
