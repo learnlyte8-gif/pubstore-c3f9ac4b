@@ -393,6 +393,9 @@ export default function WalletPage() {
         </div>
       </div>
 
+      <ManualTopupCard userId={userId} />
+
+
       {/* Perks */}
       <div className="px-4 mt-4 grid grid-cols-2 gap-2">
         <Perk icon={Zap} title="One-tap checkout" desc="Skip cards. Pay with balance." />
