@@ -65,6 +65,7 @@ import Restaurants from "./pages/Restaurants.tsx";
 import AdsDashboard from "./pages/ads/AdsDashboard.tsx";
 import AdCampaignWizard from "./pages/ads/AdCampaignWizard.tsx";
 import InterstitialAdManager from "./components/ads/InterstitialAdManager.tsx";
+import Admin from "./pages/Admin.tsx";
 
 const queryClient = new QueryClient({
   defaultOptions: {
