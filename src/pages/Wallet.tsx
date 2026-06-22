@@ -636,3 +636,125 @@ function BrandTile({
     </button>
   );
 }
+
+function ManualTopupCard({ userId }: { userId: string | null }) {
+  const [cfg, setCfg] = useState<{ enabled: boolean; number: string; name: string; instructions: string } | null>(null);
+  const [amount, setAmount] = useState("");
+  const [reference, setReference] = useState("");
+  const [note, setNote] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [myTopups, setMyTopups] = useState<any[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await sb.from("platform_settings").select("value").eq("key", "manual_topup").maybeSingle();
+      const v = (data?.value ?? {}) as any;
+      setCfg({
+        enabled: v.enabled !== false,
+        number: v.number ?? "",
+        name: v.name ?? "PUBSTORE",
+        instructions: v.instructions ?? "",
+      });
+    })();
+  }, []);
+
+  const loadMine = async () => {
+    if (!userId) return;
+    const { data } = await sb.from("manual_topups").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(5);
+    setMyTopups(data ?? []);
+  };
+  useEffect(() => { loadMine(); }, [userId]);
+
+  const submit = async () => {
+    if (!userId) { toast.error("Sign in first"); return; }
+    const amt = Number(amount);
+    if (!Number.isFinite(amt) || amt < 1) { toast.error("Enter the amount you sent"); return; }
+    if (!reference.trim()) { toast.error("Enter the EcoCash confirmation reference"); return; }
+    setSubmitting(true);
+    const { error } = await sb.from("manual_topups").insert({
+      user_id: userId,
+      amount: Math.round(amt * 100) / 100,
+      reference: reference.trim(),
+      note: note.trim() || null,
+      platform_number: cfg?.number ?? null,
+    });
+    setSubmitting(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Submitted — we'll credit your balance once verified");
+    setAmount(""); setReference(""); setNote("");
+    loadMine();
+  };
+
+  if (!cfg || !cfg.enabled) return null;
+
+  return (
+    <div className="px-4 mt-4">
+      <div className="bg-card rounded-2xl border border-border shadow-card p-4">
+        <div className="flex items-center gap-1.5 mb-1">
+          <Smartphone className="w-4 h-4 text-primary" />
+          <p className="text-sm font-black tracking-tight">Manual EcoCash top-up</p>
+        </div>
+        <p className="text-[11px] text-muted-foreground mb-3">
+          Send EcoCash to the platform number, then paste the confirmation reference here. Your PUBSTORE Pay balance will be credited once the platform team verifies it.
+        </p>
+
+        {cfg.number ? (
+          <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 mb-3 flex items-start justify-between gap-2">
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-bold">Send to {cfg.name || "PUBSTORE"}</p>
+              <p className="text-base font-extrabold tabular-nums">{cfg.number}</p>
+              {cfg.instructions && <p className="text-[11px] text-muted-foreground mt-1 whitespace-pre-line">{cfg.instructions}</p>}
+            </div>
+            <button
+              type="button"
+              onClick={() => { navigator.clipboard.writeText(cfg.number); toast.success("Number copied"); }}
+              className="text-[11px] font-bold text-primary px-2 py-1 rounded-md bg-background border"
+            >Copy</button>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 mb-3 text-[11px]">
+            Manual top-up isn't fully configured yet. Please try again later.
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Amount sent (USD)</label>
+              <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" inputMode="decimal" step="0.01" className="w-full h-10 rounded-xl border bg-background px-3 text-sm" placeholder="10.00" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">EcoCash reference *</label>
+              <input value={reference} onChange={(e) => setReference(e.target.value)} className="w-full h-10 rounded-xl border bg-background px-3 text-sm" placeholder="EC123ABCD45" />
+            </div>
+          </div>
+          <label className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Note (optional)</label>
+          <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} className="w-full rounded-xl border bg-background p-3 text-sm" placeholder="Sent at 14:32 from 077…" />
+          <Button onClick={submit} disabled={submitting || !cfg.number} className="h-10 w-full">
+            {submitting ? "Submitting…" : "Submit for verification"}
+          </Button>
+        </div>
+
+        {myTopups.length > 0 && (
+          <div className="mt-4">
+            <p className="text-[11px] font-black uppercase tracking-wider text-muted-foreground mb-1.5">Recent submissions</p>
+            <div className="space-y-1.5">
+              {myTopups.map((t) => (
+                <div key={t.id} className="flex items-center gap-2 text-[11px] border rounded-lg px-2.5 py-1.5">
+                  <span className="font-bold tabular-nums">${Number(t.amount).toFixed(2)}</span>
+                  <span className="text-muted-foreground truncate flex-1">Ref {t.reference}</span>
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded capitalize ${
+                    t.status === "approved" ? "bg-emerald-500/15 text-emerald-700" :
+                    t.status === "declined" ? "bg-red-500/15 text-red-700" :
+                    "bg-amber-500/15 text-amber-700"
+                  }`}>{t.status}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
