@@ -329,15 +329,9 @@ export default function Cart() {
           total: orderTotal,
           status: (statusOverride ?? "placed") as any,
           payment_method: payMethod,
-          payment_status:
-            payMethod === "cod" ? "cod" :
-            payMethod === "manual" ? "awaiting_confirmation" :
-            "pending",
+          payment_status: payMethod === "cod" ? "cod" : "pending",
           delivery_courier_user_id: shipInfo?.courierUserId ?? null,
           delivery_option_label: shipInfo?.label ?? null,
-          manual_payment_reference: payMethod === "manual" ? (manualRef.trim() || null) : null,
-          manual_payment_note: payMethod === "manual" ? (manualNote.trim() || null) : null,
-          manual_payment_submitted_at: payMethod === "manual" ? new Date().toISOString() : null,
         } as any)
         .select("id,ref_code")
         .single();
