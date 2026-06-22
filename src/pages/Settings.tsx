@@ -15,6 +15,7 @@ export default function Settings() {
   const [currency, setCurrency] = useState("USD");
   const [language, setLanguage] = useState("English");
   const { interests, save: saveInterests, userId } = useMyInterests();
+  const { isAdmin } = useIsAdmin();
   const [testingWa, setTestingWa] = useState(false);
 
   const sendTestWhatsApp = async () => {
