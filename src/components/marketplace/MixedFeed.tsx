@@ -73,21 +73,16 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 function interleave(items: MixedItem[]): MixedItem[] {
-  const byType = new Map<string, MixedItem[]>();
-  for (const it of items) {
-    if (!byType.has(it.type)) byType.set(it.type, []);
-    byType.get(it.type)!.push(it);
-  }
-  byType.forEach((list) => shuffle(list));
+  const products = shuffle(items.filter((it) => it.type === "product"));
+  const others = shuffle(items.filter((it) => it.type !== "product"));
 
   const result: MixedItem[] = [];
-  while (byType.size > 0) {
-    const types = shuffle(Array.from(byType.keys()));
-    for (const type of types) {
-      const list = byType.get(type)!;
-      result.push(list.shift()!);
-      if (list.length === 0) byType.delete(type);
-    }
+  let p = 0;
+  let o = 0;
+  while (p < products.length || o < others.length) {
+    // Place products more frequently than any single service by alternating product / other.
+    if (p < products.length) result.push(products[p++]);
+    if (o < others.length) result.push(others[o++]);
   }
   return result;
 }
