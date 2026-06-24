@@ -538,12 +538,18 @@ function MixedCard({ item }: { item: MixedItem }) {
       className="group relative rounded-2xl bg-card border border-border shadow-card hover:shadow-elevated transition overflow-hidden flex flex-col h-full"
     >
       <div className="relative aspect-[4/3] bg-muted overflow-hidden">
-        <img
-          src={item.image}
-          alt={item.title}
-          loading="lazy"
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-        />
+        {item.image === "/placeholder.svg" || !item.image ? (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+            <Icon className="w-12 h-12 text-muted-foreground/30" />
+          </div>
+        ) : (
+          <img
+            src={item.image}
+            alt={item.title}
+            loading="lazy"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition" />
 
         <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-background/95 backdrop-blur text-[9px] font-bold uppercase tracking-wider text-foreground shadow-soft">
