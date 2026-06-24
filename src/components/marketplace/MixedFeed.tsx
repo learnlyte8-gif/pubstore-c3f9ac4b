@@ -486,31 +486,17 @@ export default function MixedFeed({ verticals = [], tradeMode = "all" }: MixedFe
     );
   }
 
-  const left = items.filter((_, i) => i % 2 === 0);
-  const right = items.filter((_, i) => i % 2 === 1);
-
   return (
     <section className="px-4 mt-4 animate-fade-in">
-      <div className="grid grid-cols-2 gap-1 items-start">
-        <div className="flex flex-col gap-1">
-          {left.map((item) =>
-            item.type === "product" && item.product ? (
-              <ProductCard key={`product-${item.id}`} product={item.product} />
-            ) : (
-              <MixedCard key={`${item.type}-${item.id}`} item={item} />
-            )
-          )}
-        </div>
-        <div className="flex flex-col gap-1">
-          {right.map((item) =>
-            item.type === "product" && item.product ? (
-              <ProductCard key={`product-${item.id}`} product={item.product} />
-            ) : (
-              <MixedCard key={`${item.type}-${item.id}`} item={item} />
-            )
-          )}
-        </div>
-      </div>
+      <MasonryGrid>
+        {items.map((item) =>
+          item.type === "product" && item.product ? (
+            <ProductCard key={`product-${item.id}`} product={item.product} />
+          ) : (
+            <MixedCard key={`${item.type}-${item.id}`} item={item} />
+          )
+        )}
+      </MasonryGrid>
     </section>
   );
 }
