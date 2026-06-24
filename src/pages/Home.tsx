@@ -79,11 +79,22 @@ const Home = () => {
       )}
 
       {tab === "fyp" && (
-        <div className="animate-fade-in">
+        <div className="animate-fade-in px-4 mt-4">
+          <SectionHeader icon={Sparkles} title="For you" subtitle="Personalized picks based on your interests" />
           {products.length === 0 ? (
             <EmptyState title="Nothing in the feed yet" description="When suppliers list products they'll show up here." />
           ) : (
-            <VerticalFeed interests={interests} variant="fyp" products={products} />
+            <MasonryGrid className="mt-3">
+              {(() => {
+                const liked = interests.length
+                  ? products.filter((p) => interests.some((i) => p.category === i))
+                  : [];
+                const rest = products.filter((p) => !liked.includes(p));
+                return [...liked, ...rest].map((p) => (
+                  <ProductCard key={p.id} product={p} />
+                ));
+              })()}
+            </MasonryGrid>
           )}
         </div>
       )}
