@@ -17,6 +17,7 @@ import RecommendationStrip from "@/components/marketplace/RecommendationStrip";
 import NewArrivals from "@/components/marketplace/NewArrivals";
 import VerticalFeed from "@/components/marketplace/VerticalFeed";
 import ProductCard from "@/components/marketplace/ProductCard";
+import MasonryGrid from "@/components/marketplace/MasonryGrid";
 import EmptyState from "@/components/EmptyState";
 import SupplierCard from "@/components/marketplace/SupplierCard";
 import { useProducts } from "@/hooks/useCatalog";
@@ -180,11 +181,11 @@ function FollowingTab() {
             No products yet from the suppliers you follow.
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-1 mt-3">
+          <MasonryGrid className="mt-3">
             {products.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
-          </div>
+          </MasonryGrid>
         )}
       </section>
     </div>

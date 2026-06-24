@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useShop } from "@/store/shop";
-import { useSaves } from "@/hooks/useSaves";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -45,6 +44,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProducts } from "@/hooks/useCatalog";
 import ProductCard from "./ProductCard";
+import MasonryGrid from "./MasonryGrid";
 import { fetchJobs } from "@/data/jobs";
 import { fetchRestaurants } from "@/data/restaurants";
 import { fetchNews, fetchStays, fetchVehicles, fetchIndustrial, fetchAgro } from "@/data/verticals";
@@ -460,7 +460,7 @@ export default function MixedFeed({ verticals = [], tradeMode = "all" }: MixedFe
   if (isLoading) {
     return (
       <section className="px-4 mt-6">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-1">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="rounded-2xl bg-card border border-border shadow-card overflow-hidden">
               <Skeleton className="aspect-[4/3] w-full rounded-none" />
@@ -487,7 +487,7 @@ export default function MixedFeed({ verticals = [], tradeMode = "all" }: MixedFe
 
   return (
     <section className="px-4 mt-4 animate-fade-in">
-      <div className="grid grid-cols-2 gap-1">
+      <MasonryGrid>
         {items.map((item) =>
           item.type === "product" && item.product ? (
             <ProductCard key={`product-${item.id}`} product={item.product} />
@@ -495,7 +495,7 @@ export default function MixedFeed({ verticals = [], tradeMode = "all" }: MixedFe
             <MixedCard key={`${item.type}-${item.id}`} item={item} />
           )
         )}
-      </div>
+      </MasonryGrid>
     </section>
   );
 }
@@ -540,7 +540,7 @@ function MixedCard({ item }: { item: MixedItem }) {
   return (
     <Link
       to={item.href}
-      className="group relative rounded-2xl bg-card border border-border shadow-card hover:shadow-elevated transition overflow-hidden flex flex-col h-full"
+      className="group relative block rounded-2xl bg-card border border-border shadow-card hover:shadow-elevated transition overflow-hidden"
     >
       <div className="relative aspect-[4/3] bg-muted overflow-hidden">
         {item.image === "/placeholder.svg" || !item.image ? (
@@ -580,13 +580,13 @@ function MixedCard({ item }: { item: MixedItem }) {
 
       </div>
 
-      <div className="p-2.5 flex flex-col flex-1 min-w-0">
+      <div className="p-2.5">
         <p className="text-xs font-bold leading-snug overflow-hidden whitespace-nowrap text-ellipsis break-words">{item.title}</p>
         {item.subtitle && (
           <p className="text-[10px] text-muted-foreground overflow-hidden whitespace-nowrap text-ellipsis break-words mt-0.5">{item.subtitle}</p>
         )}
 
-        <div className="mt-auto pt-2 flex items-end justify-between gap-2">
+        <div className="pt-2 flex items-end justify-between gap-2">
           <div className="min-w-0">
             {item.price && (
               <p className="text-sm font-black tracking-tight text-destructive truncate">{item.price}</p>
