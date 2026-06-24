@@ -573,11 +573,6 @@ function MixedCard({ item }: { item: MixedItem }) {
           </button>
         )}
 
-        {item.type === "live" && (
-          <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold animate-pulse flex items-center gap-1">
-            <Radio className="w-3 h-3" /> LIVE
-          </span>
-        )}
       </div>
 
       <div className="p-2.5 flex flex-col flex-1 min-w-0">
