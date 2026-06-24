@@ -4,7 +4,7 @@ import {
   Home as HomeIcon, Store as StoreIcon,
   Users, Menu, X, FileText, Package, GitCompare, Wallet, BadgePercent,
   Briefcase, Wrench, Banknote, BedDouble, Car, Factory, Sprout, Navigation,
-  Truck, Compass, Sparkles, Newspaper, Flame, Heart,
+  Truck, Compass, Sparkles, Newspaper, Heart,
   type LucideIcon,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -12,10 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Promo3DCarousel from "@/components/marketplace/Promo3DCarousel";
 import MixedFeed from "@/components/marketplace/MixedFeed";
-import FlashDeals from "@/components/marketplace/FlashDeals";
 import RecommendationStrip from "@/components/marketplace/RecommendationStrip";
 import NewArrivals from "@/components/marketplace/NewArrivals";
-import VerticalFeed from "@/components/marketplace/VerticalFeed";
 import ProductCard from "@/components/marketplace/ProductCard";
 import MasonryGrid from "@/components/marketplace/MasonryGrid";
 import EmptyState from "@/components/EmptyState";
