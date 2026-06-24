@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useShop } from "@/store/shop";
 import { useSaves } from "@/hooks/useSaves";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   ShoppingBag,
   Briefcase,
