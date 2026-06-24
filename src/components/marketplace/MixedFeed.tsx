@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProducts } from "@/hooks/useCatalog";
+import ProductCard from "./ProductCard";
 import { fetchJobs } from "@/data/jobs";
 import { fetchRestaurants } from "@/data/restaurants";
 import { fetchNews, fetchStays, fetchVehicles, fetchIndustrial, fetchAgro } from "@/data/verticals";
@@ -486,10 +487,14 @@ export default function MixedFeed({ verticals = [], tradeMode = "all" }: MixedFe
 
   return (
     <section className="px-4 mt-4 animate-fade-in">
-      <div className="grid grid-cols-2 gap-2">
-        {items.map((item) => (
-          <MixedCard key={`${item.type}-${item.id}`} item={item} />
-        ))}
+      <div className="grid grid-cols-2 gap-1">
+        {items.map((item) =>
+          item.type === "product" && item.product ? (
+            <ProductCard key={`product-${item.id}`} product={item.product} />
+          ) : (
+            <MixedCard key={`${item.type}-${item.id}`} item={item} />
+          )
+        )}
       </div>
     </section>
   );

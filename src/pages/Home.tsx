@@ -4,7 +4,7 @@ import {
   Home as HomeIcon, Store as StoreIcon,
   Users, Menu, X, FileText, Package, GitCompare, Wallet, BadgePercent,
   Briefcase, Wrench, Banknote, BedDouble, Car, Factory, Sprout, Navigation,
-  Truck, Compass, Sparkles, Newspaper,
+  Truck, Compass, Sparkles, Newspaper, Flame, Heart,
   type LucideIcon,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -12,6 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Promo3DCarousel from "@/components/marketplace/Promo3DCarousel";
 import MixedFeed from "@/components/marketplace/MixedFeed";
+import FlashDeals from "@/components/marketplace/FlashDeals";
+import RecommendationStrip from "@/components/marketplace/RecommendationStrip";
+import NewArrivals from "@/components/marketplace/NewArrivals";
 import VerticalFeed from "@/components/marketplace/VerticalFeed";
 import ProductCard from "@/components/marketplace/ProductCard";
 import EmptyState from "@/components/EmptyState";
@@ -54,7 +57,28 @@ const Home = () => {
         <div className="animate-fade-in">
           <Promo3DCarousel />
           <HomeMenuDrawer />
-          <MixedFeed verticals={verticals} tradeMode={tradeMode} />
+
+          <section className="px-4 mt-5">
+            <SectionHeader icon={Flame} title="Trending now" subtitle="Hottest deals ending soon" />
+            <div className="mt-3"><FlashDeals /></div>
+          </section>
+
+          <section className="px-4 mt-6">
+            <SectionHeader icon={Heart} title="Because you browsed" subtitle="Picked from your recent activity" />
+            <div className="mt-3 grid grid-cols-1"><RecommendationStrip title="Because you browsed" subtitle="Hand-picked for you" /></div>
+          </section>
+
+          <section className="px-4 mt-6">
+            <SectionHeader icon={Sparkles} title="For you" subtitle="Fresh arrivals tailored to your taste" />
+            <NewArrivals />
+          </section>
+
+          <div className="mt-6">
+            <div className="px-4">
+              <SectionHeader icon={Compass} title="Explore the marketplace" subtitle="Products, services and more" />
+            </div>
+            <MixedFeed verticals={verticals} tradeMode={tradeMode} />
+          </div>
         </div>
       )}
 
