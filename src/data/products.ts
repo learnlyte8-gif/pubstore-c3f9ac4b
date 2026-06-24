@@ -3,19 +3,14 @@
 // components (ProductCard, SupplierCard, etc.) keep working without changes.
 import type { LucideIcon } from "lucide-react";
 import {
-  Smartphone,
-  Shirt,
-  Home as HomeIcon,
-  Sparkles,
-  Dumbbell,
-  ToyBrick,
-  Car,
-  Factory,
-  Sprout,
-  Package,
-  Briefcase,
-  HeartPulse,
-  ShoppingBag,
+  Smartphone, Shirt, Home as HomeIcon, Sparkles, Dumbbell, ToyBrick,
+  Car, Factory, Sprout, Package, Briefcase, HeartPulse, ShoppingBag,
+  Wrench, Hammer, Drill, PaintBucket, Lightbulb, Plug, Ruler,
+  Baby, PawPrint, BookOpen, Music, Camera, Gamepad2, Gem,
+  UtensilsCrossed, ChefHat, Wine, Cookie, Bike, Tent,
+  Wallet, Watch, Glasses, Scissors, Flower2, TreePine, Sofa,
+  Refrigerator, Tv, Laptop, Headphones, Printer, BatteryCharging,
+  Bed, Bath, Shovel, Truck, Plane, Ship, Fuel, Cog, Pill,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
