@@ -59,18 +59,13 @@ const Home = () => {
           <Promo3DCarousel />
           <HomeMenuDrawer />
 
-          <section className="px-4 mt-5">
-            <SectionHeader icon={Flame} title="Trending now" subtitle="Hottest deals ending soon" />
-            <div className="mt-3"><FlashDeals /></div>
-          </section>
-
           <section className="px-4 mt-6">
             <SectionHeader icon={Heart} title="Because you browsed" subtitle="Picked from your recent activity" />
             <div className="mt-3 grid grid-cols-1"><RecommendationStrip title="Because you browsed" subtitle="Hand-picked for you" /></div>
           </section>
 
           <section className="px-4 mt-6">
-            <SectionHeader icon={Sparkles} title="For you" subtitle="Fresh arrivals tailored to your taste" />
+            <SectionHeader icon={Sparkles} title="New arrivals" subtitle="Latest products from suppliers" />
             <NewArrivals />
           </section>
 
