@@ -80,7 +80,8 @@ function interleave(items: MixedItem[]): MixedItem[] {
   let p = 0;
   let o = 0;
   while (p < products.length || o < others.length) {
-    // Place products more frequently than any single service by alternating product / other.
+    // Place products more frequently than any single service (2 products per 1 other).
+    if (p < products.length) result.push(products[p++]);
     if (p < products.length) result.push(products[p++]);
     if (o < others.length) result.push(others[o++]);
   }
