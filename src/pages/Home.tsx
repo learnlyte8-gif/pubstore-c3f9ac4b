@@ -17,6 +17,7 @@ import RecommendationStrip from "@/components/marketplace/RecommendationStrip";
 import NewArrivals from "@/components/marketplace/NewArrivals";
 import VerticalFeed from "@/components/marketplace/VerticalFeed";
 import ProductCard from "@/components/marketplace/ProductCard";
+import MasonryGrid from "@/components/marketplace/MasonryGrid";
 import EmptyState from "@/components/EmptyState";
 import SupplierCard from "@/components/marketplace/SupplierCard";
 import { useProducts } from "@/hooks/useCatalog";
