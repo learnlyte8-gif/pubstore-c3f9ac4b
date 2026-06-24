@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useShop } from "@/store/shop";
-import { useSaves } from "@/hooks/useSaves";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
