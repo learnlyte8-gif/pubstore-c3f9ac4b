@@ -246,42 +246,9 @@ export default function NotificationPreferences() {
                   </div>
                 </div>
 
-                {prefs.whatsapp_enabled && !prefs.whatsapp_sandbox_joined && (
-                  <div className="mt-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 p-3">
-                    <p className="text-[11px] font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1">
-                      <AlertCircle className="w-3.5 h-3.5" /> One-time sandbox setup
-                    </p>
-                    <p className="text-[11px] text-amber-900/80 dark:text-amber-200/80 mt-1 leading-relaxed">
-                      We're on Twilio's WhatsApp sandbox. Open WhatsApp on the phone above and send the
-                      message <span className="font-mono font-bold">join &lt;your-sandbox-code&gt;</span> to{" "}
-                      <span className="font-mono font-bold">+1 415 523 8886</span>. After Twilio replies, we'll
-                      activate this automatically.
-                    </p>
-                    <div className="mt-2 flex gap-2">
-                      <button
-                        onClick={async () => {
-                          await navigator.clipboard.writeText("+14155238886");
-                          setCopied(true);
-                          setTimeout(() => setCopied(false), 1500);
-                        }}
-                        className="inline-flex items-center gap-1 px-2 h-7 rounded-full bg-white dark:bg-amber-900/40 border border-amber-200 dark:border-amber-800 text-[11px] font-bold"
-                      >
-                        {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                        Copy number
-                      </button>
-                      <a
-                        href="https://wa.me/14155238886"
-                        target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-2 h-7 rounded-full bg-emerald-500 text-white text-[11px] font-bold"
-                      >
-                        Open WhatsApp
-                      </a>
-                    </div>
-                  </div>
-                )}
-                {prefs.whatsapp_enabled && prefs.whatsapp_sandbox_joined && (
+                {prefs.whatsapp_enabled && (
                   <p className="mt-3 text-[11px] text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
-                    <Check className="w-3.5 h-3.5" /> Sandbox connected — you're all set.
+                    <Check className="w-3.5 h-3.5" /> Connected — messages will arrive on WhatsApp from our paired number.
                   </p>
                 )}
               </div>

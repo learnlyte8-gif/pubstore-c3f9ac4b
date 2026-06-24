@@ -25,3 +25,5 @@ project_id = "ccprnnqxpnrkdrfsudjc"
     verify_jwt = false
   [functions.twilio-whatsapp-inbound]
     verify_jwt = false
+  [functions.waapi-inbound]
+    verify_jwt = false
