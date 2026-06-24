@@ -1,57 +1,26 @@
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { toast } from "sonner";
 import {
-  TrendingUp, Sparkles, LayoutGrid, Building2, Compass, Users, Home as HomeIcon, Store as StoreIcon,
-  Award, Newspaper, Zap, ShieldCheck, Truck, Flame, Menu, X, FileText, Package, GitCompare, Wallet, BadgePercent,
+  Home as HomeIcon, Store as StoreIcon,
+  Users, Menu, X, FileText, Package, GitCompare, Wallet, BadgePercent,
   Briefcase, Wrench, Banknote, BedDouble, Car, Factory, Sprout, Navigation,
+  Truck, Compass, Sparkles, Newspaper,
   type LucideIcon,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Promo3DCarousel from "@/components/marketplace/Promo3DCarousel";
-import ProductCard from "@/components/marketplace/ProductCard";
-import AdReel from "@/components/marketplace/AdReel";
-import InlineAdCard from "@/components/ads/InlineAdCard";
-
-import TopSuppliers from "@/components/marketplace/TopSuppliers";
+import MixedFeed from "@/components/marketplace/MixedFeed";
 import VerticalFeed from "@/components/marketplace/VerticalFeed";
-import LiveStatsBanner from "@/components/marketplace/LiveStatsBanner";
-import BrandSpotlight from "@/components/marketplace/BrandSpotlight";
-
-import LiveStreamsRail from "@/components/marketplace/LiveStreamsRail";
-import PromoTile from "@/components/marketplace/PromoTile";
-import CategoryCallout from "@/components/marketplace/CategoryCallout";
-import RecommendationStrip from "@/components/marketplace/RecommendationStrip";
-import NewsRail from "@/components/marketplace/NewsRail";
-import StaysRail from "@/components/marketplace/StaysRail";
-import AutoRail from "@/components/marketplace/AutoRail";
-import IndustrialRail from "@/components/marketplace/IndustrialRail";
-import AgroRail from "@/components/marketplace/AgroRail";
-import ServicesRail from "@/components/marketplace/ServicesRail";
-import PropertiesRail from "@/components/marketplace/PropertiesRail";
-import FinanceRail from "@/components/marketplace/FinanceRail";
-import CarRentalsRail from "@/components/marketplace/CarRentalsRail";
-import RestaurantsRail from "@/components/marketplace/RestaurantsRail";
-import JobsRail from "@/components/marketplace/JobsRail";
-import TapsonAssistant from "@/components/TapsonAssistant";
+import ProductCard from "@/components/marketplace/ProductCard";
 import EmptyState from "@/components/EmptyState";
 import SupplierCard from "@/components/marketplace/SupplierCard";
-import { useProducts, useSuppliers } from "@/hooks/useCatalog";
+import { useProducts } from "@/hooks/useCatalog";
 import { useFollowingFeed, useFollowingSupplierIds, useAuthUserId } from "@/hooks/useFollowing";
-import { useMyInterests, useWishlistInterestSlugs, interestsToSlugs, prioritizeByCategories, useRecentSearchSlugs, rankByAffinity } from "@/hooks/useInterests";
+import { useMyInterests } from "@/hooks/useInterests";
 import { useMyVerticals } from "@/hooks/useMyVerticals";
-import { wantsVertical } from "@/data/verticalsCatalog";
-import { usePersonalizedFeed } from "@/hooks/useSocial";
-import { useClickAffinity, useRefreshFeed } from "@/hooks/usePersonalizationLog";
 import { useTradeMode } from "@/hooks/useTradeMode";
-import TradeModeSwitch from "@/components/marketplace/TradeModeSwitch";
-import { useWallet } from "@/hooks/useWallet";
-import { Wallet as WalletIcon, Plus, RefreshCw, Radio, Eye } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Skeleton } from "@/components/ui/skeleton";
 
 type Tab = "home" | "fyp" | "following";
 const TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
@@ -64,66 +33,11 @@ const Home = () => {
   const [searchParams] = useSearchParams();
   const tab: Tab = (searchParams.get("feed") as Tab) || "home";
 
-
   const { interests } = useMyInterests();
   const { verticals } = useMyVerticals();
-  const showShop = wantsVertical(verticals, "shop");
-  const wishlistSlugs = useWishlistInterestSlugs();
-  const { slugs: searchSlugs, tokens: searchTokens } = useRecentSearchSlugs();
-  const { counts: clickCounts, tokens: clickTokens } = useClickAffinity();
-  const { seed, refresh } = useRefreshFeed();
-  const interestSlugs = interestsToSlugs(interests);
-  const prioritySlugs = [...interestSlugs, ...wishlistSlugs, ...searchSlugs];
-  // Weighted counts: interests count twice (explicit), wishlist/search once.
-  const priorityCounts = prioritySlugs.reduce<Record<string, number>>((acc, s) => {
-    acc[s] = (acc[s] ?? 0) + 1;
-    return acc;
-  }, {});
-  for (const s of interestSlugs) priorityCounts[s] = (priorityCounts[s] ?? 0) + 1;
-  // Merge in click-derived affinity (already weighted by recency in the hook).
-  for (const [cat, n] of Object.entries(clickCounts)) priorityCounts[cat] = (priorityCounts[cat] ?? 0) + n;
-
-  const { balance, userId: walletUserId } = useWallet();
   const { mode: tradeMode } = useTradeMode();
 
-  const { data: rawProducts = [], isLoading } = useProducts({ limit: 80, tradeMode });
-  const { data: trending = [] } = useProducts({ sortBy: "sold", limit: 6, tradeMode });
-  const { data: dealPool = [] } = useProducts({ sortBy: "newest", limit: 50, tradeMode });
-  const { data: suppliers = [] } = useSuppliers({ limit: 6 });
-  const { data: forYouProducts = [] } = usePersonalizedFeed(12);
-  const { data: liveStreams = [] } = useQuery({
-    queryKey: ["home-live-streams"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("live_streams")
-        .select("id,title,cover,viewer_count,supplier_id,suppliers(name,logo)")
-        .eq("status", "live")
-        .order("started_at", { ascending: false })
-        .limit(8);
-      return data ?? [];
-    },
-  });
-
-  // Personalized ordering: rank by affinity (interests + wishlist + searches + clicks).
-  // The `seed` reshuffles ties when the user taps "Refresh my feed".
-  const allTokens = [...searchTokens, ...clickTokens];
-  const ranked = rankByAffinity(rawProducts, priorityCounts, allTokens);
-  const products = seed > 0 ? [...ranked].sort(() => Math.random() - 0.5) : ranked;
-
-  // Real flash deals: products with an active deal_ends_at OR ≥30% off
-  const now = Date.now();
-  const flashDeals = dealPool
-    .filter((p) => {
-      const stillRunning = p.dealEndsAt ? new Date(p.dealEndsAt).getTime() > now : false;
-      const bigDiscount = p.originalPrice && p.originalPrice > p.price && (p.originalPrice - p.price) / p.originalPrice >= 0.3;
-      return stillRunning || bigDiscount;
-    })
-    .sort((a, b) => {
-      // products with countdown first
-      if (!!a.dealEndsAt === !!b.dealEndsAt) return 0;
-      return a.dealEndsAt ? -1 : 1;
-    })
-    .slice(0, 8);
+  const { data: products = [] } = useProducts({ limit: 80, tradeMode });
 
   return (
     <div className="pb-6">
@@ -136,91 +50,11 @@ const Home = () => {
       </Helmet>
       <h1 className="sr-only">PUBSTORE — Shop, share and discover across verticals</h1>
 
-
-
       {tab === "home" && (
         <div className="animate-fade-in">
           <Promo3DCarousel />
           <HomeMenuDrawer />
-
-          {/* Product-dependent rails — only when the buyer wants the marketplace */}
-          {showShop && (isLoading ? (
-            <HomeRailsSkeleton />
-          ) : products.length === 0 ? (
-            <div className="px-4 mt-4">
-              <EmptyState
-                icon={<StoreIcon className="w-7 h-7 text-muted-foreground" />}
-                title="No products listed yet"
-                description="Be one of the first suppliers on PUBSTORE — open your store and list a product."
-                action={<Button asChild><Link to="/become-supplier">Open my store</Link></Button>}
-              />
-            </div>
-          ) : (
-            <>
-              {trending.length > 0 && (
-                <section className="px-4 mt-6">
-                  <SectionHeader icon={TrendingUp} title="Trending now" subtitle="Most ordered this week" />
-                  <div className="flex gap-1 overflow-x-auto scrollbar-none mt-3 -mx-1 px-1 pb-1">
-                    {trending.map((p) => (<ProductCard key={p.id} product={p} variant="compact" />))}
-                  </div>
-                </section>
-              )}
-
-
-              <section className="px-4 mt-6">
-                <RecommendationStrip />
-              </section>
-
-              {suppliers.length > 0 && (
-                <section className="px-4 mt-6">
-                  <SectionHeader icon={Building2} title="Top suppliers" subtitle="Verified stores ready to ship" />
-                  <TopSuppliers suppliers={suppliers} />
-                </section>
-              )}
-
-
-              <section className="px-4 mt-6">
-
-                <SectionHeader icon={Sparkles} title="For you" subtitle="Ranked by your interests, follows & activity" />
-                <div className="grid grid-cols-2 gap-1 mt-3">
-                  {(() => {
-                    const rankedIds = (forYouProducts as any[]).map((p) => p.id);
-                    const byId = new Map(products.map((p) => [p.id, p]));
-                    const ranked = rankedIds.map((id) => byId.get(id)).filter(Boolean) as typeof products;
-                    const seen = new Set(ranked.map((p) => p.id));
-                    const tail = products.filter((p) => !seen.has(p.id));
-                    return [...ranked, ...tail].slice(0, 6).map((p) => (<ProductCard key={p.id} product={p} />));
-                  })()}
-                </div>
-              </section>
-
-              <section className="px-4 mt-6">
-                <SectionHeader icon={Award} title="Brand spotlight" subtitle="Featured collections" />
-                <BrandSpotlight />
-              </section>
-            </>
-          ))}
-
-          {/* Non-product rails — each gated by the user's vertical preferences.
-              Empty preferences = show everything (back-compat). */}
-          {wantsVertical(verticals, "jobs") && <JobsRail />}
-          {wantsVertical(verticals, "news") && <NewsRail />}
-          {wantsVertical(verticals, "restaurants") && <RestaurantsRail />}
-          {wantsVertical(verticals, "stays") && <StaysRail />}
-          {wantsVertical(verticals, "vehicles") && <AutoRail />}
-          {wantsVertical(verticals, "services") && <ServicesRail />}
-          {wantsVertical(verticals, "car_rentals") && <CarRentalsRail />}
-          {wantsVertical(verticals, "properties") && <PropertiesRail />}
-          {wantsVertical(verticals, "finance") && <FinanceRail />}
-          {wantsVertical(verticals, "industrial") && <IndustrialRail />}
-          {wantsVertical(verticals, "agro") && <AgroRail />}
-
-          {showShop && !isLoading && products.length > 0 && (
-            <section className="px-4 mt-6">
-              <SectionHeader icon={LayoutGrid} title="Explore catalog" subtitle="Mixed picks, ads & ideas" />
-              <MixedCatalogGrid products={products.slice(6)} hero={products[0]} />
-            </section>
-          )}
+          <MixedFeed verticals={verticals} tradeMode={tradeMode} />
         </div>
       )}
 
@@ -239,57 +73,9 @@ const Home = () => {
           <FollowingTab />
         </div>
       )}
-
-      
     </div>
   );
 };
-
-function HomeRailsSkeleton() {
-  return (
-    <div className="animate-fade-in">
-      {/* Trending now skeleton */}
-      <section className="px-4 mt-6">
-        <div className="flex items-end justify-between">
-          <div className="flex items-start gap-2.5">
-            <Skeleton className="w-8 h-8 rounded-xl" />
-            <div className="space-y-1.5">
-              <Skeleton className="h-4 w-28" />
-              <Skeleton className="h-3 w-40" />
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-3 overflow-hidden mt-3 -mx-1 px-1 pb-1">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="shrink-0 w-32 space-y-2">
-              <Skeleton className="w-32 h-32 rounded-xl" />
-              <Skeleton className="h-3 w-28" />
-              <Skeleton className="h-3 w-16" />
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Live + Flash skeleton */}
-      <section className="px-4 mt-6">
-        <div className="flex items-end justify-between">
-          <div className="flex items-start gap-2.5">
-            <Skeleton className="w-8 h-8 rounded-xl" />
-            <div className="space-y-1.5">
-              <Skeleton className="h-4 w-44" />
-              <Skeleton className="h-3 w-52" />
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-3 overflow-hidden mt-3 -mx-1 px-1 pb-1">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="shrink-0 w-32 aspect-[3/4] rounded-2xl" />
-          ))}
-        </div>
-      </section>
-    </div>
-  );
-}
 
 function SectionHeader({ title, subtitle, icon: Icon }: { title: string; subtitle?: string; icon?: LucideIcon }) {
   return (
@@ -308,109 +94,6 @@ function SectionHeader({ title, subtitle, icon: Icon }: { title: string; subtitl
       </div>
     </div>
   );
-}
-
-/**
- * MixedCatalogGrid — interleaves product cards with promotional tiles,
- * category callouts, an ad slot and a recommendation strip so the
- * "Explore catalog" surface feels like a curated feed instead of a wall.
- *
- * Full-width inserts (col-span-2) are aligned to row starts so we never
- * leave a blank cell next to them.
- */
-function MixedCatalogGrid({ products, hero }: { products: import("@/data/products").Product[]; hero?: import("@/data/products").Product }) {
-  if (products.length === 0) return null;
-
-  const dealSeed = products.find((p) => p.originalPrice && p.originalPrice > p.price) ?? products[0];
-  const newSeed = products.find((p) => p.badge === "New") ?? products[1] ?? products[0];
-  const editorSeed = hero ?? products[2] ?? products[0];
-
-  type Insert = { after: number; span: 1 | 2; node: React.ReactNode };
-  // `after` = how many product cards must appear before this insert
-  const inserts: Insert[] = [
-    { after: 2, span: 1, node: <PromoTile key="promo-deal" product={dealSeed} variant="deal" /> },
-    {
-      after: 4, span: 2, node: (
-        <CategoryCallout
-          key="cat-fresh"
-          title="Verified factories ready to ship today"
-          subtitle="Trade Assurance"
-          href="/categories"
-          icon={ShieldCheck}
-          tone="primary"
-        />
-      ),
-    },
-    { after: 6, span: 2, node: <RecommendationStrip key="rec-strip" /> },
-    { after: 8, span: 1, node: <PromoTile key="promo-editor" product={editorSeed} variant="editor" /> },
-    {
-      after: 10, span: 2, node: (
-        <CategoryCallout
-          key="cat-warm"
-          title="Free shipping on orders over $50"
-          subtitle="Limited time"
-          href="/categories"
-          icon={Truck}
-          tone="warm"
-        />
-      ),
-    },
-    { after: 13, span: 1, node: <PromoTile key="promo-new" product={newSeed} variant="new" /> },
-    { after: 7, span: 1, node: <InlineAdCard key="ad-inline-1" /> },
-    { after: 14, span: 1, node: <InlineAdCard key="ad-inline-2" /> },
-    {
-      after: 16, span: 2, node: (
-        <CategoryCallout
-          key="cat-flash"
-          title="Hottest categories this week"
-          subtitle="Trending now"
-          href="/categories"
-          icon={Flame}
-          tone="ink"
-        />
-      ),
-    },
-  ];
-
-  const cells: React.ReactNode[] = [];
-  let col = 0; // current column position (0 or 1) within the 2-col grid
-  let placed = 0; // products placed so far
-  let prodIndex = 0;
-
-  const placeProduct = () => {
-    const p = products[prodIndex++];
-    if (!p) return false;
-    cells.push(<ProductCard key={p.id} product={p} />);
-    col = (col + 1) % 2;
-    placed++;
-    return true;
-  };
-
-  const placeInsert = (ins: Insert) => {
-    // If a full-width insert lands mid-row, fill the empty cell with a product first
-    if (ins.span === 2 && col === 1) {
-      if (!placeProduct()) {
-        // No product left to fill — skip the insert to avoid a blank gap
-        return;
-      }
-    }
-    cells.push(ins.node);
-    col = ins.span === 2 ? 0 : (col + 1) % 2;
-  };
-
-  // Walk products and insert callouts at the requested counts
-  while (prodIndex < products.length) {
-    const due = inserts.find((x) => x.after === placed);
-    if (due) {
-      // remove so we don't re-insert
-      inserts.splice(inserts.indexOf(due), 1);
-      placeInsert(due);
-      continue;
-    }
-    if (!placeProduct()) break;
-  }
-
-  return <div className="grid grid-cols-2 gap-1 mt-3">{cells}</div>;
 }
 
 function FollowingTab() {
