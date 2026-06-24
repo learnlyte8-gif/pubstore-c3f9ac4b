@@ -4,7 +4,7 @@ import {
   Home as HomeIcon, Store as StoreIcon,
   Users, Menu, X, FileText, Package, GitCompare, Wallet, BadgePercent,
   Briefcase, Wrench, Banknote, BedDouble, Car, Factory, Sprout, Navigation,
-  Truck, Compass, Sparkles, Newspaper,
+  Truck, Compass, Sparkles, Newspaper, Flame, Heart,
   type LucideIcon,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
