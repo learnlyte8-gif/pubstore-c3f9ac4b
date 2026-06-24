@@ -4,7 +4,7 @@ import {
   Home as HomeIcon, Store as StoreIcon,
   Users, Menu, X, FileText, Package, GitCompare, Wallet, BadgePercent,
   Briefcase, Wrench, Banknote, BedDouble, Car, Factory, Sprout, Navigation,
-  Truck, Compass, Sparkles, Newspaper, Flame, Heart,
+  Truck, Compass, Sparkles, Newspaper, Heart,
   type LucideIcon,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -12,10 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Promo3DCarousel from "@/components/marketplace/Promo3DCarousel";
 import MixedFeed from "@/components/marketplace/MixedFeed";
-import FlashDeals from "@/components/marketplace/FlashDeals";
 import RecommendationStrip from "@/components/marketplace/RecommendationStrip";
 import NewArrivals from "@/components/marketplace/NewArrivals";
-import VerticalFeed from "@/components/marketplace/VerticalFeed";
 import ProductCard from "@/components/marketplace/ProductCard";
 import MasonryGrid from "@/components/marketplace/MasonryGrid";
 import EmptyState from "@/components/EmptyState";
@@ -59,18 +57,13 @@ const Home = () => {
           <Promo3DCarousel />
           <HomeMenuDrawer />
 
-          <section className="px-4 mt-5">
-            <SectionHeader icon={Flame} title="Trending now" subtitle="Hottest deals ending soon" />
-            <div className="mt-3"><FlashDeals /></div>
-          </section>
-
           <section className="px-4 mt-6">
             <SectionHeader icon={Heart} title="Because you browsed" subtitle="Picked from your recent activity" />
             <div className="mt-3 grid grid-cols-1"><RecommendationStrip title="Because you browsed" subtitle="Hand-picked for you" /></div>
           </section>
 
           <section className="px-4 mt-6">
-            <SectionHeader icon={Sparkles} title="For you" subtitle="Fresh arrivals tailored to your taste" />
+            <SectionHeader icon={Sparkles} title="New arrivals" subtitle="Latest products from suppliers" />
             <NewArrivals />
           </section>
 
@@ -84,11 +77,22 @@ const Home = () => {
       )}
 
       {tab === "fyp" && (
-        <div className="animate-fade-in">
+        <div className="animate-fade-in px-4 mt-4">
+          <SectionHeader icon={Sparkles} title="For you" subtitle="Personalized picks based on your interests" />
           {products.length === 0 ? (
             <EmptyState title="Nothing in the feed yet" description="When suppliers list products they'll show up here." />
           ) : (
-            <VerticalFeed interests={interests} variant="fyp" products={products} />
+            <MasonryGrid className="mt-3">
+              {(() => {
+                const liked = interests.length
+                  ? products.filter((p) => interests.some((i) => p.category === i))
+                  : [];
+                const rest = products.filter((p) => !liked.includes(p));
+                return [...liked, ...rest].map((p) => (
+                  <ProductCard key={p.id} product={p} />
+                ));
+              })()}
+            </MasonryGrid>
           )}
         </div>
       )}
