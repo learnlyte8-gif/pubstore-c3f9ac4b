@@ -121,6 +121,8 @@ Deno.serve(async (req) => {
     const body: string = (msg?.body || msg?.text || msg?.message || "").toString().trim();
     const sid: string | null =
       msg?.id?._serialized || msg?.id || msg?.messageId || data?.id?._serialized || null;
+    // Reply MUST go back to the exact chatId we received from (handles @lid privacy IDs).
+    const replyTo: string | null = fromChat ? String(fromChat) : null;
     const fromE164 = chatIdToE164(fromChat) || normalizePhoneE164(fromChat);
 
     if (sid) {
