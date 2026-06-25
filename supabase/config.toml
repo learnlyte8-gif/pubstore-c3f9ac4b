@@ -27,3 +27,9 @@ project_id = "ccprnnqxpnrkdrfsudjc"
     verify_jwt = false
   [functions.waapi-inbound]
     verify_jwt = false
+  [functions.tapson-whatsapp]
+    verify_jwt = false
+  [functions.send-whatsapp-code]
+    verify_jwt = true
+  [functions.verify-whatsapp-code]
+    verify_jwt = true

@@ -9,6 +9,7 @@ import { INTERESTS } from "@/data/interests";
 import { useMyInterests } from "@/hooks/useInterests";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import LinkWhatsApp from "@/components/whatsapp/LinkWhatsApp";
 
 export default function Settings() {
   const { theme, setTheme } = useTheme();
@@ -144,6 +145,7 @@ export default function Settings() {
               {testingWa ? "Sending…" : "Send test"}
             </Button>
           </div>
+          <LinkWhatsApp />
         </Section>
 
         <Section title="Region">
