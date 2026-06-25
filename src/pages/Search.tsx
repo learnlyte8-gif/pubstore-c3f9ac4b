@@ -10,6 +10,7 @@ import EmptyState from "@/components/EmptyState";
 import { suggestCompletions, tokenize } from "@/lib/search";
 import { useUniversalPool, searchUniversal, type UniversalHit } from "@/hooks/useUniversalSearch";
 import { toast } from "sonner";
+import BackButton from "@/components/BackButton";
 
 const SORTS = [
   { id: "relevance", label: "Relevance" },
