@@ -43,8 +43,12 @@ export async function sendWhatsApp(toE164: string, body: string): Promise<WhatsA
   if (!token) return { ok: false, status: 500, error: "WAAPI_ACCESS_TOKEN not configured" };
   if (!instanceId) return { ok: false, status: 500, error: "WAAPI_INSTANCE_ID not configured" };
 
-  const digits = toE164.replace(/\D/g, "");
-  const chatId = `${digits}@c.us`;
+  // Accept either a raw waapi chatId ("12345@c.us" / "12345@lid" / "12345@g.us")
+  // or an E.164 phone. LIDs cannot be converted to phone numbers, so we must
+  // reply to the same chatId we received the message from.
+  const chatId = toE164.includes("@")
+    ? toE164
+    : `${toE164.replace(/\D/g, "")}@c.us`;
 
   const url = `${baseUrl}/api/v1/instances/${instanceId}/client/action/send-message`;
   const res = await fetch(url, {
