@@ -10,6 +10,7 @@ import EmptyState from "@/components/EmptyState";
 import { toast } from "sonner";
 import SupplierOnboarding, { buildOnboardingSteps, isOnboardingComplete, OnboardingBlockedBanner } from "@/components/SupplierOnboarding";
 import { useVerification } from "@/hooks/useVerification";
+import BackButton from "@/components/BackButton";
 
 export default function MyStore() {
   const navigate = useNavigate();
