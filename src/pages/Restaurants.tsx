@@ -10,6 +10,7 @@ import MediaUpload from "@/components/MediaUpload";
 import { fetchRestaurants, fetchRestaurant, fetchMenu, fetchMyRestaurants, CUISINES, type Restaurant, type MenuItem, type FoodOrderItem } from "@/data/restaurants";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import BackButton from "@/components/BackButton";
 
 export default function Restaurants() {
   const { id } = useParams();
