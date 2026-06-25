@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
       if (dup) return new Response(JSON.stringify({ ok: true, dup: true }), { headers: jsonHeaders });
     }
 
-    if (!fromE164 || !body) {
+    if (!replyTo || !body) {
       await admin.from("whatsapp_inbound_log").insert({
         twilio_sid: sid, from_phone: fromE164 || String(fromChat || "unknown"),
         body, matched_user_id: null, conversation_id: null, ref_tag: null, raw: payload,
@@ -139,11 +139,15 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, skipped: "empty" }), { headers: jsonHeaders });
     }
 
-    // 1. Try link-code pairing
-    let matchedUserId = await tryConsumeLinkCode(body, fromE164);
+    // Identifier used for phone-matching & log records.
+    // For @lid senders we don't have a real phone — store the chatId itself.
+    const senderKey = fromE164 || replyTo;
 
-    // 2. Phone match
-    if (!matchedUserId) matchedUserId = await findUserByPhone(fromE164);
+    // 1. Try link-code pairing
+    let matchedUserId = await tryConsumeLinkCode(body, senderKey, replyTo);
+
+    // 2. Phone match (only meaningful when we have a real E.164)
+    if (!matchedUserId && fromE164) matchedUserId = await findUserByPhone(fromE164);
 
     if (matchedUserId) {
       await admin.from("notification_preferences").upsert({
@@ -173,8 +177,9 @@ Deno.serve(async (req) => {
     // 4. Otherwise → Tapson AI (signed-in or anonymous)
     if (handler === "tapson") {
       if (!matchedUserId) handler = "anon_tapson";
-      // Fire-and-forget (Tapson sends its own WA reply)
-      await invokeTapson(fromE164, body, matchedUserId);
+      // Fire-and-forget (Tapson sends its own WA reply). Pass the raw chatId so
+      // replies route back to @lid / @c.us correctly.
+      await invokeTapson(replyTo, body, matchedUserId);
     }
 
     await admin.from("whatsapp_inbound_log").insert({
