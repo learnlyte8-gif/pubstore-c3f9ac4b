@@ -54,6 +54,14 @@ async function findUserByWhatsAppIdentity(identity: string): Promise<string | nu
 }
 
 async function getReplyTarget(userId: string | null, fallback: string): Promise<string> {
+  // Waapi trial instances can only deliver outbound messages to the trial owner's
+  // own WhatsApp number. While testing, force every reply to that number so the
+  // user actually sees responses regardless of which account/LID sent the message.
+  const trial = Deno.env.get("WAAPI_TRIAL_NUMBER");
+  if (trial) {
+    const digits = trial.replace(/\D/g, "");
+    if (digits.length >= 8) return "+" + digits;
+  }
   if (!userId) return fallback;
   const { data: prof } = await admin.from("profiles")
     .select("phone")
