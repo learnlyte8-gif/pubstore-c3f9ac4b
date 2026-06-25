@@ -5,6 +5,7 @@ import { Home as HomeIcon, MapPin, Bed, Bath, Maximize2, Phone, MessageCircle, S
 import { fetchProperties, PROPERTY_KINDS, type Property } from "@/data/newVerticals";
 import EmptyState from "@/components/EmptyState";
 import PropertyInquiryDialog from "@/components/marketplace/PropertyInquiryDialog";
+import BackButton from "@/components/BackButton";
 
 export default function Properties() {
   const [listingType, setListingType] = useState<string>("rent");
