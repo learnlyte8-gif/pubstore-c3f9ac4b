@@ -129,7 +129,6 @@ export default function MyStore() {
           <img src={supplier.banner} alt="" className="w-full h-full object-cover" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-foreground/20 to-transparent" />
-        <div className="absolute bottom-3 left-4 right-4 flex items-end gap-3 text-background">
         <BackButton iconOnly className="absolute top-3 left-3 z-10 bg-background/85 backdrop-blur shadow-card" />
         <div className="absolute bottom-3 left-4 right-4 flex items-end gap-3 text-background">
           <div className="w-16 h-16 rounded-2xl bg-card ring-2 ring-background shadow-elevated flex items-center justify-center overflow-hidden">
