@@ -11,7 +11,7 @@ export default function LinkWhatsApp() {
   const generate = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc("create_whatsapp_link_code");
+      const { data, error } = await (supabase.rpc as any)("create_whatsapp_link_code");
       if (error) throw error;
       setCode(String(data));
     } catch (e: any) {
