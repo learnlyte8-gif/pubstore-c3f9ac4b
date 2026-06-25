@@ -3080,6 +3080,7 @@ export type Database = {
           buyer_id: string
           coupon_code: string | null
           created_at: string
+          delivery_code: string | null
           delivery_courier_user_id: string | null
           delivery_option_label: string | null
           discount: number
@@ -3111,6 +3112,7 @@ export type Database = {
           buyer_id: string
           coupon_code?: string | null
           created_at?: string
+          delivery_code?: string | null
           delivery_courier_user_id?: string | null
           delivery_option_label?: string | null
           discount?: number
@@ -3142,6 +3144,7 @@ export type Database = {
           buyer_id?: string
           coupon_code?: string | null
           created_at?: string
+          delivery_code?: string | null
           delivery_courier_user_id?: string | null
           delivery_option_label?: string | null
           discount?: number
@@ -5186,6 +5189,30 @@ export type Database = {
           },
         ]
       }
+      tapson_wa_threads: {
+        Row: {
+          created_at: string
+          messages: Json
+          phone: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          messages?: Json
+          phone: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          messages?: Json
+          phone?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_follows: {
         Row: {
           created_at: string
@@ -5603,6 +5630,36 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_link_codes: {
+        Row: {
+          code: string
+          consumed_at: string | null
+          consumed_phone: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          consumed_at?: string | null
+          consumed_phone?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          consumed_at?: string | null
+          consumed_phone?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       whatsapp_send_log: {
         Row: {
           body: string | null
@@ -5641,6 +5698,42 @@ export type Database = {
           status?: string
           to_phone?: string
           twilio_sid?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      whatsapp_verification_codes: {
+        Row: {
+          attempts: number
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          purpose: Database["public"]["Enums"]["wa_code_purpose"]
+          reference: string | null
+          used_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          code: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          purpose: Database["public"]["Enums"]["wa_code_purpose"]
+          reference?: string | null
+          used_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          purpose?: Database["public"]["Enums"]["wa_code_purpose"]
+          reference?: string | null
+          used_at?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -5851,6 +5944,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_whatsapp_link_code: { Args: never; Returns: string }
       decline_manual_topup: {
         Args: { _admin_note?: string; _id: string }
         Returns: {
@@ -6066,6 +6160,7 @@ export type Database = {
           buyer_id: string
           coupon_code: string | null
           created_at: string
+          delivery_code: string | null
           delivery_courier_user_id: string | null
           delivery_option_label: string | null
           discount: number
@@ -6252,6 +6347,7 @@ export type Database = {
       rfq_status: "open" | "closed"
       share_channel: "chat" | "external" | "copy"
       verification_status: "pending" | "approved" | "rejected"
+      wa_code_purpose: "twofa" | "order_delivery" | "withdrawal" | "generic"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -6401,6 +6497,7 @@ export const Constants = {
       rfq_status: ["open", "closed"],
       share_channel: ["chat", "external", "copy"],
       verification_status: ["pending", "approved", "rejected"],
+      wa_code_purpose: ["twofa", "order_delivery", "withdrawal", "generic"],
     },
   },
 } as const
