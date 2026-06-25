@@ -21,6 +21,7 @@ export default function CarRentals() {
 
 /* ---------------- LIST ---------------- */
 function CarRentalList() {
+  const navigate = useNavigate();
   const [klass, setKlass] = useState<string>("");
   const { data: rentals = [], isLoading } = useQuery({
     queryKey: ["car-rentals", klass],
