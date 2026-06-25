@@ -41,9 +41,9 @@ function CarRentalList() {
         />
         <div className="relative">
           <div className="flex items-center gap-2">
-            <Link to="/home" className="w-9 h-9 rounded-full bg-white/15 backdrop-blur flex items-center justify-center">
+            <button onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/home"))} aria-label="Back" className="w-9 h-9 rounded-full bg-white/15 backdrop-blur flex items-center justify-center active:scale-90 transition">
               <ArrowLeft className="w-4 h-4" />
-            </Link>
+            </button>
             <span className="w-10 h-10 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center">
               <Key className="w-5 h-5" />
             </span>
