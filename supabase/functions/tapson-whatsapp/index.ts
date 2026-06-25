@@ -10,9 +10,112 @@ const admin = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   { auth: { persistSession: false } },
 );
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") || "";
 const MODEL = "google/gemini-3-flash-preview";
 const json = { ...corsHeaders, "Content-Type": "application/json" };
+
+// ---------- Command-based fallback (no AI required) ----------
+// Works when LOVABLE_API_KEY is missing or the AI gateway is unavailable
+// (rate limit / credits exhausted). Parses simple keywords and runs the
+// same tool functions used by the AI agent.
+function fmtMoney(n: any) {
+  const v = Number(n || 0);
+  return isFinite(v) ? `$${v.toFixed(2)}` : "$0.00";
+}
+
+function helpText(signedIn: boolean): string {
+  const acct = signedIn
+    ? `• orders — your recent orders\n• wallet — your balance\n• cart — open your cart\n• ride <pickup> to <dropoff> — request a ride\n`
+    : `• Sign in: ${APP_BASE_URL}/auth (needed for cart, orders, wallet, rides)\n`;
+  return `Hi! I'm Tapson on ${APP_BRAND}.\n\nTry:\n• find <keyword>  e.g. find wireless earbuds\n• product <id>\n• add <product_id> [qty]\n• services <city>\n• stays <city>\n• properties <city>\n${acct}• help — this menu\n\nOpen the app: ${APP_BASE_URL}`;
+}
+
+function renderList(title: string, items: any[], render: (x: any) => string): string {
+  if (!items?.length) return `${title}: no results. Browse: ${APP_BASE_URL}`;
+  return `${title}:\n` + items.slice(0, 6).map((it, i) => `${i + 1}. ${render(it)}`).join("\n");
+}
+
+async function runWithoutAI(body: string, userId: string | null): Promise<string> {
+  const text = body.trim();
+  const lower = text.toLowerCase();
+  const signedIn = !!userId;
+
+  // Greetings / help
+  if (/^(hi|hello|hey|start|menu|help|\?|h)\b/.test(lower) || lower.length < 2) {
+    return helpText(signedIn);
+  }
+
+  // wallet
+  if (/^wallet\b|^balance\b/.test(lower)) {
+    const r = await runTool("wallet_balance", {}, userId);
+    if (r?.error) return `${r.error}\n${APP_BASE_URL}/wallet`;
+    return `Wallet 💰\nPersonal: ${fmtMoney(r.personal_balance)}\nSales: ${fmtMoney(r.sales_balance)}\n\n${APP_BASE_URL}/wallet`;
+  }
+
+  // orders
+  if (/^orders?\b/.test(lower)) {
+    const r = await runTool("recent_orders", { limit: 5 }, userId);
+    if (r?.error) return `${r.error}\n${APP_BASE_URL}/orders`;
+    return renderList("Recent orders", r, (o: any) => `#${o.ref} — ${fmtMoney(o.total)} — ${o.status}`) + `\n\n${APP_BASE_URL}/orders`;
+  }
+
+  // cart
+  if (/^cart\b|^checkout\b/.test(lower)) {
+    return `Open your cart: ${APP_BASE_URL}/cart`;
+  }
+
+  // add <product_id> [qty]
+  const addM = text.match(/^add\s+([a-f0-9-]{6,})(?:\s+(\d+))?/i);
+  if (addM) {
+    const r = await runTool("add_to_cart", { product_id: addM[1], quantity: addM[2] ? Number(addM[2]) : 1 }, userId);
+    if (r?.error) return `${r.error}`;
+    return `✅ Added ${r.quantity} × ${r.title}\nSubtotal: ${fmtMoney(r.subtotal)}\nCheckout: ${r.checkout_link}`;
+  }
+
+  // product <id>
+  const prodM = text.match(/^product\s+([a-f0-9-]{6,})/i);
+  if (prodM) {
+    const r = await runTool("get_product", { id: prodM[1] }, userId);
+    if (r?.error) return r.error;
+    return `${r.title}\nPrice: ${fmtMoney(r.price)}\n${r.description ? r.description.slice(0, 200) + "\n" : ""}${r.link}`;
+  }
+
+  // ride <pickup> to <dropoff>
+  const rideM = text.match(/^ride\s+(.+?)\s+to\s+(.+)/i);
+  if (rideM) {
+    const r = await runTool("create_ride_request",
+      { pickup_address: rideM[1].trim(), dropoff_address: rideM[2].trim() }, userId);
+    if (r?.error) return `${r.error}\n${r.hint || APP_BASE_URL + "/rides"}`;
+    return `🚗 Ride requested!\nTrack: ${r.link}`;
+  }
+
+  // services / stays / properties
+  const svcM = text.match(/^services?\s*(.*)/i);
+  if (svcM) {
+    const r = await runTool("search_services", { city: svcM[1] || undefined, limit: 5 }, userId);
+    return renderList("Services", r, (s: any) => `${s.name} — ${s.category || ""} ${s.city ? "("+s.city+")" : ""} ${s.rate_per_hour ? "— "+fmtMoney(s.rate_per_hour)+"/hr" : ""}`) + `\n\n${APP_BASE_URL}/services`;
+  }
+  const stayM = text.match(/^stays?\s*(.*)/i);
+  if (stayM) {
+    const r = await runTool("search_stays", { city: stayM[1] || undefined, limit: 5 }, userId);
+    return renderList("Stays", r, (s: any) => `${s.title} (${s.city || "?"}) — ${fmtMoney(s.price_per_night)}/night`) + `\n\n${APP_BASE_URL}/stays`;
+  }
+  const propM = text.match(/^propert(?:y|ies)\s*(.*)/i);
+  if (propM) {
+    const r = await runTool("search_properties", { city: propM[1] || undefined, limit: 5 }, userId);
+    return renderList("Properties", r, (p: any) => `${p.title} (${p.city || "?"}) — ${fmtMoney(p.price)} ${p.kind || ""}`) + `\n\n${APP_BASE_URL}/properties`;
+  }
+
+  // find / search <query>
+  const findM = text.match(/^(?:find|search|look for|show)\s+(.+)/i);
+  const query = findM ? findM[1] : text;
+  const r = await runTool("search_products", { query, limit: 6 }, userId);
+  if (Array.isArray(r) && r.length) {
+    return renderList(`Results for "${query}"`, r, (p: any) => `${p.title} — ${fmtMoney(p.price)}\n   ${p.link}\n   (add ${p.id})`) +
+      `\n\nMore on ${APP_BASE_URL}`;
+  }
+  return `No matches for "${query}". Browse all on ${APP_BASE_URL}\n\nType "help" for commands.`;
+}
 
 const SYSTEM_PROMPT = `You are Tapson, the AI assistant for ${APP_BRAND} (a global B2B/B2C marketplace) on WhatsApp.
 
@@ -287,32 +390,47 @@ Deno.serve(async (req) => {
       { role: "user", content: body },
     ];
 
-    // Tool loop (max 4 hops)
+    // Tool loop (max 4 hops) — fall back to command parser if AI unavailable
     let finalText = "";
-    for (let hop = 0; hop < 4; hop++) {
-      const resp = await callModel(messages);
-      const choice = resp.choices?.[0];
-      const msg = choice?.message;
-      if (!msg) { finalText = "Sorry, I had trouble — try again."; break; }
-      messages.push(msg);
-      const toolCalls = msg.tool_calls;
-      if (!toolCalls || toolCalls.length === 0) {
-        finalText = String(msg.content || "").trim();
-        break;
+    let usedFallback = false;
+    const aiAvailable = !!LOVABLE_API_KEY;
+
+    if (aiAvailable) {
+      try {
+        for (let hop = 0; hop < 4; hop++) {
+          const resp = await callModel(messages);
+          const choice = resp.choices?.[0];
+          const msg = choice?.message;
+          if (!msg) { finalText = ""; break; }
+          messages.push(msg);
+          const toolCalls = msg.tool_calls;
+          if (!toolCalls || toolCalls.length === 0) {
+            finalText = String(msg.content || "").trim();
+            break;
+          }
+          for (const tc of toolCalls) {
+            let args: any = {};
+            try { args = JSON.parse(tc.function.arguments || "{}"); } catch { /* ignore */ }
+            const result = await runTool(tc.function.name, args, user_id || null);
+            messages.push({
+              role: "tool",
+              tool_call_id: tc.id,
+              content: JSON.stringify(result),
+            });
+          }
+        }
+      } catch (e) {
+        console.warn("AI unavailable, using command fallback:", (e as any)?.message);
+        usedFallback = true;
       }
-      for (const tc of toolCalls) {
-        let args: any = {};
-        try { args = JSON.parse(tc.function.arguments || "{}"); } catch { /* ignore */ }
-        const result = await runTool(tc.function.name, args, user_id || null);
-        messages.push({
-          role: "tool",
-          tool_call_id: tc.id,
-          content: JSON.stringify(result),
-        });
-      }
+    } else {
+      usedFallback = true;
     }
 
-    if (!finalText) finalText = `I'm here at ${APP_BASE_URL} — what would you like to do?`;
+    if (!finalText) {
+      usedFallback = true;
+      finalText = await runWithoutAI(body, user_id || null);
+    }
 
     // Persist thread (keep last 20 messages incl tool messages compressed)
     const trimmed = messages
