@@ -16,6 +16,7 @@ import RideRating from "@/components/rides/RideRating";
 import PoolPanel from "@/components/rides/PoolPanel";
 import CircleSpinner from "@/components/CircleSpinner";
 import { supabase as sbAny } from "@/integrations/supabase/client";
+import BackButton from "@/components/BackButton";
 
 type LatLng = { lat: number; lng: number };
 type VClass = Ride["vehicle_class"];
