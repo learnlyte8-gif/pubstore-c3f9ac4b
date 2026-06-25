@@ -38,7 +38,7 @@ async function findUserByPhone(phone: string): Promise<string | null> {
   return null;
 }
 
-async function tryConsumeLinkCode(body: string, fromE164: string): Promise<string | null> {
+async function tryConsumeLinkCode(body: string, fromIdent: string, replyTo: string): Promise<string | null> {
   const match = body.match(/\b(\d{6})\b/);
   if (!match) return null;
   const code = match[1];
@@ -50,19 +50,22 @@ async function tryConsumeLinkCode(body: string, fromE164: string): Promise<strin
   if (new Date(row.expires_at).getTime() < Date.now()) return null;
   await admin.from("whatsapp_link_codes").update({
     consumed_at: new Date().toISOString(),
-    consumed_phone: fromE164,
+    consumed_phone: fromIdent,
   }).eq("id", row.id);
-  // Update profile phone (don't overwrite if user already has matching)
-  const { data: prof } = await admin.from("profiles").select("phone").eq("user_id", row.user_id).maybeSingle();
-  if (!prof?.phone) {
-    await admin.from("profiles").update({ phone: fromE164 }).eq("user_id", row.user_id);
+  // Only set profile.phone when we have a real E.164 (not an @lid identifier).
+  const looksLikePhone = /^\+?\d{8,15}$/.test(fromIdent);
+  if (looksLikePhone) {
+    const { data: prof } = await admin.from("profiles").select("phone").eq("user_id", row.user_id).maybeSingle();
+    if (!prof?.phone) {
+      await admin.from("profiles").update({ phone: fromIdent }).eq("user_id", row.user_id);
+    }
   }
   await admin.from("notification_preferences").upsert({
     user_id: row.user_id,
     whatsapp_enabled: true,
     whatsapp_sandbox_joined: true,
   }, { onConflict: "user_id" });
-  await sendWhatsApp(fromE164,
+  await sendWhatsApp(replyTo,
     `✅ ${APP_BRAND} — WhatsApp linked!\nYou can now chat with Tapson here. Try: "show my recent orders" or "find me wireless earbuds under $30".`);
   return row.user_id;
 }
