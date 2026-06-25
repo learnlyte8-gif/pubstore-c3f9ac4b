@@ -10,6 +10,7 @@ import { fetchLogisticsRequests } from "@/data/newVerticals";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
+import BackButton from "@/components/BackButton";
 
 const VEHICLE_TYPES = [
   { slug: "bike", label: "Bike", maxKg: 5 },
