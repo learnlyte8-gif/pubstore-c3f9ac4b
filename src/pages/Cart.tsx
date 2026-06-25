@@ -11,6 +11,7 @@ import { getEdgeFunctionErrorMessage } from "@/lib/edgeFunctionError";
 import { useVerification } from "@/hooks/useVerification";
 import { useQuery } from "@tanstack/react-query";
 import { courierToRate, quoteCourierRate, summarizeRate } from "@/lib/courierRates";
+import BackButton from "@/components/BackButton";
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
 
