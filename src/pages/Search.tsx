@@ -201,7 +201,8 @@ export default function SearchPage() {
         <meta property="og:title" content="Search — PUBSTORE" />
       </Helmet>
       <h1 className="sr-only">Search PUBSTORE</h1>
-      <form onSubmit={onSubmit} className="sticky top-14 z-20 bg-background/95 backdrop-blur border-b px-4 py-3 flex items-center gap-2 shadow-soft">
+      <form onSubmit={onSubmit} className="sticky top-14 z-20 bg-background/95 backdrop-blur border-b px-3 py-3 flex items-center gap-2 shadow-soft">
+        <BackButton iconOnly />
         <div className="flex-1 relative">
           <SearchIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
