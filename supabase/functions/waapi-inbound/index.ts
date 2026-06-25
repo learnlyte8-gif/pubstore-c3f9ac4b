@@ -20,7 +20,11 @@ const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
 function chatIdToE164(chatId: string | null | undefined): string | null {
   if (!chatId) return null;
-  const digits = String(chatId).split("@")[0].replace(/\D/g, "");
+  const value = String(chatId);
+  // WhatsApp privacy LIDs and group IDs are not real phone numbers. Treating
+  // them as E.164 breaks matching and causes replies to go to an invalid target.
+  if (/@(?:lid|g\.us)$/i.test(value)) return null;
+  const digits = value.split("@")[0].replace(/\D/g, "");
   if (digits.length < 8) return null;
   return "+" + digits;
 }
@@ -36,6 +40,26 @@ async function findUserByPhone(phone: string): Promise<string | null> {
     if (byTail?.user_id) return byTail.user_id;
   }
   return null;
+}
+
+async function findUserByWhatsAppIdentity(identity: string): Promise<string | null> {
+  const { data } = await admin.from("whatsapp_link_codes")
+    .select("user_id")
+    .eq("consumed_phone", identity)
+    .not("consumed_at", "is", null)
+    .order("consumed_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data?.user_id || null;
+}
+
+async function getReplyTarget(userId: string | null, fallback: string): Promise<string> {
+  if (!userId) return fallback;
+  const { data: prof } = await admin.from("profiles")
+    .select("phone")
+    .eq("user_id", userId)
+    .maybeSingle();
+  return prof?.phone || fallback;
 }
 
 async function tryConsumeLinkCode(body: string, fromIdent: string, replyTo: string): Promise<string | null> {
@@ -65,7 +89,11 @@ async function tryConsumeLinkCode(body: string, fromIdent: string, replyTo: stri
     whatsapp_enabled: true,
     whatsapp_sandbox_joined: true,
   }, { onConflict: "user_id" });
-  await sendWhatsApp(replyTo,
+
+  // If waapi is on trial, it may only allow sending to the account's real test
+  // phone, not to WhatsApp privacy LIDs. Prefer the user's saved phone when present.
+  const confirmationTarget = await getReplyTarget(row.user_id, replyTo);
+  await sendWhatsApp(confirmationTarget,
     `✅ ${APP_BRAND} — WhatsApp linked!\nYou can now chat with Tapson here. Try: "show my recent orders" or "find me wireless earbuds under $30".`);
   return row.user_id;
 }
@@ -126,31 +154,56 @@ Deno.serve(async (req) => {
       msg?.id?._serialized || msg?.id || msg?.messageId || data?.id?._serialized || null;
     // Reply MUST go back to the exact chatId we received from (handles @lid privacy IDs).
     const replyTo: string | null = fromChat ? String(fromChat) : null;
-    const fromE164 = chatIdToE164(fromChat) || normalizePhoneE164(fromChat);
+    const fromE164 = String(fromChat || "").includes("@")
+      ? chatIdToE164(fromChat)
+      : normalizePhoneE164(fromChat);
 
+    let reservedInbound = false;
     if (sid) {
-      const { data: dup } = await admin.from("whatsapp_inbound_log")
-        .select("id").eq("twilio_sid", sid).maybeSingle();
-      if (dup) return new Response(JSON.stringify({ ok: true, dup: true }), { headers: jsonHeaders });
+      const { error: reserveError } = await admin.from("whatsapp_inbound_log").insert({
+        twilio_sid: sid,
+        from_phone: fromE164 || replyTo || String(fromChat || "unknown"),
+        body,
+        raw: payload,
+      });
+      if (reserveError) {
+        // waapi may retry / fan out the same webhook. Reserve by message ID before
+        // doing any side effects so duplicates cannot trigger multiple replies.
+        if (reserveError.code === "23505") {
+          return new Response(JSON.stringify({ ok: true, dup: true }), { headers: jsonHeaders });
+        }
+        console.warn("waapi inbound reserve failed", reserveError.message);
+      } else {
+        reservedInbound = true;
+      }
     }
 
     if (!replyTo || !body) {
-      await admin.from("whatsapp_inbound_log").insert({
-        twilio_sid: sid, from_phone: fromE164 || String(fromChat || "unknown"),
-        body, matched_user_id: null, conversation_id: null, ref_tag: null, raw: payload,
-      });
+      const emptyLog = {
+        from_phone: fromE164 || String(fromChat || "unknown"),
+        body, matched_user_id: null, conversation_id: null, ref_tag: "empty", raw: payload,
+      };
+      if (reservedInbound && sid) {
+        await admin.from("whatsapp_inbound_log").update(emptyLog).eq("twilio_sid", sid);
+      } else {
+        await admin.from("whatsapp_inbound_log").insert({ twilio_sid: sid, ...emptyLog });
+      }
       return new Response(JSON.stringify({ ok: true, skipped: "empty" }), { headers: jsonHeaders });
     }
 
     // Identifier used for phone-matching & log records.
     // For @lid senders we don't have a real phone — store the chatId itself.
-    const senderKey = fromE164 || replyTo;
+    const senderKey = /@lid$/i.test(replyTo) ? replyTo : (fromE164 || replyTo);
 
     // 1. Try link-code pairing
-    let matchedUserId = await tryConsumeLinkCode(body, senderKey, replyTo);
+    const linkedUserId = await tryConsumeLinkCode(body, senderKey, replyTo);
+    let matchedUserId = linkedUserId;
 
     // 2. Phone match (only meaningful when we have a real E.164)
     if (!matchedUserId && fromE164) matchedUserId = await findUserByPhone(fromE164);
+
+    // 2b. Privacy LID match: use the account pairing created by the link code.
+    if (!matchedUserId) matchedUserId = await findUserByWhatsAppIdentity(replyTo);
 
     if (matchedUserId) {
       await admin.from("notification_preferences").upsert({
@@ -160,7 +213,7 @@ Deno.serve(async (req) => {
 
     const ref = parseRefTag(body);
     let conversationId: string | null = null;
-    let handler: "tapson" | "conversation" | "link_code" | "anon_tapson" = "tapson";
+    let handler: "tapson" | "conversation" | "link_code" | "anon_tapson" = linkedUserId ? "link_code" : "tapson";
 
     // 3. If message has a ref tag and user matched → route to that conversation thread
     if (matchedUserId && ref) {
@@ -182,11 +235,11 @@ Deno.serve(async (req) => {
       if (!matchedUserId) handler = "anon_tapson";
       // Fire-and-forget (Tapson sends its own WA reply). Pass the raw chatId so
       // replies route back to @lid / @c.us correctly.
-      await invokeTapson(replyTo, body, matchedUserId);
+      const tapsonReplyTarget = await getReplyTarget(matchedUserId, replyTo);
+      await invokeTapson(tapsonReplyTarget, body, matchedUserId);
     }
 
-    await admin.from("whatsapp_inbound_log").insert({
-      twilio_sid: sid,
+    const inboundLog = {
       from_phone: fromE164,
       to_phone: null,
       body,
@@ -194,7 +247,13 @@ Deno.serve(async (req) => {
       conversation_id: conversationId,
       ref_tag: ref ? `${ref.kind}_${ref.id}` : handler,
       raw: payload,
-    });
+    };
+
+    if (reservedInbound && sid) {
+      await admin.from("whatsapp_inbound_log").update(inboundLog).eq("twilio_sid", sid);
+    } else {
+      await admin.from("whatsapp_inbound_log").insert({ twilio_sid: sid, ...inboundLog });
+    }
 
     return new Response(JSON.stringify({ ok: true, handler }), { headers: jsonHeaders });
   } catch (e: any) {
