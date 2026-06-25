@@ -390,32 +390,47 @@ Deno.serve(async (req) => {
       { role: "user", content: body },
     ];
 
-    // Tool loop (max 4 hops)
+    // Tool loop (max 4 hops) — fall back to command parser if AI unavailable
     let finalText = "";
-    for (let hop = 0; hop < 4; hop++) {
-      const resp = await callModel(messages);
-      const choice = resp.choices?.[0];
-      const msg = choice?.message;
-      if (!msg) { finalText = "Sorry, I had trouble — try again."; break; }
-      messages.push(msg);
-      const toolCalls = msg.tool_calls;
-      if (!toolCalls || toolCalls.length === 0) {
-        finalText = String(msg.content || "").trim();
-        break;
+    let usedFallback = false;
+    const aiAvailable = !!LOVABLE_API_KEY;
+
+    if (aiAvailable) {
+      try {
+        for (let hop = 0; hop < 4; hop++) {
+          const resp = await callModel(messages);
+          const choice = resp.choices?.[0];
+          const msg = choice?.message;
+          if (!msg) { finalText = ""; break; }
+          messages.push(msg);
+          const toolCalls = msg.tool_calls;
+          if (!toolCalls || toolCalls.length === 0) {
+            finalText = String(msg.content || "").trim();
+            break;
+          }
+          for (const tc of toolCalls) {
+            let args: any = {};
+            try { args = JSON.parse(tc.function.arguments || "{}"); } catch { /* ignore */ }
+            const result = await runTool(tc.function.name, args, user_id || null);
+            messages.push({
+              role: "tool",
+              tool_call_id: tc.id,
+              content: JSON.stringify(result),
+            });
+          }
+        }
+      } catch (e) {
+        console.warn("AI unavailable, using command fallback:", (e as any)?.message);
+        usedFallback = true;
       }
-      for (const tc of toolCalls) {
-        let args: any = {};
-        try { args = JSON.parse(tc.function.arguments || "{}"); } catch { /* ignore */ }
-        const result = await runTool(tc.function.name, args, user_id || null);
-        messages.push({
-          role: "tool",
-          tool_call_id: tc.id,
-          content: JSON.stringify(result),
-        });
-      }
+    } else {
+      usedFallback = true;
     }
 
-    if (!finalText) finalText = `I'm here at ${APP_BASE_URL} — what would you like to do?`;
+    if (!finalText) {
+      usedFallback = true;
+      finalText = await runWithoutAI(body, user_id || null);
+    }
 
     // Persist thread (keep last 20 messages incl tool messages compressed)
     const trimmed = messages
