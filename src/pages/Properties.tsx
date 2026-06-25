@@ -5,6 +5,7 @@ import { Home as HomeIcon, MapPin, Bed, Bath, Maximize2, Phone, MessageCircle, S
 import { fetchProperties, PROPERTY_KINDS, type Property } from "@/data/newVerticals";
 import EmptyState from "@/components/EmptyState";
 import PropertyInquiryDialog from "@/components/marketplace/PropertyInquiryDialog";
+import BackButton from "@/components/BackButton";
 
 export default function Properties() {
   const [listingType, setListingType] = useState<string>("rent");
@@ -20,6 +21,7 @@ export default function Properties() {
     <div className="pb-8">
       <header className="px-4 pt-4 pb-3 bg-gradient-to-br from-sky-700 via-blue-700 to-indigo-800 text-white">
         <div className="flex items-center gap-2">
+          <BackButton iconOnly className="bg-white/15 backdrop-blur text-white hover:bg-white/25" />
           <span className="w-10 h-10 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center">
             <HomeIcon className="w-5 h-5" />
           </span>

@@ -16,6 +16,7 @@ import RideRating from "@/components/rides/RideRating";
 import PoolPanel from "@/components/rides/PoolPanel";
 import CircleSpinner from "@/components/CircleSpinner";
 import { supabase as sbAny } from "@/integrations/supabase/client";
+import BackButton from "@/components/BackButton";
 
 type LatLng = { lat: number; lng: number };
 type VClass = Ride["vehicle_class"];
@@ -338,6 +339,7 @@ export default function Rides() {
       {/* HERO HEADER STRIP */}
       <div className="relative px-3 pt-3 pb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
+          <BackButton iconOnly className="rides-glass-soft text-white" />
           <span className="rides-chip h-7 px-2.5 rounded-full inline-flex items-center gap-1.5 text-[10px] font-bold">
             <span className="relative w-1.5 h-1.5 rounded-full bg-[hsl(var(--rides-mint))] rides-pulse" />
             LIVE NETWORK

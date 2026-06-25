@@ -10,6 +10,7 @@ import { fetchLogisticsRequests } from "@/data/newVerticals";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
+import BackButton from "@/components/BackButton";
 
 const VEHICLE_TYPES = [
   { slug: "bike", label: "Bike", maxKg: 5 },
@@ -67,6 +68,7 @@ export default function Logistics() {
     <div className="pb-8">
       <header className="px-4 pt-4 pb-3 bg-gradient-to-br from-orange-600 via-red-600 to-rose-600 text-white">
         <div className="flex items-center gap-2">
+          <BackButton iconOnly className="bg-white/15 backdrop-blur text-white hover:bg-white/25" />
           <span className="w-10 h-10 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center">
             <Truck className="w-5 h-5" />
           </span>

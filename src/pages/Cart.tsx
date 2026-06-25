@@ -11,6 +11,7 @@ import { getEdgeFunctionErrorMessage } from "@/lib/edgeFunctionError";
 import { useVerification } from "@/hooks/useVerification";
 import { useQuery } from "@tanstack/react-query";
 import { courierToRate, quoteCourierRate, summarizeRate } from "@/lib/courierRates";
+import BackButton from "@/components/BackButton";
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
 
@@ -482,9 +483,10 @@ export default function Cart() {
 
   return (
     <div className="">
-      <div className="px-4 pt-3 pb-2 flex items-center justify-between">
+      <div className="px-3 pt-2 pb-2 flex items-center gap-2">
+        <BackButton iconOnly />
         <h1 className="text-xl font-bold">Cart ({cartProducts.length})</h1>
-        <button onClick={clearCart} className="text-xs text-muted-foreground hover:text-destructive">
+        <button onClick={clearCart} className="ml-auto text-xs text-muted-foreground hover:text-destructive">
           Clear all
         </button>
       </div>

@@ -10,6 +10,7 @@ import EmptyState from "@/components/EmptyState";
 import { toast } from "sonner";
 import SupplierOnboarding, { buildOnboardingSteps, isOnboardingComplete, OnboardingBlockedBanner } from "@/components/SupplierOnboarding";
 import { useVerification } from "@/hooks/useVerification";
+import BackButton from "@/components/BackButton";
 
 export default function MyStore() {
   const navigate = useNavigate();
@@ -128,6 +129,7 @@ export default function MyStore() {
           <img src={supplier.banner} alt="" className="w-full h-full object-cover" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-foreground/20 to-transparent" />
+        <BackButton iconOnly className="absolute top-3 left-3 z-10 bg-background/85 backdrop-blur shadow-card" />
         <div className="absolute bottom-3 left-4 right-4 flex items-end gap-3 text-background">
           <div className="w-16 h-16 rounded-2xl bg-card ring-2 ring-background shadow-elevated flex items-center justify-center overflow-hidden">
             {supplier.logo && supplier.logo !== "/placeholder.svg" ? (

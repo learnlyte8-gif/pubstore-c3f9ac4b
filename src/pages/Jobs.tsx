@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowLeft,
   Briefcase,
   MapPin,
   Building2,
@@ -132,6 +133,9 @@ export default function Jobs() {
       <header className="px-4 pt-4 pb-4 bg-gradient-to-br from-blue-700 via-indigo-700 to-sky-600 text-white">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
+            <button onClick={() => (window.history.length > 1 ? nav(-1) : nav("/home"))} aria-label="Back" className="w-9 h-9 rounded-full bg-white/15 backdrop-blur flex items-center justify-center active:scale-90 transition">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
             <span className="w-10 h-10 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center">
               <Briefcase className="w-5 h-5" />
             </span>
