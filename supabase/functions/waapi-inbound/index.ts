@@ -1,10 +1,14 @@
 // deno-lint-ignore-file no-explicit-any
 // waapi.app inbound webhook.
-// Configure in waapi dashboard → Webhooks. Send "message" events.
-// Payload shape (simplified):
-// { event: "message", instanceId: "...", data: { message: { from: "2637...@c.us", body: "...", id: { _serialized: "..." }, fromMe: false } } }
+// Flow:
+//  1) Dedup by message sid.
+//  2) Detect a 6-digit link code → pair phone↔user, confirm via WhatsApp.
+//  3) Match sender to a PUBSTORE user by phone (exact or tail).
+//  4) Route reply:
+//      - if [ref:order_X] / [ref:inquiry_X] → counterparty conversation
+//      - else → Tapson WhatsApp AI agent
 import { createClient } from "@supabase/supabase-js";
-import { normalizePhoneE164, parseRefTag } from "../_shared/whatsapp.ts";
+import { normalizePhoneE164, parseRefTag, sendWhatsApp, APP_BRAND } from "../_shared/whatsapp.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const admin = createClient(
@@ -12,7 +16,6 @@ const admin = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   { auth: { persistSession: false } },
 );
-
 const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
 function chatIdToE164(chatId: string | null | undefined): string | null {
@@ -22,44 +25,79 @@ function chatIdToE164(chatId: string | null | undefined): string | null {
   return "+" + digits;
 }
 
-async function findOrCreatePubstoreConversation(userId: string): Promise<string | null> {
-  const { data: existing } = await admin
-    .from("conversations")
-    .select("id")
-    .eq("buyer_id", userId)
-    .is("supplier_id", null)
-    .maybeSingle();
-  if (existing?.id) return existing.id;
-  const { data: created, error } = await admin
-    .from("conversations")
-    .insert({ buyer_id: userId, supplier_id: null, title: "PUBSTORE", last_message: null })
-    .select("id").single();
-  if (error) { console.error("create conv failed", error); return null; }
-  return created.id;
+async function findUserByPhone(phone: string): Promise<string | null> {
+  const { data: exact } = await admin.from("profiles")
+    .select("user_id").eq("phone", phone).maybeSingle();
+  if (exact?.user_id) return exact.user_id;
+  const tail = phone.replace(/\D/g, "").slice(-9);
+  if (tail.length === 9) {
+    const { data: byTail } = await admin.from("profiles")
+      .select("user_id").ilike("phone", `%${tail}%`).limit(1).maybeSingle();
+    if (byTail?.user_id) return byTail.user_id;
+  }
+  return null;
 }
 
-async function routeReplyToConversation(userId: string, ref: { kind: string; id: string } | null) {
-  if (ref) {
-    if (ref.kind === "inquiry") {
-      const { data: i } = await admin.from("product_inquiries")
-        .select("buyer_id, supplier_id").eq("id", ref.id).maybeSingle();
-      if (i) {
-        const { data: c } = await admin.from("conversations")
-          .select("id").eq("buyer_id", i.buyer_id).eq("supplier_id", i.supplier_id).maybeSingle();
-        if (c?.id) return { conversationId: c.id, senderId: userId };
-      }
-    } else if (ref.kind === "order") {
-      const { data: o } = await admin.from("orders")
-        .select("buyer_id, supplier_id").eq("id", ref.id).maybeSingle();
-      if (o) {
-        const { data: c } = await admin.from("conversations")
-          .select("id").eq("buyer_id", o.buyer_id).eq("supplier_id", o.supplier_id).maybeSingle();
-        if (c?.id) return { conversationId: c.id, senderId: userId };
-      }
+async function tryConsumeLinkCode(body: string, fromE164: string): Promise<string | null> {
+  const match = body.match(/\b(\d{6})\b/);
+  if (!match) return null;
+  const code = match[1];
+  const { data: row } = await admin.from("whatsapp_link_codes")
+    .select("id, user_id, expires_at, consumed_at")
+    .eq("code", code).is("consumed_at", null)
+    .order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (!row) return null;
+  if (new Date(row.expires_at).getTime() < Date.now()) return null;
+  await admin.from("whatsapp_link_codes").update({
+    consumed_at: new Date().toISOString(),
+    consumed_phone: fromE164,
+  }).eq("id", row.id);
+  // Update profile phone (don't overwrite if user already has matching)
+  const { data: prof } = await admin.from("profiles").select("phone").eq("user_id", row.user_id).maybeSingle();
+  if (!prof?.phone) {
+    await admin.from("profiles").update({ phone: fromE164 }).eq("user_id", row.user_id);
+  }
+  await admin.from("notification_preferences").upsert({
+    user_id: row.user_id,
+    whatsapp_enabled: true,
+    whatsapp_sandbox_joined: true,
+  }, { onConflict: "user_id" });
+  await sendWhatsApp(fromE164,
+    `✅ ${APP_BRAND} — WhatsApp linked!\nYou can now chat with Tapson here. Try: "show my recent orders" or "find me wireless earbuds under $30".`);
+  return row.user_id;
+}
+
+async function routeReplyToConversation(userId: string, ref: { kind: string; id: string }) {
+  if (ref.kind === "inquiry") {
+    const { data: i } = await admin.from("product_inquiries")
+      .select("buyer_id, supplier_id").eq("id", ref.id).maybeSingle();
+    if (i) {
+      const { data: c } = await admin.from("conversations")
+        .select("id").eq("buyer_id", i.buyer_id).eq("supplier_id", i.supplier_id).maybeSingle();
+      if (c?.id) return c.id;
+    }
+  } else if (ref.kind === "order") {
+    const { data: o } = await admin.from("orders")
+      .select("buyer_id, supplier_id").eq("id", ref.id).maybeSingle();
+    if (o) {
+      const { data: c } = await admin.from("conversations")
+        .select("id").eq("buyer_id", o.buyer_id).eq("supplier_id", o.supplier_id).maybeSingle();
+      if (c?.id) return c.id;
     }
   }
-  const convId = await findOrCreatePubstoreConversation(userId);
-  return { conversationId: convId, senderId: userId };
+  return null;
+}
+
+async function invokeTapson(phone: string, body: string, userId: string | null) {
+  const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/tapson-whatsapp`;
+  await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+    },
+    body: JSON.stringify({ phone, body, user_id: userId }),
+  }).catch((e) => console.error("tapson invoke failed", e));
 }
 
 Deno.serve(async (req) => {
@@ -72,7 +110,6 @@ Deno.serve(async (req) => {
     const data = payload?.data || {};
     const msg = data?.message || data?.data?.message || data;
 
-    // Ignore outbound and non-message events
     if (event && !/message/i.test(String(event))) {
       return new Response(JSON.stringify({ ok: true, skipped: "event" }), { headers: jsonHeaders });
     }
@@ -81,7 +118,7 @@ Deno.serve(async (req) => {
     }
 
     const fromChat = msg?.from || msg?.chatId || data?.from;
-    const body: string = msg?.body || msg?.text || msg?.message || "";
+    const body: string = (msg?.body || msg?.text || msg?.message || "").toString().trim();
     const sid: string | null =
       msg?.id?._serialized || msg?.id || msg?.messageId || data?.id?._serialized || null;
     const fromE164 = chatIdToE164(fromChat) || normalizePhoneE164(fromChat);
@@ -92,57 +129,64 @@ Deno.serve(async (req) => {
       if (dup) return new Response(JSON.stringify({ ok: true, dup: true }), { headers: jsonHeaders });
     }
 
-    let matchedUserId: string | null = null;
-    if (fromE164) {
-      const { data: byExact } = await admin.from("profiles")
-        .select("user_id").eq("phone", fromE164).maybeSingle();
-      if (byExact?.user_id) matchedUserId = byExact.user_id;
-      else {
-        const tail = fromE164.replace(/\D/g, "").slice(-9);
-        if (tail.length === 9) {
-          const { data: byTail } = await admin.from("profiles")
-            .select("user_id, phone").ilike("phone", `%${tail}%`).limit(1).maybeSingle();
-          if (byTail?.user_id) matchedUserId = byTail.user_id;
-        }
-      }
+    if (!fromE164 || !body) {
+      await admin.from("whatsapp_inbound_log").insert({
+        twilio_sid: sid, from_phone: fromE164 || String(fromChat || "unknown"),
+        body, matched_user_id: null, conversation_id: null, ref_tag: null, raw: payload,
+      });
+      return new Response(JSON.stringify({ ok: true, skipped: "empty" }), { headers: jsonHeaders });
+    }
+
+    // 1. Try link-code pairing
+    let matchedUserId = await tryConsumeLinkCode(body, fromE164);
+
+    // 2. Phone match
+    if (!matchedUserId) matchedUserId = await findUserByPhone(fromE164);
+
+    if (matchedUserId) {
+      await admin.from("notification_preferences").upsert({
+        user_id: matchedUserId, whatsapp_sandbox_joined: true,
+      }, { onConflict: "user_id" });
     }
 
     const ref = parseRefTag(body);
     let conversationId: string | null = null;
+    let handler: "tapson" | "conversation" | "link_code" | "anon_tapson" = "tapson";
 
-    if (matchedUserId) {
-      await admin.from("notification_preferences").upsert({
-        user_id: matchedUserId,
-        whatsapp_sandbox_joined: true,
-      }, { onConflict: "user_id" });
-
-      const routed = await routeReplyToConversation(matchedUserId, ref);
-      conversationId = routed.conversationId;
-      if (conversationId && body) {
+    // 3. If message has a ref tag and user matched → route to that conversation thread
+    if (matchedUserId && ref) {
+      conversationId = await routeReplyToConversation(matchedUserId, ref);
+      if (conversationId) {
         await admin.from("messages").insert({
-          conversation_id: conversationId,
-          sender_id: routed.senderId,
-          body,
+          conversation_id: conversationId, sender_id: matchedUserId, body,
         });
         await admin.from("conversations").update({
           last_message: body.slice(0, 200),
           last_message_at: new Date().toISOString(),
         }).eq("id", conversationId);
+        handler = "conversation";
       }
+    }
+
+    // 4. Otherwise → Tapson AI (signed-in or anonymous)
+    if (handler === "tapson") {
+      if (!matchedUserId) handler = "anon_tapson";
+      // Fire-and-forget (Tapson sends its own WA reply)
+      await invokeTapson(fromE164, body, matchedUserId);
     }
 
     await admin.from("whatsapp_inbound_log").insert({
       twilio_sid: sid,
-      from_phone: fromE164 || String(fromChat || "unknown"),
+      from_phone: fromE164,
       to_phone: null,
       body,
       matched_user_id: matchedUserId,
       conversation_id: conversationId,
-      ref_tag: ref ? `${ref.kind}_${ref.id}` : null,
+      ref_tag: ref ? `${ref.kind}_${ref.id}` : handler,
       raw: payload,
     });
 
-    return new Response(JSON.stringify({ ok: true }), { headers: jsonHeaders });
+    return new Response(JSON.stringify({ ok: true, handler }), { headers: jsonHeaders });
   } catch (e: any) {
     console.error("waapi-inbound error", e);
     return new Response(JSON.stringify({ ok: false, error: e?.message || "internal" }), {
