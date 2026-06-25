@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Banknote, Phone, MessageCircle, ShieldCheck, Percent, Calendar, Check, FileText } from "lucide-react";
 import { fetchFinanceProducts, FINANCE_KINDS, type FinanceProduct } from "@/data/newVerticals";
 import EmptyState from "@/components/EmptyState";
+import BackButton from "@/components/BackButton";
 import FinanceApplicationDialog from "@/components/marketplace/FinanceApplicationDialog";
 
 export default function Finance() {
