@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendWhatsApp, normalizePhoneE164, APP_BRAND } from "../_shared/whatsapp.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
