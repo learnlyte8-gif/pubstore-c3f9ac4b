@@ -34,6 +34,11 @@ export type WhatsAppSendResult =
   | { ok: true; sid: string }
   | { ok: false; status: number; error: string; code?: number };
 
+function toWaapiChatId(value: string): string {
+  if (value.includes("@")) return value;
+  return `${value.replace(/\D/g, "")}@c.us`;
+}
+
 // waapi.app endpoint: POST /api/v1/instances/{id}/client/action/send-message
 // Body: { chatId: "<digits>@c.us", message: "..." }
 export async function sendWhatsApp(toE164: string, body: string): Promise<WhatsAppSendResult> {
@@ -46,9 +51,11 @@ export async function sendWhatsApp(toE164: string, body: string): Promise<WhatsA
   // Accept either a raw waapi chatId ("12345@c.us" / "12345@lid" / "12345@g.us")
   // or an E.164 phone. LIDs cannot be converted to phone numbers, so we must
   // reply to the same chatId we received the message from.
-  const chatId = toE164.includes("@")
-    ? toE164
-    : `${toE164.replace(/\D/g, "")}@c.us`;
+  // waapi trial instances can only send to one allowed WhatsApp chat. When the
+  // trial target is configured, force every outbound message to that exact
+  // chatId. This prevents @lid privacy addresses from being rejected by waapi.
+  const trialTarget = Deno.env.get("WAAPI_TRIAL_NUMBER")?.trim();
+  const chatId = trialTarget ? toWaapiChatId(trialTarget) : toWaapiChatId(toE164);
 
   const url = `${baseUrl}/api/v1/instances/${instanceId}/client/action/send-message`;
   const res = await fetch(url, {
