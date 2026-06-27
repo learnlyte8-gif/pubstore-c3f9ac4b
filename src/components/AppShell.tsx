@@ -266,7 +266,7 @@ export default function AppShell() {
         className="fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border"
         aria-label="Primary"
       >
-        <ul className="relative flex flex-row items-stretch gap-0.5 max-w-2xl mx-auto px-1 h-[56px]">
+        <ul className="relative flex flex-row items-stretch gap-0.5 max-w-2xl lg:max-w-[1600px] mx-auto px-1 h-[56px]">
           <TabItem to="/home" iconOutline={IoHomeOutline} iconFilled={IoHome} label="Home" />
           <TabItem to="/categories" iconOutline={IoBagHandleOutline} iconFilled={IoBagHandle} label="Shop" />
           <TabItem to="/messages" iconOutline={IoChatbubbleOutline} iconFilled={IoChatbubble} label="Chats" badge={chatsWithUnread} />
