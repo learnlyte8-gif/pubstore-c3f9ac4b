@@ -354,7 +354,7 @@ export default function MixedFeed({ verticals = [], tradeMode = "all" }: MixedFe
   const showCarRentals = verticals.length === 0 || verticals.includes("car_rentals");
   const showSuppliers = verticals.length === 0 || true; // always a few suppliers
 
-  const productsQ = useProducts({ limit: 40, tradeMode });
+  const productsQ = useInfiniteProducts({ tradeMode, pageSize: 24 });
   const jobsQ = useQuery({ queryKey: ["home-jobs"], queryFn: () => fetchJobs({ limit: 6 }), enabled: showJobs });
   const newsQ = useQuery({ queryKey: ["home-news"], queryFn: () => fetchNews({ limit: 4 }), enabled: showNews });
   const restaurantsQ = useQuery({ queryKey: ["home-restaurants"], queryFn: () => fetchRestaurants({ limit: 6 }), enabled: showRestaurants });
