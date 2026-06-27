@@ -5,7 +5,9 @@ import { LayoutGrid, ChevronRight, ChevronLeft, UtensilsCrossed } from "lucide-r
 import ProductCard from "@/components/marketplace/ProductCard";
 import EmptyState from "@/components/EmptyState";
 import TradeModeSwitch from "@/components/marketplace/TradeModeSwitch";
-import { useCategories, useProducts } from "@/hooks/useCatalog";
+import { useCategories } from "@/hooks/useCatalog";
+import { useInfiniteProducts } from "@/hooks/useInfiniteProducts";
+import InfiniteScrollSentinel from "@/components/marketplace/InfiniteScrollSentinel";
 import SubcategoryChips from "@/components/marketplace/SubcategoryChips";
 import { deriveSubcategories, filterBySubcategory } from "@/lib/subcategories";
 import {
