@@ -18,7 +18,7 @@ const fmtSold = (n: number) =>
 
 // Estimate delivery date from a free-form lead time string like "3-5 days", "2 weeks", "24h".
 function estimateDeliveryDate(leadTime?: string): { label: string; range: string } | null {
-  if (!leadTime || leadTime === "—") return { label: "Delivery", range: deliveryRange(3, 7) };
+  if (!leadTime || leadTime === "—") return { label: "Delivery", range: deliveryRange(1, 7) };
   const s = leadTime.toLowerCase();
   const nums = s.match(/\d+/g)?.map(Number) ?? [];
   let minDays = nums[0] ?? 3;
@@ -327,7 +327,7 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
 
         <div className="flex items-baseline gap-1.5 mt-1.5">
           <span className="price text-base text-destructive">{fmtPrice(product.price)}</span>
-          <span className="text-[10px] text-muted-foreground font-semibold">/{product.unit || "unit"}</span>
+          <span className="text-[10px] text-muted-foreground font-bold">/{product.unit || "unit"}</span>
           {product.originalPrice && (
             <span className="text-[11px] text-muted-foreground line-through">
               {fmtPrice(product.originalPrice)}
