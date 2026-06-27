@@ -256,21 +256,22 @@ Deno.serve(async (req) => {
       await invokeTapson(tapsonReplyTarget, body, matchedUserId);
     }
 
-    const inboundLog = {
+    // Patch the reserved row with matching/routing metadata. Skip `raw` here —
+    // it was already written on the reservation insert.
+    const inboundPatch = {
       from_phone: fromE164,
-      to_phone: null,
       body,
       matched_user_id: matchedUserId,
       conversation_id: conversationId,
       ref_tag: ref ? `${ref.kind}_${ref.id}` : handler,
-      raw: payload,
     };
 
     if (reservedInbound && sid) {
-      await admin.from("whatsapp_inbound_log").update(inboundLog).eq("twilio_sid", sid);
-    } else {
-      await admin.from("whatsapp_inbound_log").insert({ twilio_sid: sid, ...inboundLog });
+      await admin.from("whatsapp_inbound_log").update(inboundPatch).eq("twilio_sid", sid);
+    } else if (!reservedInbound) {
+      await admin.from("whatsapp_inbound_log").insert({ twilio_sid: sid, ...inboundPatch, raw: slimRaw });
     }
+
 
     return new Response(JSON.stringify({ ok: true, handler }), { headers: jsonHeaders });
   } catch (e: any) {
