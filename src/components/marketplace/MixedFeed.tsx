@@ -494,6 +494,13 @@ export default function MixedFeed({ verticals = [], tradeMode = "all" }: MixedFe
           )
         )}
       </MasonryGrid>
+      {showShop && (
+        <InfiniteScrollSentinel
+          hasMore={!!productsQ.hasNextPage}
+          isLoading={productsQ.isFetchingNextPage}
+          onLoadMore={() => productsQ.fetchNextPage()}
+        />
+      )}
     </section>
   );
 }
