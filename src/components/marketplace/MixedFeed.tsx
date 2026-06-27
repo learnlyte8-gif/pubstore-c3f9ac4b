@@ -409,7 +409,7 @@ export default function MixedFeed({ verticals = [], tradeMode = "all" }: MixedFe
 
   const items = useMemo(() => {
     const all: MixedItem[] = [];
-    if (showShop) all.push(...(productsQ.data ?? []).slice(0, 40).map(normalizeProduct));
+    if (showShop) all.push(...(productsQ.items ?? []).map(normalizeProduct));
     if (showJobs) all.push(...(jobsQ.data ?? []).slice(0, 6).map(normalizeJob));
     if (showNews) all.push(...(newsQ.data ?? []).slice(0, 4).map(normalizeNews));
     if (showRestaurants) all.push(...(restaurantsQ.data ?? []).slice(0, 6).map(normalizeRestaurant));
