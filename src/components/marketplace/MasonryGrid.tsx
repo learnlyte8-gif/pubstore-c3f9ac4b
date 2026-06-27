@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface MasonryGridProps {
@@ -7,40 +8,48 @@ interface MasonryGridProps {
 }
 
 /**
- * Responsive masonry-style staggered grid.
- *  - mobile: 2 columns
- *  - md:     3 columns
- *  - lg:     4 columns
- *  - xl:     5 columns
- * Cards keep their natural heights — no forced stretch, no blank gaps.
- * Uses CSS multi-column layout so any number of children flow correctly.
+ * Responsive masonry grid that distributes items across N flex columns.
+ *   mobile: 2 · md: 3 · lg: 4 · xl: 5
+ * Items are placed left-to-right in row order so reading flow is preserved,
+ * and each column stacks naturally — no blank gaps, no CSS-column reordering
+ * artifacts when new items append during infinite scroll.
  */
 export default function MasonryGrid({ children, className, gap = "gap-1" }: MasonryGridProps) {
-  const items = Array.isArray(children) ? children : [children];
-  // Map our gap tokens to a matching column-gap. Defaults to 0.25rem (gap-1).
-  const colGapClass =
-    gap.includes("gap-2") ? "[column-gap:0.5rem]" :
-    gap.includes("gap-3") ? "[column-gap:0.75rem]" :
-    gap.includes("gap-4") ? "[column-gap:1rem]" :
-    "[column-gap:0.25rem]";
+  const items = Array.isArray(children) ? children.filter(Boolean) : [children].filter(Boolean);
 
-  const itemSpaceClass =
-    gap.includes("gap-2") ? "mb-2" :
-    gap.includes("gap-3") ? "mb-3" :
-    gap.includes("gap-4") ? "mb-4" :
-    "mb-1";
+  const [cols, setCols] = useState<number>(() => {
+    if (typeof window === "undefined") return 2;
+    const w = window.innerWidth;
+    if (w >= 1280) return 5;
+    if (w >= 1024) return 4;
+    if (w >= 768) return 3;
+    return 2;
+  });
+
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      setCols(w >= 1280 ? 5 : w >= 1024 ? 4 : w >= 768 ? 3 : 2);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  const columns: React.ReactNode[][] = Array.from({ length: cols }, () => []);
+  items.forEach((child, i) => {
+    columns[i % cols].push(
+      <div key={i} className="w-full">
+        {child}
+      </div>,
+    );
+  });
 
   return (
-    <div
-      className={cn(
-        "columns-2 md:columns-3 lg:columns-4 xl:columns-5",
-        colGapClass,
-        className,
-      )}
-    >
-      {items.map((child, i) => (
-        <div key={i} className={cn("break-inside-avoid", itemSpaceClass)}>
-          {child}
+    <div className={cn("flex w-full", gap, className)}>
+      {columns.map((col, idx) => (
+        <div key={idx} className={cn("flex-1 min-w-0 flex flex-col", gap)}>
+          {col}
         </div>
       ))}
     </div>
