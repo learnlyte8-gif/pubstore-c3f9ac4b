@@ -176,9 +176,18 @@ export default function Categories() {
         ) : visible.length === 0 ? (
           <EmptyState title="No products yet" description="Be the first supplier to list in this category." />
         ) : (
-          <div className="grid grid-cols-2 gap-1 p-3">
-            {visible.map((p) => (<ProductCard key={p.id} product={p} />))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1 p-3">
+              {visible.map((p) => (<ProductCard key={p.id} product={p} />))}
+            </div>
+            {!activeSubObj && (
+              <InfiniteScrollSentinel
+                hasMore={!!productsQ.hasNextPage}
+                isLoading={productsQ.isFetchingNextPage}
+                onLoadMore={() => productsQ.fetchNextPage()}
+              />
+            )}
+          </>
         )}
       </div>
     </div>
