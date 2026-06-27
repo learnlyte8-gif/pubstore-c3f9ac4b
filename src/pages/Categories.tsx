@@ -33,9 +33,11 @@ export default function Categories() {
   const { slugs: searchSlugs, tokens: searchTokens } = useRecentSearchSlugs();
   const { mode: tradeMode } = useTradeMode();
 
-  const { data: products = [], isLoading } = useProducts(
-    isAll ? { limit: 120, tradeMode } : { category: active, limit: 60, tradeMode },
+  const productsQ = useInfiniteProducts(
+    isAll ? { tradeMode, pageSize: 30 } : { category: active, tradeMode, pageSize: 30 },
   );
+  const products = productsQ.items;
+  const isLoading = productsQ.isLoading;
 
   const interestSlugs = interestsToSlugs(interests);
   const priorityCounts = [...interestSlugs, ...interestSlugs, ...wishlistSlugs, ...searchSlugs].reduce<Record<string, number>>(
