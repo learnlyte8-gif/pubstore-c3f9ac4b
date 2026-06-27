@@ -439,7 +439,7 @@ export default function MixedFeed({ verticals = [], tradeMode = "all" }: MixedFe
     showFinance,
     showCarRentals,
     showSuppliers,
-    productsQ.data,
+    productsQ.items,
     jobsQ.data,
     newsQ.data,
     restaurantsQ.data,
