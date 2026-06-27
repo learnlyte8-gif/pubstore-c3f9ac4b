@@ -252,9 +252,10 @@ export default function AppShell() {
 
 
       <main
-        className="flex-1 max-w-2xl w-full mx-auto"
+        className="flex-1 max-w-2xl lg:max-w-[1600px] w-full mx-auto lg:px-6"
         style={{ paddingBottom: "64px" }}
       >
+
         <div key={location.pathname} className="page-transition">
           <Outlet />
         </div>
