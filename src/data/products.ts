@@ -361,6 +361,8 @@ export async function fetchProducts(opts: {
   supplierId?: string;
   search?: string;
   limit?: number;
+  /** Zero-based offset for pagination. */
+  offset?: number;
   sortBy?: "newest" | "sold" | "price_asc" | "price_desc" | "rating";
   /** "retail" → moq <= 1, "wholesale" → moq > 1, "all" → no filter */
   tradeMode?: "all" | "retail" | "wholesale";
@@ -401,7 +403,8 @@ export async function fetchProducts(opts: {
     default: q = q.order("created_at", { ascending: false });
   }
   const limit = Math.min(opts.limit ?? DEFAULT_PRODUCT_LIMIT, MAX_PRODUCT_LIMIT);
-  q = q.limit(limit);
+  const offset = Math.max(opts.offset ?? 0, 0);
+  q = q.range(offset, offset + limit - 1);
   const { data, error } = await q;
   // Throw so React Query can retry + surface a real error instead of an
   // infinite "Loading…" state.

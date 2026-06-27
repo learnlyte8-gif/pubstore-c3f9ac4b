@@ -5,7 +5,9 @@ import { LayoutGrid, ChevronRight, ChevronLeft, UtensilsCrossed } from "lucide-r
 import ProductCard from "@/components/marketplace/ProductCard";
 import EmptyState from "@/components/EmptyState";
 import TradeModeSwitch from "@/components/marketplace/TradeModeSwitch";
-import { useCategories, useProducts } from "@/hooks/useCatalog";
+import { useCategories } from "@/hooks/useCatalog";
+import { useInfiniteProducts } from "@/hooks/useInfiniteProducts";
+import InfiniteScrollSentinel from "@/components/marketplace/InfiniteScrollSentinel";
 import SubcategoryChips from "@/components/marketplace/SubcategoryChips";
 import { deriveSubcategories, filterBySubcategory } from "@/lib/subcategories";
 import {
@@ -31,9 +33,11 @@ export default function Categories() {
   const { slugs: searchSlugs, tokens: searchTokens } = useRecentSearchSlugs();
   const { mode: tradeMode } = useTradeMode();
 
-  const { data: products = [], isLoading } = useProducts(
-    isAll ? { limit: 120, tradeMode } : { category: active, limit: 60, tradeMode },
+  const productsQ = useInfiniteProducts(
+    isAll ? { tradeMode, pageSize: 30 } : { category: active, tradeMode, pageSize: 30 },
   );
+  const products = productsQ.items;
+  const isLoading = productsQ.isLoading;
 
   const interestSlugs = interestsToSlugs(interests);
   const priorityCounts = [...interestSlugs, ...interestSlugs, ...wishlistSlugs, ...searchSlugs].reduce<Record<string, number>>(
@@ -172,9 +176,18 @@ export default function Categories() {
         ) : visible.length === 0 ? (
           <EmptyState title="No products yet" description="Be the first supplier to list in this category." />
         ) : (
-          <div className="grid grid-cols-2 gap-1 p-3">
-            {visible.map((p) => (<ProductCard key={p.id} product={p} />))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1 p-3">
+              {visible.map((p) => (<ProductCard key={p.id} product={p} />))}
+            </div>
+            {!activeSubObj && (
+              <InfiniteScrollSentinel
+                hasMore={!!productsQ.hasNextPage}
+                isLoading={productsQ.isFetchingNextPage}
+                onLoadMore={() => productsQ.fetchNextPage()}
+              />
+            )}
+          </>
         )}
       </div>
     </div>

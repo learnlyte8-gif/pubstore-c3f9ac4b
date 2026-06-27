@@ -43,8 +43,10 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProducts } from "@/hooks/useCatalog";
+import { useInfiniteProducts } from "@/hooks/useInfiniteProducts";
 import ProductCard from "./ProductCard";
 import MasonryGrid from "./MasonryGrid";
+import InfiniteScrollSentinel from "./InfiniteScrollSentinel";
 import { fetchJobs } from "@/data/jobs";
 import { fetchRestaurants } from "@/data/restaurants";
 import { fetchNews, fetchStays, fetchVehicles, fetchIndustrial, fetchAgro } from "@/data/verticals";
@@ -352,7 +354,7 @@ export default function MixedFeed({ verticals = [], tradeMode = "all" }: MixedFe
   const showCarRentals = verticals.length === 0 || verticals.includes("car_rentals");
   const showSuppliers = verticals.length === 0 || true; // always a few suppliers
 
-  const productsQ = useProducts({ limit: 40, tradeMode });
+  const productsQ = useInfiniteProducts({ tradeMode, pageSize: 24 });
   const jobsQ = useQuery({ queryKey: ["home-jobs"], queryFn: () => fetchJobs({ limit: 6 }), enabled: showJobs });
   const newsQ = useQuery({ queryKey: ["home-news"], queryFn: () => fetchNews({ limit: 4 }), enabled: showNews });
   const restaurantsQ = useQuery({ queryKey: ["home-restaurants"], queryFn: () => fetchRestaurants({ limit: 6 }), enabled: showRestaurants });
@@ -407,7 +409,7 @@ export default function MixedFeed({ verticals = [], tradeMode = "all" }: MixedFe
 
   const items = useMemo(() => {
     const all: MixedItem[] = [];
-    if (showShop) all.push(...(productsQ.data ?? []).slice(0, 40).map(normalizeProduct));
+    if (showShop) all.push(...(productsQ.items ?? []).map(normalizeProduct));
     if (showJobs) all.push(...(jobsQ.data ?? []).slice(0, 6).map(normalizeJob));
     if (showNews) all.push(...(newsQ.data ?? []).slice(0, 4).map(normalizeNews));
     if (showRestaurants) all.push(...(restaurantsQ.data ?? []).slice(0, 6).map(normalizeRestaurant));
@@ -437,7 +439,7 @@ export default function MixedFeed({ verticals = [], tradeMode = "all" }: MixedFe
     showFinance,
     showCarRentals,
     showSuppliers,
-    productsQ.data,
+    productsQ.items,
     jobsQ.data,
     newsQ.data,
     restaurantsQ.data,
@@ -492,6 +494,13 @@ export default function MixedFeed({ verticals = [], tradeMode = "all" }: MixedFe
           )
         )}
       </MasonryGrid>
+      {showShop && (
+        <InfiniteScrollSentinel
+          hasMore={!!productsQ.hasNextPage}
+          isLoading={productsQ.isFetchingNextPage}
+          onLoadMore={() => productsQ.fetchNextPage()}
+        />
+      )}
     </section>
   );
 }
