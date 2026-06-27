@@ -149,7 +149,7 @@ export default function AppShell() {
     <div className="min-h-[100dvh] bg-background text-foreground flex flex-col overflow-x-clip">
       {/* Top bar — solid, elevated */}
       <header className="sticky top-0 z-40 bg-background safe-top shadow-[0_8px_32px_-8px_hsl(0_0%_0%_/_0.18),0_2px_8px_-2px_hsl(0_0%_0%_/_0.10)]" style={{ backgroundImage: headerGradient }}>
-        <div className="max-w-2xl mx-auto px-3 pt-1.5 pb-2 flex flex-col gap-2" data-tier={tier}>
+        <div className="max-w-2xl lg:max-w-[1600px] mx-auto px-3 lg:px-6 pt-1.5 pb-2 flex flex-col gap-2" data-tier={tier}>
           {/* Row 1: brand + Tapson + action icons */}
           <div className="h-10 flex items-center gap-2">
             <RailDrawer />
@@ -252,9 +252,10 @@ export default function AppShell() {
 
 
       <main
-        className="flex-1 max-w-2xl w-full mx-auto"
+        className="flex-1 max-w-2xl lg:max-w-[1600px] w-full mx-auto lg:px-6"
         style={{ paddingBottom: "64px" }}
       >
+
         <div key={location.pathname} className="page-transition">
           <Outlet />
         </div>
@@ -265,7 +266,7 @@ export default function AppShell() {
         className="fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border"
         aria-label="Primary"
       >
-        <ul className="relative flex flex-row items-stretch gap-0.5 max-w-2xl mx-auto px-1 h-[56px]">
+        <ul className="relative flex flex-row items-stretch gap-0.5 max-w-2xl lg:max-w-[1600px] mx-auto px-1 h-[56px]">
           <TabItem to="/home" iconOutline={IoHomeOutline} iconFilled={IoHome} label="Home" />
           <TabItem to="/categories" iconOutline={IoBagHandleOutline} iconFilled={IoBagHandle} label="Shop" />
           <TabItem to="/messages" iconOutline={IoChatbubbleOutline} iconFilled={IoChatbubble} label="Chats" badge={chatsWithUnread} />
