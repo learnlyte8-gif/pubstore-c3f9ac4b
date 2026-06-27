@@ -166,13 +166,23 @@ Deno.serve(async (req) => {
       ? chatIdToE164(fromChat)
       : normalizePhoneE164(fromChat);
 
+    // Trimmed raw — keep only fields we may need for debugging. Full webhook
+    // payloads are large jsonb writes and were the #1 source of slow inserts.
+    const slimRaw = {
+      event,
+      from: fromChat,
+      sid,
+      type: msg?.type ?? null,
+      ts: msg?.timestamp ?? null,
+    };
+
     let reservedInbound = false;
     if (sid) {
       const { error: reserveError } = await admin.from("whatsapp_inbound_log").insert({
         twilio_sid: sid,
         from_phone: fromE164 || replyTo || String(fromChat || "unknown"),
         body,
-        raw: payload,
+        raw: slimRaw,
       });
       if (reserveError) {
         // waapi may retry / fan out the same webhook. Reserve by message ID before
@@ -187,17 +197,16 @@ Deno.serve(async (req) => {
     }
 
     if (!replyTo || !body) {
-      const emptyLog = {
-        from_phone: fromE164 || String(fromChat || "unknown"),
-        body, matched_user_id: null, conversation_id: null, ref_tag: "empty", raw: payload,
-      };
-      if (reservedInbound && sid) {
-        await admin.from("whatsapp_inbound_log").update(emptyLog).eq("twilio_sid", sid);
-      } else {
-        await admin.from("whatsapp_inbound_log").insert({ twilio_sid: sid, ...emptyLog });
+      if (!reservedInbound && sid) {
+        await admin.from("whatsapp_inbound_log").insert({
+          twilio_sid: sid,
+          from_phone: fromE164 || String(fromChat || "unknown"),
+          body, ref_tag: "empty", raw: slimRaw,
+        });
       }
       return new Response(JSON.stringify({ ok: true, skipped: "empty" }), { headers: jsonHeaders });
     }
+
 
     // Identifier used for phone-matching & log records.
     // For @lid senders we don't have a real phone — store the chatId itself.
@@ -247,21 +256,22 @@ Deno.serve(async (req) => {
       await invokeTapson(tapsonReplyTarget, body, matchedUserId);
     }
 
-    const inboundLog = {
+    // Patch the reserved row with matching/routing metadata. Skip `raw` here —
+    // it was already written on the reservation insert.
+    const inboundPatch = {
       from_phone: fromE164,
-      to_phone: null,
       body,
       matched_user_id: matchedUserId,
       conversation_id: conversationId,
       ref_tag: ref ? `${ref.kind}_${ref.id}` : handler,
-      raw: payload,
     };
 
     if (reservedInbound && sid) {
-      await admin.from("whatsapp_inbound_log").update(inboundLog).eq("twilio_sid", sid);
-    } else {
-      await admin.from("whatsapp_inbound_log").insert({ twilio_sid: sid, ...inboundLog });
+      await admin.from("whatsapp_inbound_log").update(inboundPatch).eq("twilio_sid", sid);
+    } else if (!reservedInbound) {
+      await admin.from("whatsapp_inbound_log").insert({ twilio_sid: sid, ...inboundPatch, raw: slimRaw });
     }
+
 
     return new Response(JSON.stringify({ ok: true, handler }), { headers: jsonHeaders });
   } catch (e: any) {
