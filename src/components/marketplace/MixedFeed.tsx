@@ -43,8 +43,10 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProducts } from "@/hooks/useCatalog";
+import { useInfiniteProducts } from "@/hooks/useInfiniteProducts";
 import ProductCard from "./ProductCard";
 import MasonryGrid from "./MasonryGrid";
+import InfiniteScrollSentinel from "./InfiniteScrollSentinel";
 import { fetchJobs } from "@/data/jobs";
 import { fetchRestaurants } from "@/data/restaurants";
 import { fetchNews, fetchStays, fetchVehicles, fetchIndustrial, fetchAgro } from "@/data/verticals";
