@@ -139,7 +139,13 @@ function normalizeProduct(p: Product): MixedItem {
 }
 
 function normalizeJob(j: JobPosting): MixedItem {
-  const salary = j.salary_min ? `${j.salary_currency} ${j.salary_min}+` : "Competitive";
+  const salary = j.salary_min
+    ? `${j.salary_currency || "$"} ${(j.salary_min ?? 0).toLocaleString()}${j.salary_max ? `–${j.salary_max.toLocaleString()}` : "+"}`
+    : "Competitive";
+  const meta: MetaChip[] = [];
+  if (j.workplace_type) meta.push({ icon: Briefcase, text: j.workplace_type.replace("_", " ") });
+  if (j.employment_type) meta.push({ icon: Clock, text: j.employment_type.replace("_", " ") });
+  if (j.city) meta.push({ icon: MapPin, text: j.city });
   return {
     id: j.id,
     type: "job",
@@ -148,9 +154,12 @@ function normalizeJob(j: JobPosting): MixedItem {
     href: "/jobs",
     image: "/placeholder.svg",
     title: j.title,
-    subtitle: [j.category, j.city, j.workplace_type?.replace("_", " ")].filter(Boolean).join(" · "),
+    subtitle: j.company || j.category,
+    description: j.description?.slice(0, 120),
     price: salary,
+    priceSub: j.salary_period ? `/${j.salary_period}` : undefined,
     badge: j.featured ? "Featured" : "New",
+    meta,
   };
 }
 
@@ -164,11 +173,21 @@ function normalizeNews(n: NewsArticle): MixedItem {
     image: n.cover ?? "/placeholder.svg",
     title: n.title,
     subtitle: `${n.category} · ${ago(n.published_at)} ago`,
+    description: n.dek ?? undefined,
+    meta: [
+      { icon: Clock, text: `${n.read_minutes || 3} min read` },
+      ...(n.author ? [{ icon: Users, text: n.author } as MetaChip] : []),
+    ],
     saveKind: "news",
   };
 }
 
-function normalizeRestaurant(r: Restaurant): MixedItem {
+function normalizeRestaurant(r: Restaurant, menu: MenuPreview[] = []): MixedItem {
+  const meta: MetaChip[] = [];
+  if (r.price_level) meta.push({ icon: Banknote, text: "$".repeat(Math.max(1, Math.min(4, r.price_level))) });
+  if (r.prep_time_minutes) meta.push({ icon: Clock, text: `${r.prep_time_minutes}m prep` });
+  if (r.delivery_enabled) meta.push({ icon: Truck, text: r.delivery_fee ? `$${r.delivery_fee} delivery` : "Free delivery" });
+  if (r.min_order) meta.push({ icon: ShoppingBag, text: `Min $${r.min_order}` });
   return {
     id: r.id,
     type: "restaurant",
@@ -178,12 +197,19 @@ function normalizeRestaurant(r: Restaurant): MixedItem {
     image: r.cover ?? "/placeholder.svg",
     title: r.name,
     subtitle: [r.cuisine, r.city].filter(Boolean).join(" · "),
+    description: r.description?.slice(0, 110) ?? undefined,
     rating: r.rating,
     badge: r.delivery_enabled ? "Delivery" : undefined,
+    meta,
+    menu,
   };
 }
 
 function normalizeStay(s: Stay): MixedItem {
+  const meta: MetaChip[] = [];
+  if (s.bedrooms) meta.push({ icon: Bed, text: `${s.bedrooms} bd` });
+  if (s.baths) meta.push({ icon: Bath, text: `${s.baths} ba` });
+  if (s.guests) meta.push({ icon: Users, text: `${s.guests} guests` });
   return {
     id: s.id,
     type: "stay",
@@ -193,14 +219,21 @@ function normalizeStay(s: Stay): MixedItem {
     image: s.cover ?? "/placeholder.svg",
     title: s.title,
     subtitle: [s.city, s.country].filter(Boolean).join(", "),
-    price: `$${Math.round(s.price_per_night)}/night`,
+    description: s.description?.slice(0, 110) ?? undefined,
+    price: `$${Math.round(s.price_per_night).toLocaleString()}`,
+    priceSub: "/night",
     rating: s.rating,
     badge: s.superhost ? "Superhost" : undefined,
     saveKind: "stay",
+    meta,
   };
 }
 
 function normalizeVehicle(v: Vehicle): MixedItem {
+  const meta: MetaChip[] = [];
+  if (v.fuel) meta.push({ icon: Fuel, text: v.fuel });
+  if (v.transmission) meta.push({ icon: Cog, text: v.transmission });
+  if (v.mileage_km) meta.push({ icon: Gauge, text: `${(v.mileage_km / 1000).toFixed(0)}k km` });
   return {
     id: v.id,
     type: "vehicle",
@@ -210,12 +243,18 @@ function normalizeVehicle(v: Vehicle): MixedItem {
     image: v.cover ?? "/placeholder.svg",
     title: v.title,
     subtitle: [v.year, v.make, v.model, v.condition].filter(Boolean).join(" · "),
+    description: v.description?.slice(0, 110) ?? undefined,
     price: fmtPrice(v.price),
     badge: v.badge ?? undefined,
+    meta,
   };
 }
 
 function normalizeService(p: ServiceProvider): MixedItem {
+  const meta: MetaChip[] = [];
+  if (p.jobs_completed) meta.push({ icon: ShieldCheck, text: `${p.jobs_completed.toLocaleString()} jobs done` });
+  if (p.verified) meta.push({ icon: Award, text: "Verified pro" });
+  if (p.city) meta.push({ icon: MapPin, text: p.city });
   return {
     id: p.id,
     type: "service",
@@ -225,13 +264,21 @@ function normalizeService(p: ServiceProvider): MixedItem {
     image: p.cover ?? "/placeholder.svg",
     title: p.display_name,
     subtitle: [p.category, p.city].filter(Boolean).join(" · "),
-    price: p.hourly_rate ? `$${p.hourly_rate}/hr` : undefined,
+    description: p.bio?.slice(0, 110) ?? (p.skills?.length ? p.skills.slice(0, 4).join(" · ") : undefined),
+    price: p.hourly_rate ? `$${p.hourly_rate}` : undefined,
+    priceSub: p.hourly_rate ? "/hr" : undefined,
     rating: p.rating,
     saveKind: "service",
+    meta,
   };
 }
 
 function normalizeProperty(p: Property): MixedItem {
+  const meta: MetaChip[] = [];
+  if (p.bedrooms) meta.push({ icon: Bed, text: `${p.bedrooms} bd` });
+  if (p.baths) meta.push({ icon: Bath, text: `${p.baths} ba` });
+  if (p.area_sqm) meta.push({ icon: Home, text: `${p.area_sqm} m²` });
+  if (p.furnished) meta.push({ icon: Sparkles, text: "Furnished" });
   return {
     id: p.id,
     type: "property",
@@ -241,12 +288,20 @@ function normalizeProperty(p: Property): MixedItem {
     image: p.cover ?? "/placeholder.svg",
     title: p.title,
     subtitle: [p.listing_type, p.city].filter(Boolean).join(" · "),
-    price: `$${Number(p.price).toLocaleString()}${p.price_period === "rent" || p.price_period === "shared" ? `/${p.price_period}` : ""}`,
+    description: p.description?.slice(0, 110) ?? undefined,
+    price: `$${Number(p.price).toLocaleString()}`,
+    priceSub: p.price_period === "rent" || p.price_period === "shared" ? `/${p.price_period}` : undefined,
     saveKind: "property",
+    meta,
   };
 }
 
 function normalizeIndustrial(it: IndustrialListing): MixedItem {
+  const meta: MetaChip[] = [];
+  if (it.moq) meta.push({ icon: Package, text: `MOQ ${it.moq}${it.unit ? ` ${it.unit}` : ""}` });
+  if (it.lead_time) meta.push({ icon: Clock, text: it.lead_time });
+  if (it.capacity) meta.push({ icon: Gauge, text: it.capacity });
+  if (it.ship_from) meta.push({ icon: Truck, text: it.ship_from });
   return {
     id: it.id,
     type: "industrial",
@@ -256,12 +311,20 @@ function normalizeIndustrial(it: IndustrialListing): MixedItem {
     image: it.cover ?? "/placeholder.svg",
     title: it.title,
     subtitle: [it.category, it.subcategory].filter(Boolean).join(" · "),
+    description: it.description?.slice(0, 110) ?? undefined,
     price: it.price != null ? fmtPrice(it.price) : "Quote",
+    priceSub: it.price != null && it.unit ? `/${it.unit}` : undefined,
     saveKind: "industrial",
+    meta,
   };
 }
 
 function normalizeAgro(it: AgroListing): MixedItem {
+  const meta: MetaChip[] = [];
+  if (it.moq) meta.push({ icon: Package, text: `MOQ ${it.moq}${it.unit ? ` ${it.unit}` : ""}` });
+  if (it.harvest_season) meta.push({ icon: Sprout, text: it.harvest_season });
+  if (it.lead_time) meta.push({ icon: Clock, text: it.lead_time });
+  if (it.region || it.country) meta.push({ icon: MapPin, text: it.region || it.country! });
   return {
     id: it.id,
     type: "agro",
@@ -271,13 +334,20 @@ function normalizeAgro(it: AgroListing): MixedItem {
     image: it.cover ?? "/placeholder.svg",
     title: it.title,
     subtitle: [it.kind, it.subcategory].filter(Boolean).join(" · "),
+    description: it.description?.slice(0, 110) ?? undefined,
     price: it.price != null ? fmtPrice(it.price) : undefined,
+    priceSub: it.price != null && it.unit ? `/${it.unit}` : undefined,
     badge: it.organic ? "Organic" : undefined,
     saveKind: "agro",
+    meta,
   };
 }
 
 function normalizeFinance(p: FinanceProduct): MixedItem {
+  const meta: MetaChip[] = [];
+  if (p.interest_rate != null) meta.push({ icon: Gauge, text: `${p.interest_rate}% APR` });
+  if (p.term_months) meta.push({ icon: Clock, text: `${p.term_months} mo` });
+  if (p.provider_name) meta.push({ icon: ShieldCheck, text: p.provider_name });
   return {
     id: p.id,
     type: "finance",
@@ -287,12 +357,20 @@ function normalizeFinance(p: FinanceProduct): MixedItem {
     image: p.cover ?? "/placeholder.svg",
     title: p.title,
     subtitle: p.kind.replace("_", " "),
-    price: p.max_amount ? `up to $${p.max_amount.toLocaleString()}` : undefined,
+    description: p.description?.slice(0, 110) ?? (p.features?.length ? p.features.slice(0, 3).join(" · ") : undefined),
+    price: p.max_amount ? `$${p.max_amount.toLocaleString()}` : undefined,
+    priceSub: p.max_amount ? " max" : undefined,
     saveKind: "finance",
+    meta,
   };
 }
 
 function normalizeCarRental(r: CarRental): MixedItem {
+  const meta: MetaChip[] = [];
+  if (r.seats) meta.push({ icon: Users, text: `${r.seats} seats` });
+  if (r.transmission) meta.push({ icon: Cog, text: r.transmission });
+  if (r.fuel) meta.push({ icon: Fuel, text: r.fuel });
+  if (r.ac) meta.push({ icon: Sparkles, text: "A/C" });
   return {
     id: r.id,
     type: "car-rental",
@@ -301,10 +379,13 @@ function normalizeCarRental(r: CarRental): MixedItem {
     href: `/car-rentals/${r.id}`,
     image: r.cover ?? "/placeholder.svg",
     title: r.title,
-    subtitle: [r.vehicle_class, r.transmission, r.city].filter(Boolean).join(" · "),
-    price: `$${r.price_per_day}/day`,
+    subtitle: [r.vehicle_class, r.city].filter(Boolean).join(" · "),
+    description: r.description?.slice(0, 110) ?? (r.features?.length ? r.features.slice(0, 3).join(" · ") : undefined),
+    price: `$${r.price_per_day.toLocaleString()}`,
+    priceSub: "/day",
     badge: r.verified ? "Verified" : undefined,
     saveKind: "car-rental",
+    meta,
   };
 }
 
@@ -318,6 +399,7 @@ function normalizeLive(s: any): MixedItem {
     image: s.cover ?? "/placeholder.svg",
     title: s.title,
     subtitle: s.suppliers?.name,
+    meta: s.viewer_count ? [{ icon: Users, text: `${s.viewer_count.toLocaleString()} watching` }] : undefined,
     badge: "LIVE",
   };
 }
@@ -334,6 +416,10 @@ function normalizeSupplier(s: any): MixedItem {
     subtitle: s.country,
     rating: s.rating,
     badge: s.gold ? "Gold" : s.verified ? "Verified" : undefined,
+    meta: [
+      ...(s.country ? [{ icon: MapPin, text: s.country } as MetaChip] : []),
+      ...(s.gold ? [{ icon: Award, text: "Gold member" } as MetaChip] : s.verified ? [{ icon: ShieldCheck, text: "Verified" } as MetaChip] : []),
+    ],
   };
 }
 
