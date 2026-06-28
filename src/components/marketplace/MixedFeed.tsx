@@ -526,7 +526,7 @@ export default function MixedFeed({ verticals = [], tradeMode = "all" }: MixedFe
     if (showShop) all.push(...(productsQ.items ?? []).map(normalizeProduct));
     if (showJobs) all.push(...(jobsQ.data ?? []).slice(0, 6).map(normalizeJob));
     if (showNews) all.push(...(newsQ.data ?? []).slice(0, 4).map(normalizeNews));
-    if (showRestaurants) all.push(...(restaurantsQ.data ?? []).slice(0, 6).map(normalizeRestaurant));
+    if (showRestaurants) all.push(...(restaurantsQ.data ?? []).slice(0, 6).map((r) => normalizeRestaurant(r, menusQ.data?.[r.id] ?? [])));
     if (showStays) all.push(...(staysQ.data ?? []).slice(0, 6).map(normalizeStay));
     if (showVehicles) all.push(...(vehiclesQ.data ?? []).slice(0, 6).map(normalizeVehicle));
     if (showServices) all.push(...(servicesQ.data ?? []).slice(0, 6).map(normalizeService));
