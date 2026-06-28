@@ -533,7 +533,7 @@ function RailDrawer() {
 
 function HomeFeedTabs() {
   const [params, setParams] = useSearchParams();
-  const navigate = useNavigate();
+  // navigation handled via setParams below
   const { data: categories = [] } = useCategories();
   const activeFeed = (params.get("feed") as "home" | "fyp" | "following") || "home";
   const activeCat = params.get("cat");
