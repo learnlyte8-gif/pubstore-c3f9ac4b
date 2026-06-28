@@ -37,8 +37,9 @@ const TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
 ];
 
 const Home = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const tab: Tab = (searchParams.get("feed") as Tab) || "home";
+  const catParam = searchParams.get("cat");
 
   const { interests } = useMyInterests();
   const { verticals } = useMyVerticals();
@@ -57,59 +58,140 @@ const Home = () => {
       </Helmet>
       <h1 className="sr-only">PUBSTORE — Shop, share and discover across verticals</h1>
 
-      {tab === "home" && (
-        <div className="animate-fade-in">
-          <Promo3DCarousel />
-          <HomeMenuDrawer />
+      {catParam ? (
+        <CategoryFeed
+          categoryId={catParam}
+          activeSub={searchParams.get("sub")}
+          onSubChange={(sub) => {
+            const next = new URLSearchParams(searchParams);
+            if (sub) next.set("sub", sub);
+            else next.delete("sub");
+            setSearchParams(next, { replace: true });
+          }}
+          tradeMode={tradeMode}
+        />
+      ) : (
+        <>
+          {tab === "home" && (
+            <div className="animate-fade-in">
+              <Promo3DCarousel />
+              <HomeMenuDrawer />
 
-          <section className="px-4 mt-6">
-            <SectionHeader icon={Heart} title="Because you browsed" subtitle="Picked from your recent activity" />
-            <div className="mt-3 grid grid-cols-1"><RecommendationStrip title="Because you browsed" subtitle="Hand-picked for you" /></div>
-          </section>
+              <section className="px-4 mt-6">
+                <SectionHeader icon={Heart} title="Because you browsed" subtitle="Picked from your recent activity" />
+                <div className="mt-3 grid grid-cols-1"><RecommendationStrip title="Because you browsed" subtitle="Hand-picked for you" /></div>
+              </section>
 
-          <section className="px-4 mt-6">
-            <SectionHeader icon={Sparkles} title="New arrivals" subtitle="Latest products from suppliers" />
-            <NewArrivals />
-          </section>
+              <section className="px-4 mt-6">
+                <SectionHeader icon={Sparkles} title="New arrivals" subtitle="Latest products from suppliers" />
+                <NewArrivals />
+              </section>
 
-          <div className="mt-6">
-            <div className="px-4">
-              <SectionHeader icon={Compass} title="Explore the marketplace" subtitle="Products, services and more" />
+              <div className="mt-6">
+                <div className="px-4">
+                  <SectionHeader icon={Compass} title="Explore the marketplace" subtitle="Products, services and more" />
+                </div>
+                <MixedFeed verticals={verticals} tradeMode={tradeMode} />
+              </div>
             </div>
-            <MixedFeed verticals={verticals} tradeMode={tradeMode} />
-          </div>
-        </div>
-      )}
-
-      {tab === "fyp" && (
-        <div className="animate-fade-in px-4 mt-4">
-          <SectionHeader icon={Sparkles} title="For you" subtitle="Personalized picks based on your interests" />
-          {products.length === 0 ? (
-            <EmptyState title="Nothing in the feed yet" description="When suppliers list products they'll show up here." />
-          ) : (
-            <MasonryGrid className="mt-3">
-              {(() => {
-                const liked = interests.length
-                  ? products.filter((p) => interests.some((i) => p.category === i))
-                  : [];
-                const rest = products.filter((p) => !liked.includes(p));
-                return [...liked, ...rest].map((p) => (
-                  <ProductCard key={p.id} product={p} />
-                ));
-              })()}
-            </MasonryGrid>
           )}
-        </div>
-      )}
 
-      {tab === "following" && (
-        <div className="animate-fade-in">
-          <FollowingTab />
-        </div>
+          {tab === "fyp" && (
+            <div className="animate-fade-in px-4 mt-4">
+              <SectionHeader icon={Sparkles} title="For you" subtitle="Personalized picks based on your interests" />
+              {products.length === 0 ? (
+                <EmptyState title="Nothing in the feed yet" description="When suppliers list products they'll show up here." />
+              ) : (
+                <MasonryGrid className="mt-3">
+                  {(() => {
+                    const liked = interests.length
+                      ? products.filter((p) => interests.some((i) => p.category === i))
+                      : [];
+                    const rest = products.filter((p) => !liked.includes(p));
+                    return [...liked, ...rest].map((p) => (
+                      <ProductCard key={p.id} product={p} />
+                    ));
+                  })()}
+                </MasonryGrid>
+              )}
+            </div>
+          )}
+
+          {tab === "following" && (
+            <div className="animate-fade-in">
+              <FollowingTab />
+            </div>
+          )}
+        </>
       )}
     </div>
   );
 };
+
+function CategoryFeed({
+  categoryId,
+  activeSub,
+  onSubChange,
+  tradeMode,
+}: {
+  categoryId: string;
+  activeSub: string | null;
+  onSubChange: (sub: string | null) => void;
+  tradeMode: ReturnType<typeof useTradeMode>["mode"];
+}) {
+  const { data: cats = [] } = useCategories();
+  const cat = cats.find((c) => c.id === categoryId);
+  const Icon = cat?.icon ?? LayoutGrid;
+
+  const productsQ = useInfiniteProducts({ category: categoryId, tradeMode, pageSize: 30 });
+  const products = productsQ.items;
+  const subs = deriveSubcategories(categoryId, products);
+  const activeSubObj = subs.find((s) => s.id === activeSub) ?? null;
+  const visible = filterBySubcategory(products, activeSubObj);
+
+  return (
+    <div className="animate-fade-in">
+      <div className="px-4 pt-4">
+        <div className="flex items-center gap-2.5">
+          <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shadow-soft shrink-0">
+            <Icon className="w-5 h-5" strokeWidth={2} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg font-extrabold capitalize truncate leading-tight">{cat?.name ?? categoryId}</h2>
+            <p className="text-[11px] text-muted-foreground truncate">
+              {visible.length} products{activeSubObj ? ` · ${activeSubObj.label}` : ""}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {subs.length > 0 && (
+        <div className="mt-3">
+          <SubcategoryChips subs={subs} active={activeSub} onChange={onSubChange} />
+        </div>
+      )}
+
+      {productsQ.isLoading ? (
+        <div className="py-12 flex justify-center"><CircleSpinner size={28} /></div>
+      ) : visible.length === 0 ? (
+        <EmptyState title="No products yet" description="Be the first supplier to list in this category." />
+      ) : (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1 p-3">
+            {visible.map((p) => (<ProductCard key={p.id} product={p} />))}
+          </div>
+          {!activeSubObj && (
+            <InfiniteScrollSentinel
+              hasMore={!!productsQ.hasNextPage}
+              isLoading={productsQ.isFetchingNextPage}
+              onLoadMore={() => productsQ.fetchNextPage()}
+            />
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
 function SectionHeader({ title, subtitle, icon: Icon }: { title: string; subtitle?: string; icon?: LucideIcon }) {
   return (
