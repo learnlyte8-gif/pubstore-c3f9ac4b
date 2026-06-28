@@ -567,6 +567,7 @@ export default function MixedFeed({ verticals = [], tradeMode = "all" }: MixedFe
     carRentalsQ.data,
     suppliersQ.data,
     liveQ.data,
+    menusQ.data,
   ]);
 
   if (isLoading) {
