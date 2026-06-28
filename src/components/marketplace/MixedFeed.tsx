@@ -96,6 +96,9 @@ const fmtPrice = (n: number, currency = "$") => `${currency}${n.toLocaleString()
 // Unified card data
 // ============================================================
 
+type MetaChip = { icon: LucideIcon; text: string };
+type MenuPreview = { id: string; name: string; price: number; currency?: string; image: string | null };
+
 type MixedItem = {
   id: string;
   type: string;
@@ -106,11 +109,15 @@ type MixedItem = {
   title: string;
   subtitle?: string;
   price?: string;
+  priceSub?: string;
+  description?: string;
   rating?: number;
   sold?: number;
   badge?: string;
   saveKind?: "agro" | "stay" | "property" | "service" | "industrial" | "car-rental" | "finance" | "news";
   product?: Product;
+  meta?: MetaChip[];
+  menu?: MenuPreview[];
 };
 
 function normalizeProduct(p: Product): MixedItem {
@@ -132,7 +139,13 @@ function normalizeProduct(p: Product): MixedItem {
 }
 
 function normalizeJob(j: JobPosting): MixedItem {
-  const salary = j.salary_min ? `${j.salary_currency} ${j.salary_min}+` : "Competitive";
+  const salary = j.salary_min
+    ? `${j.salary_currency || "$"} ${(j.salary_min ?? 0).toLocaleString()}${j.salary_max ? `–${j.salary_max.toLocaleString()}` : "+"}`
+    : "Competitive";
+  const meta: MetaChip[] = [];
+  if (j.workplace_type) meta.push({ icon: Briefcase, text: j.workplace_type.replace("_", " ") });
+  if (j.employment_type) meta.push({ icon: Clock, text: j.employment_type.replace("_", " ") });
+  if (j.city) meta.push({ icon: MapPin, text: j.city });
   return {
     id: j.id,
     type: "job",
@@ -141,9 +154,12 @@ function normalizeJob(j: JobPosting): MixedItem {
     href: "/jobs",
     image: "/placeholder.svg",
     title: j.title,
-    subtitle: [j.category, j.city, j.workplace_type?.replace("_", " ")].filter(Boolean).join(" · "),
+    subtitle: j.category,
+    description: j.description?.slice(0, 120) ?? undefined,
     price: salary,
+    priceSub: j.salary_period ? `/${j.salary_period}` : undefined,
     badge: j.featured ? "Featured" : "New",
+    meta,
   };
 }
 
@@ -157,11 +173,21 @@ function normalizeNews(n: NewsArticle): MixedItem {
     image: n.cover ?? "/placeholder.svg",
     title: n.title,
     subtitle: `${n.category} · ${ago(n.published_at)} ago`,
+    description: n.dek ?? undefined,
+    meta: [
+      { icon: Clock, text: `${n.read_minutes || 3} min read` },
+      ...(n.author ? [{ icon: Users, text: n.author } as MetaChip] : []),
+    ],
     saveKind: "news",
   };
 }
 
-function normalizeRestaurant(r: Restaurant): MixedItem {
+function normalizeRestaurant(r: Restaurant, menu: MenuPreview[] = []): MixedItem {
+  const meta: MetaChip[] = [];
+  if (r.price_level) meta.push({ icon: Banknote, text: "$".repeat(Math.max(1, Math.min(4, r.price_level))) });
+  if (r.prep_time_minutes) meta.push({ icon: Clock, text: `${r.prep_time_minutes}m prep` });
+  if (r.delivery_enabled) meta.push({ icon: Truck, text: r.delivery_fee ? `$${r.delivery_fee} delivery` : "Free delivery" });
+  if (r.min_order) meta.push({ icon: ShoppingBag, text: `Min $${r.min_order}` });
   return {
     id: r.id,
     type: "restaurant",
@@ -171,12 +197,19 @@ function normalizeRestaurant(r: Restaurant): MixedItem {
     image: r.cover ?? "/placeholder.svg",
     title: r.name,
     subtitle: [r.cuisine, r.city].filter(Boolean).join(" · "),
+    description: r.description?.slice(0, 110) ?? undefined,
     rating: r.rating,
     badge: r.delivery_enabled ? "Delivery" : undefined,
+    meta,
+    menu,
   };
 }
 
 function normalizeStay(s: Stay): MixedItem {
+  const meta: MetaChip[] = [];
+  if (s.bedrooms) meta.push({ icon: Bed, text: `${s.bedrooms} bd` });
+  if (s.baths) meta.push({ icon: Bath, text: `${s.baths} ba` });
+  if (s.guests) meta.push({ icon: Users, text: `${s.guests} guests` });
   return {
     id: s.id,
     type: "stay",
@@ -186,14 +219,21 @@ function normalizeStay(s: Stay): MixedItem {
     image: s.cover ?? "/placeholder.svg",
     title: s.title,
     subtitle: [s.city, s.country].filter(Boolean).join(", "),
-    price: `$${Math.round(s.price_per_night)}/night`,
+    description: s.description?.slice(0, 110) ?? undefined,
+    price: `$${Math.round(s.price_per_night).toLocaleString()}`,
+    priceSub: "/night",
     rating: s.rating,
     badge: s.superhost ? "Superhost" : undefined,
     saveKind: "stay",
+    meta,
   };
 }
 
 function normalizeVehicle(v: Vehicle): MixedItem {
+  const meta: MetaChip[] = [];
+  if (v.fuel) meta.push({ icon: Fuel, text: v.fuel });
+  if (v.transmission) meta.push({ icon: Cog, text: v.transmission });
+  if (v.mileage_km) meta.push({ icon: Gauge, text: `${(v.mileage_km / 1000).toFixed(0)}k km` });
   return {
     id: v.id,
     type: "vehicle",
@@ -203,12 +243,18 @@ function normalizeVehicle(v: Vehicle): MixedItem {
     image: v.cover ?? "/placeholder.svg",
     title: v.title,
     subtitle: [v.year, v.make, v.model, v.condition].filter(Boolean).join(" · "),
+    description: v.description?.slice(0, 110) ?? undefined,
     price: fmtPrice(v.price),
     badge: v.badge ?? undefined,
+    meta,
   };
 }
 
 function normalizeService(p: ServiceProvider): MixedItem {
+  const meta: MetaChip[] = [];
+  if (p.jobs_completed) meta.push({ icon: ShieldCheck, text: `${p.jobs_completed.toLocaleString()} jobs done` });
+  if (p.verified) meta.push({ icon: Award, text: "Verified pro" });
+  if (p.city) meta.push({ icon: MapPin, text: p.city });
   return {
     id: p.id,
     type: "service",
@@ -218,13 +264,21 @@ function normalizeService(p: ServiceProvider): MixedItem {
     image: p.cover ?? "/placeholder.svg",
     title: p.display_name,
     subtitle: [p.category, p.city].filter(Boolean).join(" · "),
-    price: p.hourly_rate ? `$${p.hourly_rate}/hr` : undefined,
+    description: p.bio?.slice(0, 110) ?? (p.skills?.length ? p.skills.slice(0, 4).join(" · ") : undefined),
+    price: p.hourly_rate ? `$${p.hourly_rate}` : undefined,
+    priceSub: p.hourly_rate ? "/hr" : undefined,
     rating: p.rating,
     saveKind: "service",
+    meta,
   };
 }
 
 function normalizeProperty(p: Property): MixedItem {
+  const meta: MetaChip[] = [];
+  if (p.bedrooms) meta.push({ icon: Bed, text: `${p.bedrooms} bd` });
+  if (p.baths) meta.push({ icon: Bath, text: `${p.baths} ba` });
+  if (p.area_sqm) meta.push({ icon: Home, text: `${p.area_sqm} m²` });
+  if (p.furnished) meta.push({ icon: Sparkles, text: "Furnished" });
   return {
     id: p.id,
     type: "property",
@@ -234,12 +288,20 @@ function normalizeProperty(p: Property): MixedItem {
     image: p.cover ?? "/placeholder.svg",
     title: p.title,
     subtitle: [p.listing_type, p.city].filter(Boolean).join(" · "),
-    price: `$${Number(p.price).toLocaleString()}${p.price_period === "rent" || p.price_period === "shared" ? `/${p.price_period}` : ""}`,
+    description: p.description?.slice(0, 110) ?? undefined,
+    price: `$${Number(p.price).toLocaleString()}`,
+    priceSub: p.price_period === "rent" || p.price_period === "shared" ? `/${p.price_period}` : undefined,
     saveKind: "property",
+    meta,
   };
 }
 
 function normalizeIndustrial(it: IndustrialListing): MixedItem {
+  const meta: MetaChip[] = [];
+  if (it.moq) meta.push({ icon: Package, text: `MOQ ${it.moq}${it.unit ? ` ${it.unit}` : ""}` });
+  if (it.lead_time) meta.push({ icon: Clock, text: it.lead_time });
+  if (it.capacity) meta.push({ icon: Gauge, text: it.capacity });
+  if (it.ship_from) meta.push({ icon: Truck, text: it.ship_from });
   return {
     id: it.id,
     type: "industrial",
@@ -249,12 +311,20 @@ function normalizeIndustrial(it: IndustrialListing): MixedItem {
     image: it.cover ?? "/placeholder.svg",
     title: it.title,
     subtitle: [it.category, it.subcategory].filter(Boolean).join(" · "),
+    description: it.description?.slice(0, 110) ?? undefined,
     price: it.price != null ? fmtPrice(it.price) : "Quote",
+    priceSub: it.price != null && it.unit ? `/${it.unit}` : undefined,
     saveKind: "industrial",
+    meta,
   };
 }
 
 function normalizeAgro(it: AgroListing): MixedItem {
+  const meta: MetaChip[] = [];
+  if (it.moq) meta.push({ icon: Package, text: `MOQ ${it.moq}${it.unit ? ` ${it.unit}` : ""}` });
+  if (it.harvest_season) meta.push({ icon: Sprout, text: it.harvest_season });
+  if (it.lead_time) meta.push({ icon: Clock, text: it.lead_time });
+  if (it.region || it.country) meta.push({ icon: MapPin, text: it.region || it.country! });
   return {
     id: it.id,
     type: "agro",
@@ -264,13 +334,20 @@ function normalizeAgro(it: AgroListing): MixedItem {
     image: it.cover ?? "/placeholder.svg",
     title: it.title,
     subtitle: [it.kind, it.subcategory].filter(Boolean).join(" · "),
+    description: it.description?.slice(0, 110) ?? undefined,
     price: it.price != null ? fmtPrice(it.price) : undefined,
+    priceSub: it.price != null && it.unit ? `/${it.unit}` : undefined,
     badge: it.organic ? "Organic" : undefined,
     saveKind: "agro",
+    meta,
   };
 }
 
 function normalizeFinance(p: FinanceProduct): MixedItem {
+  const meta: MetaChip[] = [];
+  if (p.interest_rate != null) meta.push({ icon: Gauge, text: `${p.interest_rate}% APR` });
+  if (p.term_months) meta.push({ icon: Clock, text: `${p.term_months} mo` });
+  if (p.provider_name) meta.push({ icon: ShieldCheck, text: p.provider_name });
   return {
     id: p.id,
     type: "finance",
@@ -280,12 +357,20 @@ function normalizeFinance(p: FinanceProduct): MixedItem {
     image: p.cover ?? "/placeholder.svg",
     title: p.title,
     subtitle: p.kind.replace("_", " "),
-    price: p.max_amount ? `up to $${p.max_amount.toLocaleString()}` : undefined,
+    description: p.description?.slice(0, 110) ?? (p.features?.length ? p.features.slice(0, 3).join(" · ") : undefined),
+    price: p.max_amount ? `$${p.max_amount.toLocaleString()}` : undefined,
+    priceSub: p.max_amount ? " max" : undefined,
     saveKind: "finance",
+    meta,
   };
 }
 
 function normalizeCarRental(r: CarRental): MixedItem {
+  const meta: MetaChip[] = [];
+  if (r.seats) meta.push({ icon: Users, text: `${r.seats} seats` });
+  if (r.transmission) meta.push({ icon: Cog, text: r.transmission });
+  if (r.fuel) meta.push({ icon: Fuel, text: r.fuel });
+  if (r.ac) meta.push({ icon: Sparkles, text: "A/C" });
   return {
     id: r.id,
     type: "car-rental",
@@ -294,10 +379,13 @@ function normalizeCarRental(r: CarRental): MixedItem {
     href: `/car-rentals/${r.id}`,
     image: r.cover ?? "/placeholder.svg",
     title: r.title,
-    subtitle: [r.vehicle_class, r.transmission, r.city].filter(Boolean).join(" · "),
-    price: `$${r.price_per_day}/day`,
+    subtitle: [r.vehicle_class, r.city].filter(Boolean).join(" · "),
+    description: r.description?.slice(0, 110) ?? (r.features?.length ? r.features.slice(0, 3).join(" · ") : undefined),
+    price: `$${r.price_per_day.toLocaleString()}`,
+    priceSub: "/day",
     badge: r.verified ? "Verified" : undefined,
     saveKind: "car-rental",
+    meta,
   };
 }
 
@@ -311,6 +399,7 @@ function normalizeLive(s: any): MixedItem {
     image: s.cover ?? "/placeholder.svg",
     title: s.title,
     subtitle: s.suppliers?.name,
+    meta: s.viewer_count ? [{ icon: Users, text: `${s.viewer_count.toLocaleString()} watching` }] : undefined,
     badge: "LIVE",
   };
 }
@@ -327,6 +416,10 @@ function normalizeSupplier(s: any): MixedItem {
     subtitle: s.country,
     rating: s.rating,
     badge: s.gold ? "Gold" : s.verified ? "Verified" : undefined,
+    meta: [
+      ...(s.country ? [{ icon: MapPin, text: s.country } as MetaChip] : []),
+      ...(s.gold ? [{ icon: Award, text: "Gold member" } as MetaChip] : s.verified ? [{ icon: ShieldCheck, text: "Verified" } as MetaChip] : []),
+    ],
   };
 }
 
@@ -391,6 +484,27 @@ export default function MixedFeed({ verticals = [], tradeMode = "all" }: MixedFe
     },
   });
 
+  const restaurantIds = (restaurantsQ.data ?? []).slice(0, 6).map((r) => r.id);
+  const menusQ = useQuery({
+    queryKey: ["home-restaurant-menus", restaurantIds.join(",")],
+    enabled: restaurantIds.length > 0,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("menu_items")
+        .select("id,restaurant_id,name,price,currency,image,sort_order")
+        .in("restaurant_id", restaurantIds)
+        .eq("available", true)
+        .order("sort_order", { ascending: true })
+        .limit(48);
+      const byRestaurant: Record<string, MenuPreview[]> = {};
+      for (const row of (data ?? []) as any[]) {
+        const arr = (byRestaurant[row.restaurant_id] ||= []);
+        if (arr.length < 5) arr.push({ id: row.id, name: row.name, price: Number(row.price), currency: row.currency, image: row.image });
+      }
+      return byRestaurant;
+    },
+  });
+
   const isLoading =
     productsQ.isLoading ||
     jobsQ.isLoading ||
@@ -412,7 +526,7 @@ export default function MixedFeed({ verticals = [], tradeMode = "all" }: MixedFe
     if (showShop) all.push(...(productsQ.items ?? []).map(normalizeProduct));
     if (showJobs) all.push(...(jobsQ.data ?? []).slice(0, 6).map(normalizeJob));
     if (showNews) all.push(...(newsQ.data ?? []).slice(0, 4).map(normalizeNews));
-    if (showRestaurants) all.push(...(restaurantsQ.data ?? []).slice(0, 6).map(normalizeRestaurant));
+    if (showRestaurants) all.push(...(restaurantsQ.data ?? []).slice(0, 6).map((r) => normalizeRestaurant(r, menusQ.data?.[r.id] ?? [])));
     if (showStays) all.push(...(staysQ.data ?? []).slice(0, 6).map(normalizeStay));
     if (showVehicles) all.push(...(vehiclesQ.data ?? []).slice(0, 6).map(normalizeVehicle));
     if (showServices) all.push(...(servicesQ.data ?? []).slice(0, 6).map(normalizeService));
@@ -453,6 +567,7 @@ export default function MixedFeed({ verticals = [], tradeMode = "all" }: MixedFe
     carRentalsQ.data,
     suppliersQ.data,
     liveQ.data,
+    menusQ.data,
   ]);
 
   if (isLoading) {
@@ -586,18 +701,42 @@ function MixedCard({ item }: { item: MixedItem }) {
       </div>
 
       <div className="p-2.5">
-        <p className="text-xs font-bold leading-snug overflow-hidden whitespace-nowrap text-ellipsis break-words">{item.title}</p>
+        <p className="text-xs font-bold leading-snug line-clamp-2 break-words">{item.title}</p>
         {item.subtitle && (
-          <p className="text-[10px] text-muted-foreground overflow-hidden whitespace-nowrap text-ellipsis break-words mt-0.5">{item.subtitle}</p>
+          <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5 capitalize">{item.subtitle}</p>
+        )}
+        {item.description && (
+          <p className="text-[11px] text-foreground/80 leading-snug mt-1 line-clamp-2">{item.description}</p>
+        )}
+
+        {item.meta && item.meta.length > 0 && (
+          <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+            {item.meta.slice(0, 4).map((m, i) => {
+              const MI = m.icon;
+              return (
+                <span
+                  key={i}
+                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-muted text-foreground/80 text-[9px] font-semibold capitalize"
+                >
+                  <MI className="w-2.5 h-2.5 text-primary" /> {m.text}
+                </span>
+              );
+            })}
+          </div>
         )}
 
         <div className="pt-2 flex items-end justify-between gap-2">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             {item.price && (
-              <p className="text-sm font-black tracking-tight text-destructive truncate">{item.price}</p>
+              <p className="flex items-baseline gap-0.5 flex-wrap leading-none">
+                <span className="text-xl sm:text-2xl font-black tracking-tight text-destructive break-all">{item.price}</span>
+                {item.priceSub && (
+                  <span className="text-[10px] text-muted-foreground font-semibold">{item.priceSub}</span>
+                )}
+              </p>
             )}
             {item.rating != null && item.rating > 0 && (
-              <p className="text-[10px] flex items-center gap-1 text-muted-foreground">
+              <p className="text-[10px] flex items-center gap-1 text-muted-foreground mt-1">
                 <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                 <span className="font-medium text-foreground">{item.rating.toFixed(1)}</span>
                 {item.sold != null && item.sold > 0 && <span>· {item.sold.toLocaleString()} sold</span>}
@@ -615,6 +754,29 @@ function MixedCard({ item }: { item: MixedItem }) {
             </button>
           )}
         </div>
+
+        {item.type === "restaurant" && item.menu && item.menu.length > 0 && (
+          <div className="mt-2 pt-2 border-t border-border">
+            <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">From the menu</p>
+            <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-0.5 px-0.5">
+              {item.menu.map((m) => (
+                <div key={m.id} className="shrink-0 w-12 text-center">
+                  <div className="w-12 h-12 rounded-full overflow-hidden bg-muted ring-2 ring-primary/30 ring-offset-1 ring-offset-card">
+                    {m.image ? (
+                      <img src={m.image} alt={m.name} loading="lazy" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <UtensilsCrossed className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[9px] font-semibold mt-1 truncate">{m.name}</p>
+                  <p className="text-[10px] font-black text-destructive leading-none">${m.price.toFixed(0)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {item.type === "product" && item.product && (
           <div className="mt-2 flex items-center gap-1 flex-wrap">
