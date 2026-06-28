@@ -155,6 +155,7 @@ function normalizeJob(j: JobPosting): MixedItem {
     image: "/placeholder.svg",
     title: j.title,
     subtitle: j.category,
+    description: j.description?.slice(0, 120) ?? undefined,
     price: salary,
     priceSub: j.salary_period ? `/${j.salary_period}` : undefined,
     badge: j.featured ? "Featured" : "New",
