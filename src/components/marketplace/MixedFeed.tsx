@@ -484,6 +484,27 @@ export default function MixedFeed({ verticals = [], tradeMode = "all" }: MixedFe
     },
   });
 
+  const restaurantIds = (restaurantsQ.data ?? []).slice(0, 6).map((r) => r.id);
+  const menusQ = useQuery({
+    queryKey: ["home-restaurant-menus", restaurantIds.join(",")],
+    enabled: restaurantIds.length > 0,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("menu_items")
+        .select("id,restaurant_id,name,price,currency,image,sort_order")
+        .in("restaurant_id", restaurantIds)
+        .eq("available", true)
+        .order("sort_order", { ascending: true })
+        .limit(48);
+      const byRestaurant: Record<string, MenuPreview[]> = {};
+      for (const row of (data ?? []) as any[]) {
+        const arr = (byRestaurant[row.restaurant_id] ||= []);
+        if (arr.length < 5) arr.push({ id: row.id, name: row.name, price: Number(row.price), currency: row.currency, image: row.image });
+      }
+      return byRestaurant;
+    },
+  });
+
   const isLoading =
     productsQ.isLoading ||
     jobsQ.isLoading ||
