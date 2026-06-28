@@ -4,7 +4,7 @@ import {
   Home as HomeIcon, Store as StoreIcon,
   Users, Menu, X, FileText, Package, GitCompare, Wallet, BadgePercent,
   Briefcase, Wrench, Banknote, BedDouble, Car, Factory, Sprout, Navigation,
-  Truck, Compass, Sparkles, Newspaper, Heart,
+  Truck, Compass, Sparkles, Newspaper, Heart, LayoutGrid,
   type LucideIcon,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -18,11 +18,16 @@ import ProductCard from "@/components/marketplace/ProductCard";
 import MasonryGrid from "@/components/marketplace/MasonryGrid";
 import EmptyState from "@/components/EmptyState";
 import SupplierCard from "@/components/marketplace/SupplierCard";
-import { useProducts } from "@/hooks/useCatalog";
+import SubcategoryChips from "@/components/marketplace/SubcategoryChips";
+import InfiniteScrollSentinel from "@/components/marketplace/InfiniteScrollSentinel";
+import { useProducts, useCategories } from "@/hooks/useCatalog";
+import { useInfiniteProducts } from "@/hooks/useInfiniteProducts";
+import { deriveSubcategories, filterBySubcategory } from "@/lib/subcategories";
 import { useFollowingFeed, useFollowingSupplierIds, useAuthUserId } from "@/hooks/useFollowing";
 import { useMyInterests } from "@/hooks/useInterests";
 import { useMyVerticals } from "@/hooks/useMyVerticals";
 import { useTradeMode } from "@/hooks/useTradeMode";
+import CircleSpinner from "@/components/CircleSpinner";
 
 type Tab = "home" | "fyp" | "following";
 const TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
