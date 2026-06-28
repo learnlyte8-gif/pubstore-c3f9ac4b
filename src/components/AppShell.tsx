@@ -533,7 +533,7 @@ function RailDrawer() {
 
 function HomeFeedTabs() {
   const [params, setParams] = useSearchParams();
-  const navigate = useNavigate();
+  // navigation handled via setParams below
   const { data: categories = [] } = useCategories();
   const activeFeed = (params.get("feed") as "home" | "fyp" | "following") || "home";
   const activeCat = params.get("cat");
@@ -595,14 +595,17 @@ function HomeFeedTabs() {
             role="tab"
             aria-selected={isActive}
             onClick={() => {
-              if (t.kind === "cat") {
-                navigate(`/categories?cat=${encodeURIComponent(t.slug)}`);
-                return;
-              }
               const next = new URLSearchParams(params);
-              next.delete("cat");
-              if (t.id === "home") next.delete("feed");
-              else next.set("feed", t.id);
+              if (t.kind === "cat") {
+                next.delete("feed");
+                next.set("cat", t.slug);
+                next.delete("sub");
+              } else {
+                next.delete("cat");
+                next.delete("sub");
+                if (t.id === "home") next.delete("feed");
+                else next.set("feed", t.id);
+              }
               setParams(next, { replace: true });
             }}
             className={`relative shrink-0 text-[13px] font-bold leading-none py-1.5 whitespace-nowrap transition-colors ${
