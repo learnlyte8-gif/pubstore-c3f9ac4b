@@ -96,6 +96,9 @@ const fmtPrice = (n: number, currency = "$") => `${currency}${n.toLocaleString()
 // Unified card data
 // ============================================================
 
+type MetaChip = { icon: LucideIcon; text: string };
+type MenuPreview = { id: string; name: string; price: number; currency?: string; image: string | null };
+
 type MixedItem = {
   id: string;
   type: string;
@@ -106,11 +109,15 @@ type MixedItem = {
   title: string;
   subtitle?: string;
   price?: string;
+  priceSub?: string;
+  description?: string;
   rating?: number;
   sold?: number;
   badge?: string;
   saveKind?: "agro" | "stay" | "property" | "service" | "industrial" | "car-rental" | "finance" | "news";
   product?: Product;
+  meta?: MetaChip[];
+  menu?: MenuPreview[];
 };
 
 function normalizeProduct(p: Product): MixedItem {
