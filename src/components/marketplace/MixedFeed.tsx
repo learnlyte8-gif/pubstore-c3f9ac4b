@@ -701,18 +701,42 @@ function MixedCard({ item }: { item: MixedItem }) {
       </div>
 
       <div className="p-2.5">
-        <p className="text-xs font-bold leading-snug overflow-hidden whitespace-nowrap text-ellipsis break-words">{item.title}</p>
+        <p className="text-xs font-bold leading-snug line-clamp-2 break-words">{item.title}</p>
         {item.subtitle && (
-          <p className="text-[10px] text-muted-foreground overflow-hidden whitespace-nowrap text-ellipsis break-words mt-0.5">{item.subtitle}</p>
+          <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5 capitalize">{item.subtitle}</p>
+        )}
+        {item.description && (
+          <p className="text-[11px] text-foreground/80 leading-snug mt-1 line-clamp-2">{item.description}</p>
+        )}
+
+        {item.meta && item.meta.length > 0 && (
+          <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+            {item.meta.slice(0, 4).map((m, i) => {
+              const MI = m.icon;
+              return (
+                <span
+                  key={i}
+                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-muted text-foreground/80 text-[9px] font-semibold capitalize"
+                >
+                  <MI className="w-2.5 h-2.5 text-primary" /> {m.text}
+                </span>
+              );
+            })}
+          </div>
         )}
 
         <div className="pt-2 flex items-end justify-between gap-2">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             {item.price && (
-              <p className="text-sm font-black tracking-tight text-destructive truncate">{item.price}</p>
+              <p className="flex items-baseline gap-0.5 flex-wrap leading-none">
+                <span className="text-xl sm:text-2xl font-black tracking-tight text-destructive break-all">{item.price}</span>
+                {item.priceSub && (
+                  <span className="text-[10px] text-muted-foreground font-semibold">{item.priceSub}</span>
+                )}
+              </p>
             )}
             {item.rating != null && item.rating > 0 && (
-              <p className="text-[10px] flex items-center gap-1 text-muted-foreground">
+              <p className="text-[10px] flex items-center gap-1 text-muted-foreground mt-1">
                 <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                 <span className="font-medium text-foreground">{item.rating.toFixed(1)}</span>
                 {item.sold != null && item.sold > 0 && <span>· {item.sold.toLocaleString()} sold</span>}
@@ -730,6 +754,29 @@ function MixedCard({ item }: { item: MixedItem }) {
             </button>
           )}
         </div>
+
+        {item.type === "restaurant" && item.menu && item.menu.length > 0 && (
+          <div className="mt-2 pt-2 border-t border-border">
+            <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">From the menu</p>
+            <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-0.5 px-0.5">
+              {item.menu.map((m) => (
+                <div key={m.id} className="shrink-0 w-12 text-center">
+                  <div className="w-12 h-12 rounded-full overflow-hidden bg-muted ring-2 ring-primary/30 ring-offset-1 ring-offset-card">
+                    {m.image ? (
+                      <img src={m.image} alt={m.name} loading="lazy" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <UtensilsCrossed className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[9px] font-semibold mt-1 truncate">{m.name}</p>
+                  <p className="text-[10px] font-black text-destructive leading-none">${m.price.toFixed(0)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {item.type === "product" && item.product && (
           <div className="mt-2 flex items-center gap-1 flex-wrap">
