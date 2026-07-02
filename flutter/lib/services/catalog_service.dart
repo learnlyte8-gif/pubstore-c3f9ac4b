@@ -17,7 +17,7 @@ class CatalogService {
     final from = page * pageSize;
     final to = from + pageSize - 1;
 
-    var query = supabase
+    dynamic query = supabase
         .from('products')
         .select('id, supplier_id, title, image, gallery, price, original_price, '
             'category_slug, badge, free_shipping, moq, unit, lead_time, ship_from, '
