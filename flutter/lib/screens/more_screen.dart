@@ -3,9 +3,14 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../theme/palette.dart';
 import '../theme/theme.dart';
+import 'finance_screen.dart';
+import 'news_screen.dart';
 import 'notifications_screen.dart';
 import 'orders_screen.dart';
+import 'properties_screen.dart';
 import 'search_screen.dart';
+import 'services_screen.dart';
+import 'stays_screen.dart';
 import 'wishlist_screen.dart';
 
 /// Explore hub — mirrors the department drawer in `src/pages/Home.tsx`.
@@ -15,18 +20,23 @@ class MoreScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final depts = <_Dept>[
-      _Dept('Market', LucideIcons.store, const Color(0xFF3B82F6)),
-      _Dept('Jobs', LucideIcons.briefcase, const Color(0xFF4F46E5)),
-      _Dept('Rides', LucideIcons.navigation, const Color(0xFF10B981)),
-      _Dept('Services', LucideIcons.wrench, const Color(0xFF8B5CF6)),
-      _Dept('Property', LucideIcons.home, const Color(0xFF0284C7)),
-      _Dept('Delivery', LucideIcons.truck, const Color(0xFFF97316)),
-      _Dept('Finance', LucideIcons.banknote, const Color(0xFF059669)),
-      _Dept('News', LucideIcons.newspaper, const Color(0xFFEC4899)),
-      _Dept('Stays', LucideIcons.bedDouble, const Color(0xFFF59E0B)),
-      _Dept('Auto', LucideIcons.car, const Color(0xFF18181B)),
-      _Dept('Industrial', LucideIcons.factory, const Color(0xFF0369A1)),
-      _Dept('Agro', LucideIcons.sprout, const Color(0xFF16A34A)),
+      _Dept('Market', LucideIcons.store, const Color(0xFF3B82F6), null),
+      _Dept('Jobs', LucideIcons.briefcase, const Color(0xFF4F46E5), null),
+      _Dept('Rides', LucideIcons.navigation, const Color(0xFF10B981), null),
+      _Dept('Services', LucideIcons.wrench, const Color(0xFF8B5CF6),
+          (c) => const ServicesScreen()),
+      _Dept('Property', LucideIcons.home, const Color(0xFF0284C7),
+          (c) => const PropertiesScreen()),
+      _Dept('Delivery', LucideIcons.truck, const Color(0xFFF97316), null),
+      _Dept('Finance', LucideIcons.banknote, const Color(0xFF059669),
+          (c) => const FinanceScreen()),
+      _Dept('News', LucideIcons.newspaper, const Color(0xFFEC4899),
+          (c) => const NewsScreen()),
+      _Dept('Stays', LucideIcons.bedDouble, const Color(0xFFF59E0B),
+          (c) => const StaysScreen()),
+      _Dept('Auto', LucideIcons.car, const Color(0xFF18181B), null),
+      _Dept('Industrial', LucideIcons.factory, const Color(0xFF0369A1), null),
+      _Dept('Agro', LucideIcons.sprout, const Color(0xFF16A34A), null),
     ];
 
     return Scaffold(
@@ -62,8 +72,15 @@ class MoreScreen extends StatelessWidget {
               final d = depts[i];
               return InkWell(
                 borderRadius: BorderRadius.circular(AppRadii.md),
-                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('${d.label} — coming soon'))),
+                onTap: () {
+                  if (d.build != null) {
+                    Navigator.of(context).push(
+                        MaterialPageRoute(builder: d.build!));
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('${d.label} — coming soon')));
+                  }
+                },
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -110,10 +127,11 @@ class MoreScreen extends StatelessWidget {
 }
 
 class _Dept {
-  const _Dept(this.label, this.icon, this.color);
+  const _Dept(this.label, this.icon, this.color, this.build);
   final String label;
   final IconData icon;
   final Color color;
+  final WidgetBuilder? build;
 }
 
 class _SectionLabel extends StatelessWidget {
