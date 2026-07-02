@@ -15,6 +15,7 @@ import '../services/auth_service.dart';
 import '../services/cart_service.dart';
 import '../services/catalog_service.dart';
 import '../theme/palette.dart';
+import '../widgets/tapson_sheet.dart';
 
 /// Bottom-tab shell — mirrors `src/components/AppShell.tsx` on web and
 /// `navigation/RootTabs.tsx` in the React Native app.
