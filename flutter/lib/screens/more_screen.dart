@@ -20,18 +20,23 @@ class MoreScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final depts = <_Dept>[
-      _Dept('Market', LucideIcons.store, const Color(0xFF3B82F6)),
-      _Dept('Jobs', LucideIcons.briefcase, const Color(0xFF4F46E5)),
-      _Dept('Rides', LucideIcons.navigation, const Color(0xFF10B981)),
-      _Dept('Services', LucideIcons.wrench, const Color(0xFF8B5CF6)),
-      _Dept('Property', LucideIcons.home, const Color(0xFF0284C7)),
-      _Dept('Delivery', LucideIcons.truck, const Color(0xFFF97316)),
-      _Dept('Finance', LucideIcons.banknote, const Color(0xFF059669)),
-      _Dept('News', LucideIcons.newspaper, const Color(0xFFEC4899)),
-      _Dept('Stays', LucideIcons.bedDouble, const Color(0xFFF59E0B)),
-      _Dept('Auto', LucideIcons.car, const Color(0xFF18181B)),
-      _Dept('Industrial', LucideIcons.factory, const Color(0xFF0369A1)),
-      _Dept('Agro', LucideIcons.sprout, const Color(0xFF16A34A)),
+      _Dept('Market', LucideIcons.store, const Color(0xFF3B82F6), null),
+      _Dept('Jobs', LucideIcons.briefcase, const Color(0xFF4F46E5), null),
+      _Dept('Rides', LucideIcons.navigation, const Color(0xFF10B981), null),
+      _Dept('Services', LucideIcons.wrench, const Color(0xFF8B5CF6),
+          (c) => const ServicesScreen()),
+      _Dept('Property', LucideIcons.home, const Color(0xFF0284C7),
+          (c) => const PropertiesScreen()),
+      _Dept('Delivery', LucideIcons.truck, const Color(0xFFF97316), null),
+      _Dept('Finance', LucideIcons.banknote, const Color(0xFF059669),
+          (c) => const FinanceScreen()),
+      _Dept('News', LucideIcons.newspaper, const Color(0xFFEC4899),
+          (c) => const NewsScreen()),
+      _Dept('Stays', LucideIcons.bedDouble, const Color(0xFFF59E0B),
+          (c) => const StaysScreen()),
+      _Dept('Auto', LucideIcons.car, const Color(0xFF18181B), null),
+      _Dept('Industrial', LucideIcons.factory, const Color(0xFF0369A1), null),
+      _Dept('Agro', LucideIcons.sprout, const Color(0xFF16A34A), null),
     ];
 
     return Scaffold(
