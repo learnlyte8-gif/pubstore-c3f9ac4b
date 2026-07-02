@@ -127,10 +127,11 @@ class MoreScreen extends StatelessWidget {
 }
 
 class _Dept {
-  const _Dept(this.label, this.icon, this.color);
+  const _Dept(this.label, this.icon, this.color, this.build);
   final String label;
   final IconData icon;
   final Color color;
+  final WidgetBuilder? build;
 }
 
 class _SectionLabel extends StatelessWidget {
