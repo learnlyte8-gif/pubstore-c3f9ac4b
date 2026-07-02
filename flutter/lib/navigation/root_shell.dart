@@ -30,6 +30,7 @@ class _RootShellState extends ConsumerState<RootShell> {
   String _feed = 'home';
   Category? _activeCategory;
   late Future<List<Category>> _categories;
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -67,8 +68,15 @@ class _RootShellState extends ConsumerState<RootShell> {
       const ProfileScreen(),
     ];
 
+    final screenWidth = MediaQuery.sizeOf(context).width;
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: AppColors.background,
+      drawer: Drawer(
+        backgroundColor: AppColors.background,
+        width: screenWidth * .88 > 420 ? 420 : screenWidth * .88,
+        child: _RailDrawerContent(onClose: () => Navigator.of(context).pop()),
+      ),
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -78,7 +86,7 @@ class _RootShellState extends ConsumerState<RootShell> {
               feed: _feed,
               activeCategory: _activeCategory,
               categoriesFuture: _categories,
-              onMenu: () => _openRailDrawer(context),
+              onMenu: () => _scaffoldKey.currentState?.openDrawer(),
               onFeed: _selectFeed,
               onCategory: _selectCategory,
             ),
@@ -96,24 +104,6 @@ class _RootShellState extends ConsumerState<RootShell> {
       bottomNavigationBar: _BottomNav(
         index: _index,
         onChanged: (i) => setState(() => _index = i),
-      ),
-    );
-  }
-
-  void _openRailDrawer(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.background,
-      constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * .88),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.horizontal(right: Radius.circular(0))),
-      builder: (_) => Align(
-        alignment: Alignment.centerLeft,
-        child: SizedBox(
-          width: MediaQuery.sizeOf(context).width * .88,
-          height: MediaQuery.sizeOf(context).height,
-          child: _RailDrawerContent(onClose: () => Navigator.pop(context)),
-        ),
       ),
     );
   }
