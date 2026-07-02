@@ -7,6 +7,7 @@ import '../theme/theme.dart';
 import 'become_supplier_screen.dart';
 import 'store_actions_screen.dart';
 import 'store_analytics_screen.dart';
+import 'store_section_screen.dart';
 
 /// Mirrors `src/pages/MyStore.tsx` — supplier dashboard entry with stats,
 /// go-live CTA, and shortcuts to product management.
@@ -132,18 +133,15 @@ class _MyStoreScreenState extends State<MyStoreScreen> {
             ]),
           ),
           const SizedBox(height: 16),
-          _tile(LucideIcons.package, 'Products',
-              subtitle: 'Manage catalog & inventory'),
-          _tile(LucideIcons.shoppingBag, 'Orders',
-              subtitle: 'Fulfilment & shipping'),
-          _tile(LucideIcons.megaphone, 'Promotions',
-              subtitle: 'Coupons & campaigns'),
-          _tile(LucideIcons.barChart3, 'Analytics',
-              subtitle: 'Sales trends & audience'),
-          _tile(LucideIcons.radio, 'Go live',
-              subtitle: 'Stream to your followers now'),
-          _tile(LucideIcons.messageCircle, 'Inbox',
-              subtitle: 'Buyer messages'),
+          _tile(LucideIcons.package, 'Products', section: 'products', subtitle: 'Manage catalog & inventory'),
+          _tile(LucideIcons.shoppingBag, 'Orders', section: 'orders', subtitle: 'Fulfilment & shipping'),
+          _tile(LucideIcons.megaphone, 'Promotions', section: 'promote', subtitle: 'Coupons & campaigns'),
+          _tile(LucideIcons.barChart3, 'Analytics', section: 'analytics', subtitle: 'Sales trends & audience'),
+          _tile(LucideIcons.star, 'Reviews', section: 'reviews', subtitle: 'What buyers are saying'),
+          _tile(LucideIcons.truck, 'Shipping', section: 'shipping', subtitle: 'Templates & carriers'),
+          _tile(LucideIcons.image, 'Store profile', section: 'profile', subtitle: 'Banner, logo, about'),
+          _tile(LucideIcons.settings, 'Settings', section: 'settings', subtitle: 'Payouts, taxes, hours'),
+          _tile(LucideIcons.download, 'Import', section: 'import', subtitle: 'Alibaba / Amazon / Shopify'),
         ],
       ),
     );
@@ -163,24 +161,19 @@ class _MyStoreScreenState extends State<MyStoreScreen> {
   Widget _divider() => Container(
       width: 1, height: 32, color: Colors.white.withOpacity(0.3));
 
-  Widget _tile(IconData icon, String label, {String? subtitle}) => Card(
+  Widget _tile(IconData icon, String label, {String? subtitle, String? section}) => Card(
         elevation: 0,
         shape: RoundedRectangleBorder(
             side: const BorderSide(color: AppColors.border),
             borderRadius: BorderRadius.circular(AppRadii.md)),
         child: ListTile(
           leading: Icon(icon, color: AppColors.primary),
-          title: Text(label,
-              style: const TextStyle(fontWeight: FontWeight.w700)),
-          subtitle: subtitle == null
-              ? null
-              : Text(subtitle,
-                  style:
-                      const TextStyle(fontSize: 12, color: AppColors.muted)),
-          trailing: const Icon(LucideIcons.chevronRight,
-              size: 16, color: AppColors.muted),
-          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('$label — full flow next slice'))),
+          title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+          subtitle: subtitle == null ? null : Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+          trailing: const Icon(LucideIcons.chevronRight, size: 16, color: AppColors.muted),
+          onTap: section == null
+              ? () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$label — coming soon')))
+              : () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => StoreSectionScreen(section: section))).then((_) => _load()),
         ),
       );
 }
