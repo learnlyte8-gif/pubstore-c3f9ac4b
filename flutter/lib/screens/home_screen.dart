@@ -426,8 +426,8 @@ class _DirectorySheet extends StatelessWidget {
     ('Stays', LucideIcons.bedDouble), ('Auto', LucideIcons.car), ('Industrial', LucideIcons.factory), ('Agro', LucideIcons.sprout),
   ];
   static const quick = [
-    ('Request quote', LucideIcons.fileText), ('Track order', LucideIcons.package), ('Compare', LucideIcons.gitCompare),
-    ('Logistics', LucideIcons.truck), ('Trade Pay', LucideIcons.wallet), ('Coupons', LucideIcons.badgePercent),
+    ('Request quote', LucideIcons.fileText), ('Track order', LucideIcons.package), ('Compare', Icons.compare_arrows),
+    ('Logistics', LucideIcons.truck), ('Trade Pay', LucideIcons.wallet), ('Coupons', Icons.local_offer_outlined),
   ];
 
   @override
@@ -497,7 +497,7 @@ class _Promo3DCarouselState extends State<_Promo3DCarousel> {
   int active = 0;
   late final Timer timer;
   final slides = const [
-    ('Welcome', 'Welcome to PUBSTORE', 'Source verified suppliers worldwide', 'Explore', LucideIcons.shoppingBag, [Color(0xFF4F46E5), Color(0xFFDB2777)]),
+    ('Welcome', 'Welcome to PUBSTORE', 'Source verified suppliers worldwide', 'Explore', Icons.shopping_bag_outlined, [Color(0xFF4F46E5), Color(0xFFDB2777)]),
     ('Trending', 'Trending now', 'Best-selling products', 'Shop', LucideIcons.sparkles, [Color(0xFFF43F5E), Color(0xFFF59E0B)]),
     ('Stays', 'Stays worldwide', 'Book unique places', 'Book', LucideIcons.bedDouble, [Color(0xFF10B981), Color(0xFF0891B2)]),
   ];

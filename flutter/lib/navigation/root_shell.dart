@@ -327,7 +327,7 @@ class _BottomNav extends StatelessWidget {
   final void Function(int) onChanged;
   static const items = [
     ('Home', LucideIcons.home),
-    ('Shop', LucideIcons.shoppingBag),
+    ('Shop', Icons.shopping_bag_outlined),
     ('Chats', LucideIcons.messageCircle),
     ('Saved', LucideIcons.heart),
     ('You', LucideIcons.user),
@@ -365,8 +365,8 @@ class _RailDrawerContent extends StatelessWidget {
   static const sections = [
     ('Commerce', [('Marketplace', 'Shop everything', LucideIcons.store), ('Industrial', 'B2B & wholesale', LucideIcons.factory), ('Logistics', 'Ship & deliver', LucideIcons.truck)]),
     ('Mobility', [('Rides', 'Book a trip', LucideIcons.navigation), ('Auto', 'Buy vehicles', LucideIcons.car), ('Car Rentals', 'Rent by the day', LucideIcons.car)]),
-    ('Living', [('Properties', 'Buy & let', LucideIcons.building2), ('Stays', 'Hotels & rentals', LucideIcons.hotel), ('Services', 'Hire a pro', LucideIcons.wrench)]),
-    ('Work & Money', [('Jobs', 'Find work', LucideIcons.briefcase), ('Finance', 'Loans & wallet', LucideIcons.landmark), ('News', 'Today’s stories', LucideIcons.newspaper)]),
+    ('Living', [('Properties', 'Buy & let', Icons.apartment), ('Stays', 'Hotels & rentals', Icons.hotel_outlined), ('Services', 'Hire a pro', LucideIcons.wrench)]),
+    ('Work & Money', [('Jobs', 'Find work', LucideIcons.briefcase), ('Finance', 'Loans & wallet', Icons.account_balance_outlined), ('News', 'Today’s stories', LucideIcons.newspaper)]),
   ];
   @override
   Widget build(BuildContext context) => SafeArea(
