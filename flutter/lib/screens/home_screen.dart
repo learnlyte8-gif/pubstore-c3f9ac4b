@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -5,9 +7,11 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../models/models.dart';
 import '../services/catalog_service.dart';
 import '../services/cart_service.dart';
+import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../widgets/masonry_grid.dart';
 import 'product_detail_screen.dart';
+
 
 /// Home feed — infinite-scrolling staggered grid backed by
 /// `products` on Lovable Cloud. Same shape as `src/pages/Home.tsx`.
@@ -37,16 +41,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   String get _sortBy => widget.feed == 'fyp' ? 'rating' : 'newest';
 
+  List<String>? _followedSupplierIds;
+
   @override
   void initState() {
     super.initState();
-    _loadMore();
+    _bootstrap();
     _scroll.addListener(() {
       if (_scroll.position.pixels >=
           _scroll.position.maxScrollExtent - 400) {
         _loadMore();
       }
     });
+  }
+
+  Future<void> _bootstrap() async {
+    if (widget.feed == 'following') {
+      await _loadFollowing();
+    }
+    await _loadMore();
+  }
+
+  Future<void> _loadFollowing() async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) {
+      _followedSupplierIds = const [];
+      return;
+    }
+    try {
+      final rows = await supabase
+          .from('followers')
+          .select('supplier_id')
+          .eq('user_id', uid);
+      _followedSupplierIds =
+          (rows as List).map((r) => r['supplier_id'] as String).toList();
+    } catch (_) {
+      _followedSupplierIds = const [];
+    }
   }
 
   @override
@@ -65,17 +96,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _loadMore() async {
     if (_loading || _done) return;
+    // Following tab with zero follows → nothing to load.
+    if (widget.feed == 'following' && (_followedSupplierIds?.isEmpty ?? false)) {
+      setState(() => _done = true);
+      return;
+    }
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final batch = await catalog.fetchProducts(
-        page: _page,
-        pageSize: 30,
-        category: widget.categoryId,
-        sortBy: _sortBy,
-      );
+      List<Product> batch;
+      if (widget.feed == 'following' && (_followedSupplierIds?.isNotEmpty ?? false)) {
+        final from = _page * 30;
+        final to = from + 29;
+        final rows = await supabase
+            .from('products')
+            .select('id, supplier_id, title, image, gallery, price, original_price, '
+                'category_slug, badge, free_shipping, moq, unit, lead_time, ship_from, '
+                'rating, review_count, sold, deal_ends_at, '
+                'suppliers!inner(name, verified, gold, country, location_address, latitude, longitude, trade_type)')
+            .eq('active', true)
+            .inFilter('supplier_id', _followedSupplierIds!)
+            .order('created_at', ascending: false)
+            .range(from, to);
+        batch = (rows as List)
+            .map((r) => Product.fromRow(r as Map<String, dynamic>))
+            .toList();
+      } else {
+        batch = await catalog.fetchProducts(
+          page: _page,
+          pageSize: 30,
+          category: widget.categoryId,
+          sortBy: _sortBy,
+        );
+      }
       setState(() {
         _products.addAll(batch);
         _page += 1;
@@ -96,6 +151,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _page = 0;
       _done = false;
     });
+    if (widget.feed == 'following') await _loadFollowing();
     await _loadMore();
   }
 
@@ -112,6 +168,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     slivers: [
                       if (widget.categoryId == null && widget.feed == 'home') ...[
                         SliverToBoxAdapter(child: _Promo3DCarousel()),
+                        SliverToBoxAdapter(child: _HomeMenuButton()),
+
 
                         SliverToBoxAdapter(
                           child: Padding(
@@ -188,6 +246,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           padding: EdgeInsets.symmetric(vertical: 16),
                           sliver: SliverToBoxAdapter(
                             child: Center(child: CircularProgressIndicator()),
+                          ),
+                        ),
+                      if (widget.feed == 'following' && _products.isEmpty && !_loading)
+                        const SliverPadding(
+                          padding: EdgeInsets.all(24),
+                          sliver: SliverToBoxAdapter(
+                            child: _FollowingEmpty(),
                           ),
                         ),
                       if (_done && _products.isNotEmpty)
@@ -285,8 +350,10 @@ class _SubcategoryChips extends StatelessWidget {
   Widget build(BuildContext context) {
     final counts = <String, int>{};
     for (final p in products) {
-      final text = p.unit.isNotEmpty ? p.unit : 'Products';
-      counts[text] = (counts[text] ?? 0) + 1;
+      final label = (p.badge != null && p.badge!.isNotEmpty)
+          ? p.badge!
+          : (p.category ?? 'Other');
+      counts[label] = (counts[label] ?? 0) + 1;
     }
     if (counts.isEmpty) return const SizedBox.shrink();
     final entries = counts.entries.toList();
@@ -321,6 +388,74 @@ class _SubcategoryChips extends StatelessWidget {
         ),
       );
 }
+
+class _HomeMenuButton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        child: Material(
+          color: AppColors.card,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: AppColors.border),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () {
+              final s = Scaffold.maybeOf(context);
+              if (s?.hasDrawer ?? false) s!.openDrawer();
+            },
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(children: [
+                Icon(LucideIcons.menu, size: 16),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text('Browse categories & quick actions',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                ),
+                Text('›', style: TextStyle(fontSize: 20, color: AppColors.muted)),
+              ]),
+            ),
+          ),
+        ),
+      );
+}
+
+class _FollowingEmpty extends StatelessWidget {
+  const _FollowingEmpty();
+
+  @override
+  Widget build(BuildContext context) {
+    final signedIn = supabase.auth.currentUser != null;
+    return Column(children: [
+      Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: AppColors.mutedSurface,
+        ),
+        child: const Icon(LucideIcons.users, color: AppColors.muted, size: 24),
+      ),
+      const SizedBox(height: 12),
+      Text(
+        signedIn ? "You're not following anyone yet" : 'Sign in to see your following feed',
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        signedIn
+            ? "Visit a supplier's store and tap follow to see their posts here."
+            : 'Follow suppliers and their newest products land here.',
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 12, color: AppColors.muted),
+      ),
+    ]);
+  }
+}
+
 
 class _RecommendationStrip extends StatefulWidget {
   const _RecommendationStrip({required this.onTap});
