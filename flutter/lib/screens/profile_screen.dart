@@ -5,12 +5,18 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../services/auth_service.dart';
 import '../theme/palette.dart';
+import 'addresses_screen.dart';
 import 'auth_screen.dart';
 import 'cart_screen.dart';
+import 'help_center_screen.dart';
 import 'messages_screen.dart';
+import 'my_store_screen.dart';
 import 'notifications_screen.dart';
 import 'orders_screen.dart';
+import 'payment_methods_screen.dart';
+import 'privacy_screen.dart';
 import 'settings_screen.dart';
+import 'verification_screen.dart';
 import 'wallet_screen.dart';
 import 'wishlist_screen.dart';
 
@@ -200,7 +206,38 @@ class _SignedIn extends ConsumerWidget {
         _Row(
           icon: LucideIcons.store,
           label: 'My store',
-          onTap: () => _todo(context, 'My store'),
+          onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const MyStoreScreen())),
+        ),
+        _Row(
+          icon: LucideIcons.mapPin,
+          label: 'Addresses',
+          onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AddressesScreen())),
+        ),
+        _Row(
+          icon: LucideIcons.creditCard,
+          label: 'Payment methods',
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => const PaymentMethodsScreen())),
+        ),
+        _Row(
+          icon: LucideIcons.badgeCheck,
+          label: 'Identity verification',
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => const VerificationScreen())),
+        ),
+        _Row(
+          icon: LucideIcons.helpCircle,
+          label: 'Help center',
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => const HelpCenterScreen())),
+        ),
+        _Row(
+          icon: LucideIcons.shield,
+          label: 'Privacy',
+          onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PrivacyScreen())),
         ),
         _Row(
           icon: LucideIcons.settings,

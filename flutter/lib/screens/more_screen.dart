@@ -5,6 +5,7 @@ import '../theme/palette.dart';
 import '../theme/theme.dart';
 import 'agro_screen.dart';
 import 'auto_screen.dart';
+import 'car_rentals_screen.dart';
 import 'finance_screen.dart';
 import 'industrial_screen.dart';
 import 'jobs_screen.dart';
@@ -14,6 +15,7 @@ import 'news_screen.dart';
 import 'notifications_screen.dart';
 import 'orders_screen.dart';
 import 'properties_screen.dart';
+import 'restaurants_screen.dart';
 import 'rides_screen.dart';
 import 'search_screen.dart';
 import 'services_screen.dart';
@@ -53,6 +55,10 @@ class MoreScreen extends StatelessWidget {
           (c) => const IndustrialScreen()),
       _Dept('Agro', LucideIcons.sprout, const Color(0xFF16A34A),
           (c) => const AgroScreen()),
+      _Dept('Food', LucideIcons.utensils, const Color(0xFFDC2626),
+          (c) => const RestaurantsScreen()),
+      _Dept('Rentals', LucideIcons.keyRound, const Color(0xFF7C3AED),
+          (c) => const CarRentalsScreen()),
     ];
 
     return Scaffold(
