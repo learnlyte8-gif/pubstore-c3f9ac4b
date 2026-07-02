@@ -41,16 +41,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   String get _sortBy => widget.feed == 'fyp' ? 'rating' : 'newest';
 
+  List<String>? _followedSupplierIds;
+
   @override
   void initState() {
     super.initState();
-    _loadMore();
+    _bootstrap();
     _scroll.addListener(() {
       if (_scroll.position.pixels >=
           _scroll.position.maxScrollExtent - 400) {
         _loadMore();
       }
     });
+  }
+
+  Future<void> _bootstrap() async {
+    if (widget.feed == 'following') {
+      await _loadFollowing();
+    }
+    await _loadMore();
+  }
+
+  Future<void> _loadFollowing() async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) {
+      _followedSupplierIds = const [];
+      return;
+    }
+    try {
+      final rows = await supabase
+          .from('followers')
+          .select('supplier_id')
+          .eq('user_id', uid);
+      _followedSupplierIds =
+          (rows as List).map((r) => r['supplier_id'] as String).toList();
+    } catch (_) {
+      _followedSupplierIds = const [];
+    }
   }
 
   @override
@@ -69,17 +96,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _loadMore() async {
     if (_loading || _done) return;
+    // Following tab with zero follows → nothing to load.
+    if (widget.feed == 'following' && (_followedSupplierIds?.isEmpty ?? false)) {
+      setState(() => _done = true);
+      return;
+    }
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final batch = await catalog.fetchProducts(
-        page: _page,
-        pageSize: 30,
-        category: widget.categoryId,
-        sortBy: _sortBy,
-      );
+      List<Product> batch;
+      if (widget.feed == 'following' && (_followedSupplierIds?.isNotEmpty ?? false)) {
+        final from = _page * 30;
+        final to = from + 29;
+        final rows = await supabase
+            .from('products')
+            .select('id, supplier_id, title, image, gallery, price, original_price, '
+                'category_slug, badge, free_shipping, moq, unit, lead_time, ship_from, '
+                'rating, review_count, sold, deal_ends_at, '
+                'suppliers!inner(name, verified, gold, country, location_address, latitude, longitude, trade_type)')
+            .eq('active', true)
+            .inFilter('supplier_id', _followedSupplierIds!)
+            .order('created_at', ascending: false)
+            .range(from, to);
+        batch = (rows as List)
+            .map((r) => Product.fromRow(r as Map<String, dynamic>))
+            .toList();
+      } else {
+        batch = await catalog.fetchProducts(
+          page: _page,
+          pageSize: 30,
+          category: widget.categoryId,
+          sortBy: _sortBy,
+        );
+      }
       setState(() {
         _products.addAll(batch);
         _page += 1;
@@ -100,6 +151,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _page = 0;
       _done = false;
     });
+    if (widget.feed == 'following') await _loadFollowing();
     await _loadMore();
   }
 
