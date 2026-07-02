@@ -1,75 +1,64 @@
-## What we're building
+## Goal
 
-PUBSTORE will send branded WhatsApp messages from your Twilio sandbox for the events you picked, and incoming replies will land in the existing Messages inbox so you can answer from the app.
+Rebuild the Flutter Messages surface to match `src/pages/Messages.tsx` 1:1 — inbox with tabs, full-screen thread, swipe-to-reply, long-press actions, reactions, reply quotes, forwarding, and attachment cards. Replaces the stub `messages_screen.dart` and `thread_screen.dart`.
 
-## Scope (events)
+## Scope
 
-Outbound WhatsApp triggers:
-1. **Order confirmation + status updates** → buyer (placed, paid, shipped, delivered, cancelled, refunded)
-2. **New sale alert** → seller
-3. **Inquiry / RFQ / property / finance** notifications → the receiving party (supplier, lister, finance provider)
+### Inbox (`messages_screen.dart`)
+- Tabs: Unread · Suppliers · People · Groups · Discover
+- Search bar, refresh, unread counts per conversation
+- Rows show peer avatar with gradient ring, verified badge, subtitle (response time / @username / group meta), last message + time
+- Realtime refresh via Supabase channel + focus/visibility polling
+- Auto-open conversation from `?supplier=` or `?conv=` deep-link equivalents (in-app args)
+- Merges buyer conversations + supplier-owned + member-based (DMs, group buys)
 
-Two-way: replies to any PUBSTORE WhatsApp message land in the user's in-app conversation with PUBSTORE (or with the counter-party where one exists, e.g. supplier ↔ buyer inquiry thread).
+### Thread (`thread_screen.dart`)
+- Header: back, gradient-ring avatar, live dot, verified check, name, subtitle, call/video/info actions, group/supplier deep-link
+- Empty state with suggested quick prompts
+- Day dividers, sender grouping, tail bubbles, "Host" badge for supplier owner
+- SwipeBubble (Dismissible-based) → reply on threshold; long-press → action sheet; double-tap → ❤️ reaction
+- Reply preview strip above composer, cancel button
+- Reactions row under bubble (emoji + count)
+- Forwarded label + Reply quote card
+- Composer: attach button, text field, send / mic / heart, product picker sheet
+- Attachment card widget for product / supplier / wishlist / cart-unlock / catalog kinds
+- Notifications insert on send
 
-## User experience
+### Supporting files
+- `services/messages_service.dart` — extended with: fetch messages, insert (with attachment/reply/forward), update reactions, delete, mark read, list group buys / profiles, product search reuse
+- `models/message_models.dart` — `ChatConversation`, `ChatMessage`, `ChatAttachment` union, `Reactions` typedef
+- `widgets/chat/swipe_bubble.dart`, `widgets/chat/reply_quote.dart`, `widgets/chat/reaction_chips.dart`, `widgets/chat/attachment_card.dart`, `widgets/chat/message_actions_sheet.dart`, `widgets/chat/product_picker_sheet.dart`, `widgets/chat/discover_people.dart`
 
-- New "WhatsApp notifications" section in **Settings → Notifications**:
-  - Toggle: *Send me WhatsApp notifications* (off by default — sandbox requires explicit join).
-  - Shows the user's profile phone (read-only — they edit it on Account).
-  - **Sandbox join instructions** banner: "Send `join <code>` to +1 415 523 8886 on WhatsApp to activate" with copy buttons. Until they join, Twilio will reject — we surface a friendly state in the UI.
-  - Per-event sub-toggles (orders / sales / inquiries) that mirror the email prefs.
-- A small "via WhatsApp" badge in the notification preferences list.
-
-## Backend
-
-### Database (one migration)
-- Add to `public.profiles`: nothing — we reuse `phone`.
-- Add to `public.notification_preferences`:
-  - `whatsapp_enabled boolean default false`
-  - `whatsapp_orders boolean default true`
-  - `whatsapp_sales boolean default true`
-  - `whatsapp_inquiries boolean default true`
-  - `whatsapp_sandbox_joined boolean default false` (flipped to true the first time we receive an inbound from that number, so the UI can stop nagging).
-- New table `public.whatsapp_send_log` (event, to, status, twilio_sid, error, payload, created_at) — analogous to `email_send_log`, with RLS so users see only their own rows and service_role full access.
-- New table `public.whatsapp_inbound_log` (from, body, twilio_sid, conversation_id, created_at) for debugging + idempotency.
-- DB triggers (pg_net) on `orders` (insert + status update), `product_inquiries`, `rfqs`, `property_inquiries`, `finance_applications` → call `dispatch-whatsapp-notification` edge function. Triggers no-op when the recipient has the relevant toggle off.
-
-### Edge functions
-1. **`send-whatsapp`** (internal): wraps Twilio gateway `/Messages.json` with `From=whatsapp:+14155238886`, `To=whatsapp:+E164`. Logs every send into `whatsapp_send_log`. Skips + logs `skipped_opt_out` when prefs are off or phone missing. `verify_jwt = true`, callable from other edge functions with service-role.
-2. **`dispatch-whatsapp-notification`** (`verify_jwt = false`, pg_net caller): receives `{event, entity_id}`, loads the entity + recipient profile + prefs, renders the right short message (with deep link back into the app — e.g. `https://pubstore.app/orders/<id>`) and calls `send-whatsapp`.
-3. **`twilio-whatsapp-inbound`** (`verify_jwt = false`, public webhook): Twilio posts here when a user replies. We:
-   - Look up the user by phone.
-   - Mark `whatsapp_sandbox_joined = true` on first inbound.
-   - Find or create a system PUBSTORE conversation (or the active counter-party conversation if the reply is to a specific event, detected via a short `[ref:order_<id>]` tag we include in outbound messages).
-   - Insert the message into `messages` so it shows up in the existing Messages page in real time.
-   - Return empty TwiML so Twilio doesn't auto-reply.
-
-### Twilio
-- Already connected (test number confirmed). Sandbox sender hardcoded to `whatsapp:+14155238886`.
-- After deploy, you paste the inbound webhook URL into Twilio Sandbox settings — I'll show you the exact URL.
-
-## Message style
-
-Short, plain-text WhatsApp messages (no HTML, sandbox doesn't allow rich templates) with the PUBSTORE brand prefix and a deep link, e.g.:
-
-```
-🛒 PUBSTORE — Order #A1B2 confirmed
-2× Wireless headphones — $59.98
-Track: https://pubstore.app/orders/<id>
-Reply here to talk to the seller.
-[ref:order_<id>]
-```
-
-## Out of scope (for this round)
-
-- Marketing blasts (still email/in-app only).
-- Approved-template / production sender (you said sandbox).
-- OTP over WhatsApp (you didn't pick it).
+### Out of scope (left as TODO stubs)
+- Voice recording (`Mic` UI shown but records nothing)
+- Real audio/video call handlers (buttons no-op)
+- InquiryApprovalPanel / PendingInquiriesInbox (kept as placeholder cards linking to the web equivalent behavior; can be built next turn)
 
 ## Technical notes
 
-- Twilio called via Lovable connector gateway (no raw secrets in code).
-- Phone normalization to E.164 helper in `_shared/phone.ts`.
-- All triggers use `pg_net` (already enabled for the email system) — no new infra.
-- Inbound idempotency via `twilio_sid` unique index.
-- We surface a clean error in the UI if the user hasn't joined the sandbox yet (Twilio returns code `63007` / `63015`).
+- Realtime: `supabase.channel(...).onPostgresChanges(...)` — one subscription per active conversation for INSERT/UPDATE/DELETE, one shared subscription for conversations list, plus a 15s poll timer while foregrounded.
+- Optimistic sends: temp id in local list, replaced by server row on success, removed on error.
+- Sticky-to-bottom scroll: track `_stick` from `NotificationListener<ScrollNotification>`, snap to bottom on new message when stuck.
+- SwipeBubble: use `Dismissible` with `direction: mine ? endToStart : startToEnd`, `confirmDismiss` returning false so the row springs back; fire `onReply` when past 56px.
+- Reactions stored in `messages.reactions jsonb` — update entire map on toggle, mirror web logic (single reaction per user across all emojis).
+- Attachments stored in `messages.attachment jsonb`; render via `AttachmentCard` dispatching on `kind`.
+- Deep-link params passed through Flutter navigation args instead of URL search params (`MessagesScreen(supplierId: ..., prefill: ..., convId: ...)`).
+
+## Deliverables
+
+New/edited files:
+1. `flutter/lib/screens/messages_screen.dart` (rewrite)
+2. `flutter/lib/screens/thread_screen.dart` (rewrite)
+3. `flutter/lib/services/messages_service.dart` (extend)
+4. `flutter/lib/models/message_models.dart` (new)
+5. `flutter/lib/widgets/chat/swipe_bubble.dart` (new)
+6. `flutter/lib/widgets/chat/reply_quote.dart` (new)
+7. `flutter/lib/widgets/chat/reaction_chips.dart` (new)
+8. `flutter/lib/widgets/chat/attachment_card.dart` (new)
+9. `flutter/lib/widgets/chat/message_actions_sheet.dart` (new)
+10. `flutter/lib/widgets/chat/product_picker_sheet.dart` (new)
+11. `flutter/lib/widgets/chat/discover_people.dart` (new)
+
+No backend/schema changes — reuses existing `conversations`, `messages`, `conversation_members`, `notifications`, `group_buys`, `profiles`, `suppliers`.
+
+Approve to build, or tell me which parts to trim (e.g. skip Discover tab, skip attachments) if you want it smaller.
