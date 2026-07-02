@@ -4,6 +4,9 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../theme/theme.dart';
+import 'become_supplier_screen.dart';
+import 'store_actions_screen.dart';
+import 'store_analytics_screen.dart';
 
 /// Mirrors `src/pages/MyStore.tsx` — supplier dashboard entry with stats,
 /// go-live CTA, and shortcuts to product management.
@@ -76,9 +79,12 @@ class _MyStoreScreenState extends State<MyStoreScreen> {
               ),
               const SizedBox(height: 14),
               FilledButton.icon(
-                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Supplier onboarding coming soon'))),
+                onPressed: () async {
+                  final ok = await Navigator.of(context).push<bool>(
+                    MaterialPageRoute(builder: (_) => const BecomeSupplierScreen()),
+                  );
+                  if (ok == true) _load();
+                },
                 icon: const Icon(LucideIcons.plus, size: 14),
                 label: const Text('Create my store'),
               ),
@@ -93,8 +99,15 @@ class _MyStoreScreenState extends State<MyStoreScreen> {
         title: Text(s['name']?.toString() ?? 'My store'),
         actions: [
           IconButton(
-              icon: const Icon(LucideIcons.settings),
-              onPressed: () {}),
+            icon: const Icon(LucideIcons.barChart3),
+            tooltip: 'Analytics',
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StoreAnalyticsScreen())),
+          ),
+          IconButton(
+            icon: const Icon(LucideIcons.layoutGrid),
+            tooltip: 'Actions',
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StoreActionsScreen())),
+          ),
         ],
       ),
       body: ListView(
