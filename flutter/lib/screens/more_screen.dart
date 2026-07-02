@@ -128,6 +128,16 @@ class MoreScreen extends StatelessWidget {
               label: 'Notifications',
               onTap: () => Navigator.of(context).push(MaterialPageRoute(
                   builder: (_) => const NotificationsScreen()))),
+          _QuickRow(
+              icon: LucideIcons.wallet,
+              label: 'PUBSTORE Pay',
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const WalletScreen()))),
+          _QuickRow(
+              icon: LucideIcons.settings,
+              label: 'Settings',
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const SettingsScreen()))),
         ],
       ),
     );
