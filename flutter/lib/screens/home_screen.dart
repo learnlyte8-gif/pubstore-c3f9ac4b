@@ -11,7 +11,7 @@ import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../widgets/masonry_grid.dart';
 import 'product_detail_screen.dart';
-import 'supplier_screen.dart';
+
 
 /// Home feed — infinite-scrolling staggered grid backed by
 /// `products` on Lovable Cloud. Same shape as `src/pages/Home.tsx`.
