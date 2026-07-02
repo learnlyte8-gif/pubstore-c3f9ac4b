@@ -3,12 +3,18 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../theme/palette.dart';
 import '../theme/theme.dart';
+import 'admin_screen.dart';
+import 'ads_dashboard_screen.dart';
 import 'agro_screen.dart';
 import 'auto_screen.dart';
 import 'car_rentals_screen.dart';
+import 'driver_screen.dart';
 import 'finance_screen.dart';
 import 'industrial_screen.dart';
+import 'jobs_network_screen.dart';
+import 'jobs_profile_screen.dart';
 import 'jobs_screen.dart';
+import 'live_screen.dart';
 import 'logistics_screen.dart';
 import 'my_store_screen.dart';
 import 'news_screen.dart';
@@ -16,6 +22,7 @@ import 'notifications_screen.dart';
 import 'orders_screen.dart';
 import 'properties_screen.dart';
 import 'restaurants_screen.dart';
+import 'rfq_screen.dart';
 import 'rides_screen.dart';
 import 'search_screen.dart';
 import 'services_screen.dart';
@@ -147,6 +154,41 @@ class MoreScreen extends StatelessWidget {
               label: 'PUBSTORE Pay',
               onTap: () => Navigator.of(context).push(MaterialPageRoute(
                   builder: (_) => const WalletScreen()))),
+          _QuickRow(
+              icon: LucideIcons.fileText,
+              label: 'Request for quote',
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const RfqScreen()))),
+          _QuickRow(
+              icon: LucideIcons.video,
+              label: 'Live now',
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const LiveScreen()))),
+          _QuickRow(
+              icon: LucideIcons.userSquare,
+              label: 'Career profile',
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const JobsProfileScreen()))),
+          _QuickRow(
+              icon: LucideIcons.users,
+              label: 'My network',
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const JobsNetworkScreen()))),
+          _QuickRow(
+              icon: LucideIcons.megaphone,
+              label: 'Ads dashboard',
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const AdsDashboardScreen()))),
+          _QuickRow(
+              icon: LucideIcons.car,
+              label: 'Driver hub',
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const DriverScreen()))),
+          _QuickRow(
+              icon: LucideIcons.shield,
+              label: 'Admin console',
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const AdminScreen()))),
           _QuickRow(
               icon: LucideIcons.settings,
               label: 'Settings',
