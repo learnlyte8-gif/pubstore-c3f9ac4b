@@ -1,4 +1,5 @@
 import '../models/vertical_models.dart';
+import '../models/vertical_models_ext.dart';
 import 'supabase_client.dart';
 
 /// Mirrors `src/data/newVerticals.ts` and `src/data/verticals.ts`.
