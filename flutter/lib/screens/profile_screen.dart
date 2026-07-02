@@ -11,6 +11,7 @@ import 'cart_screen.dart';
 import 'help_center_screen.dart';
 import 'messages_screen.dart';
 import 'my_store_screen.dart';
+import 'notification_preferences_screen.dart';
 import 'notifications_screen.dart';
 import 'orders_screen.dart';
 import 'payment_methods_screen.dart';
@@ -196,6 +197,11 @@ class _SignedIn extends ConsumerWidget {
           label: 'Notifications',
           onTap: () => Navigator.of(context).push(MaterialPageRoute(
               builder: (_) => const NotificationsScreen())),
+        _Row(
+          icon: LucideIcons.bellRing,
+          label: 'Notification preferences',
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => const NotificationPreferencesScreen())),
         ),
         _Row(
           icon: LucideIcons.wallet,
