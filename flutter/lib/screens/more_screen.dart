@@ -3,14 +3,19 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../theme/palette.dart';
 import '../theme/theme.dart';
+import 'agro_screen.dart';
+import 'auto_screen.dart';
 import 'finance_screen.dart';
+import 'industrial_screen.dart';
 import 'news_screen.dart';
 import 'notifications_screen.dart';
 import 'orders_screen.dart';
 import 'properties_screen.dart';
 import 'search_screen.dart';
 import 'services_screen.dart';
+import 'settings_screen.dart';
 import 'stays_screen.dart';
+import 'wallet_screen.dart';
 import 'wishlist_screen.dart';
 
 /// Explore hub — mirrors the department drawer in `src/pages/Home.tsx`.
@@ -34,9 +39,12 @@ class MoreScreen extends StatelessWidget {
           (c) => const NewsScreen()),
       _Dept('Stays', LucideIcons.bedDouble, const Color(0xFFF59E0B),
           (c) => const StaysScreen()),
-      _Dept('Auto', LucideIcons.car, const Color(0xFF18181B), null),
-      _Dept('Industrial', LucideIcons.factory, const Color(0xFF0369A1), null),
-      _Dept('Agro', LucideIcons.sprout, const Color(0xFF16A34A), null),
+      _Dept('Auto', LucideIcons.car, const Color(0xFF18181B),
+          (c) => const AutoScreen()),
+      _Dept('Industrial', LucideIcons.factory, const Color(0xFF0369A1),
+          (c) => const IndustrialScreen()),
+      _Dept('Agro', LucideIcons.sprout, const Color(0xFF16A34A),
+          (c) => const AgroScreen()),
     ];
 
     return Scaffold(
@@ -120,6 +128,16 @@ class MoreScreen extends StatelessWidget {
               label: 'Notifications',
               onTap: () => Navigator.of(context).push(MaterialPageRoute(
                   builder: (_) => const NotificationsScreen()))),
+          _QuickRow(
+              icon: LucideIcons.wallet,
+              label: 'PUBSTORE Pay',
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const WalletScreen()))),
+          _QuickRow(
+              icon: LucideIcons.settings,
+              label: 'Settings',
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const SettingsScreen()))),
         ],
       ),
     );

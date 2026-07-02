@@ -10,6 +10,8 @@ import 'cart_screen.dart';
 import 'messages_screen.dart';
 import 'notifications_screen.dart';
 import 'orders_screen.dart';
+import 'settings_screen.dart';
+import 'wallet_screen.dart';
 import 'wishlist_screen.dart';
 
 /// Profile tab — mirrors `src/pages/Account.tsx`. Signed-out users see a
@@ -190,6 +192,12 @@ class _SignedIn extends ConsumerWidget {
               builder: (_) => const NotificationsScreen())),
         ),
         _Row(
+          icon: LucideIcons.wallet,
+          label: 'PUBSTORE Pay',
+          onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const WalletScreen())),
+        ),
+        _Row(
           icon: LucideIcons.store,
           label: 'My store',
           onTap: () => _todo(context, 'My store'),
@@ -197,7 +205,8 @@ class _SignedIn extends ConsumerWidget {
         _Row(
           icon: LucideIcons.settings,
           label: 'Settings',
-          onTap: () => _todo(context, 'Settings'),
+          onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SettingsScreen())),
         ),
         const Divider(height: 1, color: AppColors.border),
         _Row(
