@@ -3,23 +3,20 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'supabase_client.dart';
 
-/// Auth + profile providers — mirrors `src/pages/Auth.tsx` +
-/// `src/hooks/useRequireAuth.ts` on web. All screens should read
-/// [authStateProvider] for the live session and [profileProvider] for
-/// the current user's profile row.
+/// Auth + profile providers — mirrors `src/pages/Auth.tsx` on web.
+/// The web app uses passwordless email OTP (8-digit code), with optional
+/// display_name + phone captured on the same screen and persisted to
+/// `public.profiles` after verification.
 
-/// Streams every auth event (sign-in, sign-out, token refresh).
 final authStateProvider = StreamProvider<AuthState>((ref) {
   return supabase.auth.onAuthStateChange;
 });
 
-/// Current [User] or null. Rebuilds whenever auth state changes.
 final currentUserProvider = Provider<User?>((ref) {
   ref.watch(authStateProvider);
   return supabase.auth.currentUser;
 });
 
-/// The signed-in user's `public.profiles` row, or null when signed out.
 final profileProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
   final user = ref.watch(currentUserProvider);
   if (user == null) return null;
@@ -34,22 +31,53 @@ final profileProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
 class AuthService {
   const AuthService();
 
-  Future<void> signInWithPassword(String email, String password) async {
-    await supabase.auth.signInWithPassword(email: email, password: password);
-  }
-
-  Future<void> signUp(String email, String password,
-      {String? displayName}) async {
-    await supabase.auth.signUp(
+  /// Send an 8-digit login code to [email]. Optional [displayName], [phoneE164]
+  /// and [phoneCountry] are attached as auth metadata (used by the
+  /// `handle_new_user` trigger on first sign-up).
+  Future<void> sendEmailOtp({
+    required String email,
+    String? displayName,
+    String? phoneE164,
+    String? phoneCountry,
+  }) async {
+    final data = <String, dynamic>{};
+    if (displayName != null && displayName.isNotEmpty) {
+      data['display_name'] = displayName;
+    }
+    if (phoneE164 != null && phoneE164.isNotEmpty) {
+      data['phone'] = phoneE164;
+      if (phoneCountry != null) data['phone_country'] = phoneCountry;
+    }
+    await supabase.auth.signInWithOtp(
       email: email,
-      password: password,
-      data: displayName == null ? null : {'display_name': displayName},
-      emailRedirectTo: null,
+      shouldCreateUser: true,
+      data: data.isEmpty ? null : data,
     );
   }
 
-  Future<void> sendPasswordReset(String email) async {
-    await supabase.auth.resetPasswordForEmail(email);
+  /// Verify the 8-digit code sent to [email]. Returns the signed-in user.
+  Future<User?> verifyEmailOtp({
+    required String email,
+    required String token,
+  }) async {
+    final res = await supabase.auth.verifyOTP(
+      email: email,
+      token: token,
+      type: OtpType.email,
+    );
+    return res.user;
+  }
+
+  /// Persist phone on `profiles` (handle_new_user only fires on create,
+  /// so returning users need an explicit upsert — matches web behaviour).
+  Future<void> upsertPhone({
+    required String userId,
+    required String phoneE164,
+  }) async {
+    await supabase
+        .from('profiles')
+        .upsert({'user_id': userId, 'phone': phoneE164},
+            onConflict: 'user_id');
   }
 
   Future<void> signOut() async {
