@@ -81,7 +81,11 @@ class Product {
     final supplier = row['suppliers'] is Map
         ? Map<String, dynamic>.from(row['suppliers'] as Map)
         : <String, dynamic>{};
-    double? numOrNull(dynamic v) => v == null ? null : (v as num).toDouble();
+    double? numOrNull(dynamic v) {
+      if (v == null) return null;
+      if (v is num) return v.toDouble();
+      return double.tryParse(v.toString());
+    }
     return Product(
       id: row['id'] as String,
       title: (row['title'] ?? row['name'] ?? '') as String,
