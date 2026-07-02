@@ -9,6 +9,7 @@ import '../theme/palette.dart';
 import '../widgets/masonry_grid.dart';
 import 'cart_screen.dart';
 import 'product_detail_screen.dart';
+import 'search_screen.dart';
 
 /// Home feed — infinite-scrolling staggered grid backed by
 /// `products` on Lovable Cloud. Same shape as `src/pages/Home.tsx`.
@@ -85,6 +86,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -0.5),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(LucideIcons.search),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SearchScreen()),
+            ),
+          ),
           Stack(
             alignment: Alignment.center,
             children: [

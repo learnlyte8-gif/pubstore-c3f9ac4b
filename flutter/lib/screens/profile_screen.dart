@@ -7,6 +7,10 @@ import '../services/auth_service.dart';
 import '../theme/palette.dart';
 import 'auth_screen.dart';
 import 'cart_screen.dart';
+import 'messages_screen.dart';
+import 'notifications_screen.dart';
+import 'orders_screen.dart';
+import 'wishlist_screen.dart';
 
 /// Profile tab — mirrors `src/pages/Account.tsx`. Signed-out users see a
 /// sign-in CTA; signed-in users see their profile summary + shortcuts to
@@ -164,17 +168,26 @@ class _SignedIn extends ConsumerWidget {
         _Row(
           icon: LucideIcons.package,
           label: 'Orders',
-          onTap: () => _todo(context, 'Orders'),
+          onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const OrdersScreen())),
         ),
         _Row(
           icon: LucideIcons.heart,
           label: 'Wishlist',
-          onTap: () => _todo(context, 'Wishlist'),
+          onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const WishlistScreen())),
         ),
         _Row(
           icon: LucideIcons.messageCircle,
           label: 'Messages',
-          onTap: () => _todo(context, 'Messages'),
+          onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const MessagesScreen())),
+        ),
+        _Row(
+          icon: LucideIcons.bell,
+          label: 'Notifications',
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => const NotificationsScreen())),
         ),
         _Row(
           icon: LucideIcons.store,
