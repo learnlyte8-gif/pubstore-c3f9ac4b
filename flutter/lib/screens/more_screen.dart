@@ -3,14 +3,19 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../theme/palette.dart';
 import '../theme/theme.dart';
+import 'agro_screen.dart';
+import 'auto_screen.dart';
 import 'finance_screen.dart';
+import 'industrial_screen.dart';
 import 'news_screen.dart';
 import 'notifications_screen.dart';
 import 'orders_screen.dart';
 import 'properties_screen.dart';
 import 'search_screen.dart';
 import 'services_screen.dart';
+import 'settings_screen.dart';
 import 'stays_screen.dart';
+import 'wallet_screen.dart';
 import 'wishlist_screen.dart';
 
 /// Explore hub — mirrors the department drawer in `src/pages/Home.tsx`.
