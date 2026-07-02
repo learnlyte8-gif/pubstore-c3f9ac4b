@@ -460,9 +460,14 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        leading: const BackButton(),
-        title: Text('Cart (${lines.length})', style: const TextStyle(fontWeight: FontWeight.w800)),
+        leading: const BackButton(color: AppColors.foreground),
+        iconTheme: const IconThemeData(color: AppColors.foreground),
+        title: Text(
+          'Cart (${lines.length})',
+          style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.foreground),
+        ),
         backgroundColor: AppColors.background,
+        foregroundColor: AppColors.foreground,
         elevation: 0,
         actions: [
           if (lines.isNotEmpty)
@@ -472,19 +477,22 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             ),
         ],
       ),
-      body: lines.isEmpty
-          ? _empty()
-          : ListView(
-              padding: const EdgeInsets.only(bottom: 140),
-              children: [
-                _addressCard(selectedAddr),
-                ...lines.map((l) => _lineTile(l)),
-                _couponCard(),
-                _deliveryCard(groups, shipBySupplier),
-                _paymentCard(walletBalance, total),
-                const SizedBox(height: 16),
-              ],
-            ),
+      body: DefaultTextStyle.merge(
+        style: const TextStyle(color: AppColors.foreground),
+        child: lines.isEmpty
+            ? _empty()
+            : ListView(
+                padding: const EdgeInsets.only(top: 8, bottom: 140),
+                children: [
+                  _addressCard(selectedAddr),
+                  ...lines.map((l) => _lineTile(l)),
+                  _couponCard(),
+                  _deliveryCard(groups, shipBySupplier),
+                  _paymentCard(walletBalance, total),
+                  const SizedBox(height: 16),
+                ],
+              ),
+      ),
       bottomNavigationBar: lines.isEmpty
           ? null
           : SafeArea(
