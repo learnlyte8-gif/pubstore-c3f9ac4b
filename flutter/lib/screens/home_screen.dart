@@ -350,8 +350,10 @@ class _SubcategoryChips extends StatelessWidget {
   Widget build(BuildContext context) {
     final counts = <String, int>{};
     for (final p in products) {
-      final text = p.unit.isNotEmpty ? p.unit : 'Products';
-      counts[text] = (counts[text] ?? 0) + 1;
+      final label = (p.badge != null && p.badge!.isNotEmpty)
+          ? p.badge!
+          : (p.category ?? 'Other');
+      counts[label] = (counts[label] ?? 0) + 1;
     }
     if (counts.isEmpty) return const SizedBox.shrink();
     final entries = counts.entries.toList();
