@@ -15,46 +15,56 @@ class MessagesService {
 
   /// Loads and resolves every conversation this user can see: buyer-owned,
   /// supplier-owned, and membership-based (DMs, group buys).
+  Future<List<Map>> _safeList(Future<dynamic> Function() fn) async {
+    try {
+      final v = await fn();
+      return (v as List).cast<Map>();
+    } catch (e) {
+      // ignore: avoid_print
+      print('messages_service query failed: $e');
+      return const <Map>[];
+    }
+  }
+
   Future<List<ChatConversation>> loadConversations(String uid) async {
-    final buyerRows = await supabase
+    final buyerRows = await _safeList(() => supabase
         .from('conversations')
         .select('*')
         .eq('buyer_id', uid)
-        .order('last_message_at', ascending: false);
+        .order('last_message_at', ascending: false));
 
-    final mySuppliers =
-        await supabase.from('suppliers').select('id, owner_id').eq('owner_id', uid);
-    final supplierIds = (mySuppliers as List)
+    final mySuppliers = await _safeList(() =>
+        supabase.from('suppliers').select('id, owner_id').eq('owner_id', uid));
+    final supplierIds = mySuppliers
         .map((s) => s['id']?.toString())
         .whereType<String>()
         .toList();
 
     final supRows = <Map>[];
     for (final group in _chunk(supplierIds, 50)) {
-      final data = await supabase
+      supRows.addAll(await _safeList(() => supabase
           .from('conversations')
           .select('*')
           .inFilter('supplier_id', group)
-          .order('last_message_at', ascending: false);
-      supRows.addAll((data as List).cast<Map>());
+          .order('last_message_at', ascending: false)));
     }
 
-    final memberRows = await supabase
+    final memberRows = await _safeList(() => supabase
         .from('conversation_members')
         .select('conversation_id')
-        .eq('user_id', uid);
-    final memberIds = (memberRows as List)
+        .eq('user_id', uid));
+    final memberIds = memberRows
         .map((r) => r['conversation_id']?.toString())
         .whereType<String>()
         .toList();
     final memberConvRows = <Map>[];
     for (final group in _chunk(memberIds, 50)) {
-      final data = await supabase.from('conversations').select('*').inFilter('id', group);
-      memberConvRows.addAll((data as List).cast<Map>());
+      memberConvRows.addAll(await _safeList(() =>
+          supabase.from('conversations').select('*').inFilter('id', group)));
     }
 
     final all = <Map>[
-      ...(buyerRows as List).cast<Map>(),
+      ...buyerRows,
       ...supRows,
       ...memberConvRows,
     ];

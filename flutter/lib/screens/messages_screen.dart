@@ -38,35 +38,49 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   RealtimeChannel? _listChannel;
   Timer? _poll;
 
+  StreamSubscription<AuthState>? _authSub;
+  bool _bootstrapped = false;
+
   @override
   void initState() {
     super.initState();
-    _bootstrap();
+    _tryBootstrap();
+    _authSub = supabase.auth.onAuthStateChange.listen((_) => _tryBootstrap());
   }
 
   @override
   void dispose() {
     if (_listChannel != null) supabase.removeChannel(_listChannel!);
     _poll?.cancel();
+    _authSub?.cancel();
     super.dispose();
   }
 
-  Future<void> _bootstrap() async {
+  Future<void> _tryBootstrap() async {
+    if (_bootstrapped) return;
     final uid = supabase.auth.currentUser?.id;
     if (uid == null) {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
       return;
     }
+    _bootstrapped = true;
+    await _bootstrap(uid);
+  }
+
+  Future<void> _bootstrap(String uid) async {
     await _refresh(uid);
-    // Deep-link: ensure conversation with supplier and open it.
     if (widget.supplierId != null) {
-      final convId = await messagesService.ensureConversationWithSupplier(
-        buyerId: uid,
-        supplierId: widget.supplierId!,
-      );
-      if (convId != null && mounted) {
-        await _refresh(uid);
-        _openConversation(convId, prefill: widget.prefill);
+      try {
+        final convId = await messagesService.ensureConversationWithSupplier(
+          buyerId: uid,
+          supplierId: widget.supplierId!,
+        );
+        if (convId != null && mounted) {
+          await _refresh(uid);
+          _openConversation(convId, prefill: widget.prefill);
+        }
+      } catch (e) {
+        debugPrint('ensureConversation failed: $e');
       }
     } else if (widget.conversationId != null) {
       _openConversation(widget.conversationId!);
@@ -86,20 +100,26 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
           callback: (_) => _refresh(uid),
         )
         .subscribe();
-    _poll = Timer.periodic(const Duration(seconds: 15), (_) => _refresh(uid));
+    _poll = Timer.periodic(const Duration(seconds: 30), (_) => _refresh(uid));
   }
 
   Future<void> _refresh(String uid) async {
     try {
       final convs = await messagesService.loadConversations(uid);
-      final unread = await messagesService.unreadCounts(uid);
+      Map<String, int> unread = {};
+      try {
+        unread = await messagesService.unreadCounts(uid);
+      } catch (e) {
+        debugPrint('unreadCounts failed: $e');
+      }
       if (!mounted) return;
       setState(() {
         _conversations = convs;
         _unread = unread;
         _loading = false;
       });
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('loadConversations failed: $e\n$st');
       if (mounted) setState(() => _loading = false);
     }
   }
