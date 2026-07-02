@@ -7,6 +7,7 @@ import '../theme/theme.dart';
 import 'become_supplier_screen.dart';
 import 'store_actions_screen.dart';
 import 'store_analytics_screen.dart';
+import 'store_section_screen.dart';
 
 /// Mirrors `src/pages/MyStore.tsx` — supplier dashboard entry with stats,
 /// go-live CTA, and shortcuts to product management.
