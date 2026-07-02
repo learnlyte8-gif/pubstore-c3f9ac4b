@@ -206,19 +206,23 @@ class _ShellHeader extends ConsumerWidget {
                           const SizedBox(width: 4),
                           const Icon(LucideIcons.camera, size: 18, color: AppColors.muted),
                           const SizedBox(width: 4),
-                          Container(
-                            height: 28,
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(.35),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: Colors.white.withOpacity(.7)),
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => TapsonSheet.show(context),
+                            child: Container(
+                              height: 28,
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(.35),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: Colors.white.withOpacity(.7)),
+                              ),
+                              child: const Row(children: [
+                                Icon(LucideIcons.sparkles, size: 14),
+                                SizedBox(width: 4),
+                                Text('Tapson', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
+                              ]),
                             ),
-                            child: const Row(children: [
-                              Icon(LucideIcons.sparkles, size: 14),
-                              SizedBox(width: 4),
-                              Text('Tapson', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
-                            ]),
                           ),
                         ]),
                       ),
