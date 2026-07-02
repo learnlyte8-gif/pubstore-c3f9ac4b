@@ -248,6 +248,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             child: Center(child: CircularProgressIndicator()),
                           ),
                         ),
+                      if (widget.feed == 'following' && _products.isEmpty && !_loading)
+                        const SliverPadding(
+                          padding: EdgeInsets.all(24),
+                          sliver: SliverToBoxAdapter(
+                            child: _FollowingEmpty(),
+                          ),
+                        ),
                       if (_done && _products.isNotEmpty)
                         const SliverPadding(
                           padding: EdgeInsets.symmetric(vertical: 24),
