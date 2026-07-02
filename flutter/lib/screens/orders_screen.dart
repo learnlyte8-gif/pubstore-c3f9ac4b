@@ -697,8 +697,8 @@ class _OrderDetailState extends ConsumerState<_OrderDetail> {
                             GestureDetector(
                               onTap: () => Navigator.of(context).push(
                                   MaterialPageRoute(
-                                      builder: (_) => ProductDetailScreen
-                                          .byId(pid))),
+                                      builder: (_) => ProductDetailScreen(
+                                          productId: pid))),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
                                 child: Image.network(
