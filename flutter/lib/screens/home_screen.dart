@@ -7,9 +7,7 @@ import '../services/catalog_service.dart';
 import '../services/cart_service.dart';
 import '../theme/palette.dart';
 import '../widgets/masonry_grid.dart';
-import 'cart_screen.dart';
 import 'product_detail_screen.dart';
-import 'search_screen.dart';
 
 /// Home feed — infinite-scrolling staggered grid backed by
 /// `products` on Lovable Cloud. Same shape as `src/pages/Home.tsx`.
