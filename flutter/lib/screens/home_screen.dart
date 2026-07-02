@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -5,9 +7,11 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../models/models.dart';
 import '../services/catalog_service.dart';
 import '../services/cart_service.dart';
+import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../widgets/masonry_grid.dart';
 import 'product_detail_screen.dart';
+import 'supplier_screen.dart';
 
 /// Home feed — infinite-scrolling staggered grid backed by
 /// `products` on Lovable Cloud. Same shape as `src/pages/Home.tsx`.
