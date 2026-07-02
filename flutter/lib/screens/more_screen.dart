@@ -72,8 +72,15 @@ class MoreScreen extends StatelessWidget {
               final d = depts[i];
               return InkWell(
                 borderRadius: BorderRadius.circular(AppRadii.md),
-                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('${d.label} — coming soon'))),
+                onTap: () {
+                  if (d.build != null) {
+                    Navigator.of(context).push(
+                        MaterialPageRoute(builder: d.build!));
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('${d.label} — coming soon')));
+                  }
+                },
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
