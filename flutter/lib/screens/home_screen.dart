@@ -1,20 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 import '../models/models.dart';
 import '../services/catalog_service.dart';
+import '../services/cart_service.dart';
 import '../theme/palette.dart';
 import '../widgets/masonry_grid.dart';
+import 'cart_screen.dart';
+import 'product_detail_screen.dart';
 
 /// Home feed — infinite-scrolling staggered grid backed by
 /// `products` on Lovable Cloud. Same shape as `src/pages/Home.tsx`.
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _scroll = ScrollController();
   final List<Product> _products = [];
   int _page = 0;
@@ -79,6 +84,39 @@ class _HomeScreenState extends State<HomeScreen> {
           'PUBSTORE',
           style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -0.5),
         ),
+        actions: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(LucideIcons.shoppingCart),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const CartScreen()),
+                ),
+              ),
+              if (ref.watch(cartCountProvider) > 0)
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 5, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: AppColors.priceRed,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    constraints: const BoxConstraints(minWidth: 16),
+                    child: Text('${ref.watch(cartCountProvider)}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700)),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: _refresh,
@@ -90,7 +128,23 @@ class _HomeScreenState extends State<HomeScreen> {
                     controller: _scroll,
                     slivers: [
                       SliverToBoxAdapter(
-                        child: MasonryProductGrid(products: _products),
+                        child: MasonryProductGrid(
+                          products: _products,
+                          onTap: (p) => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ProductDetailScreen(product: p),
+                            ),
+                          ),
+                          onAdd: (p) {
+                            ref.read(cartProvider.notifier).add(p);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Added ${p.title}'),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                       if (_loading)
                         const SliverPadding(
