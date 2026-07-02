@@ -8,7 +8,9 @@ import '../theme/theme.dart';
 /// Categories grid — reads `categories` from Lovable Cloud. Tapping a
 /// category will filter the Home feed (wired up in the next iteration).
 class CategoriesScreen extends StatefulWidget {
-  const CategoriesScreen({super.key});
+  const CategoriesScreen({super.key, this.onCategorySelected});
+
+  final void Function(Category category)? onCategorySelected;
 
   @override
   State<CategoriesScreen> createState() => _CategoriesScreenState();
@@ -26,7 +28,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Categories')),
+        appBar: AppBar(title: const Text('Categories')),
       body: FutureBuilder<List<Category>>(
         future: _future,
         builder: (context, snap) {
@@ -59,7 +61,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 borderRadius: BorderRadius.circular(AppRadii.md),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(AppRadii.md),
-                  onTap: () {},
+                  onTap: () => widget.onCategorySelected?.call(c),
                   child: Padding(
                     padding: const EdgeInsets.all(10),
                     child: Column(

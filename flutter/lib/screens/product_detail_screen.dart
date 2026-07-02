@@ -65,10 +65,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     price: 0,
     currency: 'USD',
     image: null,
+    supplierId: null,
   );
 
   List<String> get _gallery {
-    final imgs = (_full?['images'] as List?)?.cast<dynamic>() ?? const [];
+    final imgs = (_full?['gallery'] as List?)?.cast<dynamic>() ??
+        (_full?['images'] as List?)?.cast<dynamic>() ??
+        const [];
     if (imgs.isNotEmpty) return imgs.map((e) => e.toString()).toList();
     if (_product.image != null) return [_product.image!];
     return const [];
