@@ -389,6 +389,74 @@ class _SubcategoryChips extends StatelessWidget {
       );
 }
 
+class _HomeMenuButton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        child: Material(
+          color: AppColors.card,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: AppColors.border),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () {
+              final s = Scaffold.maybeOf(context);
+              if (s?.hasDrawer ?? false) s!.openDrawer();
+            },
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(children: [
+                Icon(LucideIcons.menu, size: 16),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text('Browse categories & quick actions',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                ),
+                Text('›', style: TextStyle(fontSize: 20, color: AppColors.muted)),
+              ]),
+            ),
+          ),
+        ),
+      );
+}
+
+class _FollowingEmpty extends StatelessWidget {
+  const _FollowingEmpty();
+
+  @override
+  Widget build(BuildContext context) {
+    final signedIn = supabase.auth.currentUser != null;
+    return Column(children: [
+      Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: AppColors.mutedSurface,
+        ),
+        child: const Icon(LucideIcons.users, color: AppColors.muted, size: 24),
+      ),
+      const SizedBox(height: 12),
+      Text(
+        signedIn ? "You're not following anyone yet" : 'Sign in to see your following feed',
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        signedIn
+            ? "Visit a supplier's store and tap follow to see their posts here."
+            : 'Follow suppliers and their newest products land here.',
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 12, color: AppColors.muted),
+      ),
+    ]);
+  }
+}
+
+
 class _RecommendationStrip extends StatefulWidget {
   const _RecommendationStrip({required this.onTap});
   final void Function(Product) onTap;
