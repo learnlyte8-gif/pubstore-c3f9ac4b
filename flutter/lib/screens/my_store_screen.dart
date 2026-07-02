@@ -160,24 +160,19 @@ class _MyStoreScreenState extends State<MyStoreScreen> {
   Widget _divider() => Container(
       width: 1, height: 32, color: Colors.white.withOpacity(0.3));
 
-  Widget _tile(IconData icon, String label, {String? subtitle}) => Card(
+  Widget _tile(IconData icon, String label, {String? subtitle, String? section}) => Card(
         elevation: 0,
         shape: RoundedRectangleBorder(
             side: const BorderSide(color: AppColors.border),
             borderRadius: BorderRadius.circular(AppRadii.md)),
         child: ListTile(
           leading: Icon(icon, color: AppColors.primary),
-          title: Text(label,
-              style: const TextStyle(fontWeight: FontWeight.w700)),
-          subtitle: subtitle == null
-              ? null
-              : Text(subtitle,
-                  style:
-                      const TextStyle(fontSize: 12, color: AppColors.muted)),
-          trailing: const Icon(LucideIcons.chevronRight,
-              size: 16, color: AppColors.muted),
-          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('$label — full flow next slice'))),
+          title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+          subtitle: subtitle == null ? null : Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+          trailing: const Icon(LucideIcons.chevronRight, size: 16, color: AppColors.muted),
+          onTap: section == null
+              ? () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$label — coming soon')))
+              : () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => StoreSectionScreen(section: section))).then((_) => _load()),
         ),
       );
 }
