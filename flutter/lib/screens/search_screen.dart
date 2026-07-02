@@ -397,7 +397,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
             const SizedBox(width: 4),
             _iconChip(
-              icon: LucideIcons.slidersHorizontal,
+              icon: LucideIcons.sliders,
               active: _showFilters,
               onTap: () => setState(() => _showFilters = !_showFilters),
             ),
@@ -469,7 +469,7 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
         if (_recent.isNotEmpty) ...[
           const SizedBox(height: 20),
-          _sectionLabel(LucideIcons.history, 'Recent searches'),
+          _sectionLabel(LucideIcons.clock, 'Recent searches'),
           const SizedBox(height: 10),
           Wrap(
             spacing: 8, runSpacing: 8,
@@ -594,7 +594,7 @@ class _SearchScreenState extends State<SearchScreen> {
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(LucideIcons.searchX,
+          const Icon(LucideIcons.search,
               size: 48, color: AppColors.muted),
           const SizedBox(height: 12),
           Text('No results for "$_submitted"',

@@ -235,7 +235,7 @@ class _TapsonSheetState extends State<TapsonSheet> {
                           width: 44,
                           height: 44,
                           child: Icon(
-                            _loading ? LucideIcons.loader : LucideIcons.send,
+                            _loading ? LucideIcons.loader2 : LucideIcons.send,
                             color: Colors.white,
                             size: 18,
                           ),
@@ -283,7 +283,7 @@ class _TapsonSheetState extends State<TapsonSheet> {
         ),
         if (_messages.isNotEmpty)
           IconButton(
-            icon: const Icon(LucideIcons.eraser, size: 18),
+            icon: const Icon(LucideIcons.trash2, size: 18),
             onPressed: () => setState(_messages.clear),
           ),
         IconButton(
