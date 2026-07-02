@@ -455,12 +455,29 @@ class _OrderDetailState extends ConsumerState<_OrderDetail> {
   Future<void> _reorder() async {
     final items = (widget.order['items'] as List).cast<Map<String, dynamic>>();
     final cart = ref.read(cartProvider.notifier);
-    for (final it in items) {
-      await cart.add(it['product_id'] as String, qty: (it['qty'] as num).toInt());
-    }
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Items added back to cart')));
+    final ids = items.map((it) => it['product_id'] as String).toList();
+    try {
+      final rows = await supabase
+          .from('products')
+          .select('id, title, price, currency, images, category, rating, sold, supplier_id')
+          .inFilter('id', ids);
+      final byId = <String, Product>{
+        for (final r in (rows as List).cast<Map<String, dynamic>>())
+          r['id'] as String: Product.fromRow(r)
+      };
+      for (final it in items) {
+        final p = byId[it['product_id']];
+        if (p != null) cart.add(p, qty: (it['qty'] as num).toInt());
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Items added back to cart')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$e')));
+      }
     }
   }
 
