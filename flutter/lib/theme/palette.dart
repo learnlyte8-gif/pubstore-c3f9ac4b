@@ -13,6 +13,7 @@ class AppColors {
   static const Color muted = Color(0xFF64748B);
   static const Color mutedSurface = Color(0xFFF1F5F9);
   static const Color border = Color(0xFFE2E8F0);
+  static const Color input = Color(0xFFF8FAFC);
   static const Color card = Color(0xFFFFFFFF);
   static const Color destructive = Color(0xFFEF4444);
   static const Color destructiveForeground = Color(0xFFFFFFFF);
