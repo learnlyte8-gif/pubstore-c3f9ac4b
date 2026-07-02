@@ -43,33 +43,31 @@ class _SupplierScreenState extends State<SupplierScreen> {
       final id = widget.supplierId;
       _userId = supabase.auth.currentUser?.id;
 
-      final results = await Future.wait([
-        supabase.from('suppliers').select('*').eq('id', id).maybeSingle(),
-        supabase
-            .from('products')
-            .select('*, suppliers!inner(name, verified, gold, country, location_address, latitude, longitude, trade_type)')
+      final s = await supabase.from('suppliers').select('*').eq('id', id).maybeSingle();
+      final rows = await supabase
+          .from('products')
+          .select('*, suppliers!inner(name, verified, gold, country, location_address, latitude, longitude, trade_type)')
+          .eq('supplier_id', id)
+          .eq('active', true)
+          .order('created_at', ascending: false)
+          .limit(80);
+      final followers = await supabase.from('followers').select('id').eq('supplier_id', id);
+      Map<String, dynamic>? myFollow;
+      if (_userId != null) {
+        myFollow = await supabase
+            .from('followers')
+            .select('id')
             .eq('supplier_id', id)
-            .eq('active', true)
-            .order('created_at', ascending: false)
-            .limit(80),
-        supabase.from('followers').select('id').eq('supplier_id', id).count(),
-        if (_userId != null)
-          supabase.from('followers').select('id').eq('supplier_id', id).eq('user_id', _userId as Object).maybeSingle(),
-      ]);
-
-      final s = results[0] as Map<String, dynamic>?;
-      final rows = results[1] as List;
-      final followers = results[2];
-      final myFollow = _userId != null ? results[3] : null;
+            .eq('user_id', _userId as Object)
+            .maybeSingle();
+      }
 
       if (!mounted) return;
       setState(() {
         _supplier = s == null ? null : Map<String, dynamic>.from(s);
         _ownerId = _supplier?['owner_id'] as String?;
-        _products = rows.map((e) => Product.fromRow(Map<String, dynamic>.from(e))).toList();
-        _followerCount = (followers is dynamic && followers?.count is int)
-            ? followers.count as int
-            : (followers is List ? followers.length : 0);
+        _products = (rows as List).map((e) => Product.fromRow(Map<String, dynamic>.from(e))).toList();
+        _followerCount = (followers as List).length;
         _following = myFollow != null;
         _loading = false;
       });
