@@ -112,7 +112,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     slivers: [
                       if (widget.categoryId == null && widget.feed == 'home') ...[
                         SliverToBoxAdapter(child: _Promo3DCarousel()),
-                        SliverToBoxAdapter(child: _HomeMenuDrawer()),
+
                         SliverToBoxAdapter(
                           child: Padding(
                             padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
