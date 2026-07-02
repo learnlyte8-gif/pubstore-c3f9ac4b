@@ -546,10 +546,10 @@ class _Promo3DCarouselState extends State<_Promo3DCarousel> {
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 700),
       curve: Curves.easeOut,
-      left: 20 + offset * 54,
-      right: 20 - offset * 54,
-      top: abs * 16,
-      bottom: abs * 16,
+      left: (20 + offset * 54).toDouble(),
+      right: (20 - offset * 54).toDouble(),
+      top: (abs * 16).toDouble(),
+      bottom: (abs * 16).toDouble(),
       child: Transform.scale(
         scale: offset == 0 ? 1 : abs == 1 ? .82 : .66,
         child: Opacity(
