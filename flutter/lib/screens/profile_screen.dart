@@ -192,6 +192,12 @@ class _SignedIn extends ConsumerWidget {
               builder: (_) => const NotificationsScreen())),
         ),
         _Row(
+          icon: LucideIcons.wallet,
+          label: 'PUBSTORE Pay',
+          onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const WalletScreen())),
+        ),
+        _Row(
           icon: LucideIcons.store,
           label: 'My store',
           onTap: () => _todo(context, 'My store'),
@@ -199,7 +205,8 @@ class _SignedIn extends ConsumerWidget {
         _Row(
           icon: LucideIcons.settings,
           label: 'Settings',
-          onTap: () => _todo(context, 'Settings'),
+          onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SettingsScreen())),
         ),
         const Divider(height: 1, color: AppColors.border),
         _Row(
