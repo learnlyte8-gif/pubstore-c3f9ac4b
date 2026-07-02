@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 import '../models/models.dart';
 import 'product_card.dart';
 
-/// Staggered grid — 2 cols mobile / 3 tablet / 4 desktop / 5 wide.
-/// Mirrors `src/components/marketplace/MasonryGrid.tsx`.
+/// Flex-column masonry mirror of `src/components/marketplace/MasonryGrid.tsx`.
 class MasonryProductGrid extends StatelessWidget {
   const MasonryProductGrid({
     super.key,
     required this.products,
     this.onTap,
     this.onAdd,
-    this.padding = const EdgeInsets.all(10),
+    this.padding = const EdgeInsets.all(12),
+    this.gap = 4,
   });
 
   final List<Product> products;
   final void Function(Product)? onTap;
   final void Function(Product)? onAdd;
   final EdgeInsets padding;
+  final double gap;
 
   int _columns(double w) {
     if (w >= 1400) return 5;
@@ -32,21 +32,33 @@ class MasonryProductGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, c) {
         final cols = _columns(c.maxWidth);
+        final columns = List.generate(cols, (_) => <Product>[]);
+        for (var i = 0; i < products.length; i++) {
+          columns[i % cols].add(products[i]);
+        }
         return Padding(
           padding: padding,
-          child: MasonryGridView.count(
-            crossAxisCount: cols,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            itemCount: products.length,
-            itemBuilder: (context, i) {
-              final p = products[i];
-              return ProductCard(
-                product: p,
-                onTap: onTap == null ? null : () => onTap!(p),
-                onAdd: onAdd == null ? null : () => onAdd!(p),
-              );
-            },
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (var ci = 0; ci < columns.length; ci++) ...[
+                if (ci > 0) SizedBox(width: gap),
+                Expanded(
+                  child: Column(
+                    children: [
+                      for (var pi = 0; pi < columns[ci].length; pi++) ...[
+                        if (pi > 0) SizedBox(height: gap),
+                        ProductCard(
+                          product: columns[ci][pi],
+                          onTap: onTap == null ? null : () => onTap!(columns[ci][pi]),
+                          onAdd: onAdd == null ? null : () => onAdd!(columns[ci][pi]),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ],
           ),
         );
       },
