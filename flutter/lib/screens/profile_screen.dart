@@ -10,6 +10,8 @@ import 'cart_screen.dart';
 import 'messages_screen.dart';
 import 'notifications_screen.dart';
 import 'orders_screen.dart';
+import 'settings_screen.dart';
+import 'wallet_screen.dart';
 import 'wishlist_screen.dart';
 
 /// Profile tab — mirrors `src/pages/Account.tsx`. Signed-out users see a
