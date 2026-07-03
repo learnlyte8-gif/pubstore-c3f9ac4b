@@ -7,6 +7,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../widgets/tapson_sheet.dart';
+import '../widgets/skeletons.dart';
 import 'product_detail_screen.dart';
 import '../models/models.dart';
 import 'supplier_screen.dart';
