@@ -152,7 +152,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(appBar: AppBar(), body: Skeletons.screen(SkeletonPreset.detail));
     }
     if (_full == null) {
       return Scaffold(
