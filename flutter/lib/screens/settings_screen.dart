@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../services/supabase_client.dart';
 import '../theme/palette.dart';
+import 'notification_preferences_screen.dart';
+import 'privacy_screen.dart';
+import 'admin_screen.dart';
 
 /// Mirrors `src/pages/Settings.tsx`.
 class SettingsScreen extends StatefulWidget {
