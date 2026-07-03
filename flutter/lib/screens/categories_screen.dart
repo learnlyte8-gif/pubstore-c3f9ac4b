@@ -7,6 +7,7 @@ import '../models/models.dart';
 import '../services/catalog_service.dart';
 import '../theme/palette.dart';
 import '../widgets/masonry_grid.dart';
+import '../widgets/skeletons.dart';
 import 'product_detail_screen.dart';
 import 'restaurants_screen.dart';
 
