@@ -380,11 +380,68 @@ class _RailDrawerContent extends StatelessWidget {
   const _RailDrawerContent({required this.onClose});
   final VoidCallback onClose;
   static const sections = [
-    ('Commerce', [('Marketplace', 'Shop everything', LucideIcons.store), ('Industrial', 'B2B & wholesale', LucideIcons.factory), ('Logistics', 'Ship & deliver', LucideIcons.truck)]),
-    ('Mobility', [('Rides', 'Book a trip', LucideIcons.navigation), ('Auto', 'Buy vehicles', LucideIcons.car), ('Car Rentals', 'Rent by the day', LucideIcons.car)]),
-    ('Living', [('Properties', 'Buy & let', Icons.apartment), ('Stays', 'Hotels & rentals', Icons.hotel_outlined), ('Services', 'Hire a pro', LucideIcons.wrench)]),
-    ('Work & Money', [('Jobs', 'Find work', LucideIcons.briefcase), ('Finance', 'Loans & wallet', Icons.account_balance_outlined), ('News', 'Today’s stories', LucideIcons.newspaper)]),
+    ('Commerce', [
+      ('Marketplace', 'Shop everything', LucideIcons.store, 'marketplace'),
+      ('Industrial', 'B2B & wholesale', LucideIcons.factory, 'industrial'),
+      ('Logistics', 'Ship & deliver', LucideIcons.truck, 'logistics'),
+      ('Restaurants', 'Order food nearby', LucideIcons.utensils, 'restaurants'),
+      ('Agro', 'Farm & fresh', LucideIcons.sprout, 'agro'),
+      ('RFQ', 'Request a quote', LucideIcons.fileText, 'rfq'),
+    ]),
+    ('Mobility', [
+      ('Rides', 'Book a trip', LucideIcons.navigation, 'rides'),
+      ('Auto', 'Buy vehicles', LucideIcons.car, 'auto'),
+      ('Car Rentals', 'Rent by the day', LucideIcons.car, 'car_rentals'),
+    ]),
+    ('Living', [
+      ('Properties', 'Buy & let', Icons.apartment, 'properties'),
+      ('Stays', 'Hotels & rentals', Icons.hotel_outlined, 'stays'),
+      ('Services', 'Hire a pro', LucideIcons.wrench, 'services'),
+    ]),
+    ('Work & Money', [
+      ('Jobs', 'Find work', LucideIcons.briefcase, 'jobs'),
+      ('Finance', 'Loans & wallet', Icons.account_balance_outlined, 'finance'),
+      ('News', 'Today’s stories', LucideIcons.newspaper, 'news'),
+      ('Live', 'Live streams', LucideIcons.radio, 'live'),
+    ]),
+    ('You', [
+      ('My Store', 'Supplier dashboard', LucideIcons.store, 'my_store'),
+      ('Orders', 'Track purchases', LucideIcons.package, 'orders'),
+      ('Wallet', 'PUBSTORE Pay', LucideIcons.wallet, 'wallet'),
+      ('Settings', 'Preferences', LucideIcons.settings, 'settings'),
+    ]),
   ];
+
+  void _go(BuildContext context, String key) {
+    onClose();
+    Widget? screen;
+    switch (key) {
+      case 'marketplace': return; // already on home
+      case 'industrial': screen = const IndustrialScreen(); break;
+      case 'logistics': screen = const LogisticsScreen(); break;
+      case 'restaurants': screen = const RestaurantsScreen(); break;
+      case 'agro': screen = const AgroScreen(); break;
+      case 'rfq': screen = const RfqScreen(); break;
+      case 'rides': screen = const RidesScreen(); break;
+      case 'auto': screen = const AutoScreen(); break;
+      case 'car_rentals': screen = const CarRentalsScreen(); break;
+      case 'properties': screen = const PropertiesScreen(); break;
+      case 'stays': screen = const StaysScreen(); break;
+      case 'services': screen = const ServicesScreen(); break;
+      case 'jobs': screen = const JobsScreen(); break;
+      case 'finance': screen = const FinanceScreen(); break;
+      case 'news': screen = const NewsScreen(); break;
+      case 'live': screen = const LiveScreen(); break;
+      case 'my_store': screen = const MyStoreScreen(); break;
+      case 'orders': screen = const OrdersScreen(); break;
+      case 'wallet': screen = const WalletScreen(); break;
+      case 'settings': screen = const SettingsScreen(); break;
+    }
+    if (screen != null) {
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen!));
+    }
+  }
+
   @override
   Widget build(BuildContext context) => SafeArea(
         child: Column(children: [
@@ -415,7 +472,7 @@ class _RailDrawerContent extends StatelessWidget {
                   title: Text(item.$1, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
                   subtitle: Text(item.$2, style: const TextStyle(fontSize: 11, color: AppColors.muted)),
                   trailing: const Text('›', style: TextStyle(fontSize: 18, color: AppColors.muted)),
-                  onTap: onClose,
+                  onTap: () => _go(context, item.$4),
                 ),
               ],
             ]),
