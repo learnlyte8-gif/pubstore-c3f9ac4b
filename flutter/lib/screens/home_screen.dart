@@ -162,7 +162,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return RefreshIndicator(
         onRefresh: _refresh,
         child: _products.isEmpty && _loading
-            ? const Center(child: CircularProgressIndicator())
+            ? Skeletons.screen(SkeletonPreset.feed)
             : _products.isEmpty && _error != null
                 ? _ErrorRetry(error: _error!, onRetry: _loadMore)
                 : CustomScrollView(
