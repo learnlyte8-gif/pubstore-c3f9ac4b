@@ -59,7 +59,7 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
           future: _future,
           builder: (context, snap) {
             if (snap.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator());
+              return Skeletons.productGrid(count: 6);
             }
             final items = snap.data ?? [];
             if (items.isEmpty) {
