@@ -318,7 +318,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         child: RefreshIndicator(
           onRefresh: _refresh,
           child: _visible.isEmpty && _loading
-              ? const Center(child: CircularProgressIndicator())
+              ? Skeletons.productGrid(count: 6)
               : _visible.isEmpty
                   ? ListView(children: const [
                       SizedBox(height: 120),
