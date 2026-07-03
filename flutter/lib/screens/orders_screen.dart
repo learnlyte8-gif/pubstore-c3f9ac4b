@@ -9,6 +9,7 @@ import '../services/cart_service.dart';
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../theme/theme.dart';
+import '../widgets/skeletons.dart';
 import 'messages_screen.dart';
 import 'product_detail_screen.dart';
 
