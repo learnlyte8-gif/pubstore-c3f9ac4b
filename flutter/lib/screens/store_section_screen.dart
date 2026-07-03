@@ -1,3 +1,4 @@
+import '../widgets/skeletons.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -147,7 +148,7 @@ class _ProductsViewState extends State<_ProductsView> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loading) return Skeletons.list(count: 4);
     return Column(
       children: [
         Padding(
@@ -325,7 +326,7 @@ class _OrdersViewState extends State<_OrdersView> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loading) return Skeletons.list(count: 4);
     if (_orders.isEmpty) return const Center(child: Text('No orders yet'));
     return ListView.separated(
       padding: const EdgeInsets.all(12),
@@ -392,7 +393,7 @@ class _AnalyticsViewState extends State<_AnalyticsView> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loading) return Skeletons.list(count: 4);
     return GridView.count(
       padding: const EdgeInsets.all(16),
       crossAxisCount: 2,
@@ -467,7 +468,7 @@ class _ReviewsViewState extends State<_ReviewsView> {
   }
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loading) return Skeletons.list(count: 4);
     if (_rows.isEmpty) return const Center(child: Text('No reviews yet'));
     return ListView.separated(
       padding: const EdgeInsets.all(12),
@@ -528,7 +529,7 @@ class _ProfileViewState extends State<_ProfileView> {
   }
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loading) return Skeletons.list(count: 4);
     return ListView(padding: const EdgeInsets.all(16), children: [
       TextField(controller: _name, decoration: const InputDecoration(labelText: 'Store name')),
       const SizedBox(height: 12),

@@ -1,3 +1,4 @@
+import '../widgets/skeletons.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -68,7 +69,7 @@ class _StaysScreenState extends State<StaysScreen> {
               if (loading)
                 const Padding(
                     padding: EdgeInsets.all(48),
-                    child: Center(child: CircularProgressIndicator()))
+                    child: Skeletons.list(count: 4))
               else if (stays.isEmpty)
                 const Padding(
                   padding: EdgeInsets.all(48),

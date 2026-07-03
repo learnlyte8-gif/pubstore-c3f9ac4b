@@ -1,3 +1,4 @@
+import '../widgets/skeletons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -225,7 +226,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               future: _future,
               builder: (context, snap) {
                 if (snap.connectionState != ConnectionState.done) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Skeletons.list(count: 4);
                 }
                 final s = snap.data ??
                     WalletSummary(balance: 0, personal: 0, sales: 0, transactions: []);

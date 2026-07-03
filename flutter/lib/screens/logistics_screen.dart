@@ -1,3 +1,4 @@
+import '../widgets/skeletons.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -130,7 +131,7 @@ class _LogisticsScreenState extends State<LogisticsScreen> {
                       child: Text('Courier directory — coming soon',
                           style: TextStyle(color: AppColors.muted)))
                   : _loading
-                      ? const Center(child: CircularProgressIndicator())
+                      ? Skeletons.list(count: 4)
                       : _requests.isEmpty
                           ? const Center(
                               child: Text('No active requests',

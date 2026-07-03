@@ -1,3 +1,4 @@
+import '../widgets/skeletons.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -70,7 +71,7 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
           child: FutureBuilder<List<Map<String, dynamic>>>(
             future: _future,
             builder: (context, snap) {
-              if (snap.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
+              if (snap.connectionState != ConnectionState.done) return Skeletons.list(count: 4);
               final rows = snap.data ?? const [];
               if (rows.isEmpty) return const Center(child: Text('No restaurants nearby yet'));
               return ListView.separated(

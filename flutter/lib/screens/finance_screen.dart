@@ -1,3 +1,4 @@
+import '../widgets/skeletons.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -42,7 +43,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                   if (snap.connectionState != ConnectionState.done) {
                     return const Padding(
                         padding: EdgeInsets.all(48),
-                        child: Center(child: CircularProgressIndicator()));
+                        child: Skeletons.list(count: 4));
                   }
                   final list = snap.data ?? [];
                   if (list.isEmpty) {
