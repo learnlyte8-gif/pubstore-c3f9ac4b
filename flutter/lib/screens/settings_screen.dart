@@ -65,10 +65,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _card([
             _row(LucideIcons.bell, 'Notification preferences',
                 'Push, in-app, and email — choose what reaches you',
-                onTap: () {}),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => const NotificationPreferencesScreen()))),
             _row(LucideIcons.messageCircle, 'Test WhatsApp',
                 'Send a test to your linked number',
-                onTap: () {}),
+                onTap: _sendWhatsAppTest),
           ]),
           const SizedBox(height: 16),
           _sectionLabel('Region'),
@@ -81,15 +82,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 (v) => setState(() => _currency = v)),
             _rowValue(LucideIcons.globe, 'Country', 'Kenya'),
           ]),
+          if (_isAdmin) ...[
+            const SizedBox(height: 16),
+            _sectionLabel('Admin'),
+            _card([
+              _row(LucideIcons.shieldCheck, 'Platform Admin',
+                  'Trade assurance, top-ups, withdrawals, reviews',
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const AdminScreen()))),
+            ]),
+          ],
           const SizedBox(height: 16),
           _sectionLabel('About'),
           _card([
             _rowValue(LucideIcons.smartphone, 'App version', '1.0.0'),
             _row(LucideIcons.shieldCheck, 'Terms of service', null,
-                onTap: () {}),
+                onTap: () => _openUrl('https://pubstore.app/terms')),
             _row(LucideIcons.shieldCheck, 'Privacy policy', null,
-                onTap: () {}),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => const PrivacyScreen()))),
           ]),
+        ],
+      ),
+    );
+  }
+
+  bool get _isAdmin =>
+      (supabase.auth.currentUser?.email ?? '').toLowerCase() ==
+      'kukistacks8@gmail.com';
+
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _sendWhatsAppTest() async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sign in to test WhatsApp')));
+      return;
+    }
+    try {
+      await supabase.functions.invoke('test-whatsapp', body: {'user_id': uid});
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Test WhatsApp message sent')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not send: $e')));
+    }
+  }
         ],
       ),
     );
