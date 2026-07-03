@@ -1,3 +1,4 @@
+import '../widgets/skeletons.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -47,7 +48,7 @@ class _AdminScreenState extends State<AdminScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_loading) return const Scaffold(body: Skeletons.list(count: 4));
     if (!_isAdmin) {
       return Scaffold(
         appBar: AppBar(title: const Text('Admin')),

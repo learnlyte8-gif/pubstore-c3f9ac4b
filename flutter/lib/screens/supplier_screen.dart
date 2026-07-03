@@ -7,6 +7,7 @@ import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../theme/theme.dart';
 import '../widgets/masonry_grid.dart';
+import '../widgets/skeletons.dart';
 import 'auth_screen.dart';
 import 'messages_screen.dart';
 import 'rfq_screen.dart';
@@ -108,7 +109,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_loading) return Scaffold(appBar: AppBar(), body: Skeletons.screen(SkeletonPreset.detail));
     final s = _supplier;
     if (s == null) {
       return Scaffold(

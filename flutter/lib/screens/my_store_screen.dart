@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../theme/theme.dart';
+import '../widgets/skeletons.dart';
 import 'become_supplier_screen.dart';
 import 'store_actions_screen.dart';
 import 'store_analytics_screen.dart';
@@ -58,7 +59,7 @@ class _MyStoreScreenState extends State<MyStoreScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(appBar: AppBar(title: const Text('My store')), body: Skeletons.screen(SkeletonPreset.dashboard));
     }
     if (_supplier == null) {
       return Scaffold(

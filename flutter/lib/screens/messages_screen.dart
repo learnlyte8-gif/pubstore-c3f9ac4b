@@ -13,6 +13,7 @@ import '../services/messages_service.dart';
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../widgets/chat/discover_people.dart';
+import '../widgets/skeletons.dart';
 import 'auth_screen.dart';
 import 'thread_screen.dart';
 
@@ -224,7 +225,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                   },
                 )
               : _loading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? Skeletons.list(count: 8)
                   : _filtered.isEmpty
                       ? _emptyList()
                       : RefreshIndicator(

@@ -3,6 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
+import '../widgets/skeletons.dart';
 
 /// Mirrors `src/pages/StoreAnalytics.tsx` — revenue, orders, visitors, and
 /// top products for a supplier.
@@ -55,7 +56,7 @@ class _StoreAnalyticsScreenState extends State<StoreAnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_loading) return Scaffold(appBar: AppBar(title: const Text('Store analytics')), body: Skeletons.screen(SkeletonPreset.dashboard));
     return Scaffold(
       appBar: AppBar(title: const Text('Store analytics')),
       body: ListView(padding: const EdgeInsets.all(16), children: [

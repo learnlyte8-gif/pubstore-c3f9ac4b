@@ -11,6 +11,7 @@ import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../widgets/masonry_grid.dart';
 import '../widgets/product_card.dart';
+import '../widgets/skeletons.dart';
 import 'product_detail_screen.dart';
 
 
@@ -161,7 +162,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return RefreshIndicator(
         onRefresh: _refresh,
         child: _products.isEmpty && _loading
-            ? const Center(child: CircularProgressIndicator())
+            ? Skeletons.screen(SkeletonPreset.feed)
             : _products.isEmpty && _error != null
                 ? _ErrorRetry(error: _error!, onRetry: _loadMore)
                 : CustomScrollView(
@@ -244,11 +245,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ),
                       if (_loading)
-                        const SliverPadding(
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          sliver: SliverToBoxAdapter(
-                            child: Center(child: CircularProgressIndicator()),
-                          ),
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          sliver: SliverToBoxAdapter(child: Skeletons.productGrid(count: 4)),
                         ),
                       if (widget.feed == 'following' && _products.isEmpty && !_loading)
                         const SliverPadding(
@@ -771,10 +770,7 @@ class _NewArrivalsStripState extends State<_NewArrivalsStrip> {
         future: _future,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
-            return const SizedBox(
-              height: 220,
-              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-            );
+            return Skeletons.productStrip(height: 260, width: 170);
           }
           final data = snap.data ?? const <Product>[];
           if (data.isEmpty) {

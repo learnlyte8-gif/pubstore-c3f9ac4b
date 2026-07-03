@@ -7,6 +7,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../widgets/tapson_sheet.dart';
+import '../widgets/skeletons.dart';
 import 'product_detail_screen.dart';
 import '../models/models.dart';
 import 'supplier_screen.dart';
@@ -336,7 +337,7 @@ class _SearchScreenState extends State<SearchScreen> {
             child: _submitted.isEmpty
                 ? _landing()
                 : _loading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? Skeletons.list(count: 8)
                     : _resultsList(),
           ),
         ],

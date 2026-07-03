@@ -1,3 +1,4 @@
+import '../widgets/skeletons.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -73,7 +74,7 @@ class _JobsScreenState extends State<JobsScreen> {
             SliverToBoxAdapter(child: _buildFilters()),
           if (_loading)
             const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator()))
+                child: Skeletons.list(count: 4))
           else
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

@@ -7,6 +7,7 @@ import '../models/models.dart';
 import '../services/catalog_service.dart';
 import '../theme/palette.dart';
 import '../widgets/masonry_grid.dart';
+import '../widgets/skeletons.dart';
 import 'product_detail_screen.dart';
 import 'restaurants_screen.dart';
 
@@ -317,7 +318,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         child: RefreshIndicator(
           onRefresh: _refresh,
           child: _visible.isEmpty && _loading
-              ? const Center(child: CircularProgressIndicator())
+              ? Skeletons.productGrid(count: 6)
               : _visible.isEmpty
                   ? ListView(children: const [
                       SizedBox(height: 120),
@@ -341,11 +342,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                           ),
                         ),
                         if (_loading && _visible.isNotEmpty)
-                          const SliverToBoxAdapter(
+                          SliverToBoxAdapter(
                             child: Padding(
-                              padding: EdgeInsets.all(24),
-                              child:
-                                  Center(child: CircularProgressIndicator()),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Skeletons.productGrid(count: 4),
                             ),
                           ),
                       ],

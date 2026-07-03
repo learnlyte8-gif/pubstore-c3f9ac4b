@@ -7,6 +7,7 @@ import '../services/auth_service.dart';
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../widgets/masonry_grid.dart';
+import '../widgets/skeletons.dart';
 import 'product_detail_screen.dart';
 
 /// Wishlist — mirrors `src/pages/Wishlist.tsx`.
@@ -58,7 +59,7 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
           future: _future,
           builder: (context, snap) {
             if (snap.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator());
+              return Skeletons.productGrid(count: 6);
             }
             final items = snap.data ?? [];
             if (items.isEmpty) {

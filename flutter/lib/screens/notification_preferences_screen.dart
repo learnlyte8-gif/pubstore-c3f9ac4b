@@ -1,3 +1,4 @@
+import '../widgets/skeletons.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -70,7 +71,7 @@ class _NotificationPreferencesScreenState extends State<NotificationPreferencesS
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_loading) return const Scaffold(body: Skeletons.list(count: 4));
     return Scaffold(
       appBar: AppBar(title: const Text('Notifications')),
       body: ListView(padding: const EdgeInsets.symmetric(vertical: 8), children: [

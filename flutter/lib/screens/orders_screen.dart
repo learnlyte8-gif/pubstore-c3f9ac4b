@@ -9,6 +9,7 @@ import '../services/cart_service.dart';
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../theme/theme.dart';
+import '../widgets/skeletons.dart';
 import 'messages_screen.dart';
 import 'product_detail_screen.dart';
 
@@ -207,8 +208,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                 ),
               ),
               if (loading)
-                const SliverFillRemaining(
-                    child: Center(child: CircularProgressIndicator()))
+                SliverFillRemaining(child: Skeletons.list(count: 5))
               else if (visible.isEmpty)
                 SliverFillRemaining(
                   hasScrollBody: false,

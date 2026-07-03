@@ -1,3 +1,4 @@
+import '../widgets/skeletons.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -70,7 +71,7 @@ class _AddressesScreenState extends State<AddressesScreen> {
         future: _future,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
+            return Skeletons.list(count: 4);
           }
           final rows = snap.data ?? const [];
           if (rows.isEmpty) {

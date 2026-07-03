@@ -7,6 +7,7 @@ import '../services/catalog_service.dart';
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../widgets/product_card.dart';
+import '../widgets/skeletons.dart';
 
 /// Mirrors `src/pages/UserProfile.tsx` — public seller / user profile with
 /// their listings and follow toggle.
@@ -93,7 +94,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(p?['display_name']?.toString() ?? 'Profile')),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Skeletons.screen(SkeletonPreset.detail)
           : p == null
               ? const Center(child: Text('Profile not found'))
               : CustomScrollView(slivers: [

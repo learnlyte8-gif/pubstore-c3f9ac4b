@@ -1,3 +1,4 @@
+import '../widgets/skeletons.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -52,7 +53,7 @@ class _GroupBuyDetailScreenState extends State<GroupBuyDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_loading) return const Scaffold(body: Skeletons.list(count: 4));
     final gb = _gb;
     if (gb == null) return const Scaffold(body: Center(child: Text('Group buy not found')));
     final product = (gb['products'] ?? {}) as Map;

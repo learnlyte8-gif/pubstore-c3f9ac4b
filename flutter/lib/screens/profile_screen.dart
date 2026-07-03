@@ -9,6 +9,7 @@ import '../services/wallet_service.dart';
 import '../services/cart_service.dart';
 import '../services/wishlist_service.dart';
 import '../theme/palette.dart';
+import '../widgets/skeletons.dart';
 import 'addresses_screen.dart';
 import 'auth_screen.dart';
 import 'become_supplier_screen.dart';
@@ -123,9 +124,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return Scaffold(body: Skeletons.screen(SkeletonPreset.dashboard));
     }
     return Scaffold(
       backgroundColor: AppColors.background,

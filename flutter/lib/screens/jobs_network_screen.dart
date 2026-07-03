@@ -1,3 +1,4 @@
+import '../widgets/skeletons.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -72,7 +73,7 @@ class _JobsNetworkScreenState extends State<JobsNetworkScreen> {
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
+          if (snap.connectionState != ConnectionState.done) return Skeletons.list(count: 4);
           final rows = snap.data ?? const [];
           if (rows.isEmpty) return Center(child: Text(_tab == 0 ? 'No connections yet' : 'No pending requests'));
           final uid = supabase.auth.currentUser?.id;
