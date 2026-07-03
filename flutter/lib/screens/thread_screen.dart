@@ -281,7 +281,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
         child: Column(children: [
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator())
+                ? Skeletons.screen(SkeletonPreset.chat)
                 : ListView.builder(
                     controller: _scroll,
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
