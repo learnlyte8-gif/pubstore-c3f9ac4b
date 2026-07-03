@@ -56,7 +56,7 @@ class _StoreAnalyticsScreenState extends State<StoreAnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_loading) return Scaffold(appBar: AppBar(title: const Text('Store analytics')), body: Skeletons.screen(SkeletonPreset.dashboard));
     return Scaffold(
       appBar: AppBar(title: const Text('Store analytics')),
       body: ListView(padding: const EdgeInsets.all(16), children: [
