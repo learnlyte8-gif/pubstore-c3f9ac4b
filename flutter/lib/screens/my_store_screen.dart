@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../theme/theme.dart';
+import '../widgets/skeletons.dart';
 import 'become_supplier_screen.dart';
 import 'store_actions_screen.dart';
 import 'store_analytics_screen.dart';
