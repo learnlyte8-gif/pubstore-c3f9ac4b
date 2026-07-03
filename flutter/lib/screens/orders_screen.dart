@@ -208,8 +208,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                 ),
               ),
               if (loading)
-                const SliverFillRemaining(
-                    child: Center(child: CircularProgressIndicator()))
+                SliverFillRemaining(child: Skeletons.list(count: 5))
               else if (visible.isEmpty)
                 SliverFillRemaining(
                   hasScrollBody: false,
