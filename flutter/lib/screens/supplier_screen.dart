@@ -7,6 +7,7 @@ import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../theme/theme.dart';
 import '../widgets/masonry_grid.dart';
+import '../widgets/skeletons.dart';
 import 'auth_screen.dart';
 import 'messages_screen.dart';
 import 'rfq_screen.dart';
