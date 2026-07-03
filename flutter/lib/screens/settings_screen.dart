@@ -136,10 +136,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           SnackBar(content: Text('Could not send: $e')));
     }
   }
-        ],
-      ),
-    );
-  }
 
   Widget _sectionLabel(String t) => Padding(
         padding: const EdgeInsets.only(bottom: 8, left: 4),
