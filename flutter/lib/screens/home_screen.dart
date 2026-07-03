@@ -192,6 +192,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                           ),
                         ),
+                        SliverToBoxAdapter(child: _NewArrivalsStrip(onTap: _openProduct)),
                       ],
                       if (widget.categoryId != null || widget.feed != 'home')
                         SliverToBoxAdapter(
