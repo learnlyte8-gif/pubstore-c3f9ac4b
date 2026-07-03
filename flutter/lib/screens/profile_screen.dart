@@ -9,6 +9,7 @@ import '../services/wallet_service.dart';
 import '../services/cart_service.dart';
 import '../services/wishlist_service.dart';
 import '../theme/palette.dart';
+import '../widgets/skeletons.dart';
 import 'addresses_screen.dart';
 import 'auth_screen.dart';
 import 'become_supplier_screen.dart';
