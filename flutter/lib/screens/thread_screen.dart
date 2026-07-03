@@ -13,6 +13,7 @@ import '../services/messages_service.dart';
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../widgets/chat/attachment_card.dart';
+import '../widgets/skeletons.dart';
 
 /// Chat thread — mirrors `src/pages/Messages.tsx` (thread view).
 class ThreadScreen extends ConsumerStatefulWidget {
