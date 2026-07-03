@@ -94,7 +94,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(p?['display_name']?.toString() ?? 'Profile')),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Skeletons.screen(SkeletonPreset.detail)
           : p == null
               ? const Center(child: Text('Profile not found'))
               : CustomScrollView(slivers: [
