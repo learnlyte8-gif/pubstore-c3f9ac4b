@@ -124,9 +124,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return Scaffold(body: Skeletons.screen(SkeletonPreset.dashboard));
     }
     return Scaffold(
       backgroundColor: AppColors.background,
