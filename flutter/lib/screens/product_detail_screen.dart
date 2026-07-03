@@ -10,6 +10,7 @@ import '../services/supabase_client.dart';
 import '../services/wishlist_service.dart';
 import '../theme/palette.dart';
 import '../widgets/product_card.dart';
+import '../widgets/skeletons.dart';
 import 'cart_screen.dart';
 import 'messages_screen.dart';
 import 'supplier_screen.dart';
