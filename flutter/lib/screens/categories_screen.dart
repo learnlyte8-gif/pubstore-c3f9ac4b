@@ -342,11 +342,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                           ),
                         ),
                         if (_loading && _visible.isNotEmpty)
-                          const SliverToBoxAdapter(
+                          SliverToBoxAdapter(
                             child: Padding(
-                              padding: EdgeInsets.all(24),
-                              child:
-                                  Center(child: CircularProgressIndicator()),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Skeletons.productGrid(count: 4),
                             ),
                           ),
                       ],
