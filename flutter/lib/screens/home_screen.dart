@@ -770,10 +770,7 @@ class _NewArrivalsStripState extends State<_NewArrivalsStrip> {
         future: _future,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
-            return const SizedBox(
-              height: 220,
-              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-            );
+            return Skeletons.productStrip(height: 260, width: 170);
           }
           final data = snap.data ?? const <Product>[];
           if (data.isEmpty) {
