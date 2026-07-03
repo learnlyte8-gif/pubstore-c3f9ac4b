@@ -153,6 +153,7 @@ class _ShellHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final cartCount = ref.watch(cartCountProvider);
+    final wallet = ref.watch(walletBalanceProvider);
     return DecoratedBox(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
