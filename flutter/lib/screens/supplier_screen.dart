@@ -109,7 +109,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_loading) return Scaffold(appBar: AppBar(), body: Skeletons.screen(SkeletonPreset.detail));
     final s = _supplier;
     if (s == null) {
       return Scaffold(
