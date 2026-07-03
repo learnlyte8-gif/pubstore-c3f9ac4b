@@ -10,6 +10,7 @@ import '../services/cart_service.dart';
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../widgets/masonry_grid.dart';
+import '../widgets/product_card.dart';
 import 'product_detail_screen.dart';
 
 
@@ -192,6 +193,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                           ),
                         ),
+                        SliverToBoxAdapter(child: _NewArrivalsStrip(onTap: _openProduct)),
                       ],
                       if (widget.categoryId != null || widget.feed != 'home')
                         SliverToBoxAdapter(
@@ -747,4 +749,61 @@ class _ErrorRetry extends StatelessWidget {
       ),
     );
   }
+}
+
+class _NewArrivalsStrip extends StatefulWidget {
+  const _NewArrivalsStrip({required this.onTap});
+  final void Function(Product) onTap;
+  @override
+  State<_NewArrivalsStrip> createState() => _NewArrivalsStripState();
+}
+
+class _NewArrivalsStripState extends State<_NewArrivalsStrip> {
+  late Future<List<Product>> _future;
+  @override
+  void initState() {
+    super.initState();
+    _future = catalog.fetchProducts(pageSize: 12, sortBy: 'newest');
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<List<Product>>(
+        future: _future,
+        builder: (context, snap) {
+          if (snap.connectionState != ConnectionState.done) {
+            return const SizedBox(
+              height: 220,
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            );
+          }
+          final data = snap.data ?? const <Product>[];
+          if (data.isEmpty) {
+            return const Padding(
+              padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Text('No new arrivals yet — check back soon.',
+                  style: TextStyle(color: AppColors.muted, fontSize: 12)),
+            );
+          }
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(8, 12, 8, 0),
+            child: SizedBox(
+              height: 260,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                itemCount: data.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (_, i) => SizedBox(
+                  width: 170,
+                  child: ProductCard(
+                    product: data[i],
+                    variant: 'compact',
+                    onTap: () => widget.onTap(data[i]),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      );
 }
