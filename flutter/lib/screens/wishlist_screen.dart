@@ -22,9 +22,11 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
 
   Future<List<Product>> _fetch(String uid) async {
     final rows = await supabase
-        .from('saves')
-        .select('product:products(id, title, price, currency, images, '
-            'category, rating, sold, supplier_id)')
+        .from('wishlist_items')
+        .select('created_at, product:products(id, title, price, original_price, '
+            'currency, image, gallery, category_slug, badge, free_shipping, '
+            'moq, unit, rating, review_count, sold, supplier_id, '
+            'suppliers(name, verified, gold, country, trade_type))')
         .eq('user_id', uid)
         .order('created_at', ascending: false);
     return (rows as List)
