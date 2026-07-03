@@ -6,6 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../services/auth_service.dart';
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
+import '../widgets/skeletons.dart';
 
 /// Notifications — mirrors `src/pages/Notifications.tsx`.
 class NotificationsScreen extends ConsumerStatefulWidget {
