@@ -10,6 +10,7 @@ import '../services/cart_service.dart';
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../widgets/masonry_grid.dart';
+import '../widgets/product_card.dart';
 import 'product_detail_screen.dart';
 
 
