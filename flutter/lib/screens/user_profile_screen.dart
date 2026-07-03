@@ -7,6 +7,7 @@ import '../services/catalog_service.dart';
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../widgets/product_card.dart';
+import '../widgets/skeletons.dart';
 
 /// Mirrors `src/pages/UserProfile.tsx` — public seller / user profile with
 /// their listings and follow toggle.
