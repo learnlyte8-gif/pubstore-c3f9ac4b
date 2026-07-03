@@ -52,7 +52,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           future: _future,
           builder: (context, snap) {
             if (snap.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator());
+              return Skeletons.list(count: 6);
             }
             final items = snap.data ?? [];
             if (items.isEmpty) {
