@@ -196,11 +196,12 @@ class _ShellHeader extends ConsumerWidget {
                     const Spacer(),
                     if (user != null)
                       GestureDetector(
-                        onTap: () {},
-                        child: const Row(children: [
-                          Icon(LucideIcons.wallet, size: 16),
-                          SizedBox(width: 4),
-                          Text('\$0.00', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900)),
+                        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WalletScreen())),
+                        child: Row(children: [
+                          const Icon(LucideIcons.wallet, size: 16),
+                          const SizedBox(width: 4),
+                          Text('\$${wallet.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900)),
+                          const SizedBox(width: 6),
                         ]),
                       ),
                     _HeaderIcon(icon: LucideIcons.bell, badge: 0, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NotificationsScreen()))),
