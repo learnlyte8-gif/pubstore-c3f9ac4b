@@ -337,7 +337,7 @@ class _SearchScreenState extends State<SearchScreen> {
             child: _submitted.isEmpty
                 ? _landing()
                 : _loading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? Skeletons.list(count: 8)
                     : _resultsList(),
           ),
         ],
