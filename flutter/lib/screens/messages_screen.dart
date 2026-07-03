@@ -225,7 +225,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                   },
                 )
               : _loading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? Skeletons.list(count: 8)
                   : _filtered.isEmpty
                       ? _emptyList()
                       : RefreshIndicator(
