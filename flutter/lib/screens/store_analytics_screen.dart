@@ -3,6 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
+import '../widgets/skeletons.dart';
 
 /// Mirrors `src/pages/StoreAnalytics.tsx` — revenue, orders, visitors, and
 /// top products for a supplier.
