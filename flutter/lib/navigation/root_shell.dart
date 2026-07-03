@@ -14,8 +14,28 @@ import '../screens/cart_screen.dart';
 import '../services/auth_service.dart';
 import '../services/cart_service.dart';
 import '../services/catalog_service.dart';
+import '../services/wallet_service.dart';
 import '../theme/palette.dart';
 import '../widgets/tapson_sheet.dart';
+import '../screens/industrial_screen.dart';
+import '../screens/logistics_screen.dart';
+import '../screens/rides_screen.dart';
+import '../screens/auto_screen.dart';
+import '../screens/car_rentals_screen.dart';
+import '../screens/properties_screen.dart';
+import '../screens/stays_screen.dart';
+import '../screens/services_screen.dart';
+import '../screens/jobs_screen.dart';
+import '../screens/finance_screen.dart';
+import '../screens/news_screen.dart';
+import '../screens/restaurants_screen.dart';
+import '../screens/agro_screen.dart';
+import '../screens/live_screen.dart';
+import '../screens/rfq_screen.dart';
+import '../screens/orders_screen.dart';
+import '../screens/wallet_screen.dart';
+import '../screens/my_store_screen.dart';
+import '../screens/settings_screen.dart';
 
 /// Bottom-tab shell — mirrors `src/components/AppShell.tsx` on web and
 /// `navigation/RootTabs.tsx` in the React Native app.
