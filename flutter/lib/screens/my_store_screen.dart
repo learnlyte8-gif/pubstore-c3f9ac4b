@@ -59,7 +59,7 @@ class _MyStoreScreenState extends State<MyStoreScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(appBar: AppBar(title: const Text('My store')), body: Skeletons.screen(SkeletonPreset.dashboard));
     }
     if (_supplier == null) {
       return Scaffold(
