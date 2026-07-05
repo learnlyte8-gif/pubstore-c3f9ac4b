@@ -1,9 +1,9 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
@@ -25,7 +25,7 @@ class _RidesScreenState extends State<RidesScreen> {
   final _dropoff = TextEditingController();
   double? _pickupLat, _pickupLng, _dropLat, _dropLng;
   String? _activeRideId;
-  StreamSubscription? _offersSub;
+  RealtimeChannel? _offersChannel;
   List<Map<String, dynamic>> _offers = const [];
   List<Map<String, dynamic>> _trips = const [];
   bool _creating = false;
@@ -49,7 +49,7 @@ class _RidesScreenState extends State<RidesScreen> {
 
   @override
   void dispose() {
-    _offersSub?.cancel();
+    if (_offersChannel != null) supabase.removeChannel(_offersChannel!);
     _pickup.dispose();
     _dropoff.dispose();
     super.dispose();
@@ -120,9 +120,9 @@ class _RidesScreenState extends State<RidesScreen> {
   }
 
   void _subscribeOffers(String rideId) {
-    _offersSub?.cancel();
+    if (_offersChannel != null) supabase.removeChannel(_offersChannel!);
     _loadOffers(rideId);
-    _offersSub = supabase
+    _offersChannel = supabase
         .channel('offers:$rideId')
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
@@ -131,7 +131,7 @@ class _RidesScreenState extends State<RidesScreen> {
           filter: PostgresChangeFilter(type: PostgresChangeFilterType.eq, column: 'ride_id', value: rideId),
           callback: (_) => _loadOffers(rideId),
         )
-        .subscribe() as StreamSubscription?;
+        .subscribe();
   }
 
   Future<void> _loadOffers(String rideId) async {
@@ -153,7 +153,8 @@ class _RidesScreenState extends State<RidesScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ride confirmed with ${o['driver_name']}')));
       setState(() { _activeRideId = null; _offers = const []; });
-      _offersSub?.cancel();
+      if (_offersChannel != null) supabase.removeChannel(_offersChannel!);
+      _offersChannel = null;
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
     }
@@ -163,7 +164,8 @@ class _RidesScreenState extends State<RidesScreen> {
     if (_activeRideId == null) return;
     await supabase.from('rides').update({'status': 'cancelled'}).eq('id', _activeRideId!);
     setState(() { _activeRideId = null; _offers = const []; });
-    _offersSub?.cancel();
+    if (_offersChannel != null) supabase.removeChannel(_offersChannel!);
+    _offersChannel = null;
   }
 
   Future<void> _loadTrips() async {
