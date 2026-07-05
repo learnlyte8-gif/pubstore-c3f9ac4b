@@ -35,7 +35,7 @@ class _LiveScreenState extends State<LiveScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Live now'), actions: [IconButton(onPressed: () {}, icon: const Icon(LucideIcons.video))]),
+      appBar: AppBar(title: const Text('Live now'), actions: [IconButton(onPressed: _goLive, icon: const Icon(LucideIcons.video))]),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _future,
         builder: (context, snap) {
