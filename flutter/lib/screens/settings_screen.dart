@@ -64,6 +64,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (_) {}
   }
 
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
