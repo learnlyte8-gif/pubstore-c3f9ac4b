@@ -103,4 +103,53 @@ class _LiveScreenState extends State<LiveScreen> {
       ),
     );
   }
+
+  Future<void> _goLive() async {
+    final me = supabase.auth.currentUser;
+    if (me == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in to go live')));
+      return;
+    }
+    final title = TextEditingController();
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.background,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(ctx).viewInsets.bottom + 16),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          const Text('Go Live', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 12),
+          TextField(controller: title, decoration: const InputDecoration(labelText: 'Stream title', border: OutlineInputBorder())),
+          const SizedBox(height: 12),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.destructive, foregroundColor: Colors.white, minimumSize: const Size.fromHeight(46)),
+            child: const Text('Start streaming'),
+          ),
+        ]),
+      ),
+    );
+    if (ok != true || title.text.trim().isEmpty) return;
+    try {
+      final supplier = await supabase.from('suppliers').select('id').eq('owner_id', me.id).maybeSingle();
+      final row = await supabase.from('live_streams').insert({
+        'title': title.text.trim(),
+        'host_user_id': me.id,
+        'supplier_id': supplier?['id'],
+        'status': 'live',
+        'viewer_count': 0,
+        'started_at': DateTime.now().toIso8601String(),
+      }).select().single();
+      if (!mounted) return;
+      await Navigator.of(context).push(MaterialPageRoute(builder: (_) => LiveViewerScreen(stream: row)));
+      if (!mounted) return;
+      await supabase.from('live_streams').update({'status': 'ended'}).eq('id', row['id']);
+      setState(() => _future = _load());
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to start: $e')));
+    }
+  }
 }
