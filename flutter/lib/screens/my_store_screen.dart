@@ -118,39 +118,50 @@ class _MyStoreScreenState extends State<MyStoreScreen> {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF3B82F6), Color(0xFF0EA5E9)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(AppRadii.md),
-            ),
-            child: Row(children: [
-              _stat('Orders', '$_orderCount'),
-              _divider(),
-              _stat('Revenue', '\$${_revenue.toStringAsFixed(0)}'),
-              _divider(),
-              _stat('Pending', '$_pending'),
-            ]),
-          ),
-          const SizedBox(height: 16),
-          _tile(LucideIcons.package, 'Products', section: 'products', subtitle: 'Manage catalog & inventory'),
-          _tile(LucideIcons.shoppingBag, 'Orders', section: 'orders', subtitle: 'Fulfilment & shipping'),
-          _tile(LucideIcons.megaphone, 'Promotions', section: 'promote', subtitle: 'Coupons & campaigns'),
-          _tile(LucideIcons.barChart3, 'Analytics', section: 'analytics', subtitle: 'Sales trends & audience'),
-          _tile(LucideIcons.star, 'Reviews', section: 'reviews', subtitle: 'What buyers are saying'),
-          _tile(LucideIcons.truck, 'Shipping', section: 'shipping', subtitle: 'Templates & carriers'),
-          _tile(LucideIcons.image, 'Store profile', section: 'profile', subtitle: 'Banner, logo, about'),
-          _tile(LucideIcons.settings, 'Settings', section: 'settings', subtitle: 'Payouts, taxes, hours'),
-          _tile(LucideIcons.download, 'Import', section: 'import', subtitle: 'Alibaba / Amazon / Shopify'),
-        ],
-      ),
+      body: Builder(builder: (context) {
+        final tiles = <(IconData, String, String, String)>[
+          (LucideIcons.package, 'Products', 'products', 'Manage catalog & inventory'),
+          (LucideIcons.shoppingBag, 'Orders', 'orders', 'Fulfilment & shipping'),
+          (LucideIcons.megaphone, 'Promotions', 'promote', 'Coupons & campaigns'),
+          (LucideIcons.barChart3, 'Analytics', 'analytics', 'Sales trends & audience'),
+          (LucideIcons.star, 'Reviews', 'reviews', 'What buyers are saying'),
+          (LucideIcons.truck, 'Shipping', 'shipping', 'Templates & carriers'),
+          (LucideIcons.image, 'Store profile', 'profile', 'Banner, logo, about'),
+          (LucideIcons.settings, 'Settings', 'settings', 'Payouts, taxes, hours'),
+          (LucideIcons.download, 'Import', 'import', 'Alibaba / Amazon / Shopify'),
+        ];
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: tiles.length + 1,
+          itemBuilder: (context, i) {
+            if (i == 0) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF3B82F6), Color(0xFF0EA5E9)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(AppRadii.md),
+                  ),
+                  child: Row(children: [
+                    _stat('Orders', '$_orderCount'),
+                    _divider(),
+                    _stat('Revenue', '\$${_revenue.toStringAsFixed(0)}'),
+                    _divider(),
+                    _stat('Pending', '$_pending'),
+                  ]),
+                ),
+              );
+            }
+            final t = tiles[i - 1];
+            return _tile(t.$1, t.$2, section: t.$3, subtitle: t.$4);
+          },
+        );
+      }),
     );
   }
 
