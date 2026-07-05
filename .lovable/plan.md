@@ -1,64 +1,74 @@
-## Goal
+# Flutter Parity Migration Plan
 
-Rebuild the Flutter Messages surface to match `src/pages/Messages.tsx` 1:1 — inbox with tabs, full-screen thread, swipe-to-reply, long-press actions, reactions, reply quotes, forwarding, and attachment cards. Replaces the stub `messages_screen.dart` and `thread_screen.dart`.
+Goal: bring the Flutter app to full feature parity with the web app (`src/pages/*`). Every screen, every action, every data flow that exists on web must exist and work in Flutter.
 
-## Scope
+## Approach
 
-### Inbox (`messages_screen.dart`)
-- Tabs: Unread · Suppliers · People · Groups · Discover
-- Search bar, refresh, unread counts per conversation
-- Rows show peer avatar with gradient ring, verified badge, subtitle (response time / @username / group meta), last message + time
-- Realtime refresh via Supabase channel + focus/visibility polling
-- Auto-open conversation from `?supplier=` or `?conv=` deep-link equivalents (in-app args)
-- Merges buyer conversations + supplier-owned + member-based (DMs, group buys)
+Work in ordered batches. For each batch:
+1. Read the web page(s) in `src/pages/` + supporting hooks/components.
+2. Diff against the matching `flutter/lib/screens/*` file.
+3. Port missing UI sections, actions, Supabase queries, navigation, empty/error/loading (shimmer) states.
+4. Wire navigation from drawer, home, and cross-screen links.
+5. Verify: `flutter analyze` + spot-check by reading the resulting file.
+6. Report per batch: what was missing, what was added, what still needs backend work.
 
-### Thread (`thread_screen.dart`)
-- Header: back, gradient-ring avatar, live dot, verified check, name, subtitle, call/video/info actions, group/supplier deep-link
-- Empty state with suggested quick prompts
-- Day dividers, sender grouping, tail bubbles, "Host" badge for supplier owner
-- SwipeBubble (Dismissible-based) → reply on threshold; long-press → action sheet; double-tap → ❤️ reaction
-- Reply preview strip above composer, cancel button
-- Reactions row under bubble (emoji + count)
-- Forwarded label + Reply quote card
-- Composer: attach button, text field, send / mic / heart, product picker sheet
-- Attachment card widget for product / supplier / wishlist / cart-unlock / catalog kinds
-- Notifications insert on send
+Rules kept throughout:
+- Reuse `Skeletons.*` for loading states (no spinners).
+- `ListView.builder` / `GridView.builder` for all lists.
+- Match web Supabase table/column names exactly (schema is source of truth).
+- Semantic tokens from `theme/palette.dart` — no hardcoded colors.
+- Keep `owner_id`, `image`, `active`, `moq`, `sold`, `text` conventions already fixed.
 
-### Supporting files
-- `services/messages_service.dart` — extended with: fetch messages, insert (with attachment/reply/forward), update reactions, delete, mark read, list group buys / profiles, product search reuse
-- `models/message_models.dart` — `ChatConversation`, `ChatMessage`, `ChatAttachment` union, `Reactions` typedef
-- `widgets/chat/swipe_bubble.dart`, `widgets/chat/reply_quote.dart`, `widgets/chat/reaction_chips.dart`, `widgets/chat/attachment_card.dart`, `widgets/chat/message_actions_sheet.dart`, `widgets/chat/product_picker_sheet.dart`, `widgets/chat/discover_people.dart`
+## Batches (execution order)
 
-### Out of scope (left as TODO stubs)
-- Voice recording (`Mic` UI shown but records nothing)
-- Real audio/video call handlers (buttons no-op)
-- InquiryApprovalPanel / PendingInquiriesInbox (kept as placeholder cards linking to the web equivalent behavior; can be built next turn)
+**Batch 1 — Shell & Navigation**
+- `root_shell.dart`, drawer, bottom nav, `splash_screen.dart`, `onboarding_screen.dart`, `auth_screen.dart`
+- Confirm every web route in `App.tsx` has a Flutter destination and drawer entry.
 
-## Technical notes
+**Batch 2 — Home & Discovery**
+- `home_screen.dart` (feed, wallet header, new arrivals, verticals strip, stories, live rail)
+- `categories_screen.dart`, `search_screen.dart` (universal search), `news_screen.dart`
 
-- Realtime: `supabase.channel(...).onPostgresChanges(...)` — one subscription per active conversation for INSERT/UPDATE/DELETE, one shared subscription for conversations list, plus a 15s poll timer while foregrounded.
-- Optimistic sends: temp id in local list, replaced by server row on success, removed on error.
-- Sticky-to-bottom scroll: track `_stick` from `NotificationListener<ScrollNotification>`, snap to bottom on new message when stuck.
-- SwipeBubble: use `Dismissible` with `direction: mine ? endToStart : startToEnd`, `confirmDismiss` returning false so the row springs back; fire `onReply` when past 56px.
-- Reactions stored in `messages.reactions jsonb` — update entire map on toggle, mirror web logic (single reaction per user across all emojis).
-- Attachments stored in `messages.attachment jsonb`; render via `AttachmentCard` dispatching on `kind`.
-- Deep-link params passed through Flutter navigation args instead of URL search params (`MessagesScreen(supplierId: ..., prefill: ..., convId: ...)`).
+**Batch 3 — Product & Commerce Core**
+- `product_detail_screen.dart` (gallery, variants, tier prices, reviews, inquiry, group buy, share)
+- `cart_screen.dart`, `wishlist_screen.dart`, `compare_screen.dart`, `orders_screen.dart`, `pay_action_screen.dart`
 
-## Deliverables
+**Batch 4 — Supplier / Store**
+- `my_store_screen.dart`, `store_actions_screen.dart`, `store_section_screen.dart` (products, orders, inventory, settings, coupons, fulfilment)
+- `store_analytics_screen.dart`, `ads_dashboard_screen.dart`, `ad_campaign_wizard_screen.dart`
+- `become_supplier_screen.dart`, `supplier_screen.dart` (public storefront)
 
-New/edited files:
-1. `flutter/lib/screens/messages_screen.dart` (rewrite)
-2. `flutter/lib/screens/thread_screen.dart` (rewrite)
-3. `flutter/lib/services/messages_service.dart` (extend)
-4. `flutter/lib/models/message_models.dart` (new)
-5. `flutter/lib/widgets/chat/swipe_bubble.dart` (new)
-6. `flutter/lib/widgets/chat/reply_quote.dart` (new)
-7. `flutter/lib/widgets/chat/reaction_chips.dart` (new)
-8. `flutter/lib/widgets/chat/attachment_card.dart` (new)
-9. `flutter/lib/widgets/chat/message_actions_sheet.dart` (new)
-10. `flutter/lib/widgets/chat/product_picker_sheet.dart` (new)
-11. `flutter/lib/widgets/chat/discover_people.dart` (new)
+**Batch 5 — Verticals**
+- `stays`, `auto`, `car_rentals`, `industrial`, `agro`, `properties`, `services`, `logistics`, `finance`, `restaurants`, `rides`, `driver`
+- Each: list + filters + detail + booking/inquiry action, matching web.
 
-No backend/schema changes — reuses existing `conversations`, `messages`, `conversation_members`, `notifications`, `group_buys`, `profiles`, `suppliers`.
+**Batch 6 — Jobs & Social**
+- `jobs_screen.dart`, `jobs_feed_screen.dart`, `jobs_network_screen.dart`, `jobs_profile_screen.dart`
+- `user_profile_screen.dart`, followers/following, post likes/comments.
 
-Approve to build, or tell me which parts to trim (e.g. skip Discover tab, skip attachments) if you want it smaller.
+**Batch 7 — Messaging & Live**
+- `messages_screen.dart`, `thread_screen.dart` (attachments, quotes, ride/inquiry cards)
+- `live_screen.dart` (streams list, viewer, reactions, chat)
+- Tapson chatbot behaviour aligned with web `tapson-chat` responses.
+
+**Batch 8 — Account & Settings**
+- `profile_screen.dart`, `account`, `addresses_screen.dart`, `payment_methods_screen.dart`
+- `wallet_screen.dart` (topup, withdraw, ledger), `verification_screen.dart`
+- `settings_screen.dart` + `notification_preferences_screen.dart`, `privacy_screen.dart`, `help_center_screen.dart`, `unsubscribe_screen.dart`
+
+**Batch 9 — Admin & Misc**
+- `admin_screen.dart`, `group_buy_detail_screen.dart`, `rfq_screen.dart`, notifications screen, splash polish.
+
+**Batch 10 — Final QA sweep**
+- Route audit: every `App.tsx` `<Route>` has a Flutter equivalent reachable from UI.
+- Shimmer audit: no `CircularProgressIndicator` on screen-level loading.
+- List audit: all long lists use `.builder`.
+- Run `flutter analyze`; fix warnings.
+- Produce a parity checklist marking each web route ✅.
+
+## Deliverables per batch
+- Edited Flutter files.
+- Short "diff report" listing: features ported, features intentionally deferred (with reason), any new migrations needed.
+
+## Kickoff
+Reply "start" (or "start batch N") and I will begin executing top-down, one batch per turn, without stopping until every batch is complete or you tell me to pause.
