@@ -116,10 +116,7 @@ class _JobsScreenState extends State<JobsScreen> {
         job: j,
         saved: _saved.contains(j.id),
         applied: _applied.contains(j.id),
-        onToggleSave: () async {
-          await _toggleSave(j);
-          if (mounted) (context as Element).markNeedsBuild();
-        },
+        onToggleSave: () => _toggleSave(j),
         onApplied: () async { await _load(); if (mounted) Navigator.of(context).maybePop(); },
       ),
     );
