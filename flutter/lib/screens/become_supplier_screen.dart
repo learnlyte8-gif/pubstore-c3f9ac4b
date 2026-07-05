@@ -32,6 +32,8 @@ class _BecomeSupplierScreenState extends State<BecomeSupplierScreen> {
         .from('suppliers')
         .select('id')
         .eq('owner_id', uid)
+        .order('created_at', ascending: false)
+        .limit(1)
         .maybeSingle();
     if (mounted && existing != null) Navigator.of(context).pop(true);
   }
@@ -51,6 +53,18 @@ class _BecomeSupplierScreenState extends State<BecomeSupplierScreen> {
         'user_id': uid,
         'role': 'supplier',
       }, onConflict: 'user_id,role');
+
+      final existing = await supabase
+          .from('suppliers')
+          .select('id')
+          .eq('owner_id', uid)
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      if (existing != null) {
+        if (mounted) Navigator.of(context).pop(true);
+        return;
+      }
 
       List<String> verticals = const [];
       try {

@@ -250,7 +250,7 @@ class _NewProductViewState extends State<_NewProductView> {
         'description': _desc.text.trim(),
         'category_slug': _category.text.trim().isEmpty ? null : _category.text.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-').replaceAll(RegExp(r'^-|-$'), ''),
         'image': _image.text.trim().isEmpty ? null : _image.text.trim(),
-        'visible': true,
+        'active': true,
       });
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
@@ -308,7 +308,7 @@ class _OrdersViewState extends State<_OrdersView> {
   Future<void> _load() async {
     setState(() => _loading = true);
     final uid = supabase.auth.currentUser?.id;
-    if (uid == null) return;
+    if (uid == null) { setState(() => _loading = false); return; }
     final sup = await supabase.from('suppliers').select('id').eq('owner_id', uid).limit(1).maybeSingle();
     if (sup == null) { setState(() { _loading = false; _orders = []; }); return; }
     final rows = await supabase
@@ -379,7 +379,7 @@ class _AnalyticsViewState extends State<_AnalyticsView> {
 
   Future<void> _load() async {
     final uid = supabase.auth.currentUser?.id;
-    if (uid == null) return;
+    if (uid == null) { setState(() => _loading = false); return; }
     final sup = await supabase.from('suppliers').select('id').eq('owner_id', uid).limit(1).maybeSingle();
     if (sup == null) { setState(() => _loading = false); return; }
     final orders = await supabase.from('orders').select('total,status').eq('supplier_id', sup['id']);
@@ -451,14 +451,24 @@ class _ReviewsViewState extends State<_ReviewsView> {
   void initState() { super.initState(); _load(); }
   Future<void> _load() async {
     final uid = supabase.auth.currentUser?.id;
-    if (uid == null) return;
+    if (uid == null) { setState(() => _loading = false); return; }
     final sup = await supabase.from('suppliers').select('id').eq('owner_id', uid).limit(1).maybeSingle();
     if (sup == null) { setState(() => _loading = false); return; }
     try {
+      final products = await supabase
+          .from('products')
+          .select('id')
+          .eq('supplier_id', sup['id'])
+          .limit(200);
+      final ids = (products as List).map((p) => p['id'].toString()).toList();
+      if (ids.isEmpty) {
+        setState(() { _rows = []; _loading = false; });
+        return;
+      }
       final rows = await supabase
           .from('reviews')
           .select('rating,text,created_at,product_id')
-          .eq('supplier_id', sup['id'])
+          .inFilter('product_id', ids)
           .order('created_at', ascending: false)
           .limit(50);
       setState(() { _rows = List<Map<String, dynamic>>.from(rows); _loading = false; });
@@ -507,7 +517,7 @@ class _ProfileViewState extends State<_ProfileView> {
   void initState() { super.initState(); _load(); }
   Future<void> _load() async {
     final uid = supabase.auth.currentUser?.id;
-    if (uid == null) return;
+    if (uid == null) { setState(() => _loading = false); return; }
     final s = await supabase.from('suppliers').select('*').eq('owner_id', uid).limit(1).maybeSingle();
     if (s != null) {
       _name.text = s['name'] ?? '';
