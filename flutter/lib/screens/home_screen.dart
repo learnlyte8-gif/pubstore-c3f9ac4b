@@ -684,24 +684,8 @@ class _DirectorySheet extends StatelessWidget {
       );
 }
 
-/// Tiny indirection so we don't import every vertical screen twice.
-class _LazyRoute extends StatelessWidget {
-  const _LazyRoute(this.key_);
-  final String key_;
-  @override
-  Widget build(BuildContext context) {
-    // Dynamic import via a switch keeps this file's imports lean.
-    // ignore: prefer_const_constructors
-    final map = _routeBuilders;
-    final b = map[key_];
-    return b?.call() ?? const Scaffold(body: Center(child: Text('Coming soon')));
-  }
-}
 
-/// Registered lazily on first access so the imports live in a single place.
-final Map<String, Widget Function()> _routeBuilders = () {
-  return <String, Widget Function()>{};
-}();
+
 
 
 class _Promo3DCarousel extends StatefulWidget {
