@@ -19,8 +19,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
   ThemeMode _theme = ThemeMode.system;
   String _language = 'English';
   String _currency = 'USD';
+  Set<String> _interests = {};
+  bool _interestsLoaded = false;
+
+  static const _allInterests = [
+    'Electronics', 'Fashion', 'Home & Garden', 'Beauty', 'Sports', 'Toys',
+    'Automotive', 'Industrial', 'Agriculture', 'Packaging', 'Office', 'Health',
+  ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadInterests();
+  }
+
+  Future<void> _loadInterests() async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) { setState(() => _interestsLoaded = true); return; }
+    try {
+      final prof = await supabase.from('profiles').select('interests').eq('user_id', uid).maybeSingle();
+      final list = ((prof?['interests'] ?? []) as List).map((e) => e.toString()).toSet();
+      if (mounted) setState(() { _interests = list; _interestsLoaded = true; });
+    } catch (_) {
+      if (mounted) setState(() => _interestsLoaded = true);
+    }
+  }
+
+  Future<void> _toggleInterest(String item) async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in to update your interests')));
+      return;
+    }
+    final has = _interests.contains(item);
+    if (!has && _interests.length >= 8) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maximum 8 interests')));
+      return;
+    }
+    setState(() {
+      if (has) { _interests.remove(item); } else { _interests.add(item); }
+    });
+    try {
+      await supabase.from('profiles').update({'interests': _interests.toList()}).eq('user_id', uid);
+    } catch (_) {}
+  }
+
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
