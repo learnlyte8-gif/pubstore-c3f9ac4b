@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
+import 'live_viewer_screen.dart';
 
 /// Mirrors `src/pages/Live.tsx` — list of active live shopping streams.
 class LiveScreen extends StatefulWidget {
