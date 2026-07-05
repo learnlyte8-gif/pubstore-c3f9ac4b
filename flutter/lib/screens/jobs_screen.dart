@@ -105,6 +105,7 @@ class _JobsScreenState extends State<JobsScreen> {
   List<JobPosting> _visible() {
     if (_tab == 1) return _jobs.where((j) => _saved.contains(j.id)).toList();
     if (_tab == 2) return _jobs.where((j) => _applied.contains(j.id)).toList();
+    if (_tab == 3) return const [];
     return _jobs;
   }
 
