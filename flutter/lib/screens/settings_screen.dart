@@ -116,6 +116,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onTap: _sendWhatsAppTest),
           ]),
           const SizedBox(height: 16),
+          _sectionLabel('Personalization'),
+          _card([
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  _iconBubble(LucideIcons.sparkles),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Text('Your interests', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+                      Text('Drives your home & categories feed · ${_interests.length}/8 selected',
+                          style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                    ]),
+                  ),
+                ]),
+                const SizedBox(height: 12),
+                if (!_interestsLoaded)
+                  const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Center(child: CircularProgressIndicator(strokeWidth: 2)))
+                else
+                  Wrap(spacing: 6, runSpacing: 6, children: [
+                    for (final item in _allInterests)
+                      GestureDetector(
+                        onTap: () => _toggleInterest(item),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: _interests.contains(item) ? AppColors.primary : AppColors.mutedSurface,
+                            border: Border.all(color: _interests.contains(item) ? AppColors.primary : AppColors.border),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            if (_interests.contains(item)) ...[
+                              const Icon(LucideIcons.check, size: 12, color: Colors.white),
+                              const SizedBox(width: 4),
+                            ],
+                            Text(item, style: TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.w800,
+                              color: _interests.contains(item) ? Colors.white : AppColors.foreground,
+                            )),
+                          ]),
+                        ),
+                      ),
+                  ]),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 16),
           _sectionLabel('Region'),
           _card([
             _picker(LucideIcons.languages, 'Language', _language,
