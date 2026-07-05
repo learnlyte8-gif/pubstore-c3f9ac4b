@@ -120,11 +120,11 @@ class _ProductsViewState extends State<_ProductsView> {
     setState(() => _loading = true);
     final uid = supabase.auth.currentUser?.id;
     if (uid == null) { setState(() => _loading = false); return; }
-    final sup = await supabase.from('suppliers').select('id').eq('user_id', uid).maybeSingle();
+    final sup = await supabase.from('suppliers').select('id').eq('owner_id', uid).limit(1).maybeSingle();
     if (sup == null) { setState(() { _loading = false; _items = []; }); return; }
     final rows = await supabase
         .from('products')
-        .select('id,title,price,image_url,stock,visible,sold')
+        .select('id,title,price,image,moq,active,sold')
         .eq('supplier_id', sup['id'])
         .order('created_at', ascending: false);
     setState(() {
@@ -142,7 +142,7 @@ class _ProductsViewState extends State<_ProductsView> {
   }
 
   Future<void> _toggleVisible(String id, bool visible) async {
-    await supabase.from('products').update({'visible': visible}).eq('id', id);
+    await supabase.from('products').update({'active': visible}).eq('id', id);
     _load();
   }
 
@@ -195,15 +195,15 @@ class _ProductsViewState extends State<_ProductsView> {
                                   if (v == true) _selected.add(id); else _selected.remove(id);
                                 }),
                               )
-                            : (p['image_url'] != null
-                                ? ClipRRect(borderRadius: BorderRadius.circular(6), child: Image.network(p['image_url'], width: 48, height: 48, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(width: 48, height: 48, color: Palette.muted)))
+                            : (p['image'] != null
+                                ? ClipRRect(borderRadius: BorderRadius.circular(6), child: Image.network(p['image'], width: 48, height: 48, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(width: 48, height: 48, color: Palette.muted)))
                                 : Container(width: 48, height: 48, color: Palette.muted)),
                         title: Text(p['title'] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
-                        subtitle: Text('\$${p['price']} · Stock ${p['stock'] ?? 0} · Sold ${p['sold'] ?? 0}'),
+                        subtitle: Text('\$${p['price']} · MOQ ${p['moq'] ?? 1} · Sold ${p['sold'] ?? 0}'),
                         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                           IconButton(
-                            icon: Icon(p['visible'] == false ? LucideIcons.eyeOff : LucideIcons.eye, size: 18),
-                            onPressed: () => _toggleVisible(id, !(p['visible'] ?? true)),
+                            icon: Icon(p['active'] == false ? LucideIcons.eyeOff : LucideIcons.eye, size: 18),
+                            onPressed: () => _toggleVisible(id, !(p['active'] ?? true)),
                           ),
                         ]),
                       ),
@@ -240,16 +240,16 @@ class _NewProductViewState extends State<_NewProductView> {
     setState(() => _saving = true);
     try {
       final uid = supabase.auth.currentUser?.id;
-      final sup = await supabase.from('suppliers').select('id').eq('user_id', uid!).maybeSingle();
+      final sup = await supabase.from('suppliers').select('id').eq('owner_id', uid!).limit(1).maybeSingle();
       if (sup == null) throw 'No supplier profile';
       await supabase.from('products').insert({
         'supplier_id': sup['id'],
         'title': _title.text.trim(),
         'price': double.tryParse(_price.text) ?? 0,
-        'stock': int.tryParse(_stock.text) ?? 0,
+        'moq': int.tryParse(_stock.text) ?? 1,
         'description': _desc.text.trim(),
-        'category': _category.text.trim(),
-        'image_url': _image.text.trim().isEmpty ? null : _image.text.trim(),
+        'category_slug': _category.text.trim().isEmpty ? null : _category.text.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-').replaceAll(RegExp(r'^-|-$'), ''),
+        'image': _image.text.trim().isEmpty ? null : _image.text.trim(),
         'visible': true,
       });
       if (mounted) Navigator.of(context).pop();
@@ -269,7 +269,7 @@ class _NewProductViewState extends State<_NewProductView> {
         const SizedBox(height: 12),
         TextField(controller: _price, decoration: const InputDecoration(labelText: 'Price'), keyboardType: TextInputType.number),
         const SizedBox(height: 12),
-        TextField(controller: _stock, decoration: const InputDecoration(labelText: 'Stock'), keyboardType: TextInputType.number),
+        TextField(controller: _stock, decoration: const InputDecoration(labelText: 'Minimum order quantity'), keyboardType: TextInputType.number),
         const SizedBox(height: 12),
         TextField(controller: _category, decoration: const InputDecoration(labelText: 'Category')),
         const SizedBox(height: 12),
@@ -309,7 +309,7 @@ class _OrdersViewState extends State<_OrdersView> {
     setState(() => _loading = true);
     final uid = supabase.auth.currentUser?.id;
     if (uid == null) return;
-    final sup = await supabase.from('suppliers').select('id').eq('user_id', uid).maybeSingle();
+    final sup = await supabase.from('suppliers').select('id').eq('owner_id', uid).limit(1).maybeSingle();
     if (sup == null) { setState(() { _loading = false; _orders = []; }); return; }
     final rows = await supabase
         .from('orders')
@@ -380,7 +380,7 @@ class _AnalyticsViewState extends State<_AnalyticsView> {
   Future<void> _load() async {
     final uid = supabase.auth.currentUser?.id;
     if (uid == null) return;
-    final sup = await supabase.from('suppliers').select('id').eq('user_id', uid).maybeSingle();
+    final sup = await supabase.from('suppliers').select('id').eq('owner_id', uid).limit(1).maybeSingle();
     if (sup == null) { setState(() => _loading = false); return; }
     final orders = await supabase.from('orders').select('total,status').eq('supplier_id', sup['id']);
     double rev = 0; int cnt = 0;
@@ -452,12 +452,12 @@ class _ReviewsViewState extends State<_ReviewsView> {
   Future<void> _load() async {
     final uid = supabase.auth.currentUser?.id;
     if (uid == null) return;
-    final sup = await supabase.from('suppliers').select('id').eq('user_id', uid).maybeSingle();
+    final sup = await supabase.from('suppliers').select('id').eq('owner_id', uid).limit(1).maybeSingle();
     if (sup == null) { setState(() => _loading = false); return; }
     try {
       final rows = await supabase
           .from('reviews')
-          .select('rating,comment,created_at,product_id')
+          .select('rating,text,created_at,product_id')
           .eq('supplier_id', sup['id'])
           .order('created_at', ascending: false)
           .limit(50);
@@ -479,7 +479,7 @@ class _ReviewsViewState extends State<_ReviewsView> {
         return ListTile(
           leading: const Icon(LucideIcons.star, color: Colors.amber),
           title: Text('${r['rating']} ★'),
-          subtitle: Text(r['comment'] ?? ''),
+          subtitle: Text(r['text'] ?? ''),
         );
       },
     );
@@ -508,11 +508,11 @@ class _ProfileViewState extends State<_ProfileView> {
   Future<void> _load() async {
     final uid = supabase.auth.currentUser?.id;
     if (uid == null) return;
-    final s = await supabase.from('suppliers').select('*').eq('user_id', uid).maybeSingle();
+    final s = await supabase.from('suppliers').select('*').eq('owner_id', uid).limit(1).maybeSingle();
     if (s != null) {
       _name.text = s['name'] ?? '';
-      _bio.text = s['bio'] ?? '';
-      _logo.text = s['logo_url'] ?? '';
+      _bio.text = s['about'] ?? '';
+      _logo.text = s['logo'] ?? '';
     }
     setState(() => _loading = false);
   }
@@ -521,9 +521,9 @@ class _ProfileViewState extends State<_ProfileView> {
     final uid = supabase.auth.currentUser?.id;
     await supabase.from('suppliers').update({
       'name': _name.text.trim(),
-      'bio': _bio.text.trim(),
-      'logo_url': _logo.text.trim().isEmpty ? null : _logo.text.trim(),
-    }).eq('user_id', uid!);
+      'about': _bio.text.trim(),
+      'logo': _logo.text.trim().isEmpty ? null : _logo.text.trim(),
+    }).eq('owner_id', uid!);
     setState(() => _saving = false);
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved')));
   }
