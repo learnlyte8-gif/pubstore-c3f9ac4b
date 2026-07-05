@@ -33,27 +33,33 @@ class _MyStoreScreenState extends State<MyStoreScreen> {
 
   Future<void> _load() async {
     final uid = supabase.auth.currentUser?.id;
-    if (uid == null) { setState(() => _loading = false); return; }
-    final sup = await supabase
-        .from('suppliers')
-        .select('*')
-        .eq('user_id', uid)
-        .maybeSingle();
-    if (sup != null) {
-      final orders = await supabase
-          .from('orders')
-          .select('total,status')
-          .eq('supplier_id', sup['id']);
-      final list = (orders as List).cast<Map<String, dynamic>>();
-      _orderCount = list.length;
-      _revenue = list.fold(
-          0, (s, o) => s + (double.tryParse('${o['total']}') ?? 0));
-      _pending = list
-          .where((o) => o['status'] == 'placed' || o['status'] == 'processing')
-          .length;
+    if (uid == null) { if (mounted) setState(() => _loading = false); return; }
+    try {
+      final sup = await supabase
+          .from('suppliers')
+          .select('*')
+          .eq('owner_id', uid)
+          .maybeSingle();
+      if (sup != null) {
+        final orders = await supabase
+            .from('orders')
+            .select('total,status')
+            .eq('supplier_id', sup['id']);
+        final list = (orders as List).cast<Map<String, dynamic>>();
+        _orderCount = list.length;
+        _revenue = list.fold(
+            0, (s, o) => s + (double.tryParse('${o['total']}') ?? 0));
+        _pending = list
+            .where((o) => o['status'] == 'placed' || o['status'] == 'processing')
+            .length;
+      }
+      if (!mounted) return;
+      setState(() { _supplier = sup == null ? null : Map<String, dynamic>.from(sup); _loading = false; });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to load store: $e')));
     }
-    if (!mounted) return;
-    setState(() { _supplier = sup == null ? null : Map<String, dynamic>.from(sup); _loading = false; });
   }
 
   @override
