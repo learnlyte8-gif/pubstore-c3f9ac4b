@@ -13,6 +13,22 @@ import '../widgets/masonry_grid.dart';
 import '../widgets/product_card.dart';
 import '../widgets/skeletons.dart';
 import 'product_detail_screen.dart';
+import 'jobs_screen.dart';
+import 'rides_screen.dart';
+import 'services_screen.dart';
+import 'properties_screen.dart';
+import 'logistics_screen.dart';
+import 'finance_screen.dart';
+import 'news_screen.dart';
+import 'stays_screen.dart';
+import 'auto_screen.dart';
+import 'industrial_screen.dart';
+import 'agro_screen.dart';
+import 'rfq_screen.dart';
+import 'orders_screen.dart';
+import 'compare_screen.dart';
+import 'wallet_screen.dart';
+import 'profile_screen.dart';
 
 
 /// Home feed — infinite-scrolling staggered grid backed by
@@ -556,15 +572,55 @@ class _HomeMenuDrawer extends StatelessWidget {
 
 class _DirectorySheet extends StatelessWidget {
   const _DirectorySheet();
-  static const depts = [
-    ('Market', LucideIcons.store), ('Jobs', LucideIcons.briefcase), ('Rides', LucideIcons.navigation), ('Services', LucideIcons.wrench),
-    ('Property', LucideIcons.home), ('Delivery', LucideIcons.truck), ('Finance', LucideIcons.banknote), ('News', LucideIcons.newspaper),
-    ('Stays', LucideIcons.bedDouble), ('Auto', LucideIcons.car), ('Industrial', LucideIcons.factory), ('Agro', LucideIcons.sprout),
+  static const depts = <(String, IconData, String)>[
+    ('Market', LucideIcons.store, '/home'),
+    ('Jobs', LucideIcons.briefcase, 'jobs'),
+    ('Rides', LucideIcons.navigation, 'rides'),
+    ('Services', LucideIcons.wrench, 'services'),
+    ('Property', LucideIcons.home, 'properties'),
+    ('Delivery', LucideIcons.truck, 'logistics'),
+    ('Finance', LucideIcons.banknote, 'finance'),
+    ('News', LucideIcons.newspaper, 'news'),
+    ('Stays', LucideIcons.bedDouble, 'stays'),
+    ('Auto', LucideIcons.car, 'auto'),
+    ('Industrial', LucideIcons.factory, 'industrial'),
+    ('Agro', LucideIcons.sprout, 'agro'),
   ];
-  static const quick = [
-    ('Request quote', LucideIcons.fileText), ('Track order', LucideIcons.package), ('Compare', Icons.compare_arrows),
-    ('Logistics', LucideIcons.truck), ('Trade Pay', LucideIcons.wallet), ('Coupons', Icons.local_offer_outlined),
+  static const quick = <(String, IconData, String)>[
+    ('Request quote', LucideIcons.fileText, 'rfq'),
+    ('Track order', LucideIcons.package, 'orders'),
+    ('Compare', Icons.compare_arrows, 'compare'),
+    ('Logistics', LucideIcons.truck, 'logistics'),
+    ('Trade Pay', LucideIcons.wallet, 'wallet'),
+    ('Coupons', Icons.local_offer_outlined, 'account'),
   ];
+
+  void _go(BuildContext context, String key) {
+    Navigator.pop(context);
+    Widget? screen;
+    switch (key) {
+      case '/home': return;
+      case 'jobs': screen = const JobsScreen(); break;
+      case 'rides': screen = const RidesScreen(); break;
+      case 'services': screen = const ServicesScreen(); break;
+      case 'properties': screen = const PropertiesScreen(); break;
+      case 'logistics': screen = const LogisticsScreen(); break;
+      case 'finance': screen = const FinanceScreen(); break;
+      case 'news': screen = const NewsScreen(); break;
+      case 'stays': screen = const StaysScreen(); break;
+      case 'auto': screen = const AutoScreen(); break;
+      case 'industrial': screen = const IndustrialScreen(); break;
+      case 'agro': screen = const AgroScreen(); break;
+      case 'rfq': screen = const RfqScreen(); break;
+      case 'orders': screen = const OrdersScreen(); break;
+      case 'compare': screen = const CompareScreen(); break;
+      case 'wallet': screen = const WalletScreen(); break;
+      case 'account': screen = const ProfileScreen(); break;
+    }
+    if (screen != null) {
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen!));
+    }
+  }
 
   @override
   Widget build(BuildContext context) => SizedBox(
@@ -589,7 +645,7 @@ class _DirectorySheet extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                children: [for (final d in depts) _dirItem(d.$1, d.$2, true)],
+                children: [for (final d in depts) _dirItem(context, d.$1, d.$2, true, d.$3)],
               ),
               const SizedBox(height: 24),
               const Text('Quick Actions', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppColors.muted)),
@@ -601,28 +657,36 @@ class _DirectorySheet extends StatelessWidget {
                 childAspectRatio: 1.18,
                 mainAxisSpacing: 8,
                 crossAxisSpacing: 8,
-                children: [for (final q in quick) _dirItem(q.$1, q.$2, false)],
+                children: [for (final q in quick) _dirItem(context, q.$1, q.$2, false, q.$3)],
               ),
             ]),
           ),
         ]),
       );
 
-  Widget _dirItem(String label, IconData icon, bool gradient) => Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Container(
-          width: gradient ? 48 : 40,
-          height: gradient ? 48 : 40,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(gradient ? 16 : 12),
-            gradient: gradient ? const LinearGradient(colors: [AppColors.primary, AppColors.orange]) : null,
-            color: gradient ? null : AppColors.mutedSurface,
+  Widget _dirItem(BuildContext context, String label, IconData icon, bool gradient, String key) => InkWell(
+        onTap: () => _go(context, key),
+        borderRadius: BorderRadius.circular(12),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Container(
+            width: gradient ? 48 : 40,
+            height: gradient ? 48 : 40,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(gradient ? 16 : 12),
+              gradient: gradient ? const LinearGradient(colors: [AppColors.primary, AppColors.orange]) : null,
+              color: gradient ? null : AppColors.mutedSurface,
+            ),
+            child: Icon(icon, size: gradient ? 20 : 16, color: gradient ? Colors.white : AppColors.primary),
           ),
-          child: Icon(icon, size: gradient ? 20 : 16, color: gradient ? Colors.white : AppColors.primary),
-        ),
-        const SizedBox(height: 6),
-        Text(label, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.muted)),
-      ]);
+          const SizedBox(height: 6),
+          Text(label, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.muted)),
+        ]),
+      );
 }
+
+
+
+
 
 class _Promo3DCarousel extends StatefulWidget {
   @override
