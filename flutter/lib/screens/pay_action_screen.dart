@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../services/supabase_client.dart';
 import '../services/wallet_service.dart';
 import '../theme/palette.dart';
+import '../widgets/skeletons.dart';
 import 'wallet_screen.dart';
 
 /// Mirrors `src/pages/PayAction.tsx` — pay a service action (stay booking,
@@ -241,9 +242,9 @@ class _PayActionScreenState extends ConsumerState<PayActionScreen> {
             border: Border.all(color: AppColors.border),
           ),
           child: _loading
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
-                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Skeletons.list(count: 4),
                 )
               : _info == null
                   ? const Text(
