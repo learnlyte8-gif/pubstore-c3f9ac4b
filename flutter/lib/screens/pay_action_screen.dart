@@ -241,9 +241,9 @@ class _PayActionScreenState extends ConsumerState<PayActionScreen> {
             border: Border.all(color: AppColors.border),
           ),
           child: _loading
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
-                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Skeletons.list(count: 4),
                 )
               : _info == null
                   ? const Text(

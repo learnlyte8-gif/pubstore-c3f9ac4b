@@ -134,7 +134,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ]),
                 const SizedBox(height: 12),
                 if (!_interestsLoaded)
-                  const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Center(child: CircularProgressIndicator(strokeWidth: 2)))
+                  Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Skeletons.chipRow())
                 else
                   Wrap(spacing: 6, runSpacing: 6, children: [
                     for (final item in _allInterests)

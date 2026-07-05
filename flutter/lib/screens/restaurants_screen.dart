@@ -216,7 +216,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_loading) return Scaffold(backgroundColor: AppColors.background, body: Skeletons.screen(SkeletonPreset.detail));
     final r = _r;
     if (r == null) return const Scaffold(body: Center(child: Text('Not found')));
     final cover = (r['cover'] ?? '').toString();

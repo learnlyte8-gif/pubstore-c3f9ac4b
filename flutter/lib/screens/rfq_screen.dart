@@ -101,7 +101,7 @@ class _RfqScreenState extends State<RfqScreen> {
         FutureBuilder<List<Map<String, dynamic>>>(
           future: _future,
           builder: (context, snap) {
-            if (snap.connectionState != ConnectionState.done) return const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()));
+            if (snap.connectionState != ConnectionState.done) return Skeletons.list(count: 3);
             final rows = snap.data ?? const [];
             if (rows.isEmpty) return const Text('No RFQs yet.', style: TextStyle(color: AppColors.muted));
             return Column(children: [

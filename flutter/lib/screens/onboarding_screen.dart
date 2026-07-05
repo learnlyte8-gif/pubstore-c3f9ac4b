@@ -201,7 +201,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     if (!_authChecked) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator(strokeWidth: 2)));
+      return Scaffold(backgroundColor: AppColors.background, body: Skeletons.screen(SkeletonPreset.list));
     }
     return Scaffold(
       backgroundColor: AppColors.background,
