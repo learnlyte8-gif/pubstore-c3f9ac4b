@@ -36,6 +36,20 @@ import '../screens/orders_screen.dart';
 import '../screens/wallet_screen.dart';
 import '../screens/my_store_screen.dart';
 import '../screens/settings_screen.dart';
+import '../screens/help_center_screen.dart';
+import '../screens/privacy_screen.dart';
+import '../screens/verification_screen.dart';
+import '../screens/addresses_screen.dart';
+import '../screens/payment_methods_screen.dart';
+import '../screens/become_supplier_screen.dart';
+import '../screens/admin_screen.dart';
+import '../screens/ads_dashboard_screen.dart';
+import '../screens/notification_preferences_screen.dart';
+import '../screens/jobs_feed_screen.dart';
+import '../screens/jobs_network_screen.dart';
+import '../screens/jobs_profile_screen.dart';
+import '../screens/compare_screen.dart';
+
 
 /// Bottom-tab shell — mirrors `src/components/AppShell.tsx` on web and
 /// `navigation/RootTabs.tsx` in the React Native app.
@@ -404,11 +418,28 @@ class _RailDrawerContent extends StatelessWidget {
       ('News', 'Today’s stories', LucideIcons.newspaper, 'news'),
       ('Live', 'Live streams', LucideIcons.radio, 'live'),
     ]),
+    ('Careers', [
+      ('Jobs feed', 'Community posts', LucideIcons.rss, 'jobs_feed'),
+      ('Network', 'People & connections', LucideIcons.users, 'jobs_network'),
+      ('My CV', 'Career profile', LucideIcons.userCheck, 'jobs_me'),
+    ]),
     ('You', [
       ('My Store', 'Supplier dashboard', LucideIcons.store, 'my_store'),
+      ('Become a supplier', 'Open a store', LucideIcons.storefront, 'become_supplier'),
       ('Orders', 'Track purchases', LucideIcons.package, 'orders'),
       ('Wallet', 'PUBSTORE Pay', LucideIcons.wallet, 'wallet'),
+      ('Addresses', 'Shipping details', LucideIcons.mapPin, 'addresses'),
+      ('Payment methods', 'Cards & wallets', LucideIcons.creditCard, 'payments'),
+      ('Verification', 'KYC & badges', LucideIcons.badgeCheck, 'verification'),
+      ('Ads dashboard', 'Boost your listings', LucideIcons.megaphone, 'ads'),
+      ('Compare', 'Side-by-side', LucideIcons.gitCompare, 'compare'),
+      ('Notifications', 'Alerts settings', LucideIcons.bell, 'notif_prefs'),
       ('Settings', 'Preferences', LucideIcons.settings, 'settings'),
+    ]),
+    ('Support', [
+      ('Help center', 'FAQs & guides', LucideIcons.lifeBuoy, 'help'),
+      ('Privacy', 'Data & rights', LucideIcons.shield, 'privacy'),
+      ('Admin', 'Platform tools', LucideIcons.shieldCheck, 'admin'),
     ]),
   ];
 
@@ -433,9 +464,22 @@ class _RailDrawerContent extends StatelessWidget {
       case 'news': screen = const NewsScreen(); break;
       case 'live': screen = const LiveScreen(); break;
       case 'my_store': screen = const MyStoreScreen(); break;
+      case 'become_supplier': screen = const BecomeSupplierScreen(); break;
       case 'orders': screen = const OrdersScreen(); break;
       case 'wallet': screen = const WalletScreen(); break;
+      case 'addresses': screen = const AddressesScreen(); break;
+      case 'payments': screen = const PaymentMethodsScreen(); break;
+      case 'verification': screen = const VerificationScreen(); break;
+      case 'ads': screen = const AdsDashboardScreen(); break;
+      case 'compare': screen = const CompareScreen(); break;
+      case 'notif_prefs': screen = const NotificationPreferencesScreen(); break;
       case 'settings': screen = const SettingsScreen(); break;
+      case 'help': screen = const HelpCenterScreen(); break;
+      case 'privacy': screen = const PrivacyScreen(); break;
+      case 'admin': screen = const AdminScreen(); break;
+      case 'jobs_feed': screen = const JobsFeedScreen(); break;
+      case 'jobs_network': screen = const JobsNetworkScreen(); break;
+      case 'jobs_me': screen = const JobsProfileScreen(); break;
     }
     if (screen != null) {
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen!));
