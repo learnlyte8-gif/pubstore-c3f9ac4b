@@ -556,15 +556,55 @@ class _HomeMenuDrawer extends StatelessWidget {
 
 class _DirectorySheet extends StatelessWidget {
   const _DirectorySheet();
-  static const depts = [
-    ('Market', LucideIcons.store), ('Jobs', LucideIcons.briefcase), ('Rides', LucideIcons.navigation), ('Services', LucideIcons.wrench),
-    ('Property', LucideIcons.home), ('Delivery', LucideIcons.truck), ('Finance', LucideIcons.banknote), ('News', LucideIcons.newspaper),
-    ('Stays', LucideIcons.bedDouble), ('Auto', LucideIcons.car), ('Industrial', LucideIcons.factory), ('Agro', LucideIcons.sprout),
+  static const depts = <(String, IconData, String)>[
+    ('Market', LucideIcons.store, '/home'),
+    ('Jobs', LucideIcons.briefcase, 'jobs'),
+    ('Rides', LucideIcons.navigation, 'rides'),
+    ('Services', LucideIcons.wrench, 'services'),
+    ('Property', LucideIcons.home, 'properties'),
+    ('Delivery', LucideIcons.truck, 'logistics'),
+    ('Finance', LucideIcons.banknote, 'finance'),
+    ('News', LucideIcons.newspaper, 'news'),
+    ('Stays', LucideIcons.bedDouble, 'stays'),
+    ('Auto', LucideIcons.car, 'auto'),
+    ('Industrial', LucideIcons.factory, 'industrial'),
+    ('Agro', LucideIcons.sprout, 'agro'),
   ];
-  static const quick = [
-    ('Request quote', LucideIcons.fileText), ('Track order', LucideIcons.package), ('Compare', Icons.compare_arrows),
-    ('Logistics', LucideIcons.truck), ('Trade Pay', LucideIcons.wallet), ('Coupons', Icons.local_offer_outlined),
+  static const quick = <(String, IconData, String)>[
+    ('Request quote', LucideIcons.fileText, 'rfq'),
+    ('Track order', LucideIcons.package, 'orders'),
+    ('Compare', Icons.compare_arrows, 'compare'),
+    ('Logistics', LucideIcons.truck, 'logistics'),
+    ('Trade Pay', LucideIcons.wallet, 'wallet'),
+    ('Coupons', Icons.local_offer_outlined, 'account'),
   ];
+
+  void _go(BuildContext context, String key) {
+    Navigator.pop(context);
+    Widget? screen;
+    switch (key) {
+      case '/home': return;
+      case 'jobs': screen = const _LazyRoute('jobs'); break;
+      case 'rides': screen = const _LazyRoute('rides'); break;
+      case 'services': screen = const _LazyRoute('services'); break;
+      case 'properties': screen = const _LazyRoute('properties'); break;
+      case 'logistics': screen = const _LazyRoute('logistics'); break;
+      case 'finance': screen = const _LazyRoute('finance'); break;
+      case 'news': screen = const _LazyRoute('news'); break;
+      case 'stays': screen = const _LazyRoute('stays'); break;
+      case 'auto': screen = const _LazyRoute('auto'); break;
+      case 'industrial': screen = const _LazyRoute('industrial'); break;
+      case 'agro': screen = const _LazyRoute('agro'); break;
+      case 'rfq': screen = const _LazyRoute('rfq'); break;
+      case 'orders': screen = const _LazyRoute('orders'); break;
+      case 'compare': screen = const _LazyRoute('compare'); break;
+      case 'wallet': screen = const _LazyRoute('wallet'); break;
+      case 'account': screen = const _LazyRoute('account'); break;
+    }
+    if (screen != null) {
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen!));
+    }
+  }
 
   @override
   Widget build(BuildContext context) => SizedBox(
@@ -589,7 +629,7 @@ class _DirectorySheet extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                children: [for (final d in depts) _dirItem(d.$1, d.$2, true)],
+                children: [for (final d in depts) _dirItem(context, d.$1, d.$2, true, d.$3)],
               ),
               const SizedBox(height: 24),
               const Text('Quick Actions', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppColors.muted)),
@@ -601,28 +641,52 @@ class _DirectorySheet extends StatelessWidget {
                 childAspectRatio: 1.18,
                 mainAxisSpacing: 8,
                 crossAxisSpacing: 8,
-                children: [for (final q in quick) _dirItem(q.$1, q.$2, false)],
+                children: [for (final q in quick) _dirItem(context, q.$1, q.$2, false, q.$3)],
               ),
             ]),
           ),
         ]),
       );
 
-  Widget _dirItem(String label, IconData icon, bool gradient) => Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Container(
-          width: gradient ? 48 : 40,
-          height: gradient ? 48 : 40,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(gradient ? 16 : 12),
-            gradient: gradient ? const LinearGradient(colors: [AppColors.primary, AppColors.orange]) : null,
-            color: gradient ? null : AppColors.mutedSurface,
+  Widget _dirItem(BuildContext context, String label, IconData icon, bool gradient, String key) => InkWell(
+        onTap: () => _go(context, key),
+        borderRadius: BorderRadius.circular(12),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Container(
+            width: gradient ? 48 : 40,
+            height: gradient ? 48 : 40,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(gradient ? 16 : 12),
+              gradient: gradient ? const LinearGradient(colors: [AppColors.primary, AppColors.orange]) : null,
+              color: gradient ? null : AppColors.mutedSurface,
+            ),
+            child: Icon(icon, size: gradient ? 20 : 16, color: gradient ? Colors.white : AppColors.primary),
           ),
-          child: Icon(icon, size: gradient ? 20 : 16, color: gradient ? Colors.white : AppColors.primary),
-        ),
-        const SizedBox(height: 6),
-        Text(label, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.muted)),
-      ]);
+          const SizedBox(height: 6),
+          Text(label, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.muted)),
+        ]),
+      );
 }
+
+/// Tiny indirection so we don't import every vertical screen twice.
+class _LazyRoute extends StatelessWidget {
+  const _LazyRoute(this.key_);
+  final String key_;
+  @override
+  Widget build(BuildContext context) {
+    // Dynamic import via a switch keeps this file's imports lean.
+    // ignore: prefer_const_constructors
+    final map = _routeBuilders;
+    final b = map[key_];
+    return b?.call() ?? const Scaffold(body: Center(child: Text('Coming soon')));
+  }
+}
+
+/// Registered lazily on first access so the imports live in a single place.
+final Map<String, Widget Function()> _routeBuilders = () {
+  return <String, Widget Function()>{};
+}();
+
 
 class _Promo3DCarousel extends StatefulWidget {
   @override
