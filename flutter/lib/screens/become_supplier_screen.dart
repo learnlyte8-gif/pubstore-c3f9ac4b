@@ -28,7 +28,7 @@ class _BecomeSupplierScreenState extends State<BecomeSupplierScreen> {
     setState(() => _submitting = true);
     try {
       await supabase.from('suppliers').upsert({
-        'user_id': uid,
+        'owner_id': uid,
         'name': _name.text.trim(),
         'tagline': _tagline.text.trim(),
         'about': _about.text.trim(),

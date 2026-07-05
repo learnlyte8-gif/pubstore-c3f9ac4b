@@ -33,27 +33,33 @@ class _MyStoreScreenState extends State<MyStoreScreen> {
 
   Future<void> _load() async {
     final uid = supabase.auth.currentUser?.id;
-    if (uid == null) { setState(() => _loading = false); return; }
-    final sup = await supabase
-        .from('suppliers')
-        .select('*')
-        .eq('user_id', uid)
-        .maybeSingle();
-    if (sup != null) {
-      final orders = await supabase
-          .from('orders')
-          .select('total,status')
-          .eq('supplier_id', sup['id']);
-      final list = (orders as List).cast<Map<String, dynamic>>();
-      _orderCount = list.length;
-      _revenue = list.fold(
-          0, (s, o) => s + (double.tryParse('${o['total']}') ?? 0));
-      _pending = list
-          .where((o) => o['status'] == 'placed' || o['status'] == 'processing')
-          .length;
+    if (uid == null) { if (mounted) setState(() => _loading = false); return; }
+    try {
+      final sup = await supabase
+          .from('suppliers')
+          .select('*')
+          .eq('owner_id', uid)
+          .maybeSingle();
+      if (sup != null) {
+        final orders = await supabase
+            .from('orders')
+            .select('total,status')
+            .eq('supplier_id', sup['id']);
+        final list = (orders as List).cast<Map<String, dynamic>>();
+        _orderCount = list.length;
+        _revenue = list.fold(
+            0, (s, o) => s + (double.tryParse('${o['total']}') ?? 0));
+        _pending = list
+            .where((o) => o['status'] == 'placed' || o['status'] == 'processing')
+            .length;
+      }
+      if (!mounted) return;
+      setState(() { _supplier = sup == null ? null : Map<String, dynamic>.from(sup); _loading = false; });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to load store: $e')));
     }
-    if (!mounted) return;
-    setState(() { _supplier = sup == null ? null : Map<String, dynamic>.from(sup); _loading = false; });
   }
 
   @override
@@ -112,39 +118,50 @@ class _MyStoreScreenState extends State<MyStoreScreen> {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF3B82F6), Color(0xFF0EA5E9)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(AppRadii.md),
-            ),
-            child: Row(children: [
-              _stat('Orders', '$_orderCount'),
-              _divider(),
-              _stat('Revenue', '\$${_revenue.toStringAsFixed(0)}'),
-              _divider(),
-              _stat('Pending', '$_pending'),
-            ]),
-          ),
-          const SizedBox(height: 16),
-          _tile(LucideIcons.package, 'Products', section: 'products', subtitle: 'Manage catalog & inventory'),
-          _tile(LucideIcons.shoppingBag, 'Orders', section: 'orders', subtitle: 'Fulfilment & shipping'),
-          _tile(LucideIcons.megaphone, 'Promotions', section: 'promote', subtitle: 'Coupons & campaigns'),
-          _tile(LucideIcons.barChart3, 'Analytics', section: 'analytics', subtitle: 'Sales trends & audience'),
-          _tile(LucideIcons.star, 'Reviews', section: 'reviews', subtitle: 'What buyers are saying'),
-          _tile(LucideIcons.truck, 'Shipping', section: 'shipping', subtitle: 'Templates & carriers'),
-          _tile(LucideIcons.image, 'Store profile', section: 'profile', subtitle: 'Banner, logo, about'),
-          _tile(LucideIcons.settings, 'Settings', section: 'settings', subtitle: 'Payouts, taxes, hours'),
-          _tile(LucideIcons.download, 'Import', section: 'import', subtitle: 'Alibaba / Amazon / Shopify'),
-        ],
-      ),
+      body: Builder(builder: (context) {
+        final tiles = <(IconData, String, String, String)>[
+          (LucideIcons.package, 'Products', 'products', 'Manage catalog & inventory'),
+          (LucideIcons.shoppingBag, 'Orders', 'orders', 'Fulfilment & shipping'),
+          (LucideIcons.megaphone, 'Promotions', 'promote', 'Coupons & campaigns'),
+          (LucideIcons.barChart3, 'Analytics', 'analytics', 'Sales trends & audience'),
+          (LucideIcons.star, 'Reviews', 'reviews', 'What buyers are saying'),
+          (LucideIcons.truck, 'Shipping', 'shipping', 'Templates & carriers'),
+          (LucideIcons.image, 'Store profile', 'profile', 'Banner, logo, about'),
+          (LucideIcons.settings, 'Settings', 'settings', 'Payouts, taxes, hours'),
+          (LucideIcons.download, 'Import', 'import', 'Alibaba / Amazon / Shopify'),
+        ];
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: tiles.length + 1,
+          itemBuilder: (context, i) {
+            if (i == 0) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF3B82F6), Color(0xFF0EA5E9)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(AppRadii.md),
+                  ),
+                  child: Row(children: [
+                    _stat('Orders', '$_orderCount'),
+                    _divider(),
+                    _stat('Revenue', '\$${_revenue.toStringAsFixed(0)}'),
+                    _divider(),
+                    _stat('Pending', '$_pending'),
+                  ]),
+                ),
+              );
+            }
+            final t = tiles[i - 1];
+            return _tile(t.$1, t.$2, section: t.$3, subtitle: t.$4);
+          },
+        );
+      }),
     );
   }
 
