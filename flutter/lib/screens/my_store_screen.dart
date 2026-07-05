@@ -39,6 +39,8 @@ class _MyStoreScreenState extends State<MyStoreScreen> {
           .from('suppliers')
           .select('*')
           .eq('owner_id', uid)
+          .order('created_at', ascending: false)
+          .limit(1)
           .maybeSingle();
       if (sup != null) {
         final orders = await supabase
@@ -47,7 +49,7 @@ class _MyStoreScreenState extends State<MyStoreScreen> {
             .eq('supplier_id', sup['id']);
         final list = (orders as List).cast<Map<String, dynamic>>();
         _orderCount = list.length;
-        _revenue = list.fold(
+        _revenue = list.fold<double>(
             0, (s, o) => s + (double.tryParse('${o['total']}') ?? 0));
         _pending = list
             .where((o) => o['status'] == 'placed' || o['status'] == 'processing')

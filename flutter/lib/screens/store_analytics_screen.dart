@@ -28,12 +28,24 @@ class _StoreAnalyticsScreenState extends State<StoreAnalyticsScreen> {
     final uid = supabase.auth.currentUser?.id;
     if (uid == null) { setState(() => _loading = false); return; }
     try {
-      final orders = await supabase.from('orders').select('total, status, created_at').eq('supplier_id', uid);
+      final supplier = await supabase
+          .from('suppliers')
+          .select('id')
+          .eq('owner_id', uid)
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      if (supplier == null) {
+        if (mounted) setState(() => _loading = false);
+        return;
+      }
+      final supplierId = supplier['id'];
+      final orders = await supabase.from('orders').select('total, status, created_at').eq('supplier_id', supplierId);
       final products = await supabase
           .from('products')
-          .select('id, title, cover, sold_count, view_count, price')
-          .eq('supplier_id', uid)
-          .order('sold_count', ascending: false)
+          .select('id, title, image, sold, price')
+          .eq('supplier_id', supplierId)
+          .order('sold', ascending: false)
           .limit(6);
       double revenue = 0;
       int pending = 0;
@@ -70,19 +82,28 @@ class _StoreAnalyticsScreenState extends State<StoreAnalyticsScreen> {
         const SizedBox(height: 24),
         const Text('Top products', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
         const SizedBox(height: 8),
-        if (_top.isEmpty) const Text('No sales yet.', style: TextStyle(color: AppColors.muted)),
-        for (final p in _top)
-          Container(
-            margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
-            child: Row(children: [
-              Expanded(child: Text('${p['title']}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800))),
-              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                Text('${p['sold_count'] ?? 0} sold', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
-                Text('${p['view_count'] ?? 0} views', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
-              ]),
-            ]),
+        if (_top.isEmpty)
+          const Text('No sales yet.', style: TextStyle(color: AppColors.muted))
+        else
+          ListView.builder(
+            itemCount: _top.length,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemBuilder: (context, i) {
+              final p = _top[i];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+                child: Row(children: [
+                  Expanded(child: Text('${p['title']}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800))),
+                  Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                    Text('${p['sold'] ?? 0} sold', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                    Text('\$${p['price'] ?? 0}', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                  ]),
+                ]),
+              );
+            },
           ),
       ]),
     );
