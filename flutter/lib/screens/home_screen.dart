@@ -13,6 +13,22 @@ import '../widgets/masonry_grid.dart';
 import '../widgets/product_card.dart';
 import '../widgets/skeletons.dart';
 import 'product_detail_screen.dart';
+import 'jobs_screen.dart';
+import 'rides_screen.dart';
+import 'services_screen.dart';
+import 'properties_screen.dart';
+import 'logistics_screen.dart';
+import 'finance_screen.dart';
+import 'news_screen.dart';
+import 'stays_screen.dart';
+import 'auto_screen.dart';
+import 'industrial_screen.dart';
+import 'agro_screen.dart';
+import 'rfq_screen.dart';
+import 'orders_screen.dart';
+import 'compare_screen.dart';
+import 'wallet_screen.dart';
+import 'profile_screen.dart';
 
 
 /// Home feed — infinite-scrolling staggered grid backed by
@@ -584,22 +600,22 @@ class _DirectorySheet extends StatelessWidget {
     Widget? screen;
     switch (key) {
       case '/home': return;
-      case 'jobs': screen = const _LazyRoute('jobs'); break;
-      case 'rides': screen = const _LazyRoute('rides'); break;
-      case 'services': screen = const _LazyRoute('services'); break;
-      case 'properties': screen = const _LazyRoute('properties'); break;
-      case 'logistics': screen = const _LazyRoute('logistics'); break;
-      case 'finance': screen = const _LazyRoute('finance'); break;
-      case 'news': screen = const _LazyRoute('news'); break;
-      case 'stays': screen = const _LazyRoute('stays'); break;
-      case 'auto': screen = const _LazyRoute('auto'); break;
-      case 'industrial': screen = const _LazyRoute('industrial'); break;
-      case 'agro': screen = const _LazyRoute('agro'); break;
-      case 'rfq': screen = const _LazyRoute('rfq'); break;
-      case 'orders': screen = const _LazyRoute('orders'); break;
-      case 'compare': screen = const _LazyRoute('compare'); break;
-      case 'wallet': screen = const _LazyRoute('wallet'); break;
-      case 'account': screen = const _LazyRoute('account'); break;
+      case 'jobs': screen = const JobsScreen(); break;
+      case 'rides': screen = const RidesScreen(); break;
+      case 'services': screen = const ServicesScreen(); break;
+      case 'properties': screen = const PropertiesScreen(); break;
+      case 'logistics': screen = const LogisticsScreen(); break;
+      case 'finance': screen = const FinanceScreen(); break;
+      case 'news': screen = const NewsScreen(); break;
+      case 'stays': screen = const StaysScreen(); break;
+      case 'auto': screen = const AutoScreen(); break;
+      case 'industrial': screen = const IndustrialScreen(); break;
+      case 'agro': screen = const AgroScreen(); break;
+      case 'rfq': screen = const RfqScreen(); break;
+      case 'orders': screen = const OrdersScreen(); break;
+      case 'compare': screen = const CompareScreen(); break;
+      case 'wallet': screen = const WalletScreen(); break;
+      case 'account': screen = const ProfileScreen(); break;
     }
     if (screen != null) {
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen!));
