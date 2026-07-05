@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../theme/palette.dart';
 import 'ads_dashboard_screen.dart';
 import 'store_analytics_screen.dart';
+import 'store_section_screen.dart';
 
 /// Mirrors `src/pages/StoreActions.tsx` — shortcuts for supplier operations.
 class StoreActionsScreen extends StatelessWidget {
@@ -32,10 +33,18 @@ class StoreActionsScreen extends StatelessWidget {
           final a = _actions[i];
           return InkWell(
             onTap: () {
-              if (a.$2 == 'Run an ad') {
+              if (a.$2 == 'Add product') {
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StoreSectionScreen(section: 'products/new')));
+              } else if (a.$2 == 'Manage inventory') {
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StoreSectionScreen(section: 'products')));
+              } else if (a.$2 == 'Run an ad') {
                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AdsDashboardScreen()));
               } else if (a.$2 == 'Store analytics') {
                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StoreAnalyticsScreen()));
+              } else if (a.$2 == 'Fulfilment') {
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StoreSectionScreen(section: 'orders')));
+              } else if (a.$2 == 'Store settings') {
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StoreSectionScreen(section: 'settings')));
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${a.$2} — coming soon')));
               }
