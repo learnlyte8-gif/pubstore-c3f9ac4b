@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../services/supabase_client.dart';
 import '../services/wallet_service.dart';
 import '../theme/palette.dart';
+import '../widgets/skeletons.dart';
 import 'wallet_screen.dart';
 
 /// Mirrors `src/pages/PayAction.tsx` — pay a service action (stay booking,

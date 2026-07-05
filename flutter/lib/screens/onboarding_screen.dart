@@ -7,6 +7,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
+import '../widgets/skeletons.dart';
 
 /// Mirrors `src/pages/Onboarding.tsx` — role → username → verticals → interests → address.
 /// Guests get a shorter flow (verticals → interests) that saves to prefs on device.

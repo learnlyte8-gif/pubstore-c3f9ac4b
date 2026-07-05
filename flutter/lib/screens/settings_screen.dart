@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
+import '../widgets/skeletons.dart';
 import 'notification_preferences_screen.dart';
 import 'privacy_screen.dart';
 import 'admin_screen.dart';
