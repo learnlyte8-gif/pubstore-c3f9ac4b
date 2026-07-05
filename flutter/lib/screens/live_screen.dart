@@ -95,6 +95,7 @@ class _LiveScreenState extends State<LiveScreen> {
                     ]),
                   ),
                 ]),
+                ),
               );
             },
           );
