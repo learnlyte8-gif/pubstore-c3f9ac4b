@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'navigation/root_shell.dart';
 import 'screens/splash_screen.dart';
+import 'screens/onboarding_screen.dart';
+import 'screens/auth_screen.dart';
 import 'services/supabase_client.dart';
 import 'theme/theme.dart';
 
@@ -20,7 +23,13 @@ class PubstoreApp extends StatelessWidget {
       title: 'PUBSTORE',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
-      home: const SplashScreen(),
+      initialRoute: '/',
+      routes: {
+        '/': (_) => const SplashScreen(),
+        '/home': (_) => const RootShell(),
+        '/auth': (_) => const AuthScreen(),
+        '/onboarding': (_) => const OnboardingScreen(),
+      },
     );
   }
 }
