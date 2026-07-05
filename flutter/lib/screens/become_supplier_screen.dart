@@ -15,26 +15,69 @@ class BecomeSupplierScreen extends StatefulWidget {
 class _BecomeSupplierScreenState extends State<BecomeSupplierScreen> {
   final _form = GlobalKey<FormState>();
   final _name = TextEditingController();
-  final _tagline = TextEditingController();
   final _about = TextEditingController();
   final _country = TextEditingController(text: 'Zimbabwe');
-  final _category = TextEditingController();
   bool _submitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _redirectIfStoreExists();
+  }
+
+  Future<void> _redirectIfStoreExists() async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) return;
+    final existing = await supabase
+        .from('suppliers')
+        .select('id')
+        .eq('owner_id', uid)
+        .maybeSingle();
+    if (mounted && existing != null) Navigator.of(context).pop(true);
+  }
 
   Future<void> _submit() async {
     if (!(_form.currentState?.validate() ?? false)) return;
     final uid = supabase.auth.currentUser?.id;
-    if (uid == null) return;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to create a store.')),
+      );
+      return;
+    }
     setState(() => _submitting = true);
     try {
-      await supabase.from('suppliers').upsert({
+      await supabase.from('user_roles').upsert({
+        'user_id': uid,
+        'role': 'supplier',
+      }, onConflict: 'user_id,role');
+
+      List<String> verticals = const [];
+      try {
+        final profile = await supabase
+            .from('profiles')
+            .select('verticals')
+            .eq('user_id', uid)
+            .maybeSingle();
+        verticals = List<String>.from(profile?['verticals'] ?? const []);
+      } catch (_) {
+        verticals = const [];
+      }
+
+      await supabase.from('suppliers').insert({
         'owner_id': uid,
         'name': _name.text.trim(),
-        'tagline': _tagline.text.trim(),
         'about': _about.text.trim(),
         'country': _country.text.trim(),
-        'primary_category': _category.text.trim(),
-        'active': true,
+        'verified': false,
+        'gold': false,
+        'trade_assurance': true,
+        'rating': 0,
+        'response_rate': 95,
+        'response_time': '≤ 24h',
+        'on_time_delivery': 100,
+        'years_active': 0,
+        'verticals': verticals,
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Welcome aboard! Your store is live.')));
@@ -59,9 +102,7 @@ class _BecomeSupplierScreenState extends State<BecomeSupplierScreen> {
           const Text('Reach millions of buyers across Southern Africa.', style: TextStyle(color: AppColors.muted)),
           const SizedBox(height: 24),
           _field(_name, 'Business name'),
-          _field(_tagline, 'One-line tagline', required: false),
-          _field(_about, 'About your business', maxLines: 4, required: false),
-          _field(_category, 'Primary category (e.g. Electronics)'),
+          _field(_about, 'What do you sell?', maxLines: 4, required: false),
           _field(_country, 'Country'),
           const SizedBox(height: 20),
           FilledButton.icon(
