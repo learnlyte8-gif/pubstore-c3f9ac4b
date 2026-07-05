@@ -82,19 +82,28 @@ class _StoreAnalyticsScreenState extends State<StoreAnalyticsScreen> {
         const SizedBox(height: 24),
         const Text('Top products', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
         const SizedBox(height: 8),
-        if (_top.isEmpty) const Text('No sales yet.', style: TextStyle(color: AppColors.muted)),
-        for (final p in _top)
-          Container(
-            margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
-            child: Row(children: [
-              Expanded(child: Text('${p['title']}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800))),
-              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                Text('${p['sold'] ?? 0} sold', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
-                Text('\$${p['price'] ?? 0}', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
-              ]),
-            ]),
+        if (_top.isEmpty)
+          const Text('No sales yet.', style: TextStyle(color: AppColors.muted))
+        else
+          ListView.builder(
+            itemCount: _top.length,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemBuilder: (context, i) {
+              final p = _top[i];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+                child: Row(children: [
+                  Expanded(child: Text('${p['title']}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800))),
+                  Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                    Text('${p['sold'] ?? 0} sold', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                    Text('\$${p['price'] ?? 0}', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                  ]),
+                ]),
+              );
+            },
           ),
       ]),
     );
