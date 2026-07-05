@@ -1,8 +1,8 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
@@ -22,7 +22,7 @@ class _DriverScreenState extends State<DriverScreen> {
   List<Map<String, dynamic>> _requests = const [];
   double _todayEarnings = 0;
   int _todayRides = 0;
-  StreamSubscription? _reqSub;
+  RealtimeChannel? _reqChannel;
 
   @override
   void initState() {
@@ -32,7 +32,7 @@ class _DriverScreenState extends State<DriverScreen> {
 
   @override
   void dispose() {
-    _reqSub?.cancel();
+    if (_reqChannel != null) supabase.removeChannel(_reqChannel!);
     super.dispose();
   }
 
@@ -70,15 +70,16 @@ class _DriverScreenState extends State<DriverScreen> {
     if (v) {
       _subscribeRequests();
     } else {
-      _reqSub?.cancel();
+      if (_reqChannel != null) supabase.removeChannel(_reqChannel!);
+      _reqChannel = null;
       setState(() => _requests = const []);
     }
   }
 
   void _subscribeRequests() {
     _loadRequests();
-    _reqSub?.cancel();
-    _reqSub = supabase
+    if (_reqChannel != null) supabase.removeChannel(_reqChannel!);
+    _reqChannel = supabase
         .channel('driver-requests')
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
@@ -86,7 +87,7 @@ class _DriverScreenState extends State<DriverScreen> {
           table: 'rides',
           callback: (_) => _loadRequests(),
         )
-        .subscribe() as StreamSubscription?;
+        .subscribe();
   }
 
   Future<void> _loadRequests() async {
