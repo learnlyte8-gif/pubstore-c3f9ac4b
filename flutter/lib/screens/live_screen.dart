@@ -49,7 +49,9 @@ class _LiveScreenState extends State<LiveScreen> {
             itemBuilder: (context, i) {
               final s = rows[i];
               final host = (s['host'] ?? {}) as Map;
-              return Container(
+              return GestureDetector(
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => LiveViewerScreen(stream: s))).then((_) => setState(() => _future = _load())),
+                child: Container(
                 decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(16)),
                 clipBehavior: Clip.antiAlias,
                 child: Stack(fit: StackFit.expand, children: [
