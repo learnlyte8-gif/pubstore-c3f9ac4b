@@ -1,11 +1,13 @@
-import '../widgets/skeletons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
+import '../widgets/skeletons.dart';
 
-/// Mirrors `src/pages/PaymentMethods.tsx`.
+/// Mirrors `src/pages/PaymentMethods.tsx` — matches the real schema
+/// (brand, last4, holder, exp_month, exp_year, is_default).
 class PaymentMethodsScreen extends StatefulWidget {
   const PaymentMethodsScreen({super.key});
   @override
@@ -35,21 +37,6 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
 
   void _refresh() => setState(() => _future = _load());
 
-  IconData _iconFor(String kind) {
-    switch (kind) {
-      case 'card':
-        return LucideIcons.creditCard;
-      case 'mobile_money':
-        return LucideIcons.smartphone;
-      case 'wallet':
-        return LucideIcons.wallet;
-      case 'bank':
-        return LucideIcons.building2;
-      default:
-        return LucideIcons.circleDollarSign;
-    }
-  }
-
   Future<void> _delete(String id) async {
     await supabase.from('payment_methods').delete().eq('id', id);
     _refresh();
@@ -66,86 +53,121 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Payment methods'),
-        actions: [
-          IconButton(
-            icon: const Icon(LucideIcons.plus),
-            onPressed: () async {
-              final saved = await showModalBottomSheet<bool>(
-                context: context,
-                isScrollControlled: true,
-                builder: (_) => const _AddPaymentSheet(),
-              );
-              if (saved == true) _refresh();
-            },
-          ),
-        ],
+        title: const Text('Payment methods', style: TextStyle(fontWeight: FontWeight.w900)),
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
-            return Skeletons.list(count: 4);
-          }
+          if (snap.connectionState != ConnectionState.done) return Skeletons.list(count: 4);
           final rows = snap.data ?? const [];
-          if (rows.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(LucideIcons.creditCard, size: 44, color: AppColors.muted),
-                  SizedBox(height: 10),
-                  Text('No payment methods', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-                  SizedBox(height: 6),
-                  Text('Add a card, mobile-money or wallet to check out faster.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.muted)),
-                ]),
-              ),
-            );
-          }
-          return ListView.separated(
+          return ListView(
             padding: const EdgeInsets.all(16),
-            itemCount: rows.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, i) {
-              final m = rows[i];
-              final isDefault = m['is_default'] == true;
-              return Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.card,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: isDefault ? AppColors.primary : AppColors.border),
+            children: [
+              if (rows.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40),
+                  child: Column(children: [
+                    Icon(LucideIcons.creditCard, size: 44, color: AppColors.muted),
+                    SizedBox(height: 10),
+                    Text('No payment methods', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                    SizedBox(height: 6),
+                    Text('Add a card to speed up checkout.',
+                        textAlign: TextAlign.center, style: TextStyle(color: AppColors.muted)),
+                  ]),
                 ),
-                child: Row(children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(color: AppColors.mutedSurface, borderRadius: BorderRadius.circular(12)),
-                    child: Icon(_iconFor((m['kind'] ?? '').toString()), size: 20),
+              ...rows.map((m) {
+                final isDefault = m['is_default'] == true;
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.card,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: isDefault ? AppColors.primary : AppColors.border),
                   ),
-                  const SizedBox(width: 12),
+                  child: Row(children: [
+                    Container(
+                      width: 48, height: 48,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppColors.primary, Color(0xFF60A5FA)],
+                          begin: Alignment.topLeft, end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(LucideIcons.creditCard, color: Colors.white, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Row(children: [
+                          Text('${m['brand'] ?? 'Card'} •••• ${m['last4'] ?? ''}',
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900)),
+                          if (isDefault) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(4)),
+                              child: const Text('Default', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900)),
+                            ),
+                          ],
+                        ]),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${m['holder'] ?? '—'}${(m['exp_month'] != null && m['exp_year'] != null) ? ' · Exp ${m['exp_month'].toString().padLeft(2, '0')}/${m['exp_year'].toString().substring(m['exp_year'].toString().length - 2)}' : ''}',
+                          style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                        ),
+                      ]),
+                    ),
+                    if (!isDefault)
+                      IconButton(
+                        icon: const Icon(LucideIcons.star, size: 16),
+                        onPressed: () => _makeDefault(m['id'].toString()),
+                        tooltip: 'Set default',
+                      ),
+                    IconButton(
+                      icon: const Icon(LucideIcons.trash2, size: 16, color: AppColors.destructive),
+                      onPressed: () => _delete(m['id'].toString()),
+                    ),
+                  ]),
+                );
+              }),
+              const SizedBox(height: 4),
+              FilledButton.icon(
+                onPressed: () async {
+                  final saved = await showModalBottomSheet<bool>(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: AppColors.background,
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+                    builder: (_) => const _AddCardSheet(),
+                  );
+                  if (saved == true) _refresh();
+                },
+                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                icon: const Icon(LucideIcons.plus, size: 16),
+                label: const Text('Add payment method'),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(color: AppColors.mutedSurface, borderRadius: BorderRadius.circular(14)),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: const [
+                  Icon(LucideIcons.shield, color: AppColors.primary, size: 18),
+                  SizedBox(width: 10),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('${m['label'] ?? m['kind']}', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
-                      if ((m['last4'] ?? '').toString().isNotEmpty)
-                        Text('•••• ${m['last4']}', style: const TextStyle(color: AppColors.muted, fontSize: 12)),
-                      if (isDefault) const Text('Default', style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w800)),
+                      Text('Secured by Trade Assurance', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
+                      SizedBox(height: 4),
+                      Text('Payments are protected end-to-end. We never store your full card details on our servers.',
+                          style: TextStyle(color: AppColors.muted, fontSize: 11, height: 1.4)),
                     ]),
                   ),
-                  PopupMenuButton<String>(
-                    onSelected: (v) {
-                      if (v == 'default') _makeDefault(m['id'].toString());
-                      if (v == 'delete') _delete(m['id'].toString());
-                    },
-                    itemBuilder: (_) => [
-                      if (!isDefault) const PopupMenuItem(value: 'default', child: Text('Set default')),
-                      const PopupMenuItem(value: 'delete', child: Text('Remove')),
-                    ],
-                  ),
                 ]),
-              );
-            },
+              ),
+            ],
           );
         },
       ),
@@ -153,28 +175,49 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
   }
 }
 
-class _AddPaymentSheet extends StatefulWidget {
-  const _AddPaymentSheet();
+class _AddCardSheet extends StatefulWidget {
+  const _AddCardSheet();
   @override
-  State<_AddPaymentSheet> createState() => _AddPaymentSheetState();
+  State<_AddCardSheet> createState() => _AddCardSheetState();
 }
 
-class _AddPaymentSheetState extends State<_AddPaymentSheet> {
-  String _kind = 'card';
-  final _label = TextEditingController();
-  final _last4 = TextEditingController();
+class _AddCardSheetState extends State<_AddCardSheet> {
+  final _form = GlobalKey<FormState>();
+  final _number = TextEditingController();
+  final _holder = TextEditingController();
+  final _exp = TextEditingController();
   bool _saving = false;
 
+  String _detectBrand(String num) {
+    final n = num.replaceAll(RegExp(r'\s+'), '');
+    if (RegExp(r'^4').hasMatch(n)) return 'Visa';
+    if (RegExp(r'^5[1-5]').hasMatch(n)) return 'Mastercard';
+    if (RegExp(r'^3[47]').hasMatch(n)) return 'Amex';
+    if (RegExp(r'^6').hasMatch(n)) return 'Discover';
+    return 'Card';
+  }
+
   Future<void> _save() async {
+    if (!(_form.currentState?.validate() ?? false)) return;
     final uid = supabase.auth.currentUser?.id;
     if (uid == null) return;
     setState(() => _saving = true);
     try {
+      final num = _number.text.replaceAll(RegExp(r'\s+'), '');
+      final parts = _exp.text.split('/');
+      final m = int.tryParse(parts[0].trim());
+      var y = int.tryParse(parts.length > 1 ? parts[1].trim() : '');
+      if (y != null && y < 100) y = 2000 + y;
+      final existing = await supabase.from('payment_methods').select('id').eq('user_id', uid).limit(1);
+      final isFirst = (existing as List).isEmpty;
       await supabase.from('payment_methods').insert({
         'user_id': uid,
-        'kind': _kind,
-        'label': _label.text.trim().isEmpty ? _kind : _label.text.trim(),
-        'last4': _last4.text.trim(),
+        'brand': _detectBrand(num),
+        'last4': num.substring(num.length - 4),
+        'holder': _holder.text.trim(),
+        'exp_month': m,
+        'exp_year': y,
+        'is_default': isFirst,
       });
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
@@ -185,31 +228,49 @@ class _AddPaymentSheetState extends State<_AddPaymentSheet> {
   }
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: Form(
+        key: _form,
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            const Text('Add payment method', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+            const Text('New card', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
             const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              value: _kind,
-              decoration: const InputDecoration(labelText: 'Type', border: OutlineInputBorder()),
-              items: const [
-                DropdownMenuItem(value: 'card', child: Text('Card')),
-                DropdownMenuItem(value: 'mobile_money', child: Text('Mobile money')),
-                DropdownMenuItem(value: 'wallet', child: Text('Wallet')),
-                DropdownMenuItem(value: 'bank', child: Text('Bank')),
-              ],
-              onChanged: (v) => setState(() => _kind = v ?? 'card'),
+            TextFormField(
+              controller: _number,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(19)],
+              decoration: const InputDecoration(labelText: 'Card number', hintText: '4242 4242 4242 4242', border: OutlineInputBorder()),
+              validator: (v) => (v == null || v.replaceAll(' ', '').length < 12) ? 'Invalid card number' : null,
             ),
             const SizedBox(height: 12),
-            TextField(controller: _label, decoration: const InputDecoration(labelText: 'Label (e.g. Personal Visa)', border: OutlineInputBorder())),
+            TextFormField(
+              controller: _holder,
+              decoration: const InputDecoration(labelText: 'Cardholder', border: OutlineInputBorder()),
+              validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+            ),
             const SizedBox(height: 12),
-            TextField(controller: _last4, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Last 4 digits', border: OutlineInputBorder())),
-            const SizedBox(height: 20),
-            FilledButton(onPressed: _saving ? null : _save, child: _saving ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('Add')),
+            TextFormField(
+              controller: _exp,
+              decoration: const InputDecoration(labelText: 'Expiry (MM/YY)', hintText: '12/27', border: OutlineInputBorder()),
+              validator: (v) => (v == null || !v.contains('/')) ? 'MM/YY' : null,
+            ),
+            const SizedBox(height: 10),
+            const Text('Card stored for display only. No real charges.',
+                style: TextStyle(fontSize: 10, color: AppColors.muted)),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: _saving ? null : _save,
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(46)),
+              child: _saving
+                  ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text('Save'),
+            ),
           ]),
         ),
-      );
+      ),
+    );
+  }
 }

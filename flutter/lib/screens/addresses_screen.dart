@@ -1,12 +1,13 @@
-import '../widgets/skeletons.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
+import '../widgets/skeletons.dart';
 
-/// Mirrors `src/pages/Addresses.tsx` — list, add, edit and delete shipping
-/// addresses stored in the `addresses` table.
+/// Mirrors `src/pages/Addresses.tsx` — list, add, edit and delete addresses
+/// backed by the real `addresses` table (label, recipient, line1, city,
+/// region, postal, country, phone, is_default).
 class AddressesScreen extends StatefulWidget {
   const AddressesScreen({super.key});
   @override
@@ -49,100 +50,121 @@ class _AddressesScreenState extends State<AddressesScreen> {
     _refresh();
   }
 
+  IconData _iconFor(String? label) {
+    switch ((label ?? '').toLowerCase()) {
+      case 'home': return LucideIcons.home;
+      case 'work': return LucideIcons.briefcase;
+      default: return LucideIcons.mapPin;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Addresses'),
+        title: const Text('Addresses', style: TextStyle(fontWeight: FontWeight.w900)),
         actions: [
-          IconButton(
+          TextButton.icon(
             onPressed: () async {
               final saved = await Navigator.of(context).push<bool>(
                 MaterialPageRoute(builder: (_) => const _AddressForm()),
               );
               if (saved == true) _refresh();
             },
-            icon: const Icon(LucideIcons.plus),
+            icon: const Icon(LucideIcons.plus, size: 16),
+            label: const Text('New'),
           ),
         ],
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
-            return Skeletons.list(count: 4);
-          }
+          if (snap.connectionState != ConnectionState.done) return Skeletons.list(count: 4);
           final rows = snap.data ?? const [];
-          if (rows.isEmpty) {
-            return const _EmptyState();
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: rows.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, i) {
-              final a = rows[i];
-              final isDefault = a['is_default'] == true;
-              return Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.card,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: isDefault ? AppColors.primary : AppColors.border),
-                ),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
-                    Text('${a['recipient_name'] ?? ''}',
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
-                    const Spacer(),
-                    if (isDefault)
+          if (rows.isEmpty) return const _EmptyState();
+          return RefreshIndicator(
+            onRefresh: () async => _refresh(),
+            child: ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: rows.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, i) {
+                final a = rows[i];
+                final isDefault = a['is_default'] == true;
+                return Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.card,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: isDefault ? AppColors.primary : AppColors.border),
+                  ),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(.12),
-                          borderRadius: BorderRadius.circular(99),
+                        width: 40, height: 40,
+                        decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+                        child: Icon(_iconFor(a['label']?.toString()), size: 18, color: AppColors.primary),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Row(children: [
+                            Text((a['label'] ?? 'Address').toString(),
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900)),
+                            if (isDefault) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(4)),
+                                child: const Text('Default', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900)),
+                              ),
+                            ],
+                          ]),
+                          const SizedBox(height: 2),
+                          Text('${a['recipient'] ?? ''}${(a['phone']?.toString().isNotEmpty ?? false) ? ' · ${a['phone']}' : ''}',
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 2),
+                          Text([a['line1'], a['line2'], a['city'], a['region'], a['postal'], a['country']]
+                              .whereType<String>().where((s) => s.isNotEmpty).join(', '),
+                              style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+                        ]),
+                      ),
+                    ]),
+                    const Divider(height: 20),
+                    Row(children: [
+                      if (!isDefault)
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _makeDefault(a['id'].toString()),
+                            icon: const Icon(LucideIcons.star, size: 14),
+                            label: const Text('Set default'),
+                          ),
                         ),
-                        child: const Text('Default', style: TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.w800)),
+                      if (!isDefault) const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final saved = await Navigator.of(context).push<bool>(
+                              MaterialPageRoute(builder: (_) => _AddressForm(existing: a)),
+                            );
+                            if (saved == true) _refresh();
+                          },
+                          icon: const Icon(LucideIcons.pencil, size: 14),
+                          label: const Text('Edit'),
+                        ),
                       ),
-                  ]),
-                  const SizedBox(height: 4),
-                  Text('${a['line1'] ?? ''}${(a['line2'] ?? '').toString().isEmpty ? '' : ', ${a['line2']}'}'),
-                  Text('${a['city'] ?? ''}, ${a['region'] ?? ''} ${a['postal_code'] ?? ''}'),
-                  Text('${a['country'] ?? ''}'),
-                  if ((a['phone'] ?? '').toString().isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text('📞 ${a['phone']}', style: const TextStyle(fontSize: 12, color: AppColors.muted)),
-                    ),
-                  const SizedBox(height: 10),
-                  Row(children: [
-                    if (!isDefault)
-                      TextButton.icon(
-                        onPressed: () => _makeDefault(a['id'].toString()),
-                        icon: const Icon(LucideIcons.check, size: 14),
-                        label: const Text('Set default'),
+                      const SizedBox(width: 8),
+                      OutlinedButton(
+                        onPressed: () => _delete(a['id'].toString()),
+                        style: OutlinedButton.styleFrom(foregroundColor: AppColors.destructive),
+                        child: const Icon(LucideIcons.trash2, size: 14),
                       ),
-                    const Spacer(),
-                    TextButton.icon(
-                      onPressed: () async {
-                        final saved = await Navigator.of(context).push<bool>(
-                          MaterialPageRoute(builder: (_) => _AddressForm(existing: a)),
-                        );
-                        if (saved == true) _refresh();
-                      },
-                      icon: const Icon(LucideIcons.pencil, size: 14),
-                      label: const Text('Edit'),
-                    ),
-                    TextButton.icon(
-                      onPressed: () => _delete(a['id'].toString()),
-                      icon: const Icon(LucideIcons.trash2, size: 14, color: AppColors.destructive),
-                      label: const Text('Delete', style: TextStyle(color: AppColors.destructive)),
-                    ),
+                    ]),
                   ]),
-                ]),
-              );
-            },
+                );
+              },
+            ),
           );
         },
       ),
@@ -161,7 +183,7 @@ class _EmptyState extends StatelessWidget {
             SizedBox(height: 10),
             Text('No addresses yet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
             SizedBox(height: 6),
-            Text('Add one so checkout can go faster.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.muted)),
+            Text('Add one to start placing orders.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.muted)),
           ]),
         ),
       );
@@ -177,17 +199,8 @@ class _AddressForm extends StatefulWidget {
 class _AddressFormState extends State<_AddressForm> {
   final _form = GlobalKey<FormState>();
   late final _c = <String, TextEditingController>{
-    for (final k in [
-      'recipient_name',
-      'line1',
-      'line2',
-      'city',
-      'region',
-      'postal_code',
-      'country',
-      'phone',
-    ])
-      k: TextEditingController(text: widget.existing?[k]?.toString() ?? ''),
+    for (final k in ['label', 'recipient', 'phone', 'line1', 'line2', 'city', 'region', 'postal', 'country'])
+      k: TextEditingController(text: widget.existing?[k]?.toString() ?? (k == 'label' ? 'Home' : '')),
   };
   bool _default = false;
   bool _saving = false;
@@ -200,9 +213,7 @@ class _AddressFormState extends State<_AddressForm> {
 
   @override
   void dispose() {
-    for (final c in _c.values) {
-      c.dispose();
-    }
+    for (final c in _c.values) { c.dispose(); }
     super.dispose();
   }
 
@@ -213,17 +224,22 @@ class _AddressFormState extends State<_AddressForm> {
     setState(() => _saving = true);
     final payload = <String, dynamic>{
       for (final e in _c.entries) e.key: e.value.text.trim(),
-      'is_default': _default,
       'user_id': uid,
     };
     try {
-      if (_default) {
-        await supabase.from('addresses').update({'is_default': false}).eq('user_id', uid);
-      }
       if (widget.existing != null) {
-        await supabase.from('addresses').update(payload).eq('id', widget.existing!['id']);
+        if (_default) {
+          await supabase.from('addresses').update({'is_default': false}).eq('user_id', uid);
+        }
+        await supabase.from('addresses').update({...payload, 'is_default': _default}).eq('id', widget.existing!['id']);
       } else {
-        await supabase.from('addresses').insert(payload);
+        // First address becomes default automatically
+        final existing = await supabase.from('addresses').select('id').eq('user_id', uid).limit(1);
+        final isFirst = (existing as List).isEmpty;
+        if (_default) {
+          await supabase.from('addresses').update({'is_default': false}).eq('user_id', uid);
+        }
+        await supabase.from('addresses').insert({...payload, 'is_default': _default || isFirst});
       }
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
@@ -250,20 +266,21 @@ class _AddressFormState extends State<_AddressForm> {
       body: Form(
         key: _form,
         child: ListView(padding: const EdgeInsets.all(16), children: [
-          _field('recipient_name', 'Recipient name'),
+          _field('label', 'Label (Home, Work…)', required: false),
+          _field('recipient', 'Recipient name'),
+          _field('phone', 'Phone', required: false, kt: TextInputType.phone),
           _field('line1', 'Street address'),
           _field('line2', 'Apartment / suite', required: false),
           Row(children: [
             Expanded(child: _field('city', 'City')),
             const SizedBox(width: 12),
-            Expanded(child: _field('region', 'State / region')),
+            Expanded(child: _field('region', 'Region', required: false)),
           ]),
           Row(children: [
-            Expanded(child: _field('postal_code', 'Postal code', required: false)),
+            Expanded(child: _field('postal', 'Postal code', required: false)),
             const SizedBox(width: 12),
             Expanded(child: _field('country', 'Country')),
           ]),
-          _field('phone', 'Phone', required: false, kt: TextInputType.phone),
           SwitchListTile(
             value: _default,
             onChanged: (v) => setState(() => _default = v),
@@ -272,7 +289,10 @@ class _AddressFormState extends State<_AddressForm> {
           const SizedBox(height: 12),
           FilledButton(
             onPressed: _saving ? null : _save,
-            child: _saving ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('Save address'),
+            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+            child: _saving
+                ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Text('Save address'),
           ),
         ]),
       ),

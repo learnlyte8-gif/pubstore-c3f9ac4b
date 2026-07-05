@@ -19,6 +19,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
   ThemeMode _theme = ThemeMode.system;
   String _language = 'English';
   String _currency = 'USD';
+  Set<String> _interests = {};
+  bool _interestsLoaded = false;
+
+  static const _allInterests = [
+    'Electronics', 'Fashion', 'Home & Garden', 'Beauty', 'Sports', 'Toys',
+    'Automotive', 'Industrial', 'Agriculture', 'Packaging', 'Office', 'Health',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInterests();
+  }
+
+  Future<void> _loadInterests() async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) { setState(() => _interestsLoaded = true); return; }
+    try {
+      final prof = await supabase.from('profiles').select('interests').eq('user_id', uid).maybeSingle();
+      final list = ((prof?['interests'] ?? []) as List).map((e) => e.toString()).toSet();
+      if (mounted) setState(() { _interests = list; _interestsLoaded = true; });
+    } catch (_) {
+      if (mounted) setState(() => _interestsLoaded = true);
+    }
+  }
+
+  Future<void> _toggleInterest(String item) async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in to update your interests')));
+      return;
+    }
+    final has = _interests.contains(item);
+    if (!has && _interests.length >= 8) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maximum 8 interests')));
+      return;
+    }
+    setState(() {
+      if (has) { _interests.remove(item); } else { _interests.add(item); }
+    });
+    try {
+      await supabase.from('profiles').update({'interests': _interests.toList()}).eq('user_id', uid);
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,6 +114,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _row(LucideIcons.messageCircle, 'Test WhatsApp',
                 'Send a test to your linked number',
                 onTap: _sendWhatsAppTest),
+          ]),
+          const SizedBox(height: 16),
+          _sectionLabel('Personalization'),
+          _card([
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  _iconBubble(LucideIcons.sparkles),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Text('Your interests', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+                      Text('Drives your home & categories feed · ${_interests.length}/8 selected',
+                          style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                    ]),
+                  ),
+                ]),
+                const SizedBox(height: 12),
+                if (!_interestsLoaded)
+                  const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Center(child: CircularProgressIndicator(strokeWidth: 2)))
+                else
+                  Wrap(spacing: 6, runSpacing: 6, children: [
+                    for (final item in _allInterests)
+                      GestureDetector(
+                        onTap: () => _toggleInterest(item),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: _interests.contains(item) ? AppColors.primary : AppColors.mutedSurface,
+                            border: Border.all(color: _interests.contains(item) ? AppColors.primary : AppColors.border),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            if (_interests.contains(item)) ...[
+                              const Icon(LucideIcons.check, size: 12, color: Colors.white),
+                              const SizedBox(width: 4),
+                            ],
+                            Text(item, style: TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.w800,
+                              color: _interests.contains(item) ? Colors.white : AppColors.foreground,
+                            )),
+                          ]),
+                        ),
+                      ),
+                  ]),
+              ]),
+            ),
           ]),
           const SizedBox(height: 16),
           _sectionLabel('Region'),
