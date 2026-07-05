@@ -129,7 +129,7 @@ class _MyStoreScreenState extends State<MyStoreScreen> {
                 ])),
                 TextButton.icon(onPressed: _endStream,
                     style: TextButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppColors.danger, padding: const EdgeInsets.symmetric(horizontal: 10)),
-                    icon: const Icon(LucideIcons.circleStop, size: 14), label: const Text('End', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900))),
+                    icon: const Icon(Icons.stop_circle_outlined, size: 14), label: const Text('End', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900))),
               ]),
             ),
           ),
