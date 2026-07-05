@@ -84,7 +84,7 @@ class StoreSectionScreen extends StatelessWidget {
           children: [
             Text(meta.$1, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
             if (meta.$2.isNotEmpty)
-              Text(meta.$2, style: const TextStyle(fontSize: 11, color: Palette.mutedFg)),
+              Text(meta.$2, style: const TextStyle(fontSize: 11, color: AppColors.muted)),
           ],
         ),
         titleSpacing: 0,
@@ -196,8 +196,8 @@ class _ProductsViewState extends State<_ProductsView> {
                                 }),
                               )
                             : (p['image'] != null
-                                ? ClipRRect(borderRadius: BorderRadius.circular(6), child: Image.network(p['image'], width: 48, height: 48, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(width: 48, height: 48, color: Palette.muted)))
-                                : Container(width: 48, height: 48, color: Palette.muted)),
+                                ? ClipRRect(borderRadius: BorderRadius.circular(6), child: Image.network(p['image'], width: 48, height: 48, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(width: 48, height: 48, color: AppColors.mutedSurface)))
+                                : Container(width: 48, height: 48, color: AppColors.mutedSurface)),
                         title: Text(p['title'] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
                         subtitle: Text('\$${p['price']} · MOQ ${p['moq'] ?? 1} · Sold ${p['sold'] ?? 0}'),
                         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -343,7 +343,7 @@ class _OrdersViewState extends State<_OrdersView> {
                 Text('\$${o['total']}', style: const TextStyle(fontWeight: FontWeight.w700)),
               ]),
               const SizedBox(height: 6),
-              Text('Status: ${o['status']}', style: const TextStyle(color: Palette.mutedFg, fontSize: 12)),
+              Text('Status: ${o['status']}', style: const TextStyle(color: AppColors.muted, fontSize: 12)),
               const SizedBox(height: 8),
               Wrap(spacing: 6, children: _statuses.map((s) => ChoiceChip(
                 label: Text(s, style: const TextStyle(fontSize: 11)),
@@ -419,9 +419,9 @@ class _StatCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Icon(icon, color: Palette.primary),
+          Icon(icon, color: AppColors.primary),
           Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-          Text(label, style: const TextStyle(color: Palette.mutedFg, fontSize: 12)),
+          Text(label, style: const TextStyle(color: AppColors.muted, fontSize: 12)),
         ]),
       ),
     );
@@ -583,11 +583,11 @@ class _StubView extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 48, color: Palette.primary),
+          Icon(icon, size: 48, color: AppColors.primary),
           const SizedBox(height: 12),
           Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
-          Text(body, textAlign: TextAlign.center, style: const TextStyle(color: Palette.mutedFg)),
+          Text(body, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.muted)),
         ]),
       ),
     );
