@@ -1,13 +1,17 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../widgets/skeletons.dart';
 
-/// Mirrors `src/pages/JobsFeed.tsx` — LinkedIn-style feed of career posts
-/// with likes, comments, and share on `job_posts`.
+/// Mirrors `src/pages/JobsFeed.tsx` — career feed with image + link
+/// attachments, likes, comments, share, and delete-own-post.
 class JobsFeedScreen extends StatefulWidget {
   const JobsFeedScreen({super.key});
   @override
@@ -18,7 +22,11 @@ class _JobsFeedScreenState extends State<JobsFeedScreen> {
   late Future<List<Map<String, dynamic>>> _future;
   Set<String> _likedIds = {};
   final _composer = TextEditingController();
+  final _linkCtrl = TextEditingController();
+  String? _pickedImagePath;
   bool _posting = false;
+
+  String? get _uid => supabase.auth.currentUser?.id;
 
   @override
   void initState() {
@@ -32,7 +40,7 @@ class _JobsFeedScreenState extends State<JobsFeedScreen> {
         .select('*, author:author_id(display_name, avatar_url)')
         .order('created_at', ascending: false)
         .limit(60);
-    final uid = supabase.auth.currentUser?.id;
+    final uid = _uid;
     if (uid != null) {
       final likes = await supabase.from('job_post_likes').select('post_id').eq('user_id', uid);
       _likedIds = (likes as List).map((r) => (r as Map)['post_id'].toString()).toSet();
@@ -40,26 +48,79 @@ class _JobsFeedScreenState extends State<JobsFeedScreen> {
     return (rows as List).cast<Map<String, dynamic>>();
   }
 
+  Future<void> _pickImage() async {
+    final f = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (f == null) return;
+    setState(() => _pickedImagePath = f.path);
+  }
+
   Future<void> _post() async {
     final body = _composer.text.trim();
-    if (body.isEmpty) return;
-    final uid = supabase.auth.currentUser?.id;
+    final link = _linkCtrl.text.trim();
+    if (body.isEmpty && link.isEmpty && _pickedImagePath == null) return;
+    final uid = _uid;
     if (uid == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in to post')));
       return;
     }
     setState(() => _posting = true);
     try {
-      await supabase.from('job_posts').insert({'author_id': uid, 'body': body, 'visibility': 'public'});
+      String? imageUrl;
+      if (_pickedImagePath != null) {
+        try {
+          final key = 'jobs/$uid/${DateTime.now().millisecondsSinceEpoch}.jpg';
+          final storage = supabase.storage.from('chat-media');
+          await storage.upload(key, File(_pickedImagePath!));
+          imageUrl = await storage.createSignedUrl(key, 60 * 60 * 24 * 365);
+        } catch (_) {}
+      }
+      final row = <String, dynamic>{
+        'author_id': uid,
+        'body': body,
+        'visibility': 'public',
+      };
+      if (imageUrl != null) row['image_url'] = imageUrl;
+      if (link.isNotEmpty) row['link_url'] = link;
+      await supabase.from('job_posts').insert(row);
       _composer.clear();
-      setState(() => _future = _load());
+      _linkCtrl.clear();
+      setState(() {
+        _pickedImagePath = null;
+        _future = _load();
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Couldn\'t post: $e')));
+      }
     } finally {
       if (mounted) setState(() => _posting = false);
     }
   }
 
+  Future<void> _deletePost(Map<String, dynamic> p) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete this post?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await supabase.from('job_posts').delete().eq('id', p['id']);
+      setState(() => _future = _load());
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
+      }
+    }
+  }
+
   Future<void> _toggleLike(Map<String, dynamic> p) async {
-    final uid = supabase.auth.currentUser?.id;
+    final uid = _uid;
     if (uid == null) return;
     final id = p['id'].toString();
     final liked = _likedIds.contains(id);
@@ -91,21 +152,57 @@ class _JobsFeedScreenState extends State<JobsFeedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final me = _uid;
     return Scaffold(
       appBar: AppBar(title: const Text('Career feed')),
       body: Column(children: [
         Container(
           padding: const EdgeInsets.all(12),
           decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.border))),
-          child: Row(children: [
-            Expanded(
-              child: TextField(
-                controller: _composer, minLines: 1, maxLines: 3,
-                decoration: const InputDecoration(hintText: 'Share an update…', border: OutlineInputBorder(), isDense: true),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            TextField(
+              controller: _composer, minLines: 1, maxLines: 4,
+              decoration: const InputDecoration(hintText: 'Share an update…', border: OutlineInputBorder(), isDense: true),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _linkCtrl,
+              decoration: const InputDecoration(
+                hintText: 'Attach a link (https://…)',
+                border: OutlineInputBorder(),
+                isDense: true,
+                prefixIcon: Icon(LucideIcons.link2, size: 16),
               ),
             ),
-            const SizedBox(width: 8),
-            FilledButton(onPressed: _posting ? null : _post, child: Text(_posting ? '…' : 'Post')),
+            if (_pickedImagePath != null) ...[
+              const SizedBox(height: 8),
+              Row(children: [
+                const Icon(LucideIcons.image, size: 14, color: AppColors.muted),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text('Image attached',
+                      style: TextStyle(fontSize: 11, color: AppColors.muted),
+                      overflow: TextOverflow.ellipsis),
+                ),
+                IconButton(
+                  icon: const Icon(LucideIcons.x, size: 14),
+                  onPressed: () => setState(() => _pickedImagePath = null),
+                ),
+              ]),
+            ],
+            const SizedBox(height: 8),
+            Row(children: [
+              IconButton(
+                onPressed: _pickImage,
+                icon: const Icon(LucideIcons.image, size: 18),
+                tooltip: 'Attach image',
+              ),
+              const Spacer(),
+              FilledButton(
+                onPressed: _posting ? null : _post,
+                child: Text(_posting ? '…' : 'Post'),
+              ),
+            ]),
           ]),
         ),
         Expanded(
@@ -127,6 +224,9 @@ class _JobsFeedScreenState extends State<JobsFeedScreen> {
                     final likes = (p['likes_count'] as int?) ?? 0;
                     final comments = (p['comments_count'] as int?) ?? 0;
                     final liked = _likedIds.contains(p['id'].toString());
+                    final img = (p['image_url'] ?? '').toString();
+                    final link = (p['link_url'] ?? '').toString();
+                    final isOwn = me != null && p['author_id'] == me;
                     return Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
@@ -140,9 +240,45 @@ class _JobsFeedScreenState extends State<JobsFeedScreen> {
                           ),
                           const SizedBox(width: 10),
                           Expanded(child: Text(author['display_name']?.toString() ?? 'Member', style: const TextStyle(fontWeight: FontWeight.w800))),
+                          if (isOwn)
+                            IconButton(
+                              icon: const Icon(LucideIcons.trash2, size: 16, color: AppColors.destructive),
+                              onPressed: () => _deletePost(p),
+                            ),
                         ]),
                         const SizedBox(height: 10),
-                        Text(p['body']?.toString() ?? '', style: const TextStyle(height: 1.4)),
+                        if ((p['body'] ?? '').toString().isNotEmpty)
+                          Text(p['body'].toString(), style: const TextStyle(height: 1.4)),
+                        if (img.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: CachedNetworkImage(imageUrl: img, fit: BoxFit.cover),
+                          ),
+                        ],
+                        if (link.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          InkWell(
+                            onTap: () => Share.share(link),
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.mutedSurface,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: AppColors.border),
+                              ),
+                              child: Row(children: [
+                                const Icon(LucideIcons.link2, size: 14, color: AppColors.primary),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(link,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(fontSize: 12, color: AppColors.primary)),
+                                ),
+                              ]),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 10),
                         Row(children: [
                           TextButton.icon(
@@ -155,7 +291,14 @@ class _JobsFeedScreenState extends State<JobsFeedScreen> {
                             icon: const Icon(LucideIcons.messageSquare, size: 14),
                             label: Text('$comments'),
                           ),
-                          TextButton.icon(onPressed: () {}, icon: const Icon(LucideIcons.share2, size: 14), label: const Text('Share')),
+                          TextButton.icon(
+                            onPressed: () {
+                              final text = (p['body'] ?? '').toString();
+                              Share.share([text, link].where((s) => s.isNotEmpty).join('\n'));
+                            },
+                            icon: const Icon(LucideIcons.share2, size: 14),
+                            label: const Text('Share'),
+                          ),
                         ]),
                       ]),
                     );

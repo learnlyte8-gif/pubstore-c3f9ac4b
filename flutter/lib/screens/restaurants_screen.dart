@@ -40,6 +40,17 @@ class _RestaurantsScreenState extends State<RestaurantsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          backgroundColor: AppColors.background,
+          builder: (_) => const _ListRestaurantSheet(),
+        ),
+        icon: const Icon(LucideIcons.plus, size: 16),
+        label: const Text('List your restaurant'),
+      ),
       body: SafeArea(
         child: Column(children: [
           Container(
@@ -447,4 +458,85 @@ class _CheckoutSheetState extends State<_CheckoutSheet> {
       Text(b, style: TextStyle(fontWeight: bold ? FontWeight.w900 : FontWeight.w700)),
     ]),
   );
+}
+
+class _ListRestaurantSheet extends StatefulWidget {
+  const _ListRestaurantSheet();
+  @override
+  State<_ListRestaurantSheet> createState() => _ListRestaurantSheetState();
+}
+
+class _ListRestaurantSheetState extends State<_ListRestaurantSheet> {
+  final _name = TextEditingController();
+  final _cuisine = TextEditingController();
+  final _city = TextEditingController();
+  final _phone = TextEditingController();
+  final _cover = TextEditingController();
+  final _about = TextEditingController();
+  bool _busy = false;
+
+  Future<void> _submit() async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in to list a restaurant')));
+      return;
+    }
+    if (_name.text.trim().isEmpty) return;
+    setState(() => _busy = true);
+    try {
+      await supabase.from('restaurants').insert({
+        'owner_id': uid,
+        'name': _name.text.trim(),
+        'cuisine': _cuisine.text.trim().isEmpty ? null : _cuisine.text.trim(),
+        'city': _city.text.trim().isEmpty ? null : _city.text.trim(),
+        'phone': _phone.text.trim().isEmpty ? null : _phone.text.trim(),
+        'cover': _cover.text.trim().isEmpty ? null : _cover.text.trim(),
+        'about': _about.text.trim().isEmpty ? null : _about.text.trim(),
+        'active': false,
+      });
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Submitted — we\u2019ll review shortly.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16, right: 16, top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          const Text('List your restaurant', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 12),
+          TextField(controller: _name, decoration: const InputDecoration(labelText: 'Restaurant name *', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          TextField(controller: _cuisine, decoration: const InputDecoration(labelText: 'Cuisine (e.g. Italian)', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          TextField(controller: _city, decoration: const InputDecoration(labelText: 'City', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          TextField(controller: _phone, decoration: const InputDecoration(labelText: 'Phone', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          TextField(controller: _cover, decoration: const InputDecoration(labelText: 'Cover image URL', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          TextField(controller: _about, maxLines: 3, decoration: const InputDecoration(labelText: 'About', border: OutlineInputBorder())),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: _busy ? null : _submit,
+            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+            child: Text(_busy ? 'Submitting…' : 'Submit'),
+          ),
+        ]),
+      ),
+    );
+  }
 }

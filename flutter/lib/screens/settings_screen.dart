@@ -112,6 +112,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Push, in-app, and email — choose what reaches you',
                 onTap: () => Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => const NotificationPreferencesScreen()))),
+            _row(LucideIcons.link, 'Link WhatsApp number',
+                'Get a code to bind your number to this account',
+                onTap: _linkWhatsApp),
             _row(LucideIcons.messageCircle, 'Test WhatsApp',
                 'Send a test to your linked number',
                 onTap: _sendWhatsAppTest),
@@ -227,6 +230,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Could not send: $e')));
+    }
+  }
+
+  Future<void> _linkWhatsApp() async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sign in to link WhatsApp')));
+      return;
+    }
+    try {
+      final res = await supabase.functions.invoke('send-whatsapp-code', body: {'user_id': uid});
+      final data = res.data as Map?;
+      final code = data?['code']?.toString();
+      if (!mounted) return;
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Link your WhatsApp number'),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Text('Send the code below from your WhatsApp to our number to bind it to your account.'),
+            const SizedBox(height: 12),
+            SelectableText(code ?? '—',
+                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: 3)),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not generate code: $e')));
     }
   }
 

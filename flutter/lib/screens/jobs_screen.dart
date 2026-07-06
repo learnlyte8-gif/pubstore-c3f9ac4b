@@ -74,12 +74,19 @@ class _JobsScreenState extends State<JobsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openPostJob,
+        icon: const Icon(LucideIcons.plus, size: 16),
+        label: const Text('Post a job'),
+      ),
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: _buildHero(context)),
           if (_tab == 0)
             SliverToBoxAdapter(child: _buildFilters()),
-          if (_loading)
+          if (_tab == 3)
+            SliverToBoxAdapter(child: _buildManageTab())
+          else if (_loading)
             const SliverFillRemaining(
                 child: Skeletons.list(count: 4))
           else
@@ -99,6 +106,52 @@ class _JobsScreenState extends State<JobsScreen> {
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildManageTab() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        FilledButton.icon(
+          onPressed: _openPostJob,
+          icon: const Icon(LucideIcons.plus, size: 16),
+          label: const Text('Post a new job'),
+          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: _openCreateCompany,
+          icon: const Icon(LucideIcons.building2, size: 16),
+          label: const Text('Create a company'),
+          style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+        ),
+        const SizedBox(height: 20),
+        const Text('My postings', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 8),
+        Text('Postings you\u2019ve created will appear here after refresh.',
+            style: TextStyle(fontSize: 12, color: AppColors.muted)),
+      ]),
+    );
+  }
+
+  void _openPostJob() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: AppColors.background,
+      builder: (_) => const _PostJobSheet(),
+    ).then((_) => _load());
+  }
+
+  void _openCreateCompany() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: AppColors.background,
+      builder: (_) => const _CreateCompanySheet(),
     );
   }
 
@@ -175,8 +228,7 @@ class _JobsScreenState extends State<JobsScreen> {
               foregroundColor: AppColors.foreground,
               padding: const EdgeInsets.symmetric(horizontal: 12),
             ),
-            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Post-a-job flow coming soon'))),
+            onPressed: _openPostJob,
             icon: const Icon(LucideIcons.plus, size: 14),
             label: const Text('Post', style: TextStyle(fontSize: 12)),
           ),
@@ -554,4 +606,219 @@ class _ApplyDialogState extends State<_ApplyDialog> {
       ]),
     ),
   );
+}
+
+class _PostJobSheet extends StatefulWidget {
+  const _PostJobSheet();
+  @override
+  State<_PostJobSheet> createState() => _PostJobSheetState();
+}
+
+class _PostJobSheetState extends State<_PostJobSheet> {
+  final _title = TextEditingController();
+  final _companyId = TextEditingController();
+  final _location = TextEditingController();
+  final _description = TextEditingController();
+  final _minPay = TextEditingController();
+  final _maxPay = TextEditingController();
+  String _employment = 'full_time';
+  String _remote = 'on_site';
+  List<Map<String, dynamic>> _companies = const [];
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCompanies();
+  }
+
+  Future<void> _loadCompanies() async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) return;
+    final rows = await supabase.from('job_companies').select('id, name').eq('owner_id', uid);
+    if (!mounted) return;
+    setState(() => _companies = (rows as List).cast<Map<String, dynamic>>());
+    if (_companies.isNotEmpty && _companyId.text.isEmpty) {
+      _companyId.text = _companies.first['id'].toString();
+    }
+  }
+
+  Future<void> _submit() async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) return;
+    if (_title.text.trim().isEmpty) return;
+    setState(() => _busy = true);
+    try {
+      await supabase.from('job_postings').insert({
+        'poster_id': uid,
+        'company_id': _companyId.text.isEmpty ? null : _companyId.text,
+        'title': _title.text.trim(),
+        'location': _location.text.trim(),
+        'description': _description.text.trim(),
+        'employment_type': _employment,
+        'work_location_type': _remote,
+        'salary_min': int.tryParse(_minPay.text.trim()),
+        'salary_max': int.tryParse(_maxPay.text.trim()),
+        'status': 'open',
+      });
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Job posted')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16, right: 16, top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          const Text('Post a job', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 12),
+          TextField(controller: _title, decoration: const InputDecoration(labelText: 'Title *', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          if (_companies.isNotEmpty)
+            DropdownButtonFormField<String>(
+              value: _companyId.text.isEmpty ? null : _companyId.text,
+              decoration: const InputDecoration(labelText: 'Company', border: OutlineInputBorder()),
+              items: [
+                for (final c in _companies)
+                  DropdownMenuItem(value: c['id'].toString(), child: Text(c['name']?.toString() ?? '—')),
+              ],
+              onChanged: (v) => setState(() => _companyId.text = v ?? ''),
+            )
+          else
+            TextField(controller: _companyId, decoration: const InputDecoration(labelText: 'Company ID (optional)', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          TextField(controller: _location, decoration: const InputDecoration(labelText: 'Location', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _employment,
+                decoration: const InputDecoration(labelText: 'Type', border: OutlineInputBorder()),
+                items: const [
+                  DropdownMenuItem(value: 'full_time', child: Text('Full-time')),
+                  DropdownMenuItem(value: 'part_time', child: Text('Part-time')),
+                  DropdownMenuItem(value: 'contract', child: Text('Contract')),
+                  DropdownMenuItem(value: 'internship', child: Text('Internship')),
+                ],
+                onChanged: (v) => setState(() => _employment = v ?? 'full_time'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _remote,
+                decoration: const InputDecoration(labelText: 'Mode', border: OutlineInputBorder()),
+                items: const [
+                  DropdownMenuItem(value: 'on_site', child: Text('On-site')),
+                  DropdownMenuItem(value: 'hybrid', child: Text('Hybrid')),
+                  DropdownMenuItem(value: 'remote', child: Text('Remote')),
+                ],
+                onChanged: (v) => setState(() => _remote = v ?? 'on_site'),
+              ),
+            ),
+          ]),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(child: TextField(controller: _minPay, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Min pay', border: OutlineInputBorder()))),
+            const SizedBox(width: 8),
+            Expanded(child: TextField(controller: _maxPay, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Max pay', border: OutlineInputBorder()))),
+          ]),
+          const SizedBox(height: 8),
+          TextField(controller: _description, maxLines: 5, decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder())),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: _busy ? null : _submit,
+            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+            child: Text(_busy ? 'Posting…' : 'Post job'),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+class _CreateCompanySheet extends StatefulWidget {
+  const _CreateCompanySheet();
+  @override
+  State<_CreateCompanySheet> createState() => _CreateCompanySheetState();
+}
+
+class _CreateCompanySheetState extends State<_CreateCompanySheet> {
+  final _name = TextEditingController();
+  final _industry = TextEditingController();
+  final _size = TextEditingController();
+  final _website = TextEditingController();
+  final _logo = TextEditingController();
+  final _about = TextEditingController();
+  bool _busy = false;
+
+  Future<void> _submit() async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) return;
+    if (_name.text.trim().isEmpty) return;
+    setState(() => _busy = true);
+    try {
+      await supabase.from('job_companies').insert({
+        'owner_id': uid,
+        'name': _name.text.trim(),
+        'industry': _industry.text.trim().isEmpty ? null : _industry.text.trim(),
+        'company_size': _size.text.trim().isEmpty ? null : _size.text.trim(),
+        'website_url': _website.text.trim().isEmpty ? null : _website.text.trim(),
+        'logo_url': _logo.text.trim().isEmpty ? null : _logo.text.trim(),
+        'about': _about.text.trim().isEmpty ? null : _about.text.trim(),
+      });
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Company created')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16, right: 16, top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          const Text('Create a company', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 12),
+          TextField(controller: _name, decoration: const InputDecoration(labelText: 'Company name *', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          TextField(controller: _industry, decoration: const InputDecoration(labelText: 'Industry', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          TextField(controller: _size, decoration: const InputDecoration(labelText: 'Company size', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          TextField(controller: _website, decoration: const InputDecoration(labelText: 'Website', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          TextField(controller: _logo, decoration: const InputDecoration(labelText: 'Logo URL', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          TextField(controller: _about, maxLines: 3, decoration: const InputDecoration(labelText: 'About', border: OutlineInputBorder())),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: _busy ? null : _submit,
+            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+            child: Text(_busy ? 'Creating…' : 'Create company'),
+          ),
+        ]),
+      ),
+    );
+  }
 }

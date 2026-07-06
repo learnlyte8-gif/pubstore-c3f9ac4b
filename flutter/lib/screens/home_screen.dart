@@ -52,6 +52,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _scroll = ScrollController();
   final List<Product> _products = [];
+  String? _activeSubcat;
   int _page = 0;
   bool _loading = false;
   bool _done = false;
@@ -230,8 +231,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         SliverToBoxAdapter(
                           child: _SubcategoryChips(
                             products: _products,
-                            active: null,
-                            onChanged: (_) {},
+                            active: _activeSubcat,
+                            onChanged: (v) => setState(() => _activeSubcat = v),
                           ),
                         ),
                       if (widget.categoryId == null && widget.feed == 'home')
@@ -247,7 +248,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       SliverToBoxAdapter(
                         child: MasonryProductGrid(
-                          products: _products,
+                          products: _activeSubcat == null
+                              ? _products
+                              : _products.where((p) {
+                                  final label = (p.badge != null && p.badge!.isNotEmpty)
+                                      ? p.badge!
+                                      : (p.category ?? 'Other');
+                                  return label == _activeSubcat;
+                                }).toList(),
                           onTap: _openProduct,
                           onAdd: (p) {
                             ref.read(cartProvider.notifier).add(p);
