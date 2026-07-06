@@ -242,11 +242,21 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
           ListTile(
             leading: const Icon(LucideIcons.copy, color: AppColors.foreground),
             title: const Text('Copy text', style: TextStyle(color: AppColors.foreground)),
-            onTap: () {
+            onTap: () async {
               Navigator.pop(context);
-              // Best effort copy without importing services here
-              // ignore: deprecated_member_use
-              // Clipboard.setData is fine; but avoid extra imports for lean file.
+              await Clipboard.setData(ClipboardData(text: m.body));
+              if (mounted) {
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(const SnackBar(content: Text('Copied')));
+              }
+            },
+          ),
+          ListTile(
+            leading: const Icon(LucideIcons.forward, color: AppColors.foreground),
+            title: const Text('Forward', style: TextStyle(color: AppColors.foreground)),
+            onTap: () async {
+              Navigator.pop(context);
+              await _forwardMessage(m);
             },
           ),
           if (mine)
