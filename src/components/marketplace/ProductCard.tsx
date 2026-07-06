@@ -282,15 +282,35 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
       className="group rounded-xl overflow-hidden bg-card border border-border shadow-card hover:shadow-elevated hover:-translate-y-0.5 transition block"
     >
       <div className="relative aspect-square bg-muted overflow-hidden">
-        {images.map((src, i) => (
-          <img
-            key={i}
-            src={src}
-            alt={product.title}
-            loading="lazy"
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === slideIdx ? "opacity-100" : "opacity-0"}`}
+        {isPlayableVideoFile ? (
+          <video
+            src={videoUrl!}
+            poster={images[0]}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            className="absolute inset-0 w-full h-full object-cover"
           />
-        ))}
+        ) : (
+          images.map((src, i) => (
+            <img
+              key={i}
+              src={src}
+              alt={product.title}
+              loading="lazy"
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === slideIdx ? "opacity-100" : "opacity-0"}`}
+            />
+          ))
+        )}
+        {hasVideoBadge && !isPlayableVideoFile && (
+          <span className="absolute inset-0 flex items-center justify-center bg-black/25 pointer-events-none">
+            <span className="w-11 h-11 rounded-full bg-white/90 flex items-center justify-center shadow-soft">
+              <Play className="w-5 h-5 fill-current text-foreground" />
+            </span>
+          </span>
+        )}
         {displayBadge && badgeStyle[displayBadge as NonNullable<Product["badge"]>] && (
           <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded ${badgeStyle[displayBadge as NonNullable<Product["badge"]>]}`}>
             {displayBadge}
