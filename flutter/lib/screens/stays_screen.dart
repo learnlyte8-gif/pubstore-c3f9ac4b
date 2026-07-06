@@ -88,7 +88,12 @@ class _StaysScreenState extends State<StaysScreen> {
                     childAspectRatio: 0.62,
                   ),
                   itemCount: stays.length,
-                  itemBuilder: (context, i) => _stayCard(stays[i]),
+                  itemBuilder: (context, i) => GestureDetector(
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => StayDetailScreen(stay: stays[i]))),
+                    behavior: HitTestBehavior.opaque,
+                    child: _stayCard(stays[i]),
+                  ),
                 ),
             ],
           );
