@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'navigation/root_shell.dart';
@@ -11,9 +12,19 @@ import 'theme/theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Edge-to-edge: let every screen's app bar / header paint behind the
+  // status bar so it takes on the screen's own colour instead of a
+  // system-drawn opaque strip.
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarIconBrightness: Brightness.dark,
+  ));
   await initSupabase();
   await PushService.ensureInitialized();
-  // Fire-and-forget push registration for any already-signed-in user.
   // ignore: unawaited_futures
   pushService.registerForCurrentUser();
   runApp(const ProviderScope(child: PubstoreApp()));
