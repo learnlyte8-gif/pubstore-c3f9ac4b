@@ -515,7 +515,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
       child: Row(children: [
         IconButton(
           icon: const Icon(LucideIcons.plus, size: 20, color: AppColors.foreground),
-          onPressed: () {},
+          onPressed: _openAttachMenu,
         ),
         Expanded(
           child: TextField(
