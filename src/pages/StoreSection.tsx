@@ -1120,11 +1120,14 @@ function NewProductView() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [urlImages, setUrlImages] = useState<string[]>([]);
+  const [imageUrlInput, setImageUrlInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     title: "", description: "", price: "", original_price: "",
     moq: "1", unit: "piece", lead_time: "7-15 days", ship_from: "",
     category_slug: "electronics", free_shipping: false,
+    video_url: "",
   });
   const { data: cats = [] } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
 
