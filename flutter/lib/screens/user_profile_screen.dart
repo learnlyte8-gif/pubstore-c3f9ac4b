@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../models/models.dart';
-import '../services/catalog_service.dart';
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../widgets/product_card.dart';
 import '../widgets/skeletons.dart';
+import 'messages_screen.dart';
 
 /// Mirrors `src/pages/UserProfile.tsx` — public seller / user profile with
 /// their listings and follow toggle.
@@ -34,14 +35,23 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   Future<void> _load() async {
     try {
-      final p = await supabase.from('profiles').select('*').eq('id', widget.userId).maybeSingle();
-      final rows = await supabase
-          .from('products')
-          .select('*')
-          .eq('supplier_id', widget.userId)
-          .eq('active', true)
+      final p = await supabase.from('profiles').select('*').eq('user_id', widget.userId).maybeSingle();
+      // Liked products (via post_likes)
+      final likes = await supabase
+          .from('post_likes')
+          .select('target_id')
+          .eq('user_id', widget.userId)
+          .eq('target_type', 'product')
           .order('created_at', ascending: false)
-          .limit(40);
+          .limit(48);
+      final ids = (likes as List)
+          .map((r) => (r as Map)['target_id']?.toString())
+          .whereType<String>()
+          .toList();
+      List rows = const [];
+      if (ids.isNotEmpty) {
+        rows = await supabase.from('products').select('*').inFilter('id', ids);
+      }
       final followers = await supabase
           .from('user_follows')
           .select('follower_id')
@@ -128,7 +138,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           _stat('$_followers', 'Followers'),
                           const SizedBox(width: 32),
-                          _stat('${_products.length}', 'Listings'),
+                          _stat('${_products.length}', 'Likes'),
                           const SizedBox(width: 32),
                           _stat('${p['rating'] ?? '—'}', 'Rating'),
                         ]),
@@ -142,13 +152,23 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               style: FilledButton.styleFrom(backgroundColor: _following ? AppColors.mutedSurface : AppColors.orange, foregroundColor: _following ? AppColors.foreground : Colors.white),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: OutlinedButton.icon(
-                              onPressed: () {},
+                              onPressed: () => Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => const MessagesScreen()),
+                              ),
                               icon: const Icon(LucideIcons.messageCircle, size: 16),
                               label: const Text('Message'),
                             ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton.outlined(
+                            onPressed: () {
+                              final name = p['display_name']?.toString() ?? 'this profile';
+                              Share.share('Check out $name on PUBSTORE\nhttps://pubstore.app/u/${widget.userId}');
+                            },
+                            icon: const Icon(LucideIcons.share2, size: 16),
                           ),
                         ]),
                       ]),

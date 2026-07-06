@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../models/models.dart';
 import '../services/supabase_client.dart';
@@ -26,6 +27,8 @@ class SupplierScreen extends StatefulWidget {
 class _SupplierScreenState extends State<SupplierScreen> {
   Map<String, dynamic>? _supplier;
   List<Product> _products = const [];
+  List<Map<String, dynamic>> _certifications = const [];
+  List<Map<String, dynamic>> _inspections = const [];
   bool _loading = true;
   bool _following = false;
   int _followerCount = 0;
@@ -62,6 +65,14 @@ class _SupplierScreenState extends State<SupplierScreen> {
             .eq('user_id', _userId as Object)
             .maybeSingle();
       }
+      List certs = const [];
+      List insps = const [];
+      try {
+        certs = await supabase.from('supplier_certifications').select('*').eq('supplier_id', id);
+      } catch (_) {}
+      try {
+        insps = await supabase.from('inspection_reports').select('*').eq('supplier_id', id).order('created_at', ascending: false);
+      } catch (_) {}
 
       if (!mounted) return;
       setState(() {
@@ -70,6 +81,8 @@ class _SupplierScreenState extends State<SupplierScreen> {
         _products = (rows as List).map((e) => Product.fromRow(Map<String, dynamic>.from(e))).toList();
         _followerCount = (followers as List).length;
         _following = myFollow != null;
+        _certifications = certs.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        _inspections = insps.map((e) => Map<String, dynamic>.from(e as Map)).toList();
         _loading = false;
       });
     } catch (_) {
@@ -159,7 +172,8 @@ class _SupplierScreenState extends State<SupplierScreen> {
                   _circleBtn(LucideIcons.arrowLeft, () => Navigator.of(context).maybePop()),
                   Row(children: [
                     _circleBtn(LucideIcons.share2, () {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Share — coming soon')));
+                      final url = 'https://pubstore.app/supplier/${widget.supplierId}';
+                      Share.share('Check out ${(_supplier?['name'] ?? 'this store')} on PUBSTORE\n$url');
                     }),
                     const SizedBox(width: 8),
                     _circleBtn(_following ? LucideIcons.heart : LucideIcons.heart, _toggleFollow,
@@ -249,6 +263,8 @@ class _SupplierScreenState extends State<SupplierScreen> {
           delegate: _TabsHeader(
             tab: _tab,
             productsCount: _products.length,
+            certCount: _certifications.length,
+            inspCount: _inspections.length,
             onChanged: (t) => setState(() => _tab = t),
           ),
         ),
@@ -261,6 +277,66 @@ class _SupplierScreenState extends State<SupplierScreen> {
                   ),
                 )
               : SliverToBoxAdapter(child: MasonryProductGrid(products: _products))
+        else if (_tab == 'certifications')
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: _certifications.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: Center(child: Text('No certifications on file.', style: TextStyle(color: AppColors.muted, fontSize: 13))),
+                    )
+                  : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                      for (final c in _certifications)
+                        _card((c['name'] ?? 'Certificate').toString(), LucideIcons.shieldCheck,
+                            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              if ((c['issuer'] ?? '').toString().isNotEmpty)
+                                _row('Issuer', c['issuer'].toString()),
+                              if ((c['certificate_number'] ?? '').toString().isNotEmpty)
+                                _row('Number', c['certificate_number'].toString()),
+                              if ((c['issued_date'] ?? '').toString().isNotEmpty)
+                                _row('Issued', c['issued_date'].toString()),
+                              if ((c['expiry_date'] ?? '').toString().isNotEmpty)
+                                _row('Expires', c['expiry_date'].toString()),
+                              if ((c['document_url'] ?? '').toString().isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: Text('View document', style: TextStyle(fontSize: 11, color: AppColors.primary, decoration: TextDecoration.underline)),
+                                ),
+                            ])),
+                      const SizedBox(height: 12),
+                    ]),
+            ),
+          )
+        else if (_tab == 'inspections')
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: _inspections.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: Center(child: Text('No inspection reports yet.', style: TextStyle(color: AppColors.muted, fontSize: 13))),
+                    )
+                  : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                      for (final r in _inspections)
+                        _card((r['title'] ?? 'Inspection report').toString(), LucideIcons.clipboardCheck,
+                            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              if ((r['inspector'] ?? '').toString().isNotEmpty)
+                                _row('Inspector', r['inspector'].toString()),
+                              if ((r['inspection_date'] ?? '').toString().isNotEmpty)
+                                _row('Date', r['inspection_date'].toString()),
+                              if (r['score'] != null) _row('Score', '${r['score']}'),
+                              if ((r['status'] ?? '').toString().isNotEmpty)
+                                _row('Status', r['status'].toString()),
+                              if ((r['summary'] ?? '').toString().isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: Text(r['summary'].toString(), style: const TextStyle(fontSize: 12, color: AppColors.muted, height: 1.4)),
+                                ),
+                            ])),
+                    ]),
+            ),
+          )
         else
           SliverToBoxAdapter(
             child: Padding(
@@ -394,9 +470,17 @@ class _SupplierScreenState extends State<SupplierScreen> {
 }
 
 class _TabsHeader extends SliverPersistentHeaderDelegate {
-  _TabsHeader({required this.tab, required this.productsCount, required this.onChanged});
+  _TabsHeader({
+    required this.tab,
+    required this.productsCount,
+    required this.certCount,
+    required this.inspCount,
+    required this.onChanged,
+  });
   final String tab;
   final int productsCount;
+  final int certCount;
+  final int inspCount;
   final ValueChanged<String> onChanged;
 
   @override
@@ -408,11 +492,16 @@ class _TabsHeader extends SliverPersistentHeaderDelegate {
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
       color: Theme.of(context).scaffoldBackgroundColor,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(children: [
-        _btn('products', 'Products ($productsCount)'),
-        _btn('about', 'About'),
-      ]),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(children: [
+          _btn('products', 'Products ($productsCount)'),
+          _btn('about', 'About'),
+          _btn('certifications', 'Certifications${certCount > 0 ? ' ($certCount)' : ''}'),
+          _btn('inspections', 'Inspections${inspCount > 0 ? ' ($inspCount)' : ''}'),
+        ]),
+      ),
     );
   }
 
@@ -440,5 +529,9 @@ class _TabsHeader extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(covariant _TabsHeader old) =>
-      old.tab != tab || old.productsCount != productsCount;
+      old.tab != tab ||
+      old.productsCount != productsCount ||
+      old.certCount != certCount ||
+      old.inspCount != inspCount;
 }
+
