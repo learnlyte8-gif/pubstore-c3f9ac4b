@@ -82,7 +82,7 @@ export default function Auth() {
         email: parsed.data,
         options: {
           shouldCreateUser: true,
-          emailRedirectTo: `${window.location.origin}/home`,
+          emailRedirectTo: `${window.location.origin}${redirectTo.startsWith("/") ? redirectTo : "/home"}`,
           data: Object.keys(metadata).length ? metadata : undefined,
         },
       });
