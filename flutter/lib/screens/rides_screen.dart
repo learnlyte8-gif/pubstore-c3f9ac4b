@@ -345,7 +345,8 @@ class _RidesScreenState extends State<RidesScreen> {
     final me = supabase.auth.currentUser?.id;
     final drv = r['driver_id'];
     if (me == null || drv == null) return;
-    final name = _offers.firstWhere((o) => o['driver_id'] == drv, orElse: () => const {'driver_name': 'Driver'})['driver_name'] ?? 'Driver';
+    final match = _offers.where((o) => o['driver_id'] == drv).toList();
+    final name = match.isNotEmpty ? '${match.first['driver_name'] ?? 'Driver'}' : 'Driver';
     await showRideRatingSheet(
       context,
       rideId: '${r['id']}',
