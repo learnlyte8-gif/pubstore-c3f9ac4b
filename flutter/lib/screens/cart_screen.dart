@@ -348,6 +348,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             'payment_status': _payMethod == _Pay.cod ? 'cod' : 'pending',
             'delivery_courier_user_id': opt?.courierUserId,
             'delivery_option_label': opt?.label,
+            'escrow_enabled': _escrow,
           })
           .select('id,ref_code')
           .single();
