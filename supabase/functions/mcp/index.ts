@@ -28,8 +28,8 @@ var search_products_default = defineTool({
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ query, category, limit }) => {
     const sb = anonClient();
-    let q = sb.from("products").select("id,title,price,category,supplier_id,image_url,moq").ilike("title", `%${query}%`).limit(limit);
-    if (category) q = q.eq("category", category);
+    let q = sb.from("products").select("id,title,price,category_slug,supplier_id,image_url,moq").ilike("title", `%${query}%`).limit(limit);
+    if (category) q = q.eq("category_slug", category);
     const { data, error } = await q;
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
     return {
