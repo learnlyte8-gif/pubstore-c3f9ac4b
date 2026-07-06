@@ -983,6 +983,7 @@ function EditProductView({ productId }: { productId: string }) {
         category_slug: form.category_slug,
         free_shipping: form.free_shipping,
         active: form.active,
+        video_url: form.video_url.trim() || null,
         updated_at: new Date().toISOString(),
       }).eq("id", productId);
       if (error) throw error;
