@@ -28,4 +28,16 @@ class Env {
   static const String appId = 'app.lovable.14b25a14b8c040f29b8231f038ad2828';
   static const String appName = 'PUBSTORE';
   static const String webBaseUrl = 'https://pubstore.app';
+
+  /// Google OAuth client IDs. On iOS the app uses the iOS client to obtain an
+  /// idToken; on Android the serverClientId is the Web client the Supabase
+  /// project trusts. Override with `--dart-define` for release builds.
+  static const String googleIosClientId = String.fromEnvironment(
+    'GOOGLE_IOS_CLIENT_ID',
+    defaultValue: '',
+  );
+  static const String googleWebClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+    defaultValue: '',
+  );
 }

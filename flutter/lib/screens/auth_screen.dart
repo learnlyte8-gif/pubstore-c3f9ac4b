@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/auth_service.dart';
+import '../services/push_service.dart';
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 
@@ -171,9 +172,30 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     }
   }
 
+  Future<void> _signInWithGoogle() async {
+    setState(() => _loading = true);
+    try {
+      final user = await authService.signInWithGoogle();
+      if (user == null) return; // user cancelled
+      _toast('Welcome to PUBSTORE 🎉');
+      await _routeForSession();
+    } catch (e) {
+      _toast(
+        e.toString().replaceAll('Exception: ', '').replaceAll('AuthException: ', ''),
+        error: true,
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   Future<void> _routeForSession() async {
     final user = supabase.auth.currentUser;
     if (user == null || !mounted) return;
+    // Register for push once we have a session (safe no-op if Firebase isn't
+    // configured in the host app or permission was denied).
+    // ignore: unawaited_futures
+    pushService.registerForCurrentUser();
     final profile = await supabase
         .from('profiles')
         .select('profile_completed')
@@ -272,6 +294,36 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           "We'll email you a 8-digit code — no password needed.",
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 11, color: AppColors.muted),
+        ),
+        const SizedBox(height: 20),
+        Row(children: const [
+          Expanded(child: Divider(color: AppColors.border)),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 10),
+            child: Text('or', style: TextStyle(fontSize: 11, color: AppColors.muted)),
+          ),
+          Expanded(child: Divider(color: AppColors.border)),
+        ]),
+        const SizedBox(height: 14),
+        SizedBox(
+          height: 48,
+          child: OutlinedButton.icon(
+            onPressed: _loading ? null : _signInWithGoogle,
+            icon: Image.network(
+              'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
+              width: 18,
+              height: 18,
+              errorBuilder: (_, __, ___) =>
+                  const Icon(Icons.g_mobiledata, size: 22),
+            ),
+            label: const Text('Continue with Google',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.foreground,
+              side: const BorderSide(color: AppColors.border),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
         ),
       ],
     );

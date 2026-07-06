@@ -77,10 +77,20 @@ Remaining bare `ListView(children: [...])` occurrences are static composed
 screens (settings, help, drawer, product-detail sections) with a fixed number
 of children — the intended pattern.
 
-## Notes / known deferrals
-- Google Sign-In on Flutter uses platform SDK config (not covered by this
-  parity migration).
-- Push notifications are wired via `push_subscriptions` on web only; native
-  Flutter push (FCM/APNs) is outside migration scope.
-- `admin_screen.dart` exposes moderation basics; deep admin analytics remain
-  web-only for now.
+## Previously-deferred items — now shipped
+- **Google Sign-In**: `auth_service.dart` exposes `signInWithGoogle()` using
+  `google_sign_in` + `supabase.auth.signInWithIdToken(OAuthProvider.google)`;
+  wired into `auth_screen.dart` with a "Continue with Google" button.
+  Requires `GOOGLE_IOS_CLIENT_ID` / `GOOGLE_WEB_CLIENT_ID` via `--dart-define`
+  and Google enabled in Lovable Cloud auth providers.
+- **Push notifications**: new `services/push_service.dart` initializes
+  Firebase, requests permission, and upserts the FCM/APNs token into
+  `public.push_subscriptions` (same table the web `send-push` function reads).
+  Called from `main()` and on every successful sign-in.
+- **Deep admin analytics**: `admin_screen.dart` rebuilt with 3 tabs
+  (Overview / Analytics / Moderation): 30-day revenue KPI + `fl_chart`
+  line-chart, top verticals by supplier count, recent orders list, and
+  inline approve/reject actions for pending KYC verifications.
+
+Nothing is deferred — every route in `src/App.tsx` has a fully functional
+Flutter counterpart wired to the same Lovable Cloud backend.
