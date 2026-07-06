@@ -299,6 +299,7 @@ export const mapProduct = (p: DbProduct | DbProductWithSupplier): Product => {
     title: p.title,
     image: p.image ?? PLACEHOLDER_IMG,
     gallery: p.gallery?.length ? p.gallery : [p.image ?? PLACEHOLDER_IMG],
+    videoUrl: p.video_url ?? null,
     price: Number(p.price),
     originalPrice: p.original_price != null ? Number(p.original_price) : undefined,
     rating: Number(p.rating ?? 0),
