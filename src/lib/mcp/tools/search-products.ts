@@ -25,7 +25,7 @@ export default defineTool({
     const sb = anonClient();
     let q = sb
       .from("products")
-      .select("id,title,price,category_slug,supplier_id,image_url,moq")
+      .select("id,title,price,category_slug,supplier_id,image,moq")
       .ilike("title", `%${query}%`)
       .limit(limit);
     if (category) q = q.eq("category_slug", category);
