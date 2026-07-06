@@ -263,6 +263,8 @@ class _SupplierScreenState extends State<SupplierScreen> {
           delegate: _TabsHeader(
             tab: _tab,
             productsCount: _products.length,
+            certCount: _certifications.length,
+            inspCount: _inspections.length,
             onChanged: (t) => setState(() => _tab = t),
           ),
         ),
@@ -275,6 +277,66 @@ class _SupplierScreenState extends State<SupplierScreen> {
                   ),
                 )
               : SliverToBoxAdapter(child: MasonryProductGrid(products: _products))
+        else if (_tab == 'certifications')
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: _certifications.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: Center(child: Text('No certifications on file.', style: TextStyle(color: AppColors.muted, fontSize: 13))),
+                    )
+                  : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                      for (final c in _certifications)
+                        _card((c['name'] ?? 'Certificate').toString(), LucideIcons.shieldCheck,
+                            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              if ((c['issuer'] ?? '').toString().isNotEmpty)
+                                _row('Issuer', c['issuer'].toString()),
+                              if ((c['certificate_number'] ?? '').toString().isNotEmpty)
+                                _row('Number', c['certificate_number'].toString()),
+                              if ((c['issued_date'] ?? '').toString().isNotEmpty)
+                                _row('Issued', c['issued_date'].toString()),
+                              if ((c['expiry_date'] ?? '').toString().isNotEmpty)
+                                _row('Expires', c['expiry_date'].toString()),
+                              if ((c['document_url'] ?? '').toString().isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: Text('View document', style: TextStyle(fontSize: 11, color: AppColors.primary, decoration: TextDecoration.underline)),
+                                ),
+                            ])),
+                      const SizedBox(height: 12),
+                    ]),
+            ),
+          )
+        else if (_tab == 'inspections')
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: _inspections.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: Center(child: Text('No inspection reports yet.', style: TextStyle(color: AppColors.muted, fontSize: 13))),
+                    )
+                  : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                      for (final r in _inspections)
+                        _card((r['title'] ?? 'Inspection report').toString(), LucideIcons.clipboardCheck,
+                            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              if ((r['inspector'] ?? '').toString().isNotEmpty)
+                                _row('Inspector', r['inspector'].toString()),
+                              if ((r['inspection_date'] ?? '').toString().isNotEmpty)
+                                _row('Date', r['inspection_date'].toString()),
+                              if (r['score'] != null) _row('Score', '${r['score']}'),
+                              if ((r['status'] ?? '').toString().isNotEmpty)
+                                _row('Status', r['status'].toString()),
+                              if ((r['summary'] ?? '').toString().isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: Text(r['summary'].toString(), style: const TextStyle(fontSize: 12, color: AppColors.muted, height: 1.4)),
+                                ),
+                            ])),
+                    ]),
+            ),
+          )
         else
           SliverToBoxAdapter(
             child: Padding(
