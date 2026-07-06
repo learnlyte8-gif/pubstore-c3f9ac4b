@@ -94,3 +94,24 @@ of children — the intended pattern.
 
 Nothing is deferred — every route in `src/App.tsx` has a fully functional
 Flutter counterpart wired to the same Lovable Cloud backend.
+
+## Store sub-screens ported (this batch)
+`StoreSection.tsx` (~4.4k LOC) mirrored into `flutter/lib/screens/`:
+
+- **`store_service_verticals.dart` (new)** — shared `ServiceShell`,
+  `FormSheet`, `LabeledInput`, `LabeledSelect`, `CoverPickerField`, plus
+  CRUD forms for all 11 service verticals and the Import view:
+  - Stays, Vehicles, Industrial, News (admin-gated), Driver profile,
+    Pros (service_providers), Properties, Courier / logistics
+    (with weight-tier & distance-discount JSON editors),
+    Finance, Car rentals (full eligibility/penalty/mileage/insurance
+    fields incl. `custom_penalties` JSON), Agro (including project mode
+    with funding goal/raised/status).
+  - **Import** view: single-URL flow (edge fn `import-product`) and bulk
+    flow (edge fn `import-list`) sharing the markup controls
+    (`percent` / `flat` / `none`) applied before insert.
+
+- **`store_section_screen.dart`** — router updated to dispatch every
+  `services/…` and `import` key to the new widgets; product/orders/
+  analytics/promote/reviews/profile/settings/shipping remain from the
+  previous batch.
