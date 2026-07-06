@@ -1,74 +1,75 @@
-# Flutter Parity Migration Plan
+## Goal
+Bring the Flutter `rides_screen.dart` to full parity with the web `src/pages/Rides.tsx` — same layout, same flow, same live data, same visuals adapted to mobile.
 
-Goal: bring the Flutter app to full feature parity with the web app (`src/pages/*`). Every screen, every action, every data flow that exists on web must exist and work in Flutter.
+## Current gap
+The current Flutter screen is a compact stub (~400 lines) with a fake "Live map" placeholder, 4 tab labels, a single request form, and a basic offers list. The web page is ~1,220 lines plus 5 supporting components (`RideMap`, `PoolPanel`, `RideChat`, `RideRating`, `ActiveRideMonitor`) with a real Leaflet map, place search, route alternatives, surge, shared trips, live radar, ratings, chat, and share.
 
-## Approach
+## Scope — features to port (matches web 1:1)
 
-Work in ordered batches. For each batch:
-1. Read the web page(s) in `src/pages/` + supporting hooks/components.
-2. Diff against the matching `flutter/lib/screens/*` file.
-3. Port missing UI sections, actions, Supabase queries, navigation, empty/error/loading (shimmer) states.
-4. Wire navigation from drawer, home, and cross-screen links.
-5. Verify: `flutter analyze` + spot-check by reading the resulting file.
-6. Report per batch: what was missing, what was added, what still needs backend work.
+**Map & geo**
+- Real interactive map (`flutter_map` + OSM tiles) with pickup / dropoff / me / driver / demand pins and shared-trip markers
+- Reverse-geocode + Nominatim place search (typeahead)
+- 3 route alternatives (fastest / balanced / scenic) drawn as polylines, tap-to-select
+- "Use my location" for pickup and dropoff, `watchPosition` while on active ride writing `rider_lat/lng`
 
-Rules kept throughout:
-- Reuse `Skeletons.*` for loading states (no spinners).
-- `ListView.builder` / `GridView.builder` for all lists.
-- Match web Supabase table/column names exactly (schema is source of truth).
-- Semantic tokens from `theme/palette.dart` — no hardcoded colors.
-- Keep `owner_id`, `image`, `active`, `moq`, `sold`, `text` conventions already fixed.
+**Ride flow (matches `rides` table + `ride_offers`)**
+- Rehydrate any in-flight ride for the signed-in user on mount
+- Vehicle classes: moto / economy / comfort / xl with per-class ETA, seats, gradient tone, fare multiplier
+- Fare = `suggestFare(distance, class) × surge`, editable with +/−
+- Surge derived from nearby driver supply
+- Insert into `rides`, seed simulated offers, live-subscribe `ride_offers`
+- Accept offer → update ride + reject siblings; cancel; start; complete → open rating modal
+- Share trip (native share sheet), swap pickup/drop
 
-## Batches (execution order)
+**Tabs**
+- Now (RequestPanel)
+- Schedule (info banner + same request panel; stores `scheduled_for`)
+- Pool (PoolPanel — nearby shared trips list + join)
+- Trips (past + current rides list)
 
-**Batch 1 — Shell & Navigation**
-- `root_shell.dart`, drawer, bottom nav, `splash_screen.dart`, `onboarding_screen.dart`, `auth_screen.dart`
-- Confirm every web route in `App.tsx` has a Flutter destination and drawer entry.
+**Sections below map (same order as web)**
+- Trip insight strip (Route km / ETA / CO₂ / saved $)
+- Trust perks row
+- Demand zones grid (static presets)
+- Saved & frequent shortcuts (Home / Work / Airport / Mall / Hospital) with `localStorage`-equivalent via `shared_preferences`
+- Live radar (nearby drivers list from `driver_locations` join `driver_profiles`)
 
-**Batch 2 — Home & Discovery**
-- `home_screen.dart` (feed, wallet header, new arrivals, verticals strip, stories, live rail)
-- `categories_screen.dart`, `search_screen.dart` (universal search), `news_screen.dart`
+**Overlays**
+- Active ride panel with driver card, live driver marker on map, ETA countdown, chat, cancel/start/complete
+- Ride rating modal on completion (writes `ride_ratings`)
 
-**Batch 3 — Product & Commerce Core**
-- `product_detail_screen.dart` (gallery, variants, tier prices, reviews, inquiry, group buy, share)
-- `cart_screen.dart`, `wishlist_screen.dart`, `compare_screen.dart`, `orders_screen.dart`, `pay_action_screen.dart`
+## Technical plan
 
-**Batch 4 — Supplier / Store**
-- `my_store_screen.dart`, `store_actions_screen.dart`, `store_section_screen.dart` (products, orders, inventory, settings, coupons, fulfilment)
-- `store_analytics_screen.dart`, `ads_dashboard_screen.dart`, `ad_campaign_wizard_screen.dart`
-- `become_supplier_screen.dart`, `supplier_screen.dart` (public storefront)
+**Packages to add** (`flutter/pubspec.yaml`):
+- `flutter_map`, `latlong2` (map + OSM tiles)
+- `share_plus` (native share)
+- `shared_preferences` (saved Home/Work)
+- `http` is already indirectly available via `supabase_flutter`; use it for Nominatim
 
-**Batch 5 — Verticals**
-- `stays`, `auto`, `car_rentals`, `industrial`, `agro`, `properties`, `services`, `logistics`, `finance`, `restaurants`, `rides`, `driver`
-- Each: list + filters + detail + booking/inquiry action, matching web.
+**New files**
+```
+flutter/lib/screens/rides/
+  ride_map.dart              // flutter_map wrapper, pickup/drop/me/drivers/demand/shared/routes
+  ride_request_panel.dart    // address inputs + typeahead, class picker, fare, submit
+  ride_active_panel.dart     // offers list, accept, driver card, start/complete/cancel, chat button
+  ride_pool_panel.dart       // shared trips near me + join sheet
+  ride_trips_panel.dart      // past/current rides
+  ride_rating_sheet.dart     // 1–5 star modal writing ride_ratings
+  ride_chat_sheet.dart       // realtime ride_messages
+  ride_data.dart             // suggestFare, haversine, buildRoutes, reverseGeocode, searchPlace
+```
 
-**Batch 6 — Jobs & Social**
-- `jobs_screen.dart`, `jobs_feed_screen.dart`, `jobs_network_screen.dart`, `jobs_profile_screen.dart`
-- `user_profile_screen.dart`, followers/following, post likes/comments.
+**Rewritten**: `flutter/lib/screens/rides_screen.dart` becomes the orchestrator — hero header, map, HUD chips (LIVE / SURGE / POOL / GPS), tab strip, panel switch, insight/perks/zones/shortcuts/radar sections, rating overlay.
 
-**Batch 7 — Messaging & Live**
-- `messages_screen.dart`, `thread_screen.dart` (attachments, quotes, ride/inquiry cards)
-- `live_screen.dart` (streams list, viewer, reactions, chat)
-- Tapson chatbot behaviour aligned with web `tapson-chat` responses.
+**Realtime**: subscribe to `rides` (own row), `ride_offers` (by ride_id), and a `rides` broadcast for demand pins — mirroring web.
 
-**Batch 8 — Account & Settings**
-- `profile_screen.dart`, `account`, `addresses_screen.dart`, `payment_methods_screen.dart`
-- `wallet_screen.dart` (topup, withdraw, ledger), `verification_screen.dart`
-- `settings_screen.dart` + `notification_preferences_screen.dart`, `privacy_screen.dart`, `help_center_screen.dart`, `unsubscribe_screen.dart`
+**Theming**: reuse the existing `rides-theme` palette on mobile via a local `RidesTheme` — dark glassy chips, mint accents, gradient class cards.
 
-**Batch 9 — Admin & Misc**
-- `admin_screen.dart`, `group_buy_detail_screen.dart`, `rfq_screen.dart`, notifications screen, splash polish.
+**Deep-link parity**: keep the existing `/rides` and `/rides/:id` routes; opening `/rides/:id` sets `activeRideId` and re-hydrates.
 
-**Batch 10 — Final QA sweep**
-- Route audit: every `App.tsx` `<Route>` has a Flutter equivalent reachable from UI.
-- Shimmer audit: no `CircularProgressIndicator` on screen-level loading.
-- List audit: all long lists use `.builder`.
-- Run `flutter analyze`; fix warnings.
-- Produce a parity checklist marking each web route ✅.
+## Non-goals
+- No new backend tables or edge functions — everything already exists (`rides`, `ride_offers`, `ride_messages`, `ride_ratings`, `shared_trips`, `driver_locations`, `driver_profiles`).
+- No changes to web behavior.
 
-## Deliverables per batch
-- Edited Flutter files.
-- Short "diff report" listing: features ported, features intentionally deferred (with reason), any new migrations needed.
-
-## Kickoff
-Reply "start" (or "start batch N") and I will begin executing top-down, one batch per turn, without stopping until every batch is complete or you tell me to pause.
+## Delivery
+One pass. At the end I'll list every changed/created file and note anything that requires the user to run `flutter pub get` locally.
