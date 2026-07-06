@@ -1156,15 +1156,17 @@ function NewProductView() {
       const { urls, failed } = await uploadProductImages(files, { userId: user.id });
       if (failed.length) {
         toast.error(`${failed.length} photo(s) failed: ${failed.map((f) => f.reason).join(", ")}`);
-        if (urls.length === 0 && files.length > 0) { setSubmitting(false); return; }
+        if (urls.length === 0 && files.length > 0 && urlImages.length === 0) { setSubmitting(false); return; }
       }
+      const finalGallery = [...urls, ...urlImages];
 
       const { data: product, error } = await supabase.from("products").insert({
         supplier_id: supplier.id,
         title: form.title.trim(),
         description: form.description.trim() || null,
-        image: urls[0] ?? null,
-        gallery: urls,
+        image: finalGallery[0] ?? null,
+        gallery: finalGallery,
+        video_url: form.video_url.trim() || null,
         price: Number(form.price),
         original_price: form.original_price ? Number(form.original_price) : null,
         moq: Number(form.moq) || 1,
