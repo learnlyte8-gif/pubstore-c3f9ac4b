@@ -173,9 +173,11 @@ class _ProductCardState extends State<ProductCard> {
             right: compact ? 6 : 8,
             child: Row(
               children: [
-                _roundIcon(LucideIcons.send, widget.onShare),
+                _roundIcon(LucideIcons.send, widget.onShare ?? _defaultShare),
                 SizedBox(width: compact ? 4 : 6),
-                _roundIcon(LucideIcons.heart, widget.onWishlist),
+                _roundIcon(LucideIcons.users, widget.onGroupBuy ?? _defaultGroupBuy),
+                SizedBox(width: compact ? 4 : 6),
+                _roundIcon(LucideIcons.heart, widget.onWishlist ?? _defaultWishlist),
               ],
             ),
           ),
