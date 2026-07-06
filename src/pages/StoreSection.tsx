@@ -1045,10 +1045,38 @@ function EditProductView({ productId }: { productId: string }) {
             </button>
           )}
         </div>
+        <div className="flex gap-2 mt-2">
+          <input
+            value={imageUrlInput}
+            onChange={(e) => setImageUrlInput(e.target.value)}
+            placeholder="Paste image URL (https://…)"
+            className="flex-1 h-10 rounded-xl border bg-background px-3 text-sm"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className="h-10"
+            onClick={() => {
+              const u = imageUrlInput.trim();
+              if (!/^https?:\/\//i.test(u)) { toast.error("Enter a valid https:// image URL"); return; }
+              if (gallery.includes(u)) { toast("Already added"); return; }
+              setGallery((g) => [...g, u]);
+              setImageUrlInput("");
+            }}
+          >
+            <Link2 className="w-4 h-4 mr-1" /> Add URL
+          </Button>
+        </div>
       </div>
 
       <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Product title *" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
       <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description" rows={4} className="w-full rounded-xl border bg-background p-4 text-sm" />
+      <input
+        value={form.video_url}
+        onChange={(e) => setForm({ ...form, video_url: e.target.value })}
+        placeholder="Video URL (MP4/WebM or YouTube/Vimeo link)"
+        className="w-full h-12 rounded-xl border bg-background px-4 text-sm"
+      />
       <div className="grid grid-cols-2 gap-3">
         <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="Price *" type="number" step="0.01" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
         <input value={form.original_price} onChange={(e) => setForm({ ...form, original_price: e.target.value })} placeholder="Original price" type="number" step="0.01" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
