@@ -228,8 +228,7 @@ class _JobsScreenState extends State<JobsScreen> {
               foregroundColor: AppColors.foreground,
               padding: const EdgeInsets.symmetric(horizontal: 12),
             ),
-            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Post-a-job flow coming soon'))),
+            onPressed: _openPostJob,
             icon: const Icon(LucideIcons.plus, size: 14),
             label: const Text('Post', style: TextStyle(fontSize: 12)),
           ),
