@@ -123,6 +123,49 @@ class _SearchScreenState extends State<SearchScreen> {
     _run(v);
   }
 
+  Future<void> _imageSearch() async {
+    try {
+      final picker = ImagePicker();
+      final file = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        imageQuality: 80,
+      );
+      if (file == null) return;
+      final bytes = await file.readAsBytes();
+      final dataUrl = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+      if (!mounted) return;
+      setState(() => _loading = true);
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+      final res = await supabase.functions.invoke('image-search', body: {'image': dataUrl});
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      final data = res.data as Map<String, dynamic>?;
+      final keywords = (data?['keywords'] as String?)?.trim() ?? '';
+      if (keywords.isEmpty) {
+        if (mounted) {
+          setState(() => _loading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not recognize the image')),
+          );
+        }
+        return;
+      }
+      _submit(keywords);
+    } catch (e) {
+      if (mounted) Navigator.of(context, rootNavigator: true).maybePop();
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Image search failed: $e')),
+        );
+      }
+    }
+  }
+
   Future<void> _run(String q) async {
     setState(() => _loading = true);
     final like = '%${q.replaceAll(RegExp(r'[%,]+'), ' ').trim()}%';
