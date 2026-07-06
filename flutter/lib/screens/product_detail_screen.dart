@@ -544,6 +544,32 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     );
   }
 
+  Widget _socialAction({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    Color? accent,
+  }) {
+    final color = accent ?? AppColors.foreground;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(height: 4),
+          Text(label,
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: color)),
+        ]),
+      ),
+    );
+  }
+
   Widget _stepBtn(IconData icon, VoidCallback onTap) => InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(6),
