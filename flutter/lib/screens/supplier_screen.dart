@@ -470,9 +470,17 @@ class _SupplierScreenState extends State<SupplierScreen> {
 }
 
 class _TabsHeader extends SliverPersistentHeaderDelegate {
-  _TabsHeader({required this.tab, required this.productsCount, required this.onChanged});
+  _TabsHeader({
+    required this.tab,
+    required this.productsCount,
+    required this.certCount,
+    required this.inspCount,
+    required this.onChanged,
+  });
   final String tab;
   final int productsCount;
+  final int certCount;
+  final int inspCount;
   final ValueChanged<String> onChanged;
 
   @override
@@ -484,11 +492,16 @@ class _TabsHeader extends SliverPersistentHeaderDelegate {
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
       color: Theme.of(context).scaffoldBackgroundColor,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(children: [
-        _btn('products', 'Products ($productsCount)'),
-        _btn('about', 'About'),
-      ]),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(children: [
+          _btn('products', 'Products ($productsCount)'),
+          _btn('about', 'About'),
+          _btn('certifications', 'Certifications${certCount > 0 ? ' ($certCount)' : ''}'),
+          _btn('inspections', 'Inspections${inspCount > 0 ? ' ($inspCount)' : ''}'),
+        ]),
+      ),
     );
   }
 
@@ -516,5 +529,9 @@ class _TabsHeader extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(covariant _TabsHeader old) =>
-      old.tab != tab || old.productsCount != productsCount;
+      old.tab != tab ||
+      old.productsCount != productsCount ||
+      old.certCount != certCount ||
+      old.inspCount != inspCount;
 }
+
