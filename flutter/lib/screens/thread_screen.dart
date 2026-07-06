@@ -527,6 +527,24 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
       builder: (_) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           ListTile(
+            leading: const Icon(LucideIcons.image, color: AppColors.primary),
+            title: const Text('Photo',
+                style: TextStyle(color: AppColors.foreground, fontWeight: FontWeight.w700)),
+            onTap: () async {
+              Navigator.pop(context);
+              await _pickAndSendImage(fromCamera: false);
+            },
+          ),
+          ListTile(
+            leading: const Icon(LucideIcons.camera, color: AppColors.primary),
+            title: const Text('Camera',
+                style: TextStyle(color: AppColors.foreground, fontWeight: FontWeight.w700)),
+            onTap: () async {
+              Navigator.pop(context);
+              await _pickAndSendImage(fromCamera: true);
+            },
+          ),
+          ListTile(
             leading: const Icon(LucideIcons.heart, color: AppColors.destructive),
             title: const Text('Share my wishlist',
                 style: TextStyle(color: AppColors.foreground, fontWeight: FontWeight.w700)),
@@ -543,6 +561,204 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
               Navigator.pop(context);
               await _pickAndShareWishlistProduct();
             },
+          ),
+        ]),
+      ),
+    );
+  }
+
+  // ── New: image upload ──────────────────────────────────────────────
+  Future<void> _pickAndSendImage({required bool fromCamera}) async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) return;
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: fromCamera ? ImageSource.camera : ImageSource.gallery,
+        maxWidth: 2000,
+        imageQuality: 82,
+      );
+      if (picked == null) return;
+      final file = File(picked.path);
+      final ext = picked.path.split('.').last.toLowerCase();
+      final path =
+          '${widget.conversation.id}/${DateTime.now().millisecondsSinceEpoch}.$ext';
+      await supabase.storage.from('chat-media').uploadBinary(
+            path,
+            await file.readAsBytes(),
+            fileOptions: FileOptions(
+                contentType: 'image/$ext', upsert: false),
+          );
+      final url = supabase.storage.from('chat-media').getPublicUrl(path);
+      final att = ChatAttachment(kind: 'image', data: {'url': url});
+      await messagesService.insertMessage(
+        conversationId: widget.conversation.id,
+        senderId: uid,
+        body: '',
+        attachment: att,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+      }
+    }
+  }
+
+  // ── New: forward ───────────────────────────────────────────────────
+  Future<void> _forwardMessage(ChatMessage m) async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) return;
+    List<Map<String, dynamic>> convs = const [];
+    try {
+      final rows = await supabase
+          .from('conversations')
+          .select('id, title, last_message, buyer_id, supplier_id')
+          .order('last_message_at', ascending: false)
+          .limit(50);
+      convs = (rows as List)
+          .map((r) => Map<String, dynamic>.from(r as Map))
+          .where((c) => c['id'] != widget.conversation.id)
+          .toList();
+    } catch (_) {}
+    if (!mounted || convs.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No other conversations to forward to')));
+      }
+      return;
+    }
+    final picked = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      backgroundColor: AppColors.background,
+      builder: (_) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Text('Forward to…',
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.foreground)),
+          ),
+          Flexible(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: convs.length,
+              itemBuilder: (_, i) {
+                final c = convs[i];
+                return ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: AppColors.mutedSurface,
+                    child: Icon(LucideIcons.messageCircle, size: 14),
+                  ),
+                  title: Text(c['title']?.toString() ?? 'Conversation',
+                      style: const TextStyle(color: AppColors.foreground)),
+                  subtitle: Text(c['last_message']?.toString() ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: AppColors.muted)),
+                  onTap: () => Navigator.pop(context, c),
+                );
+              },
+            ),
+          ),
+        ]),
+      ),
+    );
+    if (picked == null) return;
+    try {
+      await messagesService.insertMessage(
+        conversationId: picked['id'] as String,
+        senderId: uid,
+        body: m.body,
+        attachment: m.attachment,
+        forwarded: true,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Forwarded')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Forward failed: $e')));
+      }
+    }
+  }
+
+  // ── New: calls ─────────────────────────────────────────────────────
+  Future<String?> _peerPhone() async {
+    final peerId = widget.conversation.peerUserId;
+    if (peerId == null) return null;
+    try {
+      final row = await supabase
+          .from('profiles')
+          .select('phone, whatsapp')
+          .eq('user_id', peerId)
+          .maybeSingle();
+      final p = (row?['whatsapp'] ?? row?['phone']) as String?;
+      return p?.trim();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _callPeer() async {
+    final phone = await _peerPhone();
+    if (phone == null || phone.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No phone number on file')));
+      }
+      return;
+    }
+    final uri = Uri.parse('tel:$phone');
+    if (!await launchUrl(uri)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not start call')));
+      }
+    }
+  }
+
+  Future<void> _videoCallPeer() async {
+    final phone = await _peerPhone();
+    if (phone == null || phone.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No number on file for video call')));
+      }
+      return;
+    }
+    // WhatsApp video call deep link (works if WhatsApp is installed and number is normalized).
+    final normalized = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    final uri = Uri.parse('https://wa.me/$normalized?call=video');
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open video call')));
+      }
+    }
+  }
+
+  Future<void> _openThreadMenu() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.background,
+      builder: (_) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(
+            leading: const Icon(LucideIcons.bellOff, color: AppColors.muted),
+            title: const Text('Mute notifications',
+                style: TextStyle(color: AppColors.foreground)),
+            onTap: () => Navigator.pop(context),
+          ),
+          ListTile(
+            leading: const Icon(LucideIcons.flag, color: AppColors.destructive),
+            title: const Text('Report',
+                style: TextStyle(color: AppColors.destructive)),
+            onTap: () => Navigator.pop(context),
           ),
         ]),
       ),
