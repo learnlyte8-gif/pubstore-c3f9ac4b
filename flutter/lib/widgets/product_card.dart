@@ -80,6 +80,53 @@ class _ProductCardState extends State<ProductCard> {
         if (product.gallery.isEmpty && product.image != null) product.image!,
       ].where((v) => v.isNotEmpty && v != '/placeholder.svg').toSet().toList();
 
+  void _defaultShare() {
+    final att = ChatAttachment(kind: 'product', data: {
+      'id': product.id,
+      'title': product.title,
+      'price': product.price,
+      'image': product.image ?? (product.gallery.isNotEmpty ? product.gallery.first : null),
+      'supplierId': product.supplierId,
+    });
+    showShareToChatSheet(context, attachment: att);
+  }
+
+  Future<void> _defaultWishlist() async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in to save to your wishlist.')));
+      return;
+    }
+    try {
+      final existing = await supabase.from('wishlist_items')
+          .select('user_id').eq('user_id', uid).eq('product_id', product.id).maybeSingle();
+      if (existing != null) {
+        await supabase.from('wishlist_items').delete()
+            .eq('user_id', uid).eq('product_id', product.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Removed from wishlist')));
+        }
+      } else {
+        await supabase.from('wishlist_items')
+            .insert({'user_id': uid, 'product_id': product.id});
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Added to wishlist')));
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Wishlist error: $e')));
+      }
+    }
+  }
+
+  void _defaultGroupBuy() => showGroupBuyStartSheet(context, product);
+
+
   String _fmtPrice(num n) => '\$${n.toStringAsFixed(2)}';
 
   String _fmtSold(int n) => n >= 1000
