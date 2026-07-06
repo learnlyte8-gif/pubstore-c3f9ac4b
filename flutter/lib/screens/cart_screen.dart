@@ -403,7 +403,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         final created = await _createOrders(user.id, 'placed');
         if (_payMethod == _Pay.wallet) {
           for (final o in created) {
-            await supabase.rpc('pay_order_from_wallet', params: {'_order_id': o['id']});
+            await supabase.rpc('pay_order_with_wallet', params: {'_order_id': o['id']});
           }
           await ref.read(walletBalanceProvider.notifier).refresh();
         }
