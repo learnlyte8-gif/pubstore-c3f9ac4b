@@ -935,6 +935,7 @@ function EditProductView({ productId }: { productId: string }) {
       category_slug: product.category_slug ?? "electronics",
       free_shipping: !!product.free_shipping,
       active: product.active !== false,
+      video_url: (product as any).video_url ?? "",
     });
     const g: string[] = Array.isArray(product.gallery) ? product.gallery.filter(Boolean) : [];
     if (g.length === 0 && product.image) g.push(product.image);
