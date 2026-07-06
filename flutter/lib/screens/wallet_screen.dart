@@ -257,6 +257,10 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                     padding: const EdgeInsets.only(bottom: 40),
                     children: [
                       _hero(s),
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+                        child: _LoyaltyCard(),
+                      ),
                       if (_withdrawals.isNotEmpty) _withdrawalsCard(),
                       _addMoneyCard(),
                       if (_manualCfg != null && _manualCfg!['enabled'] == true) _manualCard(),
