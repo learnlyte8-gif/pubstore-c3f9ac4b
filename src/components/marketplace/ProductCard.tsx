@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Heart, Star, Plus, Truck, ShieldCheck, Award, Timer, Package, MapPin, Map as MapIcon, CreditCard, Smartphone, Wallet, Banknote, Send, Sparkles } from "lucide-react";
+import { Heart, Star, Plus, Truck, ShieldCheck, Award, Timer, Package, MapPin, Map as MapIcon, CreditCard, Smartphone, Wallet, Banknote, Send, Sparkles, Play } from "lucide-react";
 import { toast } from "sonner";
 import { type Product, discountPct } from "@/data/products";
 import { useShop } from "@/store/shop";
@@ -152,27 +152,50 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
   };
 
   const images = (product.gallery && product.gallery.length > 0 ? product.gallery : [product.image]).filter(Boolean) as string[];
+  const videoUrl = product.videoUrl ?? null;
+  const isPlayableVideoFile = !!videoUrl && /\.(mp4|webm|ogg|mov|m4v)(\?|#|$)/i.test(videoUrl);
+  const hasVideoBadge = !!videoUrl;
   const [slideIdx, setSlideIdx] = useState(0);
   useEffect(() => {
-    if (images.length < 2) return;
+    if (isPlayableVideoFile || images.length < 2) return;
     const t = setInterval(() => setSlideIdx((i) => (i + 1) % images.length), 2000);
     return () => clearInterval(t);
-  }, [images.length]);
+  }, [images.length, isPlayableVideoFile]);
 
   if (variant === "compact") {
     return (
       <>
       <Link to={`/product/${product.id}`} onClick={() => logProductClick(product, "card-compact")} className="shrink-0 w-36 group block">
         <div className="relative aspect-square rounded-xl overflow-hidden bg-muted shadow-card group-hover:shadow-elevated transition">
-          {images.map((src, i) => (
-            <img
-              key={i}
-              src={src}
-              alt={product.title}
-              loading="lazy"
-              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === slideIdx ? "opacity-100" : "opacity-0"}`}
+          {isPlayableVideoFile ? (
+            <video
+              src={videoUrl!}
+              poster={images[0]}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              className="absolute inset-0 w-full h-full object-cover"
             />
-          ))}
+          ) : (
+            images.map((src, i) => (
+              <img
+                key={i}
+                src={src}
+                alt={product.title}
+                loading="lazy"
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === slideIdx ? "opacity-100" : "opacity-0"}`}
+              />
+            ))
+          )}
+          {hasVideoBadge && !isPlayableVideoFile && (
+            <span className="absolute inset-0 flex items-center justify-center bg-black/25 pointer-events-none">
+              <span className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center">
+                <Play className="w-4 h-4 fill-current text-foreground" />
+              </span>
+            </span>
+          )}
           {off > 0 && (
             <span className="absolute top-1.5 left-1.5 bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded">
               -{off}%
@@ -259,15 +282,35 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
       className="group rounded-xl overflow-hidden bg-card border border-border shadow-card hover:shadow-elevated hover:-translate-y-0.5 transition block"
     >
       <div className="relative aspect-square bg-muted overflow-hidden">
-        {images.map((src, i) => (
-          <img
-            key={i}
-            src={src}
-            alt={product.title}
-            loading="lazy"
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === slideIdx ? "opacity-100" : "opacity-0"}`}
+        {isPlayableVideoFile ? (
+          <video
+            src={videoUrl!}
+            poster={images[0]}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            className="absolute inset-0 w-full h-full object-cover"
           />
-        ))}
+        ) : (
+          images.map((src, i) => (
+            <img
+              key={i}
+              src={src}
+              alt={product.title}
+              loading="lazy"
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === slideIdx ? "opacity-100" : "opacity-0"}`}
+            />
+          ))
+        )}
+        {hasVideoBadge && !isPlayableVideoFile && (
+          <span className="absolute inset-0 flex items-center justify-center bg-black/25 pointer-events-none">
+            <span className="w-11 h-11 rounded-full bg-white/90 flex items-center justify-center shadow-soft">
+              <Play className="w-5 h-5 fill-current text-foreground" />
+            </span>
+          </span>
+        )}
         {displayBadge && badgeStyle[displayBadge as NonNullable<Product["badge"]>] && (
           <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded ${badgeStyle[displayBadge as NonNullable<Product["badge"]>]}`}>
             {displayBadge}

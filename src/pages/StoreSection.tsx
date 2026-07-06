@@ -913,10 +913,12 @@ function EditProductView({ productId }: { productId: string }) {
     title: "", description: "", price: "", original_price: "",
     moq: "1", unit: "piece", lead_time: "", ship_from: "",
     category_slug: "electronics", free_shipping: false, active: true,
+    video_url: "",
   });
   const [gallery, setGallery] = useState<string[]>([]);
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const [newPreviews, setNewPreviews] = useState<string[]>([]);
+  const [imageUrlInput, setImageUrlInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -934,6 +936,7 @@ function EditProductView({ productId }: { productId: string }) {
       category_slug: product.category_slug ?? "electronics",
       free_shipping: !!product.free_shipping,
       active: product.active !== false,
+      video_url: (product as any).video_url ?? "",
     });
     const g: string[] = Array.isArray(product.gallery) ? product.gallery.filter(Boolean) : [];
     if (g.length === 0 && product.image) g.push(product.image);
@@ -981,6 +984,7 @@ function EditProductView({ productId }: { productId: string }) {
         category_slug: form.category_slug,
         free_shipping: form.free_shipping,
         active: form.active,
+        video_url: form.video_url.trim() || null,
         updated_at: new Date().toISOString(),
       }).eq("id", productId);
       if (error) throw error;
@@ -1041,10 +1045,38 @@ function EditProductView({ productId }: { productId: string }) {
             </button>
           )}
         </div>
+        <div className="flex gap-2 mt-2">
+          <input
+            value={imageUrlInput}
+            onChange={(e) => setImageUrlInput(e.target.value)}
+            placeholder="Paste image URL (https://…)"
+            className="flex-1 h-10 rounded-xl border bg-background px-3 text-sm"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className="h-10"
+            onClick={() => {
+              const u = imageUrlInput.trim();
+              if (!/^https?:\/\//i.test(u)) { toast.error("Enter a valid https:// image URL"); return; }
+              if (gallery.includes(u)) { toast("Already added"); return; }
+              setGallery((g) => [...g, u]);
+              setImageUrlInput("");
+            }}
+          >
+            <Link2 className="w-4 h-4 mr-1" /> Add URL
+          </Button>
+        </div>
       </div>
 
       <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Product title *" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
       <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description" rows={4} className="w-full rounded-xl border bg-background p-4 text-sm" />
+      <input
+        value={form.video_url}
+        onChange={(e) => setForm({ ...form, video_url: e.target.value })}
+        placeholder="Video URL (MP4/WebM or YouTube/Vimeo link)"
+        className="w-full h-12 rounded-xl border bg-background px-4 text-sm"
+      />
       <div className="grid grid-cols-2 gap-3">
         <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="Price *" type="number" step="0.01" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
         <input value={form.original_price} onChange={(e) => setForm({ ...form, original_price: e.target.value })} placeholder="Original price" type="number" step="0.01" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
@@ -1088,11 +1120,14 @@ function NewProductView() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [urlImages, setUrlImages] = useState<string[]>([]);
+  const [imageUrlInput, setImageUrlInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     title: "", description: "", price: "", original_price: "",
     moq: "1", unit: "piece", lead_time: "7-15 days", ship_from: "",
     category_slug: "electronics", free_shipping: false,
+    video_url: "",
   });
   const { data: cats = [] } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
 
@@ -1121,15 +1156,17 @@ function NewProductView() {
       const { urls, failed } = await uploadProductImages(files, { userId: user.id });
       if (failed.length) {
         toast.error(`${failed.length} photo(s) failed: ${failed.map((f) => f.reason).join(", ")}`);
-        if (urls.length === 0 && files.length > 0) { setSubmitting(false); return; }
+        if (urls.length === 0 && files.length > 0 && urlImages.length === 0) { setSubmitting(false); return; }
       }
+      const finalGallery = [...urls, ...urlImages];
 
       const { data: product, error } = await supabase.from("products").insert({
         supplier_id: supplier.id,
         title: form.title.trim(),
         description: form.description.trim() || null,
-        image: urls[0] ?? null,
-        gallery: urls,
+        image: finalGallery[0] ?? null,
+        gallery: finalGallery,
+        video_url: form.video_url.trim() || null,
         price: Number(form.price),
         original_price: form.original_price ? Number(form.original_price) : null,
         moq: Number(form.moq) || 1,
@@ -1156,24 +1193,32 @@ function NewProductView() {
   return (
     <form onSubmit={submit} className="px-4 py-4 space-y-4">
       <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => onFiles(e.target.files)} />
-      {previews.length === 0 ? (
+      {previews.length === 0 && urlImages.length === 0 ? (
         <button type="button" onClick={() => fileRef.current?.click()} className="w-full aspect-video rounded-2xl border-2 border-dashed bg-muted/40 flex flex-col items-center justify-center gap-2 text-muted-foreground">
           <ImageIcon className="w-8 h-8" />
           <p className="text-sm font-bold">Upload product photos</p>
-          <p className="text-[11px]">JPG/PNG · up to 6 images · 10MB each</p>
+          <p className="text-[11px]">JPG/PNG · up to 6 images · 10MB each — or paste image URLs below</p>
         </button>
       ) : (
         <div>
           <div className="grid grid-cols-3 gap-2">
             {previews.map((src, i) => (
-              <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-muted">
+              <div key={`f-${i}`} className="relative aspect-square rounded-xl overflow-hidden bg-muted">
                 <img src={src} alt="" className="w-full h-full object-cover" />
                 <button type="button" onClick={() => removeAt(i)} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-foreground/70 text-background flex items-center justify-center">
                   <X className="w-3 h-3" />
                 </button>
               </div>
             ))}
-            {previews.length < 6 && (
+            {urlImages.map((src, i) => (
+              <div key={`u-${i}`} className="relative aspect-square rounded-xl overflow-hidden bg-muted ring-1 ring-border">
+                <img src={src} alt="" className="w-full h-full object-cover" />
+                <button type="button" onClick={() => setUrlImages((p) => p.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-foreground/70 text-background flex items-center justify-center">
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+            {previews.length + urlImages.length < 8 && (
               <button type="button" onClick={() => fileRef.current?.click()} className="aspect-square rounded-xl border-2 border-dashed bg-muted/40 flex items-center justify-center text-muted-foreground">
                 <Plus className="w-5 h-5" />
               </button>
@@ -1182,8 +1227,37 @@ function NewProductView() {
         </div>
       )}
 
+      <div className="flex gap-2">
+        <input
+          value={imageUrlInput}
+          onChange={(e) => setImageUrlInput(e.target.value)}
+          placeholder="Paste image URL (https://…)"
+          className="flex-1 h-10 rounded-xl border bg-background px-3 text-sm"
+        />
+        <Button
+          type="button"
+          variant="outline"
+          className="h-10"
+          onClick={() => {
+            const u = imageUrlInput.trim();
+            if (!/^https?:\/\//i.test(u)) { toast.error("Enter a valid https:// image URL"); return; }
+            if (urlImages.includes(u)) { toast("Already added"); return; }
+            setUrlImages((p) => [...p, u]);
+            setImageUrlInput("");
+          }}
+        >
+          <Link2 className="w-4 h-4 mr-1" /> Add URL
+        </Button>
+      </div>
+
       <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Product title *" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
       <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description" rows={4} className="w-full rounded-xl border bg-background p-4 text-sm" />
+      <input
+        value={form.video_url}
+        onChange={(e) => setForm({ ...form, video_url: e.target.value })}
+        placeholder="Video URL (MP4/WebM or YouTube/Vimeo link)"
+        className="w-full h-12 rounded-xl border bg-background px-4 text-sm"
+      />
       <div className="grid grid-cols-2 gap-3">
         <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="Price *" type="number" step="0.01" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
         <input value={form.original_price} onChange={(e) => setForm({ ...form, original_price: e.target.value })} placeholder="Original price" type="number" step="0.01" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />

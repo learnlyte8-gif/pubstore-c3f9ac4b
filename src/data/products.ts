@@ -69,6 +69,8 @@ export type Product = {
   title: string;
   image: string;
   gallery?: string[];
+  /** Optional product video (mp4/webm URL or YouTube/Vimeo link). */
+  videoUrl?: string | null;
   price: number;
   originalPrice?: number;
   rating: number;
@@ -238,6 +240,7 @@ type DbProduct = {
   ad_has_reel?: boolean | null;
   ad_headline?: string | null;
   ad_tagline?: string | null;
+  video_url?: string | null;
 };
 
 
@@ -296,6 +299,7 @@ export const mapProduct = (p: DbProduct | DbProductWithSupplier): Product => {
     title: p.title,
     image: p.image ?? PLACEHOLDER_IMG,
     gallery: p.gallery?.length ? p.gallery : [p.image ?? PLACEHOLDER_IMG],
+    videoUrl: p.video_url ?? null,
     price: Number(p.price),
     originalPrice: p.original_price != null ? Number(p.original_price) : undefined,
     rating: Number(p.rating ?? 0),
@@ -376,7 +380,7 @@ export async function fetchProducts(opts: {
     // Narrow the column set so we never pull large `description`/`specs` blobs
     // for list views — list cards only need a handful of fields.
     .select(
-      "id, supplier_id, title, image, gallery, price, original_price, category_slug, badge, free_shipping, moq, unit, lead_time, ship_from, rating, review_count, sold, deal_ends_at, ad_has_reel, ad_headline, ad_tagline, suppliers!inner(name, verified, gold, country, location_address, latitude, longitude, trade_type)"
+      "id, supplier_id, title, image, gallery, video_url, price, original_price, category_slug, badge, free_shipping, moq, unit, lead_time, ship_from, rating, review_count, sold, deal_ends_at, ad_has_reel, ad_headline, ad_tagline, suppliers!inner(name, verified, gold, country, location_address, latitude, longitude, trade_type)"
     )
     .eq("active", true);
   if (opts.category) q = q.eq("category_slug", opts.category);
