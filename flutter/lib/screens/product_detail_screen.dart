@@ -102,7 +102,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       if (mounted) setState(() => _hasInquired = false);
     }
     // Realtime: unlock as soon as supplier flips status to approved.
-    _inqCh?.let((c) {}); // no-op
+    if (_inqCh != null) {
+      try { supabase.removeChannel(_inqCh!); } catch (_) {}
+      _inqCh = null;
+    }
     try {
       _inqCh = supabase
           .channel('inq:$productId')
