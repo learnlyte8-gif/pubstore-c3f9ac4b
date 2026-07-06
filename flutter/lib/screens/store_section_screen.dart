@@ -11,6 +11,7 @@ import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../widgets/skeletons.dart';
 import 'product_detail_screen.dart';
+import 'store_service_verticals.dart' as vert;
 
 /// Mirrors `src/pages/StoreSection.tsx` — supplier section router with
 /// full-parity CRUD for Products, Orders, Analytics, Promotions (coupons),
