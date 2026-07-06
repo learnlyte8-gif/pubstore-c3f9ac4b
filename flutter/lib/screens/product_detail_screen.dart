@@ -47,6 +47,12 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   _Tab _tab = _Tab.specs;
   bool _loading = true;
 
+  // Inquiry gate state — mirrors src/pages/ProductDetail.tsx.
+  String? _buyerId;
+  bool? _hasInquired; // null = loading; true = approved (not expired); false = gated
+  RealtimeChannel? _inqCh;
+  static const int _inquiryTtlMs = 30 * 24 * 60 * 60 * 1000;
+
   late final PageController _pageCtl = PageController();
 
   @override
