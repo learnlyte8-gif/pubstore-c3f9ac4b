@@ -167,15 +167,35 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
       <>
       <Link to={`/product/${product.id}`} onClick={() => logProductClick(product, "card-compact")} className="shrink-0 w-36 group block">
         <div className="relative aspect-square rounded-xl overflow-hidden bg-muted shadow-card group-hover:shadow-elevated transition">
-          {images.map((src, i) => (
-            <img
-              key={i}
-              src={src}
-              alt={product.title}
-              loading="lazy"
-              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === slideIdx ? "opacity-100" : "opacity-0"}`}
+          {isPlayableVideoFile ? (
+            <video
+              src={videoUrl!}
+              poster={images[0]}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              className="absolute inset-0 w-full h-full object-cover"
             />
-          ))}
+          ) : (
+            images.map((src, i) => (
+              <img
+                key={i}
+                src={src}
+                alt={product.title}
+                loading="lazy"
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === slideIdx ? "opacity-100" : "opacity-0"}`}
+              />
+            ))
+          )}
+          {hasVideoBadge && !isPlayableVideoFile && (
+            <span className="absolute inset-0 flex items-center justify-center bg-black/25 pointer-events-none">
+              <span className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center">
+                <Play className="w-4 h-4 fill-current text-foreground" />
+              </span>
+            </span>
+          )}
           {off > 0 && (
             <span className="absolute top-1.5 left-1.5 bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded">
               -{off}%
