@@ -53,6 +53,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _scroll = ScrollController();
   final List<Product> _products = [];
   String? _activeSubcat;
+  String _tradeMode = 'all'; // all | retail | wholesale
   int _page = 0;
   bool _loading = false;
   bool _done = false;
