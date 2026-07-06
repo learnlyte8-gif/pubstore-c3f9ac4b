@@ -250,9 +250,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         child: MasonryProductGrid(
                           products: _activeSubcat == null
                               ? _products
-                              : _products.where((p) =>
-                                  (p.subcategory ?? '').toLowerCase() == _activeSubcat!.toLowerCase()
-                                ).toList(),
+                              : _products.where((p) {
+                                  final label = (p.badge != null && p.badge!.isNotEmpty)
+                                      ? p.badge!
+                                      : (p.category ?? 'Other');
+                                  return label == _activeSubcat;
+                                }).toList(),
                           onTap: _openProduct,
                           onAdd: (p) {
                             ref.read(cartProvider.notifier).add(p);
