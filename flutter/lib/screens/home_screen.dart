@@ -248,15 +248,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         ),
                       SliverToBoxAdapter(
+                        child: _TradeModeSwitch(
+                          mode: _tradeMode,
+                          onChanged: (v) => setState(() => _tradeMode = v),
+                        ),
+                      ),
+                      SliverToBoxAdapter(
                         child: MasonryProductGrid(
-                          products: _activeSubcat == null
-                              ? _products
-                              : _products.where((p) {
-                                  final label = (p.badge != null && p.badge!.isNotEmpty)
-                                      ? p.badge!
-                                      : (p.category ?? 'Other');
-                                  return label == _activeSubcat;
-                                }).toList(),
+                          products: _products.where((p) {
+                            if (_activeSubcat != null) {
+                              final label = (p.badge != null && p.badge!.isNotEmpty)
+                                  ? p.badge!
+                                  : (p.category ?? 'Other');
+                              if (label != _activeSubcat) return false;
+                            }
+                            if (_tradeMode == 'retail' && p.tradeType == 'wholesale') return false;
+                            if (_tradeMode == 'wholesale' && p.tradeType != 'wholesale') return false;
+                            return true;
+                          }).toList(),
                           onTap: _openProduct,
                           onAdd: (p) {
                             ref.read(cartProvider.notifier).add(p);
