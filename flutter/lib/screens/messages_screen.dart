@@ -188,6 +188,8 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
       ),
       body: Column(children: [
         _searchBar(),
+        const SupplierStories(),
+        PendingInquiriesInbox(userId: user.id),
         _tabsBar(),
         Expanded(
           child: _tab == _Tab.discover
