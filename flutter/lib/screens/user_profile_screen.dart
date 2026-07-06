@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../models/models.dart';
-import '../services/catalog_service.dart';
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../widgets/product_card.dart';
 import '../widgets/skeletons.dart';
+import 'messages_screen.dart';
 
 /// Mirrors `src/pages/UserProfile.tsx` — public seller / user profile with
 /// their listings and follow toggle.
