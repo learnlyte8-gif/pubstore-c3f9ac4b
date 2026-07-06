@@ -1141,56 +1141,78 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 builder: (_) => const MessagesScreen()));
           }),
           const SizedBox(width: 8),
-          Expanded(
-            child: SizedBox(
-              height: 48,
-              child: OutlinedButton.icon(
-                onPressed: p.id.isEmpty
-                    ? null
-                    : () {
-                        ref.read(cartProvider.notifier).add(p, qty: _qty);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Added $_qty × ${p.title}'),
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-                      },
-                style: OutlinedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24)),
-                  side: const BorderSide(color: AppColors.border),
-                  foregroundColor: AppColors.foreground,
+          if (_hasInquired == false) ...[
+            Expanded(
+              child: SizedBox(
+                height: 48,
+                child: FilledButton.icon(
+                  onPressed:
+                      p.id.isEmpty ? null : () => _openInquiryGate(p),
+                  icon: const Icon(LucideIcons.shieldCheck, size: 16),
+                  label: const Text('Inquire to unlock checkout',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontWeight: FontWeight.w700)),
+                  style: FilledButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24)),
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                  ),
                 ),
-                icon: const Icon(LucideIcons.shoppingCart, size: 16),
-                label: const Text('Add',
-                    style: TextStyle(fontWeight: FontWeight.w700)),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: SizedBox(
-              height: 48,
-              child: ElevatedButton(
-                onPressed: p.id.isEmpty
-                    ? null
-                    : () {
-                        ref.read(cartProvider.notifier).add(p, qty: _qty);
-                        Navigator.of(context).push(MaterialPageRoute(
-                            builder: (_) => const CartScreen()));
-                      },
-                style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24)),
-                  backgroundColor: AppColors.foreground,
-                  foregroundColor: AppColors.background,
+          ] else ...[
+            Expanded(
+              child: SizedBox(
+                height: 48,
+                child: OutlinedButton.icon(
+                  onPressed: p.id.isEmpty
+                      ? null
+                      : () {
+                          ref.read(cartProvider.notifier).add(p, qty: _qty);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Added $_qty × ${p.title}'),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24)),
+                    side: const BorderSide(color: AppColors.border),
+                    foregroundColor: AppColors.foreground,
+                  ),
+                  icon: const Icon(LucideIcons.shoppingCart, size: 16),
+                  label: const Text('Add',
+                      style: TextStyle(fontWeight: FontWeight.w700)),
                 ),
-                child: const Text('Buy now',
-                    style: TextStyle(fontWeight: FontWeight.w700)),
               ),
             ),
-          ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: SizedBox(
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: p.id.isEmpty
+                      ? null
+                      : () {
+                          ref.read(cartProvider.notifier).add(p, qty: _qty);
+                          Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) => const CartScreen()));
+                        },
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24)),
+                    backgroundColor: AppColors.foreground,
+                    foregroundColor: AppColors.background,
+                  ),
+                  child: const Text('Buy now',
+                      style: TextStyle(fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ),
+          ],
         ]),
       ),
     );
