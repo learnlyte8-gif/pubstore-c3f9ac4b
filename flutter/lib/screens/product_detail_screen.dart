@@ -337,6 +337,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           _qty = moq;
           _loading = false;
         });
+        // Kick off inquiry gate check once product ID is known
+        _refreshInquiryStatus(id);
       }
     } catch (e) {
       if (mounted) setState(() { _error = e; _loading = false; });
