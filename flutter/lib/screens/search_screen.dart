@@ -398,6 +398,11 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
             const SizedBox(width: 4),
             _iconChip(
+              icon: LucideIcons.camera,
+              onTap: _imageSearch,
+            ),
+            const SizedBox(width: 4),
+            _iconChip(
               icon: LucideIcons.sliders,
               active: _showFilters,
               onTap: () => setState(() => _showFilters = !_showFilters),
