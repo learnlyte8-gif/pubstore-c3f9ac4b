@@ -27,6 +27,8 @@ class SupplierScreen extends StatefulWidget {
 class _SupplierScreenState extends State<SupplierScreen> {
   Map<String, dynamic>? _supplier;
   List<Product> _products = const [];
+  List<Map<String, dynamic>> _certifications = const [];
+  List<Map<String, dynamic>> _inspections = const [];
   bool _loading = true;
   bool _following = false;
   int _followerCount = 0;
