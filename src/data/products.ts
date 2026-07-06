@@ -240,6 +240,7 @@ type DbProduct = {
   ad_has_reel?: boolean | null;
   ad_headline?: string | null;
   ad_tagline?: string | null;
+  video_url?: string | null;
 };
 
 
