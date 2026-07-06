@@ -61,14 +61,29 @@ class StoreSectionScreen extends StatelessWidget {
       case 'profile': body = const _ProfileView(); break;
       case 'settings': body = const _SettingsView(); break;
       case 'shipping': body = const _ShippingView(); break;
-      case 'import': body = const _ImportStubView(); break;
+      case 'import': body = const vert.ImportServiceView(); break;
       default:
         if (section.startsWith('product-edit/')) {
           body = _EditProductView(productId: section.substring('product-edit/'.length));
+        } else if (section.startsWith('services/')) {
+          switch (section) {
+            case 'services/stays': body = const vert.StaysServiceView(); break;
+            case 'services/vehicles': body = const vert.VehiclesServiceView(); break;
+            case 'services/industrial': body = const vert.IndustrialServiceView(); break;
+            case 'services/news': body = const vert.NewsServiceView(); break;
+            case 'services/driver': body = const vert.DriverServiceView(); break;
+            case 'services/pros': body = const vert.ProServiceView(); break;
+            case 'services/properties': body = const vert.PropertyServiceView(); break;
+            case 'services/logistics': body = const vert.CourierServiceView(); break;
+            case 'services/finance': body = const vert.FinanceServiceView(); break;
+            case 'services/car-rentals': body = const vert.CarRentalServiceView(); break;
+            case 'services/agro': body = const vert.AgroServiceView(); break;
+            default: body = _ServiceListingView(sectionKey: section);
+          }
         } else {
           body = _ServiceListingView(sectionKey: section);
         }
-    }
+      }
     return Scaffold(
       appBar: AppBar(
         title: Column(
