@@ -295,6 +295,36 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 11, color: AppColors.muted),
         ),
+        const SizedBox(height: 20),
+        Row(children: const [
+          Expanded(child: Divider(color: AppColors.border)),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 10),
+            child: Text('or', style: TextStyle(fontSize: 11, color: AppColors.muted)),
+          ),
+          Expanded(child: Divider(color: AppColors.border)),
+        ]),
+        const SizedBox(height: 14),
+        SizedBox(
+          height: 48,
+          child: OutlinedButton.icon(
+            onPressed: _loading ? null : _signInWithGoogle,
+            icon: Image.network(
+              'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
+              width: 18,
+              height: 18,
+              errorBuilder: (_, __, ___) =>
+                  const Icon(Icons.g_mobiledata, size: 22),
+            ),
+            label: const Text('Continue with Google',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.foreground,
+              side: const BorderSide(color: AppColors.border),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+        ),
       ],
     );
   }
