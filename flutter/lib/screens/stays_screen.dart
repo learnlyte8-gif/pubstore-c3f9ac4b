@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../models/vertical_models.dart';
 import '../services/verticals_service.dart';
 import '../theme/palette.dart';
+import 'stay_detail_screen.dart';
 
 /// Mirrors `src/pages/Stays.tsx` index (list + hero).
 class StaysScreen extends StatefulWidget {
@@ -88,7 +89,12 @@ class _StaysScreenState extends State<StaysScreen> {
                     childAspectRatio: 0.62,
                   ),
                   itemCount: stays.length,
-                  itemBuilder: (context, i) => _stayCard(stays[i]),
+                  itemBuilder: (context, i) => GestureDetector(
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => StayDetailScreen(stay: stays[i]))),
+                    behavior: HitTestBehavior.opaque,
+                    child: _stayCard(stays[i]),
+                  ),
                 ),
             ],
           );

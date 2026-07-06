@@ -13,6 +13,8 @@ import '../services/messages_service.dart';
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../widgets/chat/discover_people.dart';
+import '../widgets/chat/pending_inquiries_inbox.dart';
+import '../widgets/chat/supplier_stories.dart';
 import '../widgets/skeletons.dart';
 import 'auth_screen.dart';
 import 'thread_screen.dart';
@@ -186,6 +188,8 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
       ),
       body: Column(children: [
         _searchBar(),
+        const SupplierStories(),
+        PendingInquiriesInbox(userId: user.id),
         _tabsBar(),
         Expanded(
           child: _tab == _Tab.discover
