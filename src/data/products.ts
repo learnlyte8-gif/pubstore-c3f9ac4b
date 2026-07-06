@@ -69,6 +69,8 @@ export type Product = {
   title: string;
   image: string;
   gallery?: string[];
+  /** Optional product video (mp4/webm URL or YouTube/Vimeo link). */
+  videoUrl?: string | null;
   price: number;
   originalPrice?: number;
   rating: number;
