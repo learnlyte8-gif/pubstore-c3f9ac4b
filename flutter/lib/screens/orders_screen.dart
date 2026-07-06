@@ -56,11 +56,51 @@ const _statusMeta = <String, _StatusMeta>{
 _StatusMeta _metaFor(String s) =>
     _statusMeta[s] ?? _statusMeta['placed']!;
 
-class _OrdersScreenState extends ConsumerState<OrdersScreen> {
+class _OrdersScreenState extends ConsumerState<OrdersScreen> with WidgetsBindingObserver {
   Future<List<Map<String, dynamic>>>? _future;
   _Filter _filter = _Filter.all;
   String? _openId;
   final Set<String> _reviewed = {};
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Best-effort: sweep any awaiting PayPal captures on entry.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _capturePendingPayments());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _capturePendingPayments();
+  }
+
+  Future<void> _capturePendingPayments() async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) return;
+    try {
+      final rows = await supabase
+          .from('orders')
+          .select('id, payment_method')
+          .eq('buyer_id', uid)
+          .eq('payment_status', 'pending');
+      for (final o in (rows as List)) {
+        final method = (o as Map)['payment_method']?.toString();
+        final fn = method == 'paypal' ? 'paypal-capture-order' : null;
+        if (fn == null) continue;
+        try {
+          await supabase.functions.invoke(fn, body: {'orderId': o['id']});
+        } catch (_) {}
+      }
+      if (mounted) setState(() {});
+    } catch (_) {}
+  }
 
   Future<List<Map<String, dynamic>>> _fetch(String uid) async {
     final ords = await supabase
