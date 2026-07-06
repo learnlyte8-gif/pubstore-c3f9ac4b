@@ -948,6 +948,31 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               "You'll be redirected to Pesepay to complete payment with EcoCash, OneMoney, ZIPIT or your Visa card.",
               style: TextStyle(fontSize: 10, color: AppColors.muted)),
         ],
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: AppColors.mutedSurface,
+            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(children: [
+            const Icon(LucideIcons.shieldCheck, size: 16, color: AppColors.primary),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Trade Assurance (escrow)',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                Text('Hold funds until you confirm delivery. Free.',
+                    style: TextStyle(fontSize: 10, color: AppColors.muted)),
+              ]),
+            ),
+            Switch(
+              value: _escrow,
+              onChanged: (v) => setState(() => _escrow = v),
+            ),
+          ]),
+        ),
       ]),
     );
   }
