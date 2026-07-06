@@ -159,7 +159,7 @@ export default function ProductDetail() {
         />
       )}
 
-      <ProductGallery images={product.gallery ?? [product.image]} alt={product.title} />
+      <ProductGallery images={product.gallery ?? [product.image]} alt={product.title} videoUrl={product.videoUrl} />
 
       {product.adHasReel && (
         <div className="px-4 pt-3">
