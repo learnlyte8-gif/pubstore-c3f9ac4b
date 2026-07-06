@@ -66,6 +66,7 @@ import AdsDashboard from "./pages/ads/AdsDashboard.tsx";
 import AdCampaignWizard from "./pages/ads/AdCampaignWizard.tsx";
 import InterstitialAdManager from "./components/ads/InterstitialAdManager.tsx";
 import Admin from "./pages/Admin.tsx";
+import OAuthConsent from "./pages/OAuthConsent.tsx";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -123,6 +124,7 @@ const App = () => (
 
               <Route path="/" element={<Splash />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route element={<AppShell />}>
                 <Route path="/home" element={<Home />} />
