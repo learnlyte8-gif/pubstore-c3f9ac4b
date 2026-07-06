@@ -83,7 +83,37 @@ class AuthService {
   }
 
   Future<void> signOut() async {
+    try {
+      await GoogleSignIn().signOut();
+    } catch (_) {}
     await supabase.auth.signOut();
+  }
+
+  /// Native Google Sign-In → Supabase session. Requires the Google OAuth
+  /// provider to be enabled in Lovable Cloud and the platform client IDs
+  /// configured via `--dart-define` (see `Env.googleIosClientId` /
+  /// `Env.googleWebClientId`). Mirrors the web `signInWithOAuth('google')`.
+  Future<User?> signInWithGoogle() async {
+    final google = GoogleSignIn(
+      clientId: Env.googleIosClientId.isEmpty ? null : Env.googleIosClientId,
+      serverClientId:
+          Env.googleWebClientId.isEmpty ? null : Env.googleWebClientId,
+      scopes: const ['email', 'profile', 'openid'],
+    );
+    final account = await google.signIn();
+    if (account == null) return null; // user cancelled
+    final auth = await account.authentication;
+    final idToken = auth.idToken;
+    final accessToken = auth.accessToken;
+    if (idToken == null) {
+      throw const AuthException('Google sign-in failed: missing idToken');
+    }
+    final res = await supabase.auth.signInWithIdToken(
+      provider: OAuthProvider.google,
+      idToken: idToken,
+      accessToken: accessToken,
+    );
+    return res.user;
   }
 }
 
