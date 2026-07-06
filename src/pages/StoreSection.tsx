@@ -913,6 +913,7 @@ function EditProductView({ productId }: { productId: string }) {
     title: "", description: "", price: "", original_price: "",
     moq: "1", unit: "piece", lead_time: "", ship_from: "",
     category_slug: "electronics", free_shipping: false, active: true,
+    video_url: "",
   });
   const [gallery, setGallery] = useState<string[]>([]);
   const [newFiles, setNewFiles] = useState<File[]>([]);
