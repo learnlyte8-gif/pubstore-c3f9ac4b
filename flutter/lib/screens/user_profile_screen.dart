@@ -35,14 +35,23 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   Future<void> _load() async {
     try {
-      final p = await supabase.from('profiles').select('*').eq('id', widget.userId).maybeSingle();
-      final rows = await supabase
-          .from('products')
-          .select('*')
-          .eq('supplier_id', widget.userId)
-          .eq('active', true)
+      final p = await supabase.from('profiles').select('*').eq('user_id', widget.userId).maybeSingle();
+      // Liked products (via post_likes)
+      final likes = await supabase
+          .from('post_likes')
+          .select('target_id')
+          .eq('user_id', widget.userId)
+          .eq('target_type', 'product')
           .order('created_at', ascending: false)
-          .limit(40);
+          .limit(48);
+      final ids = (likes as List)
+          .map((r) => (r as Map)['target_id']?.toString())
+          .whereType<String>()
+          .toList();
+      List rows = const [];
+      if (ids.isNotEmpty) {
+        rows = await supabase.from('products').select('*').inFilter('id', ids);
+      }
       final followers = await supabase
           .from('user_follows')
           .select('follower_id')
