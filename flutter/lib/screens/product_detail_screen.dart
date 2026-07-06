@@ -219,9 +219,16 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               IconButton(
                 icon: const Icon(LucideIcons.share2),
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Share coming soon')),
-                  );
+                  showShareToChatSheet(context, attachment: ChatAttachment(
+                    kind: 'product',
+                    data: {
+                      'id': p.id,
+                      'title': p.title,
+                      'price': p.price,
+                      'image': p.image ?? (p.gallery.isNotEmpty ? p.gallery.first : null),
+                      'supplierId': p.supplierId,
+                    },
+                  ));
                 },
               ),
             ],
