@@ -111,6 +111,18 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
 
   void _toast(String msg) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
+  void _openSendMoney() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: AppColors.background,
+      builder: (_) => _SendMoneySheet(onSent: () {
+        setState(() {});
+      }),
+    );
+  }
+
   Future<void> _startCheckout(double amount) async {
     final uid = supabase.auth.currentUser?.id;
     if (uid == null) {
@@ -315,7 +327,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
         ),
         const SizedBox(height: 12),
         Row(children: [
-          _heroBtn(LucideIcons.send, 'Send', filled: true, onTap: () => _toast('Send — open dialog')),
+          _heroBtn(LucideIcons.send, 'Send', filled: true, onTap: _openSendMoney),
           const SizedBox(width: 6),
           _heroBtn(LucideIcons.plus, 'Add', onTap: () {}),
           const SizedBox(width: 6),
@@ -890,6 +902,169 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                 fontWeight: FontWeight.w900,
                 color: positive ? const Color(0xFF059669) : const Color(0xFFDC2626))),
       ]),
+    );
+  }
+}
+
+class _SendMoneySheet extends StatefulWidget {
+  const _SendMoneySheet({required this.onSent});
+  final VoidCallback onSent;
+  @override
+  State<_SendMoneySheet> createState() => _SendMoneySheetState();
+}
+
+class _SendMoneySheetState extends State<_SendMoneySheet> {
+  final _query = TextEditingController();
+  final _amount = TextEditingController();
+  final _note = TextEditingController();
+  List<Map<String, dynamic>> _results = const [];
+  Map<String, dynamic>? _selected;
+  bool _busy = false;
+
+  Future<void> _search() async {
+    final q = _query.text.trim();
+    if (q.length < 2) return;
+    try {
+      final rows = await supabase
+          .from('profiles')
+          .select('user_id, display_name, username, avatar_url')
+          .or('display_name.ilike.%$q%,username.ilike.%$q%')
+          .limit(10);
+      if (!mounted) return;
+      setState(() => _results = (rows as List).cast<Map<String, dynamic>>());
+    } catch (_) {}
+  }
+
+  Future<void> _send() async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) return;
+    final peer = _selected;
+    if (peer == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pick a recipient')));
+      return;
+    }
+    final amt = double.tryParse(_amount.text.trim());
+    if (amt == null || amt <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a valid amount')));
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      // Best-effort RPC. Falls back to a paired wallet_transactions pair.
+      try {
+        await supabase.rpc('wallet_send_p2p', params: {
+          'p_to_user': peer['user_id'],
+          'p_amount': amt,
+          'p_note': _note.text.trim(),
+        });
+      } catch (_) {
+        await supabase.from('wallet_transactions').insert([
+          {
+            'user_id': uid,
+            'account': 'personal',
+            'type': 'send',
+            'amount': -amt,
+            'ref_user_id': peer['user_id'],
+            'note': _note.text.trim(),
+          },
+          {
+            'user_id': peer['user_id'],
+            'account': 'personal',
+            'type': 'receive',
+            'amount': amt,
+            'ref_user_id': uid,
+            'note': _note.text.trim(),
+          },
+        ]);
+      }
+      await supabase.from('notifications').insert({
+        'user_id': peer['user_id'],
+        'type': 'wallet_p2p',
+        'title': 'Money received',
+        'body': 'You received \$${amt.toStringAsFixed(2)}',
+        'link': '/wallet',
+      });
+      if (!mounted) return;
+      Navigator.pop(context);
+      widget.onSent();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sent \$${amt.toStringAsFixed(2)}')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Send failed: $e')));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16, right: 16, top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          const Text('Send money', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _query,
+            onChanged: (_) => _search(),
+            decoration: const InputDecoration(
+              labelText: 'Search username or name',
+              prefixIcon: Icon(LucideIcons.search, size: 16),
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (_results.isNotEmpty && _selected == null)
+            Container(
+              constraints: const BoxConstraints(maxHeight: 200),
+              decoration: BoxDecoration(border: Border.all(color: AppColors.border), borderRadius: BorderRadius.circular(8)),
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: _results.length,
+                itemBuilder: (_, i) {
+                  final r = _results[i];
+                  return ListTile(
+                    dense: true,
+                    title: Text(r['display_name']?.toString() ?? 'User'),
+                    subtitle: Text('@${r['username'] ?? '—'}'),
+                    onTap: () => setState(() => _selected = r),
+                  );
+                },
+              ),
+            ),
+          if (_selected != null) ...[
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: AppColors.mutedSurface, borderRadius: BorderRadius.circular(10)),
+              child: Row(children: [
+                const Icon(LucideIcons.userCheck, size: 16, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Expanded(child: Text('To: ${_selected!['display_name'] ?? _selected!['username']}',
+                    style: const TextStyle(fontWeight: FontWeight.w800))),
+                IconButton(icon: const Icon(LucideIcons.x, size: 16), onPressed: () => setState(() => _selected = null)),
+              ]),
+            ),
+            const SizedBox(height: 8),
+          ],
+          TextField(
+            controller: _amount,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(labelText: 'Amount', prefixText: '\$ ', border: OutlineInputBorder()),
+          ),
+          const SizedBox(height: 8),
+          TextField(controller: _note, decoration: const InputDecoration(labelText: 'Note (optional)', border: OutlineInputBorder())),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: _busy ? null : _send,
+            icon: const Icon(LucideIcons.send, size: 16),
+            label: Text(_busy ? 'Sending…' : 'Send money'),
+            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+          ),
+        ]),
+      ),
     );
   }
 }
