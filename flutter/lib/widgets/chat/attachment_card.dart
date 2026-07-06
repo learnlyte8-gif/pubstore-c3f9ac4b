@@ -48,6 +48,31 @@ class AttachmentCard extends StatelessWidget {
           subtitle: '${d['count'] ?? 0} items',
           icon: LucideIcons.grid,
         );
+      case 'image':
+        final url = d['url']?.toString();
+        if (url == null || url.isEmpty) return const SizedBox.shrink();
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 260, maxHeight: 320),
+            child: CachedNetworkImage(
+              imageUrl: url,
+              fit: BoxFit.cover,
+              placeholder: (_, __) => Container(
+                width: 220,
+                height: 160,
+                color: AppColors.mutedSurface,
+              ),
+              errorWidget: (_, __, ___) => Container(
+                width: 220,
+                height: 160,
+                color: AppColors.mutedSurface,
+                child: const Icon(LucideIcons.imageOff,
+                    size: 20, color: AppColors.muted),
+              ),
+            ),
+          ),
+        );
       default:
         return const SizedBox.shrink();
     }
