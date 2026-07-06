@@ -52,6 +52,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _scroll = ScrollController();
   final List<Product> _products = [];
+  String? _activeSubcat;
   int _page = 0;
   bool _loading = false;
   bool _done = false;
