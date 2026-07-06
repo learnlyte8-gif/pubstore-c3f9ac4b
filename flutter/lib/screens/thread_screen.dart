@@ -505,6 +505,130 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     );
   }
 
+  Future<void> _openAttachMenu() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.background,
+      builder: (_) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(
+            leading: const Icon(LucideIcons.heart, color: AppColors.destructive),
+            title: const Text('Share my wishlist',
+                style: TextStyle(color: AppColors.foreground, fontWeight: FontWeight.w700)),
+            onTap: () async {
+              Navigator.pop(context);
+              await _sendWishlistAttachment();
+            },
+          ),
+          ListTile(
+            leading: const Icon(LucideIcons.package, color: AppColors.primary),
+            title: const Text('Share a product from my wishlist',
+                style: TextStyle(color: AppColors.foreground, fontWeight: FontWeight.w700)),
+            onTap: () async {
+              Navigator.pop(context);
+              await _pickAndShareWishlistProduct();
+            },
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Future<void> _sendWishlistAttachment() async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) return;
+    try {
+      final rows = await supabase.from('wishlist_items')
+          .select('product_id').eq('user_id', uid);
+      final count = (rows as List).length;
+      final att = ChatAttachment(kind: 'wishlist', data: {'count': count, 'ownerId': uid});
+      await messagesService.insertMessage(
+        conversationId: widget.conversation.id,
+        senderId: uid,
+        body: '❤️ Wishlist · $count items',
+        attachment: att,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not share wishlist: $e')));
+      }
+    }
+  }
+
+  Future<void> _pickAndShareWishlistProduct() async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) return;
+    List<Map<String, dynamic>> items = const [];
+    try {
+      final ids = await supabase.from('wishlist_items')
+          .select('product_id').eq('user_id', uid);
+      final list = (ids as List)
+          .map((r) => (r as Map)['product_id'].toString()).toList();
+      if (list.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Your wishlist is empty.')));
+        }
+        return;
+      }
+      final rows = await supabase.from('products')
+          .select('id, title, price, image, supplier_id').inFilter('id', list);
+      items = (rows as List).map((r) => Map<String, dynamic>.from(r as Map)).toList();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to load wishlist: $e')));
+      }
+      return;
+    }
+
+    if (!mounted) return;
+    final picked = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      backgroundColor: AppColors.background,
+      builder: (_) => SafeArea(
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: items.length,
+          itemBuilder: (_, i) {
+            final it = items[i];
+            return ListTile(
+              leading: CircleAvatar(
+                backgroundColor: AppColors.mutedSurface,
+                backgroundImage: it['image'] != null
+                    ? CachedNetworkImageProvider(it['image'].toString())
+                    : null,
+                child: it['image'] == null
+                    ? const Icon(LucideIcons.package, size: 16)
+                    : null,
+              ),
+              title: Text(it['title']?.toString() ?? 'Product',
+                  style: const TextStyle(color: AppColors.foreground)),
+              subtitle: Text('\$${it['price'] ?? 0}',
+                  style: const TextStyle(color: AppColors.muted)),
+              onTap: () => Navigator.pop(context, it),
+            );
+          },
+        ),
+      ),
+    );
+    if (picked == null) return;
+    final att = ChatAttachment(kind: 'product', data: {
+      'id': picked['id'],
+      'title': picked['title'],
+      'price': picked['price'],
+      'image': picked['image'],
+      'supplierId': picked['supplier_id'],
+    });
+    await messagesService.insertMessage(
+      conversationId: widget.conversation.id,
+      senderId: uid,
+      body: '📦 ${picked['title'] ?? 'Product'}',
+      attachment: att,
+    );
+  }
+
   Widget _composer() {
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 6, 10, 10),
