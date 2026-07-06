@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../models/vertical_models.dart';
 import '../services/verticals_service.dart';
 import '../theme/palette.dart';
+import 'stay_detail_screen.dart';
 
 /// Mirrors `src/pages/Stays.tsx` index (list + hero).
 class StaysScreen extends StatefulWidget {
