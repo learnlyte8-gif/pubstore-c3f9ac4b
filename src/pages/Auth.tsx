@@ -30,14 +30,21 @@ export default function Auth() {
   const [resendIn, setResendIn] = useState(0);
 
   useEffect(() => {
+    const isExternalOAuth = redirectTo.startsWith("/.lovable/oauth/");
     const routeForSession = async (uid: string) => {
+      // For external OAuth consent flows, always return to the consent URL
+      // so the authorization can be completed. Skip onboarding gating.
+      if (isExternalOAuth) {
+        window.location.href = redirectTo;
+        return;
+      }
       const { data } = await supabase
         .from("profiles")
         .select("profile_completed")
         .eq("user_id", uid)
         .maybeSingle();
       if (!data?.profile_completed) {
-        navigate("/onboarding", { replace: true });
+        navigate("/onboarding?redirect=" + encodeURIComponent(redirectTo), { replace: true });
       } else {
         navigate(redirectTo, { replace: true });
       }
