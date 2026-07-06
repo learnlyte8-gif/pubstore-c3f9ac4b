@@ -72,6 +72,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   bool _validating = false;
   final List<_Coupon> _coupons = [];
   _Pay _payMethod = _Pay.wallet;
+  bool _escrow = false;
 
   Map<String, List<_DeliveryOption>> _optsBySupplier = {};
   final Map<String, String> _deliveryPicks = {};
