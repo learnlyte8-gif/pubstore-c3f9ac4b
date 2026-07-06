@@ -72,6 +72,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   bool _validating = false;
   final List<_Coupon> _coupons = [];
   _Pay _payMethod = _Pay.wallet;
+  bool _escrow = false;
 
   Map<String, List<_DeliveryOption>> _optsBySupplier = {};
   final Map<String, String> _deliveryPicks = {};
@@ -347,6 +348,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             'payment_status': _payMethod == _Pay.cod ? 'cod' : 'pending',
             'delivery_courier_user_id': opt?.courierUserId,
             'delivery_option_label': opt?.label,
+            'escrow_enabled': _escrow,
           })
           .select('id,ref_code')
           .single();
@@ -948,6 +950,31 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               "You'll be redirected to Pesepay to complete payment with EcoCash, OneMoney, ZIPIT or your Visa card.",
               style: TextStyle(fontSize: 10, color: AppColors.muted)),
         ],
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: AppColors.mutedSurface,
+            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(children: [
+            const Icon(LucideIcons.shieldCheck, size: 16, color: AppColors.primary),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Trade Assurance (escrow)',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                Text('Hold funds until you confirm delivery. Free.',
+                    style: TextStyle(fontSize: 10, color: AppColors.muted)),
+              ]),
+            ),
+            Switch(
+              value: _escrow,
+              onChanged: (v) => setState(() => _escrow = v),
+            ),
+          ]),
+        ),
       ]),
     );
   }

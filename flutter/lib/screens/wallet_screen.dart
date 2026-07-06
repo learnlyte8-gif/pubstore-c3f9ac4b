@@ -257,6 +257,10 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                     padding: const EdgeInsets.only(bottom: 40),
                     children: [
                       _hero(s),
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+                        child: _LoyaltyCard(),
+                      ),
                       if (_withdrawals.isNotEmpty) _withdrawalsCard(),
                       _addMoneyCard(),
                       if (_manualCfg != null && _manualCfg!['enabled'] == true) _manualCard(),
@@ -1065,6 +1069,76 @@ class _SendMoneySheetState extends State<_SendMoneySheet> {
           ),
         ]),
       ),
+    );
+  }
+}
+
+class _LoyaltyCard extends StatefulWidget {
+  const _LoyaltyCard();
+  @override
+  State<_LoyaltyCard> createState() => _LoyaltyCardState();
+}
+
+class _LoyaltyCardState extends State<_LoyaltyCard> {
+  int? _points;
+  String _tier = 'Bronze';
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) { setState(() => _loading = false); return; }
+    try {
+      final row = await supabase.from('loyalty_points')
+          .select('points').eq('user_id', uid).maybeSingle();
+      final pts = (row?['points'] as num?)?.toInt() ?? 0;
+      setState(() {
+        _points = pts;
+        _tier = pts >= 5000 ? 'Platinum' : pts >= 2000 ? 'Gold' : pts >= 500 ? 'Silver' : 'Bronze';
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Color get _tierColor => switch (_tier) {
+    'Platinum' => const Color(0xFF6EE7F9),
+    'Gold' => const Color(0xFFF59E0B),
+    'Silver' => const Color(0xFF9CA3AF),
+    _ => const Color(0xFFB45309),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_tierColor.withOpacity(0.9), _tierColor.withOpacity(0.55)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(children: [
+        const Icon(LucideIcons.badgeCheck, color: Colors.white),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('$_tier · Loyalty',
+                style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+            Text(_loading ? '—' : '${_points ?? 0} pts',
+                style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
+          ]),
+        ),
+        const Icon(LucideIcons.sparkles, color: Colors.white70, size: 16),
+      ]),
     );
   }
 }
