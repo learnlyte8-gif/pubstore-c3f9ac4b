@@ -4,9 +4,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../models/message_models.dart';
 import '../models/models.dart';
+import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../theme/theme.dart';
+import 'chat/share_to_chat_sheet.dart';
+import 'social/group_buy_start_sheet.dart';
 
 /// Marketplace product card — mirror of `src/components/marketplace/ProductCard.tsx`.
 class ProductCard extends StatefulWidget {
@@ -17,6 +21,7 @@ class ProductCard extends StatefulWidget {
     this.onAdd,
     this.onShare,
     this.onWishlist,
+    this.onGroupBuy,
     this.variant = 'grid',
   });
 
@@ -25,6 +30,7 @@ class ProductCard extends StatefulWidget {
   final VoidCallback? onAdd;
   final VoidCallback? onShare;
   final VoidCallback? onWishlist;
+  final VoidCallback? onGroupBuy;
   final String variant;
 
   @override
