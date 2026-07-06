@@ -53,6 +53,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _scroll = ScrollController();
   final List<Product> _products = [];
   String? _activeSubcat;
+  String _tradeMode = 'all'; // all | retail | wholesale
   int _page = 0;
   bool _loading = false;
   bool _done = false;
@@ -247,15 +248,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         ),
                       SliverToBoxAdapter(
+                        child: _TradeModeSwitch(
+                          mode: _tradeMode,
+                          onChanged: (v) => setState(() => _tradeMode = v),
+                        ),
+                      ),
+                      SliverToBoxAdapter(
                         child: MasonryProductGrid(
-                          products: _activeSubcat == null
-                              ? _products
-                              : _products.where((p) {
-                                  final label = (p.badge != null && p.badge!.isNotEmpty)
-                                      ? p.badge!
-                                      : (p.category ?? 'Other');
-                                  return label == _activeSubcat;
-                                }).toList(),
+                          products: _products.where((p) {
+                            if (_activeSubcat != null) {
+                              final label = (p.badge != null && p.badge!.isNotEmpty)
+                                  ? p.badge!
+                                  : (p.category ?? 'Other');
+                              if (label != _activeSubcat) return false;
+                            }
+                            if (_tradeMode == 'retail' && p.tradeType == 'wholesale') return false;
+                            if (_tradeMode == 'wholesale' && p.tradeType != 'wholesale') return false;
+                            return true;
+                          }).toList(),
                           onTap: _openProduct,
                           onAdd: (p) {
                             ref.read(cartProvider.notifier).add(p);
@@ -874,4 +884,64 @@ class _NewArrivalsStripState extends State<_NewArrivalsStrip> {
           );
         },
       );
+}
+
+class _TradeModeSwitch extends StatelessWidget {
+  const _TradeModeSwitch({required this.mode, required this.onChanged});
+  final String mode;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    const opts = [
+      ('all', 'All', LucideIcons.globe2),
+      ('retail', 'Retail', LucideIcons.store),
+      ('wholesale', 'Wholesale', LucideIcons.package),
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: AppColors.muted.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: opts.map((o) {
+                final active = mode == o.$1;
+                return GestureDetector(
+                  onTap: () => onChanged(o.$1),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: active ? AppColors.foreground : Colors.transparent,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(o.$3, size: 12,
+                            color: active ? AppColors.background : AppColors.muted),
+                        const SizedBox(width: 4),
+                        Text(o.$2,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: active ? AppColors.background : AppColors.muted,
+                            )),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

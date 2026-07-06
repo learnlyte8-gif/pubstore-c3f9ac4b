@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../services/supabase_client.dart';
@@ -119,6 +121,49 @@ class _SearchScreenState extends State<SearchScreen> {
       if (_recent.length > 8) _recent.removeLast();
     });
     _run(v);
+  }
+
+  Future<void> _imageSearch() async {
+    try {
+      final picker = ImagePicker();
+      final file = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        imageQuality: 80,
+      );
+      if (file == null) return;
+      final bytes = await file.readAsBytes();
+      final dataUrl = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+      if (!mounted) return;
+      setState(() => _loading = true);
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+      final res = await supabase.functions.invoke('image-search', body: {'image': dataUrl});
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      final data = res.data as Map<String, dynamic>?;
+      final keywords = (data?['keywords'] as String?)?.trim() ?? '';
+      if (keywords.isEmpty) {
+        if (mounted) {
+          setState(() => _loading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not recognize the image')),
+          );
+        }
+        return;
+      }
+      _submit(keywords);
+    } catch (e) {
+      if (mounted) Navigator.of(context, rootNavigator: true).maybePop();
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Image search failed: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _run(String q) async {
@@ -395,6 +440,11 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                 ),
               ),
+            ),
+            const SizedBox(width: 4),
+            _iconChip(
+              icon: LucideIcons.camera,
+              onTap: _imageSearch,
             ),
             const SizedBox(width: 4),
             _iconChip(
