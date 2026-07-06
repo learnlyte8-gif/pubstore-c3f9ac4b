@@ -172,9 +172,30 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     }
   }
 
+  Future<void> _signInWithGoogle() async {
+    setState(() => _loading = true);
+    try {
+      final user = await authService.signInWithGoogle();
+      if (user == null) return; // user cancelled
+      _toast('Welcome to PUBSTORE 🎉');
+      await _routeForSession();
+    } catch (e) {
+      _toast(
+        e.toString().replaceAll('Exception: ', '').replaceAll('AuthException: ', ''),
+        error: true,
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   Future<void> _routeForSession() async {
     final user = supabase.auth.currentUser;
     if (user == null || !mounted) return;
+    // Register for push once we have a session (safe no-op if Firebase isn't
+    // configured in the host app or permission was denied).
+    // ignore: unawaited_futures
+    pushService.registerForCurrentUser();
     final profile = await supabase
         .from('profiles')
         .select('profile_completed')
