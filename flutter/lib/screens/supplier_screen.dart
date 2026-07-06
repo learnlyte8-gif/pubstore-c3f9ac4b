@@ -172,7 +172,8 @@ class _SupplierScreenState extends State<SupplierScreen> {
                   _circleBtn(LucideIcons.arrowLeft, () => Navigator.of(context).maybePop()),
                   Row(children: [
                     _circleBtn(LucideIcons.share2, () {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Share — coming soon')));
+                      final url = 'https://pubstore.app/supplier/${widget.supplierId}';
+                      Share.share('Check out ${(_supplier?['name'] ?? 'this store')} on PUBSTORE\n$url');
                     }),
                     const SizedBox(width: 8),
                     _circleBtn(_following ? LucideIcons.heart : LucideIcons.heart, _toggleFollow,
