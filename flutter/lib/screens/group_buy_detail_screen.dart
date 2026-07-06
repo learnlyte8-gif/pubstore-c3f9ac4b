@@ -148,7 +148,7 @@ class _GroupBuyDetailScreenState extends State<GroupBuyDetailScreen> {
   Future<void> _join() async {
     final uid = _uid;
     if (uid == null) {
-      context.go('/auth');
+      Navigator.of(context).pushNamed('/auth');
       return;
     }
     setState(() => _busy = true);
@@ -208,7 +208,7 @@ class _GroupBuyDetailScreenState extends State<GroupBuyDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Group order placed')),
         );
-        context.go('/orders');
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const OrdersScreen()));
       }
     } catch (e) {
       if (mounted) {
@@ -263,7 +263,7 @@ class _GroupBuyDetailScreenState extends State<GroupBuyDetailScreen> {
                 style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, height: 1.15)),
             if (_product != null)
               GestureDetector(
-                onTap: () => context.push('/product/${_product!['id']}'),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductDetailScreen(productId: _product!['id'].toString()))),
                 child: Padding(
                   padding: const EdgeInsets.only(top: 6),
                   child: Text('View product',
@@ -411,7 +411,7 @@ class _GroupBuyDetailScreenState extends State<GroupBuyDetailScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
             child: FilledButton.icon(
-              onPressed: () => context.go('/orders'),
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const OrdersScreen())),
               icon: const Icon(LucideIcons.shoppingBag, size: 16),
               label: const Text('View order'),
               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
@@ -434,7 +434,7 @@ class _GroupBuyDetailScreenState extends State<GroupBuyDetailScreen> {
           final avatar = p?['avatar_url']?.toString();
           final isOwn = uid == gb['owner_id'];
           return ListTile(
-            onTap: () => context.push('/u/$uid'),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => UserProfileScreen(userId: uid))),
             leading: CircleAvatar(
               radius: 18,
               backgroundColor: AppColors.mutedSurface,
@@ -458,7 +458,7 @@ class _GroupBuyDetailScreenState extends State<GroupBuyDetailScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
             child: OutlinedButton.icon(
-              onPressed: () => context.push('/messages?conv=${gb['conversation_id']}'),
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => MessagesScreen(conversationId: gb['conversation_id'].toString()))),
               icon: const Icon(LucideIcons.messageCircle, size: 16),
               label: const Text('Open group chat'),
               style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44)),
