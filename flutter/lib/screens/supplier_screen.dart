@@ -65,6 +65,14 @@ class _SupplierScreenState extends State<SupplierScreen> {
             .eq('user_id', _userId as Object)
             .maybeSingle();
       }
+      List certs = const [];
+      List insps = const [];
+      try {
+        certs = await supabase.from('supplier_certifications').select('*').eq('supplier_id', id);
+      } catch (_) {}
+      try {
+        insps = await supabase.from('inspection_reports').select('*').eq('supplier_id', id).order('created_at', ascending: false);
+      } catch (_) {}
 
       if (!mounted) return;
       setState(() {
@@ -73,6 +81,8 @@ class _SupplierScreenState extends State<SupplierScreen> {
         _products = (rows as List).map((e) => Product.fromRow(Map<String, dynamic>.from(e))).toList();
         _followerCount = (followers as List).length;
         _following = myFollow != null;
+        _certifications = certs.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        _inspections = insps.map((e) => Map<String, dynamic>.from(e as Map)).toList();
         _loading = false;
       });
     } catch (_) {
