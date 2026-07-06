@@ -152,12 +152,15 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
   };
 
   const images = (product.gallery && product.gallery.length > 0 ? product.gallery : [product.image]).filter(Boolean) as string[];
+  const videoUrl = product.videoUrl ?? null;
+  const isPlayableVideoFile = !!videoUrl && /\.(mp4|webm|ogg|mov|m4v)(\?|#|$)/i.test(videoUrl);
+  const hasVideoBadge = !!videoUrl;
   const [slideIdx, setSlideIdx] = useState(0);
   useEffect(() => {
-    if (images.length < 2) return;
+    if (isPlayableVideoFile || images.length < 2) return;
     const t = setInterval(() => setSlideIdx((i) => (i + 1) % images.length), 2000);
     return () => clearInterval(t);
-  }, [images.length]);
+  }, [images.length, isPlayableVideoFile]);
 
   if (variant === "compact") {
     return (
