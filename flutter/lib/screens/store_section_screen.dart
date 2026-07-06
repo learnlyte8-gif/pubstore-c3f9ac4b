@@ -46,7 +46,9 @@ class StoreSectionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final meta = _titles[section] ?? ('Store', '');
+    final meta = section.startsWith('product-edit/')
+        ? ('Edit product', 'Update details, price, photos')
+        : (_titles[section] ?? ('Store', ''));
     Widget body;
     switch (section) {
       case 'products': body = const _ProductsView(); break;
