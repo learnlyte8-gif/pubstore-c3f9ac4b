@@ -447,6 +447,53 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 ]),
               ),
 
+              // Social row — Share + Group buy
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Row(children: [
+                  Expanded(child: _socialAction(
+                    icon: LucideIcons.send,
+                    label: 'Share',
+                    onTap: () => showShareToChatSheet(context, attachment: ChatAttachment(
+                      kind: 'product',
+                      data: {
+                        'id': p.id,
+                        'title': p.title,
+                        'price': p.price,
+                        'image': p.image ?? (p.gallery.isNotEmpty ? p.gallery.first : null),
+                        'supplierId': p.supplierId,
+                      },
+                    )),
+                  )),
+                  const SizedBox(width: 8),
+                  Expanded(child: _socialAction(
+                    icon: LucideIcons.users,
+                    label: 'Group buy',
+                    accent: AppColors.primary,
+                    onTap: () => showGroupBuyStartSheet(context, p),
+                  )),
+                  const SizedBox(width: 8),
+                  Expanded(child: _socialAction(
+                    icon: liked ? LucideIcons.heart : LucideIcons.heart,
+                    label: liked ? 'Saved' : 'Wishlist',
+                    accent: liked ? AppColors.destructive : null,
+                    onTap: () async {
+                      final uid = supabase.auth.currentUser?.id;
+                      if (uid == null) return;
+                      if (liked) {
+                        await supabase.from('wishlist_items').delete()
+                            .eq('user_id', uid).eq('product_id', p.id);
+                      } else {
+                        await supabase.from('wishlist_items')
+                            .insert({'user_id': uid, 'product_id': p.id});
+                      }
+                      ref.read(wishlistProvider.notifier).refresh();
+                    },
+                  )),
+                ]),
+              ),
+
+
               // Request a sample
               if (_supplier != null)
                 Padding(
