@@ -16,7 +16,6 @@ export default defineTool({
     details: z.string().trim().optional().describe("Additional requirements or notes."),
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-  needsApproval: true,
   handler: async (input, ctx: ToolContext) => {
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "Sign-in required to post an RFQ." }], isError: true };
