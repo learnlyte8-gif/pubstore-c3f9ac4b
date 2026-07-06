@@ -4,9 +4,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../models/message_models.dart';
 import '../models/models.dart';
+import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../theme/theme.dart';
+import 'chat/share_to_chat_sheet.dart';
+import 'social/group_buy_start_sheet.dart';
 
 /// Marketplace product card — mirror of `src/components/marketplace/ProductCard.tsx`.
 class ProductCard extends StatefulWidget {
@@ -17,6 +21,7 @@ class ProductCard extends StatefulWidget {
     this.onAdd,
     this.onShare,
     this.onWishlist,
+    this.onGroupBuy,
     this.variant = 'grid',
   });
 
@@ -25,6 +30,7 @@ class ProductCard extends StatefulWidget {
   final VoidCallback? onAdd;
   final VoidCallback? onShare;
   final VoidCallback? onWishlist;
+  final VoidCallback? onGroupBuy;
   final String variant;
 
   @override
@@ -73,6 +79,53 @@ class _ProductCardState extends State<ProductCard> {
         ...product.gallery,
         if (product.gallery.isEmpty && product.image != null) product.image!,
       ].where((v) => v.isNotEmpty && v != '/placeholder.svg').toSet().toList();
+
+  void _defaultShare() {
+    final att = ChatAttachment(kind: 'product', data: {
+      'id': product.id,
+      'title': product.title,
+      'price': product.price,
+      'image': product.image ?? (product.gallery.isNotEmpty ? product.gallery.first : null),
+      'supplierId': product.supplierId,
+    });
+    showShareToChatSheet(context, attachment: att);
+  }
+
+  Future<void> _defaultWishlist() async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in to save to your wishlist.')));
+      return;
+    }
+    try {
+      final existing = await supabase.from('wishlist_items')
+          .select('user_id').eq('user_id', uid).eq('product_id', product.id).maybeSingle();
+      if (existing != null) {
+        await supabase.from('wishlist_items').delete()
+            .eq('user_id', uid).eq('product_id', product.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Removed from wishlist')));
+        }
+      } else {
+        await supabase.from('wishlist_items')
+            .insert({'user_id': uid, 'product_id': product.id});
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Added to wishlist')));
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Wishlist error: $e')));
+      }
+    }
+  }
+
+  void _defaultGroupBuy() => showGroupBuyStartSheet(context, product);
+
 
   String _fmtPrice(num n) => '\$${n.toStringAsFixed(2)}';
 
@@ -167,9 +220,11 @@ class _ProductCardState extends State<ProductCard> {
             right: compact ? 6 : 8,
             child: Row(
               children: [
-                _roundIcon(LucideIcons.send, widget.onShare),
+                _roundIcon(LucideIcons.send, widget.onShare ?? _defaultShare),
                 SizedBox(width: compact ? 4 : 6),
-                _roundIcon(LucideIcons.heart, widget.onWishlist),
+                _roundIcon(LucideIcons.users, widget.onGroupBuy ?? _defaultGroupBuy),
+                SizedBox(width: compact ? 4 : 6),
+                _roundIcon(LucideIcons.heart, widget.onWishlist ?? _defaultWishlist),
               ],
             ),
           ),

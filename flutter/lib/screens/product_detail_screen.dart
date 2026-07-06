@@ -3,14 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../models/message_models.dart';
 import '../models/models.dart';
 import '../services/cart_service.dart';
 import '../services/catalog_service.dart';
 import '../services/supabase_client.dart';
 import '../services/wishlist_service.dart';
 import '../theme/palette.dart';
+import '../widgets/chat/share_to_chat_sheet.dart';
 import '../widgets/product_card.dart';
 import '../widgets/skeletons.dart';
+import '../widgets/social/group_buy_start_sheet.dart';
 import 'cart_screen.dart';
 import 'messages_screen.dart';
 import 'supplier_screen.dart';
@@ -216,9 +219,16 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               IconButton(
                 icon: const Icon(LucideIcons.share2),
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Share coming soon')),
-                  );
+                  showShareToChatSheet(context, attachment: ChatAttachment(
+                    kind: 'product',
+                    data: {
+                      'id': p.id,
+                      'title': p.title,
+                      'price': p.price,
+                      'image': p.image ?? (p.gallery.isNotEmpty ? p.gallery.first : null),
+                      'supplierId': p.supplierId,
+                    },
+                  ));
                 },
               ),
             ],
@@ -437,6 +447,53 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 ]),
               ),
 
+              // Social row — Share + Group buy
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Row(children: [
+                  Expanded(child: _socialAction(
+                    icon: LucideIcons.send,
+                    label: 'Share',
+                    onTap: () => showShareToChatSheet(context, attachment: ChatAttachment(
+                      kind: 'product',
+                      data: {
+                        'id': p.id,
+                        'title': p.title,
+                        'price': p.price,
+                        'image': p.image ?? (p.gallery.isNotEmpty ? p.gallery.first : null),
+                        'supplierId': p.supplierId,
+                      },
+                    )),
+                  )),
+                  const SizedBox(width: 8),
+                  Expanded(child: _socialAction(
+                    icon: LucideIcons.users,
+                    label: 'Group buy',
+                    accent: AppColors.primary,
+                    onTap: () => showGroupBuyStartSheet(context, p),
+                  )),
+                  const SizedBox(width: 8),
+                  Expanded(child: _socialAction(
+                    icon: liked ? LucideIcons.heart : LucideIcons.heart,
+                    label: liked ? 'Saved' : 'Wishlist',
+                    accent: liked ? AppColors.destructive : null,
+                    onTap: () async {
+                      final uid = supabase.auth.currentUser?.id;
+                      if (uid == null) return;
+                      if (liked) {
+                        await supabase.from('wishlist_items').delete()
+                            .eq('user_id', uid).eq('product_id', p.id);
+                      } else {
+                        await supabase.from('wishlist_items')
+                            .insert({'user_id': uid, 'product_id': p.id});
+                      }
+                      ref.read(wishlistProvider.notifier).refresh();
+                    },
+                  )),
+                ]),
+              ),
+
+
               // Request a sample
               if (_supplier != null)
                 Padding(
@@ -484,6 +541,32 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         ],
       ),
       bottomNavigationBar: _buildBottomBar(p),
+    );
+  }
+
+  Widget _socialAction({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    Color? accent,
+  }) {
+    final color = accent ?? AppColors.foreground;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(height: 4),
+          Text(label,
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: color)),
+        ]),
+      ),
     );
   }
 
