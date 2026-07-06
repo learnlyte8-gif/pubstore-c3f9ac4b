@@ -918,6 +918,7 @@ function EditProductView({ productId }: { productId: string }) {
   const [gallery, setGallery] = useState<string[]>([]);
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const [newPreviews, setNewPreviews] = useState<string[]>([]);
+  const [imageUrlInput, setImageUrlInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
