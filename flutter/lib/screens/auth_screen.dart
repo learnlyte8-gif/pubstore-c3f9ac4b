@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/auth_service.dart';
+import '../services/push_service.dart';
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 
