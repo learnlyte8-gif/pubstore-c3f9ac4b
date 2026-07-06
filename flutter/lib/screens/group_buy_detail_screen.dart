@@ -2,13 +2,16 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/supabase_client.dart';
 import '../theme/palette.dart';
 import '../widgets/skeletons.dart';
+import 'messages_screen.dart';
+import 'orders_screen.dart';
+import 'product_detail_screen.dart';
+import 'user_profile_screen.dart';
 
 /// Mirrors `src/pages/GroupBuyDetail.tsx` — group-buy detail with pledge qty,
 /// invite accept/decline, realtime, owner-place-order, members and group chat.
