@@ -138,7 +138,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           _stat('$_followers', 'Followers'),
                           const SizedBox(width: 32),
-                          _stat('${_products.length}', 'Listings'),
+                          _stat('${_products.length}', 'Likes'),
                           const SizedBox(width: 32),
                           _stat('${p['rating'] ?? '—'}', 'Rating'),
                         ]),
@@ -152,13 +152,23 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               style: FilledButton.styleFrom(backgroundColor: _following ? AppColors.mutedSurface : AppColors.orange, foregroundColor: _following ? AppColors.foreground : Colors.white),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: OutlinedButton.icon(
-                              onPressed: () {},
+                              onPressed: () => Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => const MessagesScreen()),
+                              ),
                               icon: const Icon(LucideIcons.messageCircle, size: 16),
                               label: const Text('Message'),
                             ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton.outlined(
+                            onPressed: () {
+                              final name = p['display_name']?.toString() ?? 'this profile';
+                              Share.share('Check out $name on PUBSTORE\nhttps://pubstore.app/u/${widget.userId}');
+                            },
+                            icon: const Icon(LucideIcons.share2, size: 16),
                           ),
                         ]),
                       ]),
