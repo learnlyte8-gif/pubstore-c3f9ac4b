@@ -287,8 +287,9 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
         elevation: 0,
         title: _headerTitle(),
         actions: [
-          IconButton(icon: const Icon(LucideIcons.phone, size: 18), onPressed: () {}),
-          IconButton(icon: const Icon(LucideIcons.moreVertical, size: 18), onPressed: () {}),
+          IconButton(icon: const Icon(LucideIcons.phone, size: 18), onPressed: _callPeer),
+          IconButton(icon: const Icon(LucideIcons.video, size: 18), onPressed: _videoCallPeer),
+          IconButton(icon: const Icon(LucideIcons.moreVertical, size: 18), onPressed: _openThreadMenu),
         ],
       ),
       body: SafeArea(
