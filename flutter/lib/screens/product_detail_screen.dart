@@ -64,7 +64,215 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   @override
   void dispose() {
     _pageCtl.dispose();
+    if (_inqCh != null) {
+      try { supabase.removeChannel(_inqCh!); } catch (_) {}
+    }
     super.dispose();
+  }
+
+  // ── Inquiry gate ────────────────────────────────────────────────────
+  Future<void> _refreshInquiryStatus(String productId) async {
+    final uid = supabase.auth.currentUser?.id;
+    _buyerId = uid;
+    if (uid == null) {
+      if (mounted) setState(() => _hasInquired = false);
+      return;
+    }
+    try {
+      final inq = await supabase
+          .from('product_inquiries')
+          .select('id,status,decided_at')
+          .eq('buyer_id', uid)
+          .eq('product_id', productId)
+          .maybeSingle();
+      bool approved = false;
+      if (inq != null && inq['status'] == 'approved') {
+        final decidedAt = inq['decided_at'] as String?;
+        if (decidedAt != null) {
+          final t = DateTime.tryParse(decidedAt);
+          approved = t != null &&
+              DateTime.now().difference(t).inMilliseconds < _inquiryTtlMs;
+        } else {
+          approved = true;
+        }
+      }
+      if (mounted) setState(() => _hasInquired = approved);
+    } catch (_) {
+      if (mounted) setState(() => _hasInquired = false);
+    }
+    // Realtime: unlock as soon as supplier flips status to approved.
+    _inqCh?.let((c) {}); // no-op
+    try {
+      _inqCh = supabase
+          .channel('inq:$productId')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.update,
+            schema: 'public',
+            table: 'product_inquiries',
+            filter: PostgresChangeFilter(
+                type: PostgresChangeFilterType.eq,
+                column: 'product_id',
+                value: productId),
+            callback: (payload) {
+              final n = payload.newRecord;
+              if (n['buyer_id'] == _buyerId && n['status'] == 'approved') {
+                if (mounted) setState(() => _hasInquired = true);
+              }
+            },
+          )
+          .subscribe();
+    } catch (_) {}
+  }
+
+  Future<void> _openInquiryGate(Product p) async {
+    if (_buyerId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sign in to send an inquiry')));
+      return;
+    }
+    final supplierId = _supplier?['id'] as String?;
+    if (supplierId == null) return;
+    final controller = TextEditingController(
+        text:
+            'Hi, before placing an order I\'d like to confirm specs, packaging, lead time, and sample availability for "${p.title}". Thanks.');
+    bool sending = false;
+    final sent = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.card,
+      shape: const RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) => Padding(
+          padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+              left: 16,
+              right: 16,
+              top: 16),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Row(children: [
+              const Icon(LucideIcons.shieldCheck,
+                  color: AppColors.primary, size: 20),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text('Inquire before ordering',
+                    style: TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w900)),
+              ),
+              IconButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                icon: const Icon(LucideIcons.x, size: 18),
+              ),
+            ]),
+            const SizedBox(height: 4),
+            const Text(
+              'Trade Assurance requires the supplier to review and approve your request before you can add this product to cart.',
+              style: TextStyle(fontSize: 12, color: AppColors.muted),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              maxLines: 5,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: 'Message the supplier…',
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: FilledButton.icon(
+                onPressed: sending
+                    ? null
+                    : () async {
+                        final msg = controller.text.trim();
+                        if (msg.isEmpty) return;
+                        setSt(() => sending = true);
+                        try {
+                          final existing = await supabase
+                              .from('product_inquiries')
+                              .select('id')
+                              .eq('buyer_id', _buyerId!)
+                              .eq('product_id', p.id)
+                              .maybeSingle();
+                          if (existing?['id'] != null) {
+                            await supabase
+                                .from('product_inquiries')
+                                .update({
+                              'message': msg,
+                              'product_title': p.title,
+                              'supplier_id': supplierId,
+                              'status': 'pending',
+                              'decided_at': null,
+                              'decided_by': null,
+                            }).eq('id', existing!['id']);
+                          } else {
+                            await supabase.from('product_inquiries').insert({
+                              'buyer_id': _buyerId,
+                              'product_id': p.id,
+                              'supplier_id': supplierId,
+                              'message': msg,
+                              'product_title': p.title,
+                              'status': 'pending',
+                            });
+                          }
+                          // Find/create conversation & append message
+                          final ex = await supabase
+                              .from('conversations')
+                              .select('id')
+                              .eq('buyer_id', _buyerId!)
+                              .eq('supplier_id', supplierId)
+                              .maybeSingle();
+                          String? convId = ex?['id'] as String?;
+                          if (convId == null) {
+                            final c = await supabase
+                                .from('conversations')
+                                .insert({
+                                  'buyer_id': _buyerId,
+                                  'supplier_id': supplierId,
+                                  'last_message': msg,
+                                  'last_message_at':
+                                      DateTime.now().toIso8601String(),
+                                })
+                                .select('id')
+                                .single();
+                            convId = c['id'] as String;
+                          } else {
+                            await supabase.from('conversations').update({
+                              'last_message': msg,
+                              'last_message_at':
+                                  DateTime.now().toIso8601String(),
+                            }).eq('id', convId);
+                          }
+                          await supabase.from('messages').insert({
+                            'conversation_id': convId,
+                            'sender_id': _buyerId,
+                            'body': msg,
+                          });
+                          if (ctx.mounted) Navigator.pop(ctx, true);
+                        } catch (e) {
+                          setSt(() => sending = false);
+                          if (ctx.mounted) {
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                                SnackBar(content: Text('$e')));
+                          }
+                        }
+                      },
+                icon: const Icon(LucideIcons.send, size: 16),
+                label: Text(sending ? 'Sending…' : 'Send inquiry'),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+    if (sent == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+              'Inquiry sent. Waiting for supplier approval to unlock checkout.')));
+    }
   }
 
   Future<void> _load() async {
