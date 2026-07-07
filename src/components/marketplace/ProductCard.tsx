@@ -414,10 +414,10 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
             <ShieldCheck className="w-3 h-3" /> Trade Assurance
           </span>
           <div className="inline-flex items-center gap-1 text-muted-foreground" aria-label="Accepted payment methods">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" title="Visa" loading="lazy" className="h-4 w-auto object-contain bg-white rounded-sm p-0.5 ring-1 ring-border" />
-            <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" title="Mastercard" loading="lazy" className="h-4 w-auto object-contain bg-white rounded-sm p-0.5 ring-1 ring-border" />
-            <img src="https://upload.wikimedia.org/wikipedia/commons/a/a4/Paypal_2014_logo.png" alt="PayPal" title="PayPal" loading="lazy" className="h-4 w-auto object-contain bg-white rounded-sm p-0.5 ring-1 ring-border" />
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/Ecocash_logo.png/320px-Ecocash_logo.png" alt="EcoCash" title="EcoCash" loading="lazy" className="h-4 w-auto object-contain bg-white rounded-sm p-0.5 ring-1 ring-border" />
+            <PayLogo src={visaLogo} alt="Visa" />
+            <PayLogo src={mastercardLogo} alt="Mastercard" />
+            <PayLogo src={paypalLogo} alt="PayPal" />
+            <PayLogo src={ecocashLogo} alt="EcoCash" />
             <span title="Wallet" className="inline-flex items-center justify-center h-4 px-1 rounded-sm bg-amber-500/15 text-amber-600">
               <Wallet className="w-3 h-3" />
             </span>
