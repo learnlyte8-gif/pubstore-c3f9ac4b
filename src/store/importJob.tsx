@@ -143,10 +143,18 @@ export function ImportJobProvider({ children }: { children: React.ReactNode }) {
         const p = (data as any)?.product as ImportedProduct | undefined;
         if (!p) throw new Error("Empty response");
 
-        const finalPrice = applyMarkup(p.price, markupMode, markupValue);
-        if (finalPrice == null) throw new Error("No price found");
+        // Prefer extractor price, then the price captured in the listing preview.
+        const basePrice = p.price ?? it.price ?? null;
+        const marked = applyMarkup(basePrice, markupMode, markupValue);
+        // If nothing could be found, save as a draft priced at 0 so the user can edit
+        // and publish later instead of losing the whole row to an error.
+        const finalPrice = marked ?? 0;
+        const isDraft = basePrice == null;
 
-        const stored = await mirrorImages(user.id, p.images, `bulk-${i}`);
+        const imagePool = (p.images && p.images.length > 0)
+          ? p.images
+          : (it.image ? [it.image] : []);
+        const stored = await mirrorImages(user.id, imagePool, `bulk-${i}`);
 
         const { data: product, error: insErr } = await supabase.from("products").insert({
           supplier_id: supplier.id,
@@ -155,12 +163,12 @@ export function ImportJobProvider({ children }: { children: React.ReactNode }) {
           image: stored[0] ?? null,
           gallery: stored,
           price: finalPrice,
-          original_price: p.price ?? null,
+          original_price: basePrice ?? null,
           moq: p.moq ?? 1,
           unit: p.unit ?? "piece",
           category_slug: it.category_slug ?? p.category_slug ?? null,
           ship_from: supplier.country ?? null,
-          active: true,
+          active: !isDraft,
         }).select("id").single();
         if (insErr) throw insErr;
 
