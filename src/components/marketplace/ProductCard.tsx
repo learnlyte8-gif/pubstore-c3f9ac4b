@@ -11,6 +11,34 @@ import ShareToChatSheet from "@/components/chat/ShareToChatSheet";
 import type { ChatAttachment } from "@/components/chat/AttachmentCard";
 import InquiryGateDialog from "@/components/marketplace/InquiryGateDialog";
 import { getInquiryStatus } from "@/lib/inquiryGate";
+import visaLogo from "@/assets/payments/visa.svg";
+import mastercardLogo from "@/assets/payments/mastercard.svg";
+import paypalLogo from "@/assets/payments/paypal.svg";
+import ecocashLogo from "@/assets/payments/ecocash.svg";
+
+function PayLogo({ src, alt }: { src: string; alt: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <span
+        title={alt}
+        className="inline-flex items-center justify-center h-4 px-1 rounded-sm bg-muted text-foreground/70 text-[8px] font-extrabold leading-none ring-1 ring-border"
+      >
+        {alt}
+      </span>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={alt}
+      title={alt}
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className="h-4 w-auto object-contain bg-white rounded-sm p-0.5 ring-1 ring-border"
+    />
+  );
+}
 
 const fmtPrice = (n: number) => `$${n.toFixed(2)}`;
 const fmtSold = (n: number) =>
