@@ -11,6 +11,34 @@ import ShareToChatSheet from "@/components/chat/ShareToChatSheet";
 import type { ChatAttachment } from "@/components/chat/AttachmentCard";
 import InquiryGateDialog from "@/components/marketplace/InquiryGateDialog";
 import { getInquiryStatus } from "@/lib/inquiryGate";
+import visaLogo from "@/assets/payments/visa.svg";
+import mastercardLogo from "@/assets/payments/mastercard.svg";
+import paypalLogo from "@/assets/payments/paypal.svg";
+import ecocashLogo from "@/assets/payments/ecocash.svg";
+
+function PayLogo({ src, alt }: { src: string; alt: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <span
+        title={alt}
+        className="inline-flex items-center justify-center h-4 px-1 rounded-sm bg-muted text-foreground/70 text-[8px] font-extrabold leading-none ring-1 ring-border"
+      >
+        {alt}
+      </span>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={alt}
+      title={alt}
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className="h-4 w-auto object-contain bg-white rounded-sm p-0.5 ring-1 ring-border"
+    />
+  );
+}
 
 const fmtPrice = (n: number) => `$${n.toFixed(2)}`;
 const fmtSold = (n: number) =>
@@ -386,10 +414,10 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
             <ShieldCheck className="w-3 h-3" /> Trade Assurance
           </span>
           <div className="inline-flex items-center gap-1 text-muted-foreground" aria-label="Accepted payment methods">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" title="Visa" loading="lazy" className="h-4 w-auto object-contain bg-white rounded-sm p-0.5 ring-1 ring-border" />
-            <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" title="Mastercard" loading="lazy" className="h-4 w-auto object-contain bg-white rounded-sm p-0.5 ring-1 ring-border" />
-            <img src="https://upload.wikimedia.org/wikipedia/commons/a/a4/Paypal_2014_logo.png" alt="PayPal" title="PayPal" loading="lazy" className="h-4 w-auto object-contain bg-white rounded-sm p-0.5 ring-1 ring-border" />
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/Ecocash_logo.png/320px-Ecocash_logo.png" alt="EcoCash" title="EcoCash" loading="lazy" className="h-4 w-auto object-contain bg-white rounded-sm p-0.5 ring-1 ring-border" />
+            <PayLogo src={visaLogo} alt="Visa" />
+            <PayLogo src={mastercardLogo} alt="Mastercard" />
+            <PayLogo src={paypalLogo} alt="PayPal" />
+            <PayLogo src={ecocashLogo} alt="EcoCash" />
             <span title="Wallet" className="inline-flex items-center justify-center h-4 px-1 rounded-sm bg-amber-500/15 text-amber-600">
               <Wallet className="w-3 h-3" />
             </span>
