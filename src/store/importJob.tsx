@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { supabase } from "@/integrations/supabase/client";
 import { fetchMySupplier } from "@/data/products";
 import { toast } from "sonner";
+import { importProductFromUrl } from "@/lib/importProduct";
 
 export type ImportedProduct = {
   title: string;
@@ -137,11 +138,7 @@ export function ImportJobProvider({ children }: { children: React.ReactNode }) {
       if (cancelRef.current) break;
       setState((s) => ({ ...s, items: s.items.map((x, idx) => (idx === i ? { ...x, status: "importing" } : x)) }));
       try {
-        const { data, error } = await supabase.functions.invoke("import-product", { body: { url: it.url } });
-        if (error) throw error;
-        if ((data as any)?.error) throw new Error((data as any).error);
-        const p = (data as any)?.product as ImportedProduct | undefined;
-        if (!p) throw new Error("Empty response");
+        const p = await importProductFromUrl(it.url);
 
         // Prefer extractor price, then the price captured in the listing preview.
         const basePrice = p.price ?? it.price ?? null;
