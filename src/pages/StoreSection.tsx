@@ -16,6 +16,7 @@ import ImageUpload from "@/components/ImageUpload";
 import { uploadProductImages } from "@/lib/uploadProductImages";
 import AddAdDialog from "@/components/store/AddAdDialog";
 import { VERTICALS } from "@/data/verticalsCatalog";
+import { importProductFromUrl } from "@/lib/importProduct";
 
 
 const titles: Record<string, { title: string; sub: string }> = {
@@ -259,11 +260,7 @@ function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: M
     if (!url.trim()) { toast.error("Paste a product URL"); return; }
     setLoading(true); setPreview(null);
     try {
-      const { data, error } = await supabase.functions.invoke("import-product", { body: { url: url.trim() } });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      const p = (data as any)?.product as ImportedProduct | undefined;
-      if (!p) throw new Error("Nothing returned");
+      const p = await importProductFromUrl(url.trim());
       // Pre-apply markup to the price shown in the preview.
       setPreview({ ...p, price: applyMarkup(p.price, markupMode, markupValue), original_price: p.price });
     } catch (err: any) {
