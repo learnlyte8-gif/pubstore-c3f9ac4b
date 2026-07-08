@@ -123,7 +123,7 @@ export default function MyStore() {
     qc.invalidateQueries({ queryKey: ["my-live-stream"] });
   };
 
-  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm"><CircleSpinner size={28} /></div>;
+  if (userId === undefined || (userId && isLoading)) return <div className="p-8 text-center text-muted-foreground text-sm"><CircleSpinner size={28} /></div>;
 
   if (!supplier) {
     return (
