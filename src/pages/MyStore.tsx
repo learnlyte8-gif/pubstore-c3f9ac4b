@@ -15,7 +15,30 @@ import BackButton from "@/components/BackButton";
 export default function MyStore() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { data: supplier, isLoading } = useQuery({ queryKey: ["my-supplier"], queryFn: fetchMySupplier });
+  const [userId, setUserId] = useState<string | null | undefined>(undefined); // undefined = unknown
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
+      setUserId(session?.user?.id ?? null);
+      setUserEmail((session?.user?.email || "").toLowerCase() || null);
+      if (!session) navigate("/auth?redirect=/store");
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUserId(session?.user?.id ?? null);
+      setUserEmail((session?.user?.email || "").toLowerCase() || null);
+      qc.invalidateQueries({ queryKey: ["my-supplier"] });
+    });
+    return () => { mounted = false; sub.subscription.unsubscribe(); };
+  }, [navigate, qc]);
+
+  const { data: supplier, isLoading } = useQuery({
+    queryKey: ["my-supplier", userId],
+    queryFn: fetchMySupplier,
+    enabled: !!userId,
+  });
   const { status: verificationStatus } = useVerification();
   const onboardingSteps = buildOnboardingSteps(supplier ?? null, verificationStatus);
   const canPublish = isOnboardingComplete(onboardingSteps);
@@ -61,14 +84,7 @@ export default function MyStore() {
   const [showGoLive, setShowGoLive] = useState(false);
   const [streamTitle, setStreamTitle] = useState("");
   const [starting, setStarting] = useState(false);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) { navigate("/auth"); return; }
-      setUserEmail((session.user.email || "").toLowerCase());
-    });
-  }, [navigate]);
 
   const canImport = userEmail === "kukistacks8@gmail.com";
 
@@ -107,7 +123,7 @@ export default function MyStore() {
     qc.invalidateQueries({ queryKey: ["my-live-stream"] });
   };
 
-  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm"><CircleSpinner size={28} /></div>;
+  if (userId === undefined || (userId && isLoading)) return <div className="p-8 text-center text-muted-foreground text-sm"><CircleSpinner size={28} /></div>;
 
   if (!supplier) {
     return (
