@@ -660,6 +660,232 @@ function LabeledInput({ label, value, onChange, type = "text" }: { label: string
 }
 
 
+// ---------------- AliExpress category search (omkar.cloud) ----------------
+type AliItem = {
+  id: string;
+  title: string;
+  image: string | null;
+  price: number | null;
+  original_price: number | null;
+  currency: string | null;
+  rating: number | null;
+  orders_count: number | null;
+  url: string | null;
+};
+
+const ALI_PRICE_MULTIPLIER = 4;
+
+function AliExpressImport({ qc }: { qc: ReturnType<typeof useQueryClient> }) {
+  const [categorySlug, setCategorySlug] = useState<string>("");
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [items, setItems] = useState<AliItem[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [progress, setProgress] = useState({ done: 0, total: 0, errors: 0 });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ["import-categories"],
+    queryFn: async () => {
+      const { data } = await supabase.from("categories").select("id,name,slug").order("sort_order", { ascending: true });
+      return (data ?? []) as { id: string; name: string; slug: string }[];
+    },
+  });
+
+  const runSearch = async (nextPage = 1) => {
+    const q = query.trim();
+    if (!q) { toast.error("Pick a category or type a query"); return; }
+    setLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Please sign in again.");
+      const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/omkar-aliexpress-search`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ query: q, page: nextPage }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j?.error || `Search failed (${r.status})`);
+      const list = (j?.items ?? []) as AliItem[];
+      setItems(list);
+      setPage(j?.page ?? nextPage);
+      setSelected(new Set(list.map((x) => x.id)));
+      if (list.length === 0) toast.error("No products found");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Search failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggle = (id: string) => {
+    setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  };
+  const selectAll = () => setSelected(new Set(items.map((x) => x.id)));
+  const clearAll = () => setSelected(new Set());
+
+  const importSelected = async () => {
+    const chosen = items.filter((it) => selected.has(it.id));
+    if (chosen.length === 0) { toast.error("Select at least one product"); return; }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { toast.error("Please sign in"); return; }
+    const supplier = await fetchMySupplier();
+    if (!supplier) { toast.error("Create your store first"); return; }
+
+    setImporting(true);
+    setProgress({ done: 0, total: chosen.length, errors: 0 });
+    let errors = 0;
+    for (let i = 0; i < chosen.length; i++) {
+      const it = chosen[i];
+      try {
+        const basePrice = it.price ?? 0;
+        const finalPrice = Math.round(basePrice * ALI_PRICE_MULTIPLIER * 100) / 100;
+        const stored = it.image ? await mirrorImages(user.id, [it.image], `ali-${it.id}`) : [];
+        const { error: insErr } = await supabase.from("products").insert({
+          supplier_id: supplier.id,
+          title: it.title.slice(0, 200),
+          description: `Imported from AliExpress · ${it.url ?? ""}`.trim(),
+          image: stored[0] ?? it.image ?? null,
+          gallery: stored.length ? stored : (it.image ? [it.image] : []),
+          price: finalPrice,
+          original_price: basePrice || null,
+          moq: 1,
+          unit: "piece",
+          category_slug: categorySlug || null,
+          ship_from: supplier.country ?? null,
+          active: finalPrice > 0,
+        });
+        if (insErr) throw insErr;
+      } catch (err) {
+        console.error("ali import err", err);
+        errors++;
+      }
+      setProgress({ done: i + 1, total: chosen.length, errors });
+    }
+    setImporting(false);
+    qc.invalidateQueries({ queryKey: ["my-products"] });
+    toast.success(`Imported ${chosen.length - errors}/${chosen.length} products${errors ? ` (${errors} failed)` : ""}`);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-2xl border bg-card p-3 shadow-card space-y-2">
+        <p className="text-sm font-bold">Search AliExpress by category</p>
+        <p className="text-[11px] text-muted-foreground">
+          Prices are automatically multiplied by <b>{ALI_PRICE_MULTIPLIER}×</b> when importing so you keep a healthy margin.
+        </p>
+        <select
+          value={categorySlug}
+          onChange={(e) => {
+            const slug = e.target.value;
+            setCategorySlug(slug);
+            const cat = categories.find((c) => c.slug === slug);
+            if (cat) setQuery(cat.name);
+          }}
+          className="w-full h-10 rounded-xl border bg-background px-2 text-xs font-semibold"
+        >
+          <option value="">— Pick a category —</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.slug}>{c.name}</option>
+          ))}
+        </select>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="e.g. wireless earbuds"
+            className="flex-1 h-10 rounded-xl border bg-background px-3 text-sm"
+          />
+          <Button onClick={() => runSearch(1)} disabled={loading || importing} className="h-10">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+            <span className="ml-1 text-xs">Search</span>
+          </Button>
+        </div>
+      </div>
+
+      {items.length > 0 && (
+        <>
+          <div className="flex items-center justify-between px-1">
+            <p className="text-[11px] text-muted-foreground">
+              {selected.size} / {items.length} selected · page {page}
+            </p>
+            <div className="flex gap-1">
+              <button onClick={selectAll} className="text-[11px] font-bold text-primary px-2 py-1">All</button>
+              <button onClick={clearAll} className="text-[11px] font-bold text-muted-foreground px-2 py-1">None</button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            {items.map((it) => {
+              const isSel = selected.has(it.id);
+              const markedUp = it.price != null ? (it.price * ALI_PRICE_MULTIPLIER).toFixed(2) : null;
+              return (
+                <button
+                  key={it.id}
+                  onClick={() => toggle(it.id)}
+                  className={`text-left rounded-2xl border overflow-hidden bg-card transition ${isSel ? "border-primary ring-2 ring-primary/30" : "border-border"}`}
+                >
+                  <div className="aspect-square bg-muted relative">
+                    {it.image ? (
+                      <img src={it.image} alt={it.title} className="w-full h-full object-cover" loading="lazy" />
+                    ) : null}
+                    <div className={`absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center ${isSel ? "bg-primary text-primary-foreground" : "bg-background/80 border"}`}>
+                      {isSel ? <Check className="w-3 h-3" /> : null}
+                    </div>
+                  </div>
+                  <div className="p-2 space-y-0.5">
+                    <p className="text-[11px] leading-tight line-clamp-2 font-semibold">{it.title}</p>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-[11px] text-muted-foreground line-through">
+                        {it.price != null ? `$${it.price.toFixed(2)}` : "—"}
+                      </span>
+                      <span className="text-xs font-bold text-primary">
+                        {markedUp ? `$${markedUp}` : ""}
+                      </span>
+                    </div>
+                    {it.orders_count != null || it.rating != null ? (
+                      <p className="text-[10px] text-muted-foreground">
+                        {it.rating != null ? `★ ${it.rating}` : ""}{it.rating != null && it.orders_count != null ? " · " : ""}{it.orders_count != null ? `${it.orders_count} sold` : ""}
+                      </p>
+                    ) : null}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex gap-2">
+            <Button variant="outline" className="flex-1 h-11" disabled={loading || page <= 1} onClick={() => runSearch(page - 1)}>Prev</Button>
+            <Button variant="outline" className="flex-1 h-11" disabled={loading} onClick={() => runSearch(page + 1)}>Next</Button>
+          </div>
+
+          <div className="sticky bottom-2 z-10">
+            <Button
+              className="w-full h-12 shadow-card"
+              disabled={importing || selected.size === 0}
+              onClick={importSelected}
+            >
+              {importing
+                ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Importing {progress.done}/{progress.total}…</>
+                : <><Download className="w-4 h-4 mr-2" /> Import {selected.size} product{selected.size === 1 ? "" : "s"} (×{ALI_PRICE_MULTIPLIER} price)</>}
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+
+
+
+
 // ---------------- Products list ----------------
 function ProductsView() {
   const qc = useQueryClient();
