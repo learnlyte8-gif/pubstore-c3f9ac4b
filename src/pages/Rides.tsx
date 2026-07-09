@@ -17,6 +17,9 @@ import PoolPanel from "@/components/rides/PoolPanel";
 import CircleSpinner from "@/components/CircleSpinner";
 import { supabase as sbAny } from "@/integrations/supabase/client";
 import BackButton from "@/components/BackButton";
+import BnbSearchBar from "@/components/bnb/BnbSearchBar";
+import BnbSearchSheet, { type BnbSearchState } from "@/components/bnb/BnbSearchSheet";
+import BnbCategoryRail from "@/components/bnb/BnbCategoryRail";
 
 type LatLng = { lat: number; lng: number };
 type VClass = Ride["vehicle_class"];
