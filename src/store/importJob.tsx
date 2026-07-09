@@ -147,6 +147,12 @@ export function ImportJobProvider({ children }: { children: React.ReactNode }) {
         // and publish later instead of losing the whole row to an error.
         const finalPrice = marked ?? 0;
         const isDraft = basePrice == null;
+        // Show a small "discount" by making original_price slightly higher than our price.
+        // Bump between 8–18% above final price, rounded to look natural (.99).
+        const bumpPct = 0.08 + Math.random() * 0.10;
+        const inflated = finalPrice > 0
+          ? Math.max(finalPrice + 1, Math.round(finalPrice * (1 + bumpPct)) - 0.01)
+          : null;
 
         const imagePool = (p.images && p.images.length > 0)
           ? p.images
@@ -160,7 +166,7 @@ export function ImportJobProvider({ children }: { children: React.ReactNode }) {
           image: stored[0] ?? null,
           gallery: stored,
           price: finalPrice,
-          original_price: basePrice ?? null,
+          original_price: inflated,
           moq: p.moq ?? 1,
           unit: p.unit ?? "piece",
           category_slug: it.category_slug ?? p.category_slug ?? null,
