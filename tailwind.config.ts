@@ -57,6 +57,14 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        bnb: {
+          rausch: "hsl(var(--bnb-rausch))",
+          "rausch-foreground": "hsl(var(--bnb-rausch-foreground))",
+          hof: "hsl(var(--bnb-hof))",
+          foggy: "hsl(var(--bnb-foggy))",
+          babu: "hsl(var(--bnb-babu))",
+          arches: "hsl(var(--bnb-arches))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -68,6 +76,8 @@ export default {
         card: "var(--shadow-card)",
         elevated: "var(--shadow-elevated)",
         pop: "var(--shadow-pop)",
+        bnb: "var(--shadow-bnb)",
+        "bnb-lg": "var(--shadow-bnb-lg)",
       },
       keyframes: {
         "accordion-down": {
