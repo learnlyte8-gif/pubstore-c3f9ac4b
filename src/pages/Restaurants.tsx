@@ -11,6 +11,7 @@ import { fetchRestaurants, fetchRestaurant, fetchMenu, fetchMyRestaurants, CUISI
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import BackButton from "@/components/BackButton";
+import BnbVerticalScreen from "@/components/bnb/BnbVerticalScreen";
 
 export default function Restaurants() {
   const { id } = useParams();
