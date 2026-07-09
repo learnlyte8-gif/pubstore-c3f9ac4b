@@ -340,6 +340,19 @@ export default function Rides() {
         maskImage: "radial-gradient(70% 50% at 50% 0%, black 30%, transparent 80%)"
       }} />
 
+      {/* Airbnb-style search entry */}
+      {!inActiveFlow && (
+        <BnbSearchBar
+          value={{
+            where: dropoff?.address ?? "",
+            when: pickup?.address ? `From ${pickup.address.split(",")[0]}` : "",
+            who: `${CLASSES.find(c => c.id === vClass)?.label ?? "Economy"} · $${fare.toFixed(2)}`,
+          }}
+          placeholder="Where to? · Now · 1 passenger"
+          onOpen={() => setSearchOpen(true)}
+        />
+      )}
+
 
       {/* HERO HEADER STRIP */}
       <div className="relative px-3 pt-3 pb-2 flex items-center justify-between">
