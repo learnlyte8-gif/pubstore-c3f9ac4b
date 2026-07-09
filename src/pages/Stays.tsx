@@ -1,29 +1,19 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchStays, fetchStay } from "@/data/verticals";
-import { ArrowLeft, BedDouble, Star, MapPin, Users, Bath, Wifi, Sparkles } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ArrowLeft, BedDouble, Star, MapPin, Users, Bath, Wifi, Sparkles as SparklesIcon, Building2, Home as HomeIcon, Palmtree, Factory } from "lucide-react";
+import { useState } from "react";
 import StayBookingDialog from "@/components/marketplace/StayBookingDialog";
-import { useUrlFilters } from "@/hooks/useUrlFilters";
-import { FilterBar, FilterField, SortPills } from "@/components/marketplace/FilterBar";
-import { Slider } from "@/components/ui/slider";
-import { Checkbox } from "@/components/ui/checkbox";
 import CircleSpinner from "@/components/CircleSpinner";
+import BnbVerticalScreen from "@/components/bnb/BnbVerticalScreen";
 
-const KINDS = [
-  { id: "all", label: "All stays" },
-  { id: "b&b", label: "B&B" },
-  { id: "hotel", label: "Hotels" },
-  { id: "apartment", label: "Apartments" },
-  { id: "factory_tour", label: "Factory tours" },
-  { id: "retreat", label: "Retreats" },
-];
-
-const SORTS = [
-  { id: "rating", label: "Top rated" },
-  { id: "price_asc", label: "Price ↑" },
-  { id: "price_desc", label: "Price ↓" },
-  { id: "reviews", label: "Most reviewed" },
+const BNB_STAY_CATS = [
+  { slug: "all", label: "All stays", icon: SparklesIcon },
+  { slug: "b&b", label: "B&B", icon: BedDouble },
+  { slug: "hotel", label: "Hotels", icon: Building2 },
+  { slug: "apartment", label: "Apartments", icon: HomeIcon },
+  { slug: "factory_tour", label: "Factory tours", icon: Factory },
+  { slug: "retreat", label: "Retreats", icon: Palmtree },
 ];
 
 export default function Stays() {
@@ -33,152 +23,31 @@ export default function Stays() {
 }
 
 function StaysIndex() {
-  const { values, update, reset } = useUrlFilters({
-    q: "",
-    kind: "all",
-    sort: "rating",
-    maxPrice: "",
-    superhost: "",
-  });
-
-  const { data: stays = [], isLoading } = useQuery({
-    queryKey: ["stays", values.kind],
-    queryFn: () => fetchStays(values.kind === "all" ? {} : { kind: values.kind }),
-  });
-
-  const priceMax = useMemo(
-    () => Math.max(50, Math.ceil((stays.reduce((m, s) => Math.max(m, s.price_per_night), 0) || 500) / 50) * 50),
-    [stays],
-  );
-
-  const filtered = useMemo(() => {
-    const q = values.q.trim().toLowerCase();
-    const cap = values.maxPrice ? Number(values.maxPrice) : 0;
-    let list = stays.filter((s) => {
-      if (cap > 0 && s.price_per_night > cap) return false;
-      if (values.superhost === "1" && !s.superhost) return false;
-      if (!q) return true;
-      const hay = `${s.title} ${s.city ?? ""} ${s.country ?? ""} ${s.kind} ${s.amenities.join(" ")}`.toLowerCase();
-      return hay.includes(q);
-    });
-    list = [...list].sort((a, b) => {
-      if (values.sort === "price_asc") return a.price_per_night - b.price_per_night;
-      if (values.sort === "price_desc") return b.price_per_night - a.price_per_night;
-      if (values.sort === "reviews") return b.review_count - a.review_count;
-      return b.rating - a.rating;
-    });
-    return list;
-  }, [stays, values]);
-
-  const advancedCount =
-    (values.sort !== "rating" ? 1 : 0) + (values.maxPrice ? 1 : 0) + (values.superhost === "1" ? 1 : 0);
-  const anyActive = !!values.q || values.kind !== "all" || advancedCount > 0;
-
   return (
-    <div className="pb-10">
-      {/* Hero */}
-      <div className="relative mx-4 mt-3 rounded-3xl overflow-hidden shadow-elevated bg-gradient-to-br from-amber-50 via-rose-50 to-orange-100 p-5">
-        <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-amber-300/40 blur-3xl" />
-        <div className="absolute -bottom-12 -left-8 w-40 h-40 rounded-full bg-rose-300/40 blur-3xl" />
-        <div className="relative">
-          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-800 mb-2">
-            <Sparkles className="w-3 h-3" />
-            <span className="text-[9px] font-bold uppercase tracking-wider">PUBSTORE Stays</span>
-          </div>
-          <h1 className="font-serif text-3xl leading-tight tracking-tight text-zinc-900">
-            Stay where the<br />makers live.
-          </h1>
-          <p className="text-[12px] text-zinc-700 mt-2 max-w-xs">
-            Curated B&Bs, designer apartments and supplier-hosted factory tours — vetted by PUBSTORE.
-          </p>
-        </div>
-      </div>
-
-      <FilterBar
-        tone="light"
-        search={values.q}
-        onSearchChange={(q) => update({ q })}
-        searchPlaceholder="Search city, host, amenities…"
-        chips={KINDS}
-        chipValue={values.kind}
-        onChipChange={(kind) => update({ kind })}
-        canReset={anyActive}
-        onReset={reset}
-        activeAdvancedCount={advancedCount}
-        trailing={`${filtered.length} ${filtered.length === 1 ? "stay" : "stays"}`}
-        advanced={
-          <div className="space-y-3">
-            <FilterField label="Sort by">
-              <SortPills value={values.sort} onChange={(v) => update({ sort: v })} options={SORTS} />
-            </FilterField>
-            <FilterField label={`Max price${values.maxPrice ? ` · $${values.maxPrice}/night` : ""}`}>
-              <Slider
-                min={0}
-                max={priceMax}
-                step={25}
-                value={[values.maxPrice ? Number(values.maxPrice) : 0]}
-                onValueChange={([v]) => update({ maxPrice: v ? String(v) : "" })}
-              />
-              <p className="text-[10px] text-muted-foreground">0 = any price · up to ${priceMax}</p>
-            </FilterField>
-            <label className="flex items-center gap-2 text-[12px] font-semibold cursor-pointer">
-              <Checkbox
-                checked={values.superhost === "1"}
-                onCheckedChange={(c) => update({ superhost: c ? "1" : "" })}
-              />
-              Superhosts only
-            </label>
-          </div>
-        }
-      />
-
-      {isLoading && <p className="px-4 mt-8 text-center text-sm text-muted-foreground">Loading stays…</p>}
-
-      {!isLoading && filtered.length === 0 && (
-        <div className="px-4 mt-10 text-center">
-          <BedDouble className="w-8 h-8 mx-auto text-muted-foreground" />
-          <p className="mt-2 text-sm font-bold">No stays match your filters.</p>
-          <button onClick={reset} className="mt-1 text-xs text-primary font-bold">Reset filters</button>
-        </div>
-      )}
-
-      <div className="px-4 mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {filtered.map((s, i) => (
-          <Link
-            key={s.id}
-            to={`/stays/${s.id}`}
-            className="block group animate-fade-in"
-            style={{ animationDelay: `${Math.min(i, 8) * 30}ms`, animationFillMode: "backwards" }}
-          >
-            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-muted shadow-card transition-shadow duration-300 group-hover:shadow-elevated">
-              {s.cover && <img src={s.cover} alt={s.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />}
-              {s.superhost && (
-                <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-amber-400 text-foreground text-[10px] font-bold uppercase tracking-wider shadow">
-                  Superhost
-                </span>
-              )}
-              <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-background/95 backdrop-blur text-[11px] font-bold flex items-center gap-1">
-                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                {s.rating.toFixed(2)}
-              </span>
-            </div>
-            <div className="mt-2">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{s.kind}</p>
-              <p className="font-serif text-base leading-snug line-clamp-1">{s.title}</p>
-              <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                <MapPin className="w-3 h-3" /> {s.city}{s.country ? `, ${s.country}` : ""}
-              </p>
-              <p className="text-sm mt-1.5">
-                <span className="font-bold tabular-nums">${Math.round(s.price_per_night)}</span>
-                <span className="text-[11px] text-muted-foreground"> / night · {s.review_count} reviews</span>
-              </p>
-            </div>
-          </Link>
-        ))}
-      </div>
-    </div>
+    <BnbVerticalScreen
+      queryKey={["bnb-stays"]}
+      fetcher={(cat) => fetchStays(cat === "all" ? {} : { kind: cat })}
+      categories={BNB_STAY_CATS}
+      units="guests"
+      saveKind="stay"
+      wherePlaceholder="Search cities, hosts, retreats"
+      emptyLabel="No stays match your search"
+      toListing={(s) => ({
+        id: s.id,
+        title: s.title,
+        location: [s.city, s.country].filter(Boolean).join(", ") || null,
+        subtitle: `${s.beds} beds · ${s.baths} baths`,
+        images: [s.cover, ...(s.gallery ?? [])].filter(Boolean) as string[],
+        price: s.price_per_night,
+        priceUnit: "night",
+        rating: s.rating,
+        badge: s.superhost ? "Superhost" : null,
+        href: `/stays/${s.id}`,
+      })}
+    />
   );
 }
+
 
 function StayDetail({ id }: { id: string }) {
   const navigate = useNavigate();

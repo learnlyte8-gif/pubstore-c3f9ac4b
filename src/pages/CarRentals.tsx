@@ -19,99 +19,48 @@ export default function CarRentals() {
   return <CarRentalList />;
 }
 
-/* ---------------- LIST ---------------- */
+/* ---------------- LIST (Airbnb-style) ---------------- */
+import BnbVerticalScreen from "@/components/bnb/BnbVerticalScreen";
+import { Car as CarIcon, Zap, Truck, Crown, Rocket, Bus, Sparkles as SparklesRail } from "lucide-react";
+
+const BNB_CAR_CATS = [
+  { slug: "all", label: "All cars", icon: SparklesRail },
+  { slug: "economy", label: "Economy", icon: CarIcon },
+  { slug: "compact", label: "Compact", icon: CarIcon },
+  { slug: "suv", label: "SUV", icon: Truck },
+  { slug: "luxury", label: "Luxury", icon: Crown },
+  { slug: "exotic", label: "Exotic", icon: Rocket },
+  { slug: "van", label: "Van", icon: Bus },
+  { slug: "bakkie", label: "Bakkie", icon: Truck },
+  { slug: "ev", label: "Electric", icon: Zap },
+];
+
 function CarRentalList() {
-  const navigate = useNavigate();
-  const [klass, setKlass] = useState<string>("");
-  const { data: rentals = [], isLoading } = useQuery({
-    queryKey: ["car-rentals", klass],
-    queryFn: () => fetchCarRentals({ vehicle_class: klass || undefined, limit: 80 }),
-  });
-
   return (
-    <div className="pb-10">
-      {/* Hero */}
-      <header className="px-4 pt-4 pb-5 bg-gradient-to-br from-orange-600 via-amber-600 to-yellow-500 text-white relative overflow-hidden">
-        <div
-          aria-hidden
-          className="absolute inset-0 opacity-[0.08] pointer-events-none"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(90deg, transparent 0 12px, hsl(0 0% 100% / 1) 12px 14px)",
-          }}
-        />
-        <div className="relative">
-          <div className="flex items-center gap-2">
-            <button onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/home"))} aria-label="Back" className="w-9 h-9 rounded-full bg-white/15 backdrop-blur flex items-center justify-center active:scale-90 transition">
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            <span className="w-10 h-10 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center">
-              <Key className="w-5 h-5" />
-            </span>
-            <div>
-              <h1 className="text-xl font-black tracking-tight leading-tight">Car rentals</h1>
-              <p className="text-[11px] opacity-90">Self-drive · Daily · Weekly · Cross-border</p>
-            </div>
-          </div>
-
-          {/* Stats strip */}
-          <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-            <Stat label="Listings" value={String(rentals.length)} />
-            <Stat label="Insurance" value="Included" />
-            <Stat label="Avg pickup" value="Same day" />
-          </div>
-        </div>
-      </header>
-
-      {/* Class filter */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-none px-4 py-2.5">
-          <ChipBtn active={!klass} onClick={() => setKlass("")} label="All" />
-          {CAR_RENTAL_CLASSES.map((c) => (
-            <ChipBtn key={c.slug} active={klass === c.slug} onClick={() => setKlass(c.slug)} label={c.label} />
-          ))}
-        </div>
-      </div>
-
-      {/* Grid */}
-      <div className="px-4 mt-4">
-        {isLoading ? (
-          <div className="text-center py-10 text-sm text-muted-foreground">Loading fleet…</div>
-        ) : rentals.length === 0 ? (
-          <EmptyState title="No vehicles yet" description="Be the first to list a car for rent on PUBSTORE." />
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {rentals.map((r) => (
-              <CarRentalCard key={r.id} r={r} />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+    <BnbVerticalScreen
+      queryKey={["bnb-car-rentals"]}
+      fetcher={(cat) => fetchCarRentals(cat === "all" ? { limit: 80 } : { vehicle_class: cat, limit: 80 })}
+      categories={BNB_CAR_CATS}
+      units="passengers"
+      saveKind="vehicle"
+      wherePlaceholder="Search pickup city or make"
+      emptyLabel="No cars available"
+      toListing={(r) => ({
+        id: r.id,
+        title: r.title,
+        location: [r.city, r.country].filter(Boolean).join(", ") || null,
+        subtitle: `${r.seats} seats · ${r.transmission} · ${r.fuel}`,
+        images: [r.cover, ...(r.gallery ?? [])].filter(Boolean) as string[],
+        price: r.price_per_day,
+        priceUnit: "day",
+        rating: r.rating,
+        badge: r.verified ? "Verified" : r.featured ? "Featured" : null,
+        href: `/car-rentals/${r.id}`,
+      })}
+    />
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-white/15 backdrop-blur rounded-xl px-2 py-2 border border-white/20">
-      <p className="text-[9px] uppercase tracking-wider opacity-80">{label}</p>
-      <p className="text-sm font-black leading-tight">{value}</p>
-    </div>
-  );
-}
-
-function ChipBtn({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`shrink-0 px-3 h-8 rounded-full text-xs font-bold border transition ${
-        active ? "bg-foreground text-background border-foreground" : "bg-card hover:bg-muted"
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
 
 function CarRentalCard({ r }: { r: CarRental }) {
   return (

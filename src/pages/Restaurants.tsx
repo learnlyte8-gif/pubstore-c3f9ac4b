@@ -11,6 +11,7 @@ import { fetchRestaurants, fetchRestaurant, fetchMenu, fetchMyRestaurants, CUISI
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import BackButton from "@/components/BackButton";
+import BnbVerticalScreen from "@/components/bnb/BnbVerticalScreen";
 
 export default function Restaurants() {
   const { id } = useParams();
@@ -23,128 +24,66 @@ function priceLevel(n: number) {
 }
 
 function RestaurantsList() {
-  const [cuisine, setCuisine] = useState("");
   const [showOwner, setShowOwner] = useState(false);
 
-  const { data: list = [], isLoading } = useQuery({
-    queryKey: ["restaurants", cuisine],
-    queryFn: () => fetchRestaurants({ cuisine: cuisine || undefined, limit: 60 }),
-  });
-
-  const { data: mine = [] } = useQuery({
-    queryKey: ["my-restaurants"],
-    queryFn: fetchMyRestaurants,
-  });
+  const CATS = useMemo(
+    () => [
+      { slug: "all", label: "All", icon: UtensilsCrossed },
+      ...CUISINES.slice(0, 14).map((c) => ({ slug: c, label: c, icon: UtensilsCrossed })),
+    ],
+    [],
+  );
 
   return (
-    <div className="pb-8">
-      <header className="px-4 pt-4 pb-3 bg-gradient-to-br from-rose-600 via-orange-500 to-amber-400 text-white">
-        <div className="flex items-center gap-2">
-          <BackButton iconOnly className="bg-white/15 backdrop-blur text-white hover:bg-white/25" />
-          <span className="w-10 h-10 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center">
-            <UtensilsCrossed className="w-5 h-5" />
-          </span>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold leading-tight">Restaurants</h1>
-            <p className="text-[11px] opacity-90">Order food, reserve a table, and discover local kitchens.</p>
-          </div>
-          <button
-            onClick={() => setShowOwner(true)}
-            className="px-3 h-9 rounded-full bg-white text-foreground text-[11px] font-bold flex items-center gap-1 shadow-card"
-          >
-            <Plus className="w-3.5 h-3.5" /> List yours
-          </button>
+    <div className="min-h-screen bg-background pb-8">
+      <div className="px-4 pt-4 pb-3 flex items-center gap-2 border-b border-[hsl(var(--bnb-card-border))]">
+        <BackButton iconOnly />
+        <span className="w-10 h-10 rounded-2xl bg-[hsl(var(--bnb-rausch))]/10 text-[hsl(var(--bnb-rausch))] flex items-center justify-center">
+          <UtensilsCrossed className="w-5 h-5" />
+        </span>
+        <div className="flex-1">
+          <h1 className="text-lg font-bold leading-tight">Restaurants</h1>
+          <p className="text-[11px] text-[hsl(var(--bnb-foggy))]">Order food, reserve a table, discover local kitchens.</p>
         </div>
-      </header>
-
-      <div className="px-4 mt-3">
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-none -mx-4 px-4 pb-2">
-          <button
-            onClick={() => setCuisine("")}
-            className={`shrink-0 px-3 h-8 rounded-full text-xs font-bold border ${cuisine === "" ? "bg-foreground text-background" : "bg-card"}`}
-          >All</button>
-          {CUISINES.map((c) => (
-            <button
-              key={c}
-              onClick={() => setCuisine(c)}
-              className={`shrink-0 px-3 h-8 rounded-full text-xs font-bold border ${cuisine === c ? "bg-foreground text-background" : "bg-card"}`}
-            >{c}</button>
-          ))}
-        </div>
-
-        {mine.length > 0 && (
-          <div className="mt-3 bg-card border rounded-2xl p-3 shadow-card">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Your restaurants</p>
-            <div className="flex gap-2 overflow-x-auto scrollbar-none">
-              {mine.map((r) => (
-                <Link key={r.id} to={`/restaurants/${r.id}`} className="shrink-0 w-32 group">
-                  <div className="aspect-video rounded-xl overflow-hidden bg-muted">
-                    {r.cover && <img src={r.cover} alt={r.name} className="w-full h-full object-cover" />}
-                  </div>
-                  <p className="text-[11px] font-bold mt-1 truncate">{r.name}</p>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-32 rounded-2xl bg-muted animate-pulse" />
-            ))}
-          </div>
-        ) : list.length === 0 ? (
-          <EmptyState
-            title="No restaurants yet"
-            description="Be the first to list your restaurant and start taking orders."
-          />
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-            {list.map((r) => (
-              <Link key={r.id} to={`/restaurants/${r.id}`} className="bg-card border rounded-2xl overflow-hidden shadow-card hover:shadow-elevated transition group">
-                <div className="aspect-video bg-muted overflow-hidden relative">
-                  {r.cover && <img src={r.cover} alt={r.name} className="w-full h-full object-cover group-hover:scale-105 transition" />}
-                  {r.delivery_enabled && (
-                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-background/90 backdrop-blur text-[9px] font-bold flex items-center gap-1">
-                      <Truck className="w-2.5 h-2.5" /> Delivery
-                    </span>
-                  )}
-                  {r.reservation_enabled && (
-                    <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-background/90 backdrop-blur text-[9px] font-bold flex items-center gap-1">
-                      <CalendarDays className="w-2.5 h-2.5" /> Tables
-                    </span>
-                  )}
-                </div>
-                <div className="p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-bold text-sm leading-tight truncate">{r.name}</p>
-                    <span className="text-[10px] font-bold flex items-center gap-0.5 shrink-0">
-                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                      {r.rating.toFixed(1)}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    {r.cuisine || "Restaurant"} · <span className="font-bold">{priceLevel(r.price_level)}</span>
-                    {r.city ? ` · ${r.city}` : ""}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
-                    <span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" /> {r.prep_time_minutes} min</span>
-                    {r.delivery_enabled && r.delivery_fee > 0 && (
-                      <span>· ${r.delivery_fee.toFixed(2)} delivery</span>
-                    )}
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
+        <button
+          onClick={() => setShowOwner(true)}
+          className="h-9 px-3 rounded-full bg-foreground text-background text-[11px] font-bold flex items-center gap-1"
+        >
+          <Plus className="w-3.5 h-3.5" /> List yours
+        </button>
       </div>
+
+      <BnbVerticalScreen
+        queryKey={["bnb-restaurants"]}
+        fetcher={(cat) => fetchRestaurants(cat === "all" ? { limit: 60 } : { cuisine: cat, limit: 60 })}
+        categories={CATS}
+        units="party"
+        saveKind="restaurant"
+        wherePlaceholder="Search cuisines, cities or dishes"
+        emptyLabel="No restaurants match your search"
+        toListing={(r) => ({
+          id: r.id,
+          title: r.name,
+          location: [r.city, r.country].filter(Boolean).join(", ") || null,
+          subtitle: [r.cuisine, priceLevel(r.price_level)].filter(Boolean).join(" · "),
+          images: [r.cover, ...(r.gallery ?? [])].filter(Boolean) as string[],
+          priceLabel: r.delivery_enabled ? `Delivery from $${r.delivery_fee}` : "Dine-in",
+          rating: r.rating,
+          badge: r.featured ? "Featured" : null,
+          href: `/restaurants/${r.id}`,
+        })}
+        toPin={(r) =>
+          r.lat != null && r.lng != null
+            ? { id: r.id, lat: r.lat, lng: r.lng, label: priceLevel(r.price_level), title: r.name, image: r.cover ?? undefined, href: `/restaurants/${r.id}` }
+            : null
+        }
+      />
 
       <OwnerCreateDialog open={showOwner} onClose={() => setShowOwner(false)} />
     </div>
   );
 }
+
 
 function OwnerCreateDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const qc = useQueryClient();
