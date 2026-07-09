@@ -2,20 +2,26 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft,
   Briefcase,
   MapPin,
   Building2,
   Bookmark,
   BookmarkCheck,
   Plus,
-  Search,
   Users,
   Sparkles,
   ExternalLink,
   Send,
   Upload,
   Link2,
+  Code,
+  Palette,
+  Wrench,
+  UtensilsCrossed,
+  Truck,
+  GraduationCap,
+  Heart,
+  Camera,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +35,6 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
   fetchJobs,
-  fetchJob,
   fetchCompanies,
   fetchMyCompanies,
   fetchMyApplications,
@@ -41,16 +46,31 @@ import {
   type JobPosting,
 } from "@/data/jobs";
 import EmptyState from "@/components/EmptyState";
+import BnbVerticalScreen from "@/components/bnb/BnbVerticalScreen";
+import BackButton from "@/components/BackButton";
 
 type Tab = "feed" | "saved" | "applied" | "manage";
+
+const CATEGORY_ICONS: Record<string, typeof Briefcase> = {
+  tech: Code,
+  design: Palette,
+  trades: Wrench,
+  hospitality: UtensilsCrossed,
+  logistics: Truck,
+  education: GraduationCap,
+  health: Heart,
+  creative: Camera,
+};
+
+const BNB_JOB_CATS = [
+  { slug: "all", label: "All jobs", icon: Sparkles },
+  ...JOB_CATEGORIES.map((c) => ({ slug: c.slug, label: c.label, icon: CATEGORY_ICONS[c.slug] ?? Briefcase })),
+];
 
 export default function Jobs() {
   const nav = useNavigate();
   const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>("feed");
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<string>("");
-  const [workplace, setWorkplace] = useState<string>("");
   const [openJob, setOpenJob] = useState<JobPosting | null>(null);
   const [showApply, setShowApply] = useState(false);
   const [showPost, setShowPost] = useState(false);
@@ -61,11 +81,6 @@ export default function Jobs() {
     queryFn: async () => (await supabase.auth.getUser()).data.user,
   });
   const userId = userData?.id ?? null;
-
-  const { data: jobs = [], isLoading } = useQuery({
-    queryKey: ["jobs", { category, workplace, query }],
-    queryFn: () => fetchJobs({ category: category || undefined, workplace: workplace || undefined, q: query || undefined, limit: 60 }),
-  });
 
   const { data: companies = [] } = useQuery({
     queryKey: ["job-companies-top"],
@@ -104,6 +119,17 @@ export default function Jobs() {
     enabled: savedIds.length > 0,
   });
 
+  const { data: appliedJobs = [] } = useQuery({
+    queryKey: ["job-apps-detail", myApps.map((a) => a.job_id).join("|")],
+    queryFn: async () => {
+      const ids = myApps.map((a) => a.job_id);
+      if (ids.length === 0) return [];
+      const { data } = await supabase.from("job_postings").select("*").in("id", ids).order("created_at", { ascending: false });
+      return (data ?? []) as JobPosting[];
+    },
+    enabled: myApps.length > 0,
+  });
+
   const appliedJobsIds = useMemo(() => new Set(myApps.map((a) => a.job_id)), [myApps]);
   const savedSet = useMemo(() => new Set(savedIds), [savedIds]);
 
@@ -121,111 +147,127 @@ export default function Jobs() {
     qc.invalidateQueries({ queryKey: ["job-saves-mine"] });
   }
 
-  function openJobSheet(job: JobPosting) {
-    setOpenJob(job);
-  }
+  const companyLogo = (id?: string | null) => companies.find((c) => c.id === id)?.logo_url ?? null;
+  const companyName = (id?: string | null) => companies.find((c) => c.id === id)?.name ?? "";
 
-  const visibleJobs = tab === "saved" ? savedJobs : tab === "applied" ? jobs.filter((j) => appliedJobsIds.has(j.id)) : jobs;
+  const toListing = (j: JobPosting) => {
+    const logo = companyLogo(j.company_id);
+    const co = companyName(j.company_id);
+    const salary = formatSalary(j);
+    return {
+      id: j.id,
+      title: j.title,
+      location: [j.city, j.country].filter(Boolean).join(", ") || null,
+      subtitle: [co, j.workplace_type.replace("_", "-")].filter(Boolean).join(" · "),
+      images: logo ? [logo] : [],
+      priceLabel: salary || (j.employment_type.replace("_", " ")),
+      badge: j.featured ? "Featured" : null,
+      onClick: () => setOpenJob(j),
+    };
+  };
 
   return (
-    <div className="">
-      {/* Hero */}
-      <header className="px-4 pt-4 pb-4 bg-gradient-to-br from-blue-700 via-indigo-700 to-sky-600 text-white">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <button onClick={() => (window.history.length > 1 ? nav(-1) : nav("/home"))} aria-label="Back" className="w-9 h-9 rounded-full bg-white/15 backdrop-blur flex items-center justify-center active:scale-90 transition">
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <span className="w-10 h-10 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center">
-              <Briefcase className="w-5 h-5" />
-            </span>
-            <div>
-              <h1 className="text-xl font-bold leading-tight">Jobs</h1>
-              <p className="text-[11px] opacity-90">Hire talent. Find work. Build your network.</p>
-            </div>
-          </div>
-          <Button size="sm" variant="secondary" onClick={() => setShowPost(true)} className="bg-white text-foreground hover:bg-white/90">
-            <Plus className="w-4 h-4 mr-1" /> Post a job
-          </Button>
+    <div className="min-h-screen bg-background pb-16">
+      <div className="px-4 pt-4 pb-3 flex items-center gap-2 border-b border-[hsl(var(--bnb-card-border))]">
+        <BackButton iconOnly />
+        <span className="w-10 h-10 rounded-2xl bg-[hsl(var(--bnb-rausch))]/10 text-[hsl(var(--bnb-rausch))] flex items-center justify-center">
+          <Briefcase className="w-5 h-5" />
+        </span>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-lg font-bold leading-tight">Jobs</h1>
+          <p className="text-[11px] text-[hsl(var(--bnb-foggy))] truncate">Hire talent. Find work. Build your network.</p>
         </div>
+        <button
+          onClick={() => setShowPost(true)}
+          className="h-9 px-3 rounded-full bg-foreground text-background text-[11px] font-bold flex items-center gap-1"
+        >
+          <Plus className="w-3.5 h-3.5" /> Post
+        </button>
+      </div>
 
-        <div className="mt-3 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/60" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search title, skill, company"
-            className="pl-9 bg-white text-foreground placeholder:text-foreground/50 border-0"
-          />
-        </div>
+      <div className="px-4 pt-3 flex gap-2 overflow-x-auto scrollbar-none border-b border-[hsl(var(--bnb-card-border))] pb-3">
+        {(["feed", "saved", "applied", "manage"] as Tab[]).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`shrink-0 px-4 h-9 rounded-full text-xs font-bold transition ${tab === t ? "bg-foreground text-background" : "bg-muted text-muted-foreground"}`}
+          >
+            {t === "feed" ? "All jobs" : t === "saved" ? "Saved" : t === "applied" ? "Applied" : "Manage"}
+          </button>
+        ))}
+        <Link to="/jobs/network" className="shrink-0 px-4 h-9 rounded-full bg-muted text-muted-foreground text-xs font-bold flex items-center gap-1"><Users className="w-3.5 h-3.5" /> Network</Link>
+      </div>
 
-        <div className="mt-3 flex gap-2 overflow-x-auto scrollbar-none">
-          <Link to="/jobs/feed" className="shrink-0 px-3 h-8 rounded-full bg-white/15 backdrop-blur text-white text-xs font-bold flex items-center gap-1">📰 Feed</Link>
-          <Link to="/jobs/network" className="shrink-0 px-3 h-8 rounded-full bg-white/15 backdrop-blur text-white text-xs font-bold flex items-center gap-1"><Users className="w-3.5 h-3.5" /> Network</Link>
-          <Link to="/jobs/me" className="shrink-0 px-3 h-8 rounded-full bg-white/15 backdrop-blur text-white text-xs font-bold flex items-center gap-1"><Sparkles className="w-3.5 h-3.5" /> My profile</Link>
-        </div>
-
-        <div className="mt-3 flex bg-white/15 backdrop-blur rounded-full p-1">
-          {(["feed", "saved", "applied", "manage"] as Tab[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`flex-1 h-9 rounded-full text-xs font-bold transition ${tab === t ? "bg-white text-foreground" : "text-white/90"}`}
-            >
-              {t === "feed" ? "All jobs" : t === "saved" ? "Saved" : t === "applied" ? "Applied" : "Manage"}
-            </button>
-          ))}
-        </div>
-      </header>
-
-      {/* Filters */}
       {tab === "feed" && (
-        <div className="px-4 pt-3 flex gap-2 overflow-x-auto scrollbar-none">
-          <Select value={category || "all"} onValueChange={(v) => setCategory(v === "all" ? "" : v)}>
-            <SelectTrigger className="h-8 w-auto min-w-[120px] text-xs"><SelectValue placeholder="Category" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All categories</SelectItem>
-              {JOB_CATEGORIES.map((c) => <SelectItem key={c.slug} value={c.slug}>{c.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={workplace || "all"} onValueChange={(v) => setWorkplace(v === "all" ? "" : v)}>
-            <SelectTrigger className="h-8 w-auto min-w-[110px] text-xs"><SelectValue placeholder="Workplace" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Any workplace</SelectItem>
-              {WORKPLACE_TYPES.map((w) => <SelectItem key={w.slug} value={w.slug}>{w.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
+        <BnbVerticalScreen
+          queryKey={["bnb-jobs"]}
+          fetcher={(cat) => fetchJobs({ category: cat === "all" ? undefined : cat, limit: 60 })}
+          categories={BNB_JOB_CATS}
+          units="party"
+          wherePlaceholder="Search title, skill or company"
+          emptyLabel="No jobs match your search"
+          toListing={toListing}
+        />
+      )}
+
+      {tab === "saved" && (
+        <div className="max-w-5xl mx-auto px-4 pt-6">
+          {savedJobs.length === 0 ? (
+            <EmptyState icon={<Bookmark className="w-7 h-7 text-muted-foreground" />} title="No saved jobs yet" description="Save jobs to compare later." />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8">
+              {savedJobs.map((j) => {
+                const l = toListing(j);
+                return (
+                  <button key={j.id} type="button" onClick={l.onClick} className="text-left">
+                    <div className="aspect-square rounded-2xl bg-muted overflow-hidden grid place-items-center">
+                      {l.images[0] ? <img src={l.images[0]} className="w-full h-full object-cover" /> : <Building2 className="w-10 h-10 text-muted-foreground" />}
+                    </div>
+                    <div className="pt-2">
+                      <p className="text-[13.5px] font-semibold line-clamp-1">{l.title}</p>
+                      <p className="text-[12px] text-[hsl(var(--bnb-foggy))] line-clamp-1">{l.subtitle}</p>
+                      <p className="text-[13px] font-semibold mt-1">{l.priceLabel}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Top companies rail */}
-      {tab === "feed" && companies.length > 0 && (
-        <section className="mt-4 px-4">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-bold flex items-center gap-1.5"><Building2 className="w-4 h-4" /> Top companies</h2>
-          </div>
-          <div className="flex gap-3 overflow-x-auto scrollbar-none -mx-1 px-1 pb-1">
-            {companies.map((c) => (
-              <div key={c.id} className="shrink-0 w-32 rounded-2xl bg-card shadow-card p-3 border">
-                <div className="w-12 h-12 rounded-xl bg-muted overflow-hidden mb-2">
-                  {c.logo_url ? <img src={c.logo_url} alt={c.name} className="w-full h-full object-cover" /> : <div className="w-full h-full grid place-items-center"><Building2 className="w-5 h-5 text-muted-foreground" /></div>}
-                </div>
-                <div className="text-xs font-bold leading-tight line-clamp-2">{c.name}</div>
-                {c.industry && <div className="text-[10px] text-muted-foreground line-clamp-1">{c.industry}</div>}
-              </div>
-            ))}
-          </div>
-        </section>
+      {tab === "applied" && (
+        <div className="max-w-5xl mx-auto px-4 pt-6">
+          {appliedJobs.length === 0 ? (
+            <EmptyState icon={<Send className="w-7 h-7 text-muted-foreground" />} title="No applications yet" description="Your applied jobs will show here." />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8">
+              {appliedJobs.map((j) => {
+                const l = toListing(j);
+                return (
+                  <button key={j.id} type="button" onClick={l.onClick} className="text-left">
+                    <div className="aspect-square rounded-2xl bg-muted overflow-hidden grid place-items-center">
+                      {l.images[0] ? <img src={l.images[0]} className="w-full h-full object-cover" /> : <Building2 className="w-10 h-10 text-muted-foreground" />}
+                    </div>
+                    <div className="pt-2">
+                      <p className="text-[13.5px] font-semibold line-clamp-1">{l.title} <span className="text-[hsl(var(--bnb-rausch))]">✓</span></p>
+                      <p className="text-[12px] text-[hsl(var(--bnb-foggy))] line-clamp-1">{l.subtitle}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       )}
 
-      {/* Manage tab */}
       {tab === "manage" && (
-        <section className="px-4 mt-4 space-y-3">
-          <div className="rounded-2xl bg-card shadow-card p-4 border">
+        <section className="max-w-3xl mx-auto px-4 mt-6 space-y-4">
+          <div className="rounded-2xl bg-card shadow-bnb p-5 border border-[hsl(var(--bnb-card-border))]">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-bold text-sm">Your companies</h3>
-                <p className="text-[11px] text-muted-foreground">Create a company page to post jobs.</p>
+                <p className="text-[11px] text-[hsl(var(--bnb-foggy))]">Create a company page to post jobs.</p>
               </div>
               <Button size="sm" onClick={() => setShowCompany(true)}><Plus className="w-4 h-4 mr-1" /> New</Button>
             </div>
@@ -250,7 +292,7 @@ export default function Jobs() {
           </div>
 
           {myApps.length > 0 && (
-            <div className="rounded-2xl bg-card shadow-card p-4 border">
+            <div className="rounded-2xl bg-card shadow-bnb p-5 border border-[hsl(var(--bnb-card-border))]">
               <h3 className="font-bold text-sm mb-2">Your applications</h3>
               <div className="space-y-2">
                 {myApps.map((a) => (
@@ -265,30 +307,6 @@ export default function Jobs() {
               </div>
             </div>
           )}
-        </section>
-      )}
-
-      {/* Job list */}
-      {tab !== "manage" && (
-        <section className="px-4 mt-4 space-y-3">
-          {isLoading && <div className="text-center text-xs text-muted-foreground py-6">Loading jobs…</div>}
-          {!isLoading && visibleJobs.length === 0 && (
-            <EmptyState
-              icon={<Briefcase className="w-7 h-7 text-muted-foreground" />}
-              title={tab === "saved" ? "No saved jobs yet" : tab === "applied" ? "You haven't applied yet" : "No jobs match your filters"}
-              description={tab === "feed" ? "Try a different search or category." : "Browse the All jobs tab to find opportunities."}
-            />
-          )}
-          {visibleJobs.map((j) => (
-            <JobCard
-              key={j.id}
-              job={j}
-              saved={savedSet.has(j.id)}
-              applied={appliedJobsIds.has(j.id)}
-              onOpen={() => openJobSheet(j)}
-              onToggleSave={() => toggleSave(j.id)}
-            />
-          ))}
         </section>
       )}
 
@@ -310,7 +328,6 @@ export default function Jobs() {
         </SheetContent>
       </Sheet>
 
-      {/* Apply dialog */}
       {openJob && (
         <ApplyDialog
           open={showApply}
@@ -326,7 +343,6 @@ export default function Jobs() {
         />
       )}
 
-      {/* Post job dialog */}
       <PostJobDialog
         open={showPost}
         onClose={() => setShowPost(false)}
@@ -335,13 +351,12 @@ export default function Jobs() {
         onCreatedCompany={() => qc.invalidateQueries({ queryKey: ["job-companies-mine"] })}
         onSuccess={() => {
           setShowPost(false);
-          qc.invalidateQueries({ queryKey: ["jobs"] });
+          qc.invalidateQueries({ queryKey: ["bnb-jobs"] });
           toast.success("Job posted");
         }}
         onNeedCompany={() => { setShowPost(false); setShowCompany(true); }}
       />
 
-      {/* New company dialog */}
       <NewCompanyDialog
         open={showCompany}
         onClose={() => setShowCompany(false)}
@@ -355,6 +370,7 @@ export default function Jobs() {
     </div>
   );
 }
+
 
 // ============== Job Card ==============
 function JobCard({

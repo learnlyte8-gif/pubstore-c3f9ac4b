@@ -16,6 +16,7 @@ export interface BnbListing {
   rating?: number | null;
   badge?: string | null;
   href?: string;
+  onClick?: () => void;
 }
 
 export default function BnbListingCard({
@@ -98,13 +99,13 @@ export default function BnbListingCard({
       </div>
     </div>
   );
-  return listing.href ? (
-    <Link to={listing.href} className="block">
-      {content}
-    </Link>
-  ) : (
-    content
-  );
+  if (listing.href) {
+    return <Link to={listing.href} className="block">{content}</Link>;
+  }
+  if (listing.onClick) {
+    return <button type="button" onClick={listing.onClick} className="block w-full text-left">{content}</button>;
+  }
+  return content;
 }
 
 function NavBtn({ side, onClick }: { side: "left" | "right"; onClick: (e: React.MouseEvent) => void }) {
