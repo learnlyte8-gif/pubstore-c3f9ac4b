@@ -191,52 +191,56 @@ function ImportView() {
     <div className="px-4 py-4 space-y-4">
       {/* Mode toggle */}
       <div className="flex bg-muted rounded-full p-1">
-        {(["single", "bulk"] as const).map((m) => (
+        {(["single", "bulk", "aliexpress"] as const).map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
             className={`flex-1 h-9 rounded-full text-xs font-bold transition ${mode === m ? "bg-background shadow-card" : "text-muted-foreground"}`}
           >
-            {m === "single" ? "Single URL" : "Bulk import"}
+            {m === "single" ? "Single URL" : m === "bulk" ? "Bulk import" : "AliExpress"}
           </button>
         ))}
       </div>
 
-      {/* Markup controls — shared */}
-      <div className="rounded-2xl border bg-card p-3 shadow-card">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-            <Percent className="w-3.5 h-3.5" />
-          </span>
-          <p className="text-sm font-bold">Auto markup</p>
-          <p className="text-[11px] text-muted-foreground">applied to every imported price</p>
+      {/* Markup controls — shared (aliexpress uses fixed 4x multiplier) */}
+      {mode !== "aliexpress" && (
+        <div className="rounded-2xl border bg-card p-3 shadow-card">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+              <Percent className="w-3.5 h-3.5" />
+            </span>
+            <p className="text-sm font-bold">Auto markup</p>
+            <p className="text-[11px] text-muted-foreground">applied to every imported price</p>
+          </div>
+          <div className="flex gap-2">
+            <select
+              value={markupMode}
+              onChange={(e) => setMarkupMode(e.target.value as MarkupMode)}
+              className="h-10 rounded-xl border bg-background px-2 text-xs font-semibold"
+            >
+              <option value="percent">+ %</option>
+              <option value="flat">+ flat</option>
+              <option value="none">No markup</option>
+            </select>
+            <input
+              type="number"
+              step="0.01"
+              value={markupValue}
+              disabled={markupMode === "none"}
+              onChange={(e) => setMarkupValue(e.target.value)}
+              className="flex-1 h-10 rounded-xl border bg-background px-3 text-sm disabled:opacity-50"
+              placeholder={markupMode === "percent" ? "30" : "5.00"}
+            />
+          </div>
         </div>
-        <div className="flex gap-2">
-          <select
-            value={markupMode}
-            onChange={(e) => setMarkupMode(e.target.value as MarkupMode)}
-            className="h-10 rounded-xl border bg-background px-2 text-xs font-semibold"
-          >
-            <option value="percent">+ %</option>
-            <option value="flat">+ flat</option>
-            <option value="none">No markup</option>
-          </select>
-          <input
-            type="number"
-            step="0.01"
-            value={markupValue}
-            disabled={markupMode === "none"}
-            onChange={(e) => setMarkupValue(e.target.value)}
-            className="flex-1 h-10 rounded-xl border bg-background px-3 text-sm disabled:opacity-50"
-            placeholder={markupMode === "percent" ? "30" : "5.00"}
-          />
-        </div>
-      </div>
+      )}
 
       {mode === "single" ? (
         <SingleImport markupMode={markupMode} markupValue={Number(markupValue) || 0} qc={qc} navigate={navigate} />
-      ) : (
+      ) : mode === "bulk" ? (
         <BulkImport markupMode={markupMode} markupValue={Number(markupValue) || 0} qc={qc} />
+      ) : (
+        <AliExpressImport qc={qc} />
       )}
     </div>
   );
