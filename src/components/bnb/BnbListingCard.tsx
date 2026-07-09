@@ -16,6 +16,7 @@ export interface BnbListing {
   rating?: number | null;
   badge?: string | null;
   href?: string;
+  onClick?: () => void;
 }
 
 export default function BnbListingCard({
