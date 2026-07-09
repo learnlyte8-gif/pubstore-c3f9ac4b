@@ -17,6 +17,9 @@ import PoolPanel from "@/components/rides/PoolPanel";
 import CircleSpinner from "@/components/CircleSpinner";
 import { supabase as sbAny } from "@/integrations/supabase/client";
 import BackButton from "@/components/BackButton";
+import BnbSearchBar from "@/components/bnb/BnbSearchBar";
+import BnbSearchSheet, { type BnbSearchState } from "@/components/bnb/BnbSearchSheet";
+import BnbCategoryRail from "@/components/bnb/BnbCategoryRail";
 
 type LatLng = { lat: number; lng: number };
 type VClass = Ride["vehicle_class"];
@@ -92,6 +95,8 @@ export default function Rides() {
   const [creating, setCreating] = useState(false);
   const [routeChoice, setRouteChoice] = useState<"fastest" | "balanced" | "scenic">("fastest");
   const [tab, setTab] = useState<"now" | "schedule" | "share" | "trips">("now");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchState, setSearchState] = useState<BnbSearchState>({ where: "", count: 1 });
   const [showRating, setShowRating] = useState(false);
   const [completedRide, setCompletedRide] = useState<Ride | null>(null);
 
@@ -335,6 +340,19 @@ export default function Rides() {
         maskImage: "radial-gradient(70% 50% at 50% 0%, black 30%, transparent 80%)"
       }} />
 
+      {/* Airbnb-style search entry */}
+      {!inActiveFlow && (
+        <BnbSearchBar
+          value={{
+            where: dropoff?.address ?? "",
+            when: pickup?.address ? `From ${pickup.address.split(",")[0]}` : "",
+            who: `${CLASSES.find(c => c.id === vClass)?.label ?? "Economy"} · $${fare.toFixed(2)}`,
+          }}
+          placeholder="Where to? · Now · 1 passenger"
+          onOpen={() => setSearchOpen(true)}
+        />
+      )}
+
 
       {/* HERO HEADER STRIP */}
       <div className="relative px-3 pt-3 pb-2 flex items-center justify-between">
@@ -449,36 +467,20 @@ export default function Rides() {
       </div>
 
 
-      {/* Mode tabs */}
+      {/* Airbnb-style mode rail */}
       {!inActiveFlow && (
-        <div className="px-3 mt-3">
-          <div className="rides-glass flex gap-1 p-1 rounded-2xl">
-            {[
-              { id: "now",      label: "RIDE NOW",  icon: Zap },
-              { id: "schedule", label: "SCHEDULE",  icon: Timer },
-              { id: "share",    label: "POOL",      icon: Users },
-              { id: "trips",    label: "TRIPS",     icon: RouteIcon },
-            ].map((t) => {
-              const active = tab === t.id;
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => setTab(t.id as any)}
-                  className={`flex-1 h-10 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
-                    active
-                      ? "bg-gradient-to-b from-[hsl(var(--rides-mint)/0.25)] to-[hsl(var(--rides-mint)/0.1)] text-[hsl(var(--rides-mint-soft))] shadow-[inset_0_0_0_1px_hsl(var(--rides-mint)/0.5),0_0_24px_-4px_hsl(var(--rides-mint)/0.45)]"
-                      : "text-[hsl(var(--rides-muted))]"
-                  }`}
-                  data-hud
-                >
-                  <t.icon className="w-3.5 h-3.5" />
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <BnbCategoryRail
+          categories={[
+            { slug: "now",      label: "Ride now",  icon: Zap },
+            { slug: "schedule", label: "Schedule",  icon: Timer },
+            { slug: "share",    label: "Pool",      icon: Users },
+            { slug: "trips",    label: "Trips",     icon: RouteIcon },
+          ]}
+          value={tab}
+          onChange={(s) => setTab(s as any)}
+        />
       )}
+
 
       {/* Main panel */}
       <div className="relative mt-3 z-10">
@@ -659,6 +661,32 @@ export default function Rides() {
           onClose={() => { setShowRating(false); setCompletedRide(null); }}
         />
       )}
+
+      <BnbSearchSheet
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        value={searchState}
+        onChange={setSearchState}
+        units="passengers"
+        whereLabel="Where to?"
+        wherePlaceholder="Search a destination"
+        onApply={async () => {
+          const q = searchState.where.trim();
+          if (!q) { setSearchOpen(false); return; }
+          const res = await searchPlace(q);
+          if (res[0]) {
+            setDropoff({ lat: res[0].lat, lng: res[0].lng, address: res[0].label });
+            toast.success("Drop-off set");
+          } else {
+            toast.error("No place found");
+          }
+          setSearchOpen(false);
+        }}
+        onClear={() => {
+          setSearchState({ where: "", count: 1 });
+          setDropoff(null);
+        }}
+      />
     </div>
   );
 }
