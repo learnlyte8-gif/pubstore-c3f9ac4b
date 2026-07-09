@@ -95,6 +95,8 @@ export default function Rides() {
   const [creating, setCreating] = useState(false);
   const [routeChoice, setRouteChoice] = useState<"fastest" | "balanced" | "scenic">("fastest");
   const [tab, setTab] = useState<"now" | "schedule" | "share" | "trips">("now");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchState, setSearchState] = useState<BnbSearchState>({ where: "", count: 1 });
   const [showRating, setShowRating] = useState(false);
   const [completedRide, setCompletedRide] = useState<Ride | null>(null);
 
