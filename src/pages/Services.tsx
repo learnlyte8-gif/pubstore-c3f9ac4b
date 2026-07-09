@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Wrench, Star, MapPin, Phone, MessageCircle, Zap, Book, Scissors, Sparkles as SparklesIcon, Camera, PaintBucket, Cog, Palette } from "lucide-react";
+import { Wrench, Star, MapPin, Phone, MessageCircle, Zap, Book, Scissors, Sparkles as SparklesIcon, Camera, PaintBucket, Cog, Palette, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { fetchServiceProviders, fetchServiceRequests, SERVICE_CATEGORIES } from "@/data/newVerticals";
 import EmptyState from "@/components/EmptyState";
 import BackButton from "@/components/BackButton";
+import MediaUpload from "@/components/MediaUpload";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import BnbVerticalScreen from "@/components/bnb/BnbVerticalScreen";
 
 type Tab = "find" | "tasks" | "post";
