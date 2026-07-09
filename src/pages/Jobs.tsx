@@ -2,20 +2,26 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft,
   Briefcase,
   MapPin,
   Building2,
   Bookmark,
   BookmarkCheck,
   Plus,
-  Search,
   Users,
   Sparkles,
   ExternalLink,
   Send,
   Upload,
   Link2,
+  Code,
+  Palette,
+  Wrench,
+  UtensilsCrossed,
+  Truck,
+  GraduationCap,
+  Heart,
+  Camera,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +35,6 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
   fetchJobs,
-  fetchJob,
   fetchCompanies,
   fetchMyCompanies,
   fetchMyApplications,
@@ -41,6 +46,26 @@ import {
   type JobPosting,
 } from "@/data/jobs";
 import EmptyState from "@/components/EmptyState";
+import BnbVerticalScreen from "@/components/bnb/BnbVerticalScreen";
+import BackButton from "@/components/BackButton";
+
+type Tab = "feed" | "saved" | "applied" | "manage";
+
+const CATEGORY_ICONS: Record<string, typeof Briefcase> = {
+  tech: Code,
+  design: Palette,
+  trades: Wrench,
+  hospitality: UtensilsCrossed,
+  logistics: Truck,
+  education: GraduationCap,
+  health: Heart,
+  creative: Camera,
+};
+
+const BNB_JOB_CATS = [
+  { slug: "all", label: "All jobs", icon: Sparkles },
+  ...JOB_CATEGORIES.map((c) => ({ slug: c.slug, label: c.label, icon: CATEGORY_ICONS[c.slug] ?? Briefcase })),
+];
 
 type Tab = "feed" | "saved" | "applied" | "manage";
 
