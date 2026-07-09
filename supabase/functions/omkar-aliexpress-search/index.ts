@@ -192,63 +192,57 @@ Deno.serve(async (req) => {
     const { data: userData, error: userErr } = await supabase.auth.getUser();
     if (userErr || !userData.user) return json({ error: "Unauthorized" }, 401);
 
-    const apiKey = Deno.env.get("OMKAR_API_KEY");
-    if (!apiKey) return json({ error: "OMKAR_API_KEY not configured" }, 500);
-
     const body = await req.json().catch(() => ({}));
     const query = String(body?.query ?? "").trim();
     const page = Math.max(1, parseInt(String(body?.page ?? 1), 10) || 1);
     if (!query) return json({ error: "query is required" }, 400);
 
-    const url = new URL("https://aliexpress-scraper-api.omkar.cloud/aliexpress/search");
-    url.searchParams.set("query", query);
-    url.searchParams.set("page", String(page));
+    let data: any;
+    const apiKey = Deno.env.get("OMKAR_API_KEY");
+    if (apiKey) {
+      const url = new URL("https://aliexpress-scraper-api.omkar.cloud/aliexpress/search");
+      url.searchParams.set("query", query);
+      url.searchParams.set("page", String(page));
 
-    const r = await fetch(url.toString(), {
-      method: "GET",
-      headers: {
-        "API-Key": apiKey,
-        "Accept": "application/json",
-      },
-    });
+      try {
+        const r = await fetch(url.toString(), {
+          method: "GET",
+          headers: {
+            "API-Key": apiKey,
+            "Accept": "application/json",
+          },
+        });
 
-    const text = await r.text();
-    if (!r.ok) {
-      console.error("omkar error", r.status, text.slice(0, 500));
+        const text = await r.text();
+        if (r.ok) {
+          try {
+            data = JSON.parse(text);
+          } catch {
+            console.error("Failed to parse Omkar JSON:", text.slice(0, 500));
+          }
+        } else {
+          console.error("omkar error", r.status, text.slice(0, 500));
+        }
+      } catch (omkarFetchError) {
+        console.error("omkar fetch error", omkarFetchError);
+      }
+    } else {
+      console.error("OMKAR_API_KEY not configured; using AliExpress fallback");
+    }
+
+    let { items, meta } = data ? normalizeOmkarItems(data, page) : { items: [] as AliItem[], meta: {} as Record<string, unknown> };
+    if (items.length === 0) {
       try {
         const fallback = await scrapeAliExpressSearch(query, page);
-        if (fallback.items.length > 0) {
-          return json({
-            items: fallback.items,
-            count: fallback.meta.count ?? fallback.items.length,
-            per_page: fallback.meta.per_page ?? fallback.items.length,
-            current_page: fallback.meta.current_page ?? page,
-            page: fallback.meta.current_page ?? page,
-            total_pages: fallback.meta.total_pages ?? 1,
-            has_next: fallback.meta.has_next ?? true,
-            source: fallback.meta.source,
-          });
-        }
+        items = fallback.items;
+        meta = fallback.meta;
       } catch (fallbackError) {
         console.error("aliexpress fallback error", fallbackError);
       }
-
-      return json({ error: `Search failed [${r.status}]`, details: text.slice(0, 400) }, 502);
     }
 
-    let data: any;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      console.error("Failed to parse JSON:", text.slice(0, 500));
-      return json({ error: "Invalid response from scraper vendor" }, 502);
-    }
-
-    let { items, meta } = normalizeOmkarItems(data, page);
     if (items.length === 0) {
-      const fallback = await scrapeAliExpressSearch(query, page);
-      items = fallback.items;
-      meta = fallback.meta;
+      return json({ error: "Search failed — no products returned" }, 502);
     }
 
     return json({
