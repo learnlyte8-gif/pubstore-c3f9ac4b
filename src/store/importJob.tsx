@@ -166,7 +166,7 @@ export function ImportJobProvider({ children }: { children: React.ReactNode }) {
           image: stored[0] ?? null,
           gallery: stored,
           price: finalPrice,
-          original_price: basePrice ?? null,
+          original_price: inflated,
           moq: p.moq ?? 1,
           unit: p.unit ?? "piece",
           category_slug: it.category_slug ?? p.category_slug ?? null,
