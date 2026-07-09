@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Truck, Package, Plus, Star, Handshake, Send, Check,
-  CheckCircle2, PackageCheck, MessageCircle, Inbox,
+  CheckCircle2, PackageCheck, MessageCircle, Inbox, Sparkles, Bike, Car,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fetchLogisticsRequests } from "@/data/newVerticals";
@@ -11,12 +11,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
 import BackButton from "@/components/BackButton";
+import BnbSearchBar from "@/components/bnb/BnbSearchBar";
+import BnbSearchSheet, { type BnbSearchState } from "@/components/bnb/BnbSearchSheet";
+import BnbCategoryRail from "@/components/bnb/BnbCategoryRail";
 
 const VEHICLE_TYPES = [
   { slug: "bike", label: "Bike", maxKg: 5 },
   { slug: "car", label: "Car", maxKg: 50 },
   { slug: "van", label: "Van", maxKg: 500 },
   { slug: "truck", label: "Truck", maxKg: 5000 },
+];
+
+const BNB_LOG_CATS = [
+  { slug: "all", label: "All", icon: Sparkles },
+  { slug: "bike", label: "Bike", icon: Bike },
+  { slug: "car", label: "Car", icon: Car },
+  { slug: "van", label: "Van", icon: Truck },
+  { slug: "truck", label: "Truck", icon: Truck },
 ];
 
 const STATUS_FLOW = ["open", "accepted", "picked_up", "delivered", "completed"] as const;
@@ -36,13 +47,16 @@ type Tab = "browse" | "request" | "mine" | "couriers";
 export default function Logistics() {
   const [tab, setTab] = useState<Tab>("browse");
   const [userId, setUserId] = useState<string | null>(null);
+  const [category, setCategory] = useState("all");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [search, setSearch] = useState<BnbSearchState>({ where: "", count: 0 });
+  const [applied, setApplied] = useState<BnbSearchState>({ where: "", count: 0 });
   const qc = useQueryClient();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
   }, []);
 
-  // Realtime invalidations for everyone on this screen
   useEffect(() => {
     const ch = supabase
       .channel("logistics-live")
@@ -61,49 +75,87 @@ export default function Logistics() {
 
   const { data: requests = [] } = useQuery({
     queryKey: ["logistics-requests"],
-    queryFn: () => fetchLogisticsRequests({ status: "open", limit: 30 }),
+    queryFn: () => fetchLogisticsRequests({ status: "open", limit: 60 }),
   });
 
-  return (
-    <div className="pb-8">
-      <header className="px-4 pt-4 pb-3 bg-gradient-to-br from-orange-600 via-red-600 to-rose-600 text-white">
-        <div className="flex items-center gap-2">
-          <BackButton iconOnly className="bg-white/15 backdrop-blur text-white hover:bg-white/25" />
-          <span className="w-10 h-10 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center">
-            <Truck className="w-5 h-5" />
-          </span>
-          <div>
-            <h1 className="text-xl font-bold leading-tight">Logistics & delivery</h1>
-            <p className="text-[11px] opacity-90">Couriers, freight & supplier delivery partners.</p>
-          </div>
-        </div>
+  const filtered = useMemo(() => {
+    let rows = requests as any[];
+    if (category !== "all") rows = rows.filter((r) => r.vehicle_type === category);
+    if (applied.where.trim()) {
+      const q = applied.where.toLowerCase();
+      rows = rows.filter((r) =>
+        (r.title ?? "").toLowerCase().includes(q) ||
+        (r.pickup_address ?? "").toLowerCase().includes(q) ||
+        (r.dropoff_address ?? "").toLowerCase().includes(q)
+      );
+    }
+    return rows;
+  }, [requests, category, applied]);
 
-        <div className="mt-3 flex bg-white/15 backdrop-blur rounded-full p-1 overflow-x-auto scrollbar-none">
-          {([
-            ["browse", "Open jobs"],
-            ["request", "Request"],
-            ["mine", "My deliveries"],
-            ["couriers", "Couriers"],
-          ] as [Tab, string][]).map(([t, label]) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`shrink-0 px-3 h-9 rounded-full text-[11px] font-bold transition ${tab === t ? "bg-white text-foreground" : "text-white/90"}`}
-            >{label}</button>
-          ))}
+  const searchDisplay = useMemo(() => ({
+    where: applied.where || "",
+    when: "",
+    who: applied.count ? `${applied.count}` : "",
+  }), [applied]);
+
+  return (
+    <div className="pb-8 min-h-screen bg-background">
+      <div className="px-4 pt-4 pb-3 flex items-center gap-2 border-b border-[hsl(var(--bnb-card-border))]">
+        <BackButton iconOnly />
+        <span className="w-10 h-10 rounded-2xl bg-[hsl(var(--bnb-rausch))]/10 text-[hsl(var(--bnb-rausch))] flex items-center justify-center">
+          <Truck className="w-5 h-5" />
+        </span>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-lg font-bold leading-tight">Logistics</h1>
+          <p className="text-[11px] text-[hsl(var(--bnb-foggy))] truncate">Couriers, freight & supplier delivery partners.</p>
         </div>
-      </header>
+      </div>
+
+      <div className="px-4 pt-3 flex gap-2 overflow-x-auto scrollbar-none pb-3 border-b border-[hsl(var(--bnb-card-border))]">
+        {([
+          ["browse", "Open jobs"],
+          ["request", "Request"],
+          ["mine", "My deliveries"],
+          ["couriers", "Couriers"],
+        ] as [Tab, string][]).map(([t, label]) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`shrink-0 px-4 h-9 rounded-full text-xs font-bold transition ${tab === t ? "bg-foreground text-background" : "bg-muted text-muted-foreground"}`}
+          >{label}</button>
+        ))}
+      </div>
 
       {tab === "browse" && (
-        <div className="px-4 mt-4 space-y-2">
-          {requests.length === 0 ? (
-            <EmptyState title="No active requests" description="Open delivery requests will show here in real time." />
-          ) : (
-            requests.map((r: any) => (
-              <RequestCardForDriver key={r.id} request={r} currentUserId={userId} />
-            ))
-          )}
-        </div>
+        <>
+          <BnbSearchBar
+            value={searchDisplay}
+            placeholder="Search pickups, drop-offs or jobs"
+            onOpen={() => setSearchOpen(true)}
+          />
+          <BnbCategoryRail categories={BNB_LOG_CATS} value={category} onChange={setCategory} />
+          <div className="max-w-5xl mx-auto px-4 mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {filtered.length === 0 ? (
+              <div className="col-span-full">
+                <EmptyState title="No active requests" description="Open delivery requests will show here in real time." />
+              </div>
+            ) : (
+              filtered.map((r: any) => (
+                <RequestCardForDriver key={r.id} request={r} currentUserId={userId} />
+              ))
+            )}
+          </div>
+          <BnbSearchSheet
+            open={searchOpen}
+            onOpenChange={setSearchOpen}
+            value={search}
+            onChange={setSearch}
+            units="party"
+            wherePlaceholder="Where to?"
+            onApply={() => { setApplied(search); setSearchOpen(false); }}
+            onClear={() => { setSearch({ where: "", count: 0 }); setApplied({ where: "", count: 0 }); }}
+          />
+        </>
       )}
 
       {tab === "request" && <DeliveryRequestForm onPosted={() => setTab("mine")} />}
@@ -112,6 +164,7 @@ export default function Logistics() {
     </div>
   );
 }
+
 
 /* ------------------------------ Driver view ------------------------------ */
 
