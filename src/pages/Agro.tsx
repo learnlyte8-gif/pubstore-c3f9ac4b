@@ -5,6 +5,7 @@ import { ArrowLeft, Sprout, Tractor, Droplets, Leaf, Egg, TrendingUp, Clock, Map
 import { useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
 import QuoteRequestDialog from "@/components/marketplace/QuoteRequestDialog";
+import SaveHeart from "@/components/marketplace/SaveHeart";
 import BnbVerticalScreen from "@/components/bnb/BnbVerticalScreen";
 
 const BNB_AGRO_CATS = [
