@@ -661,6 +661,32 @@ export default function Rides() {
           onClose={() => { setShowRating(false); setCompletedRide(null); }}
         />
       )}
+
+      <BnbSearchSheet
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        value={searchState}
+        onChange={setSearchState}
+        units="passengers"
+        whereLabel="Where to?"
+        wherePlaceholder="Search a destination"
+        onApply={async () => {
+          const q = searchState.where.trim();
+          if (!q) { setSearchOpen(false); return; }
+          const res = await searchPlace(q);
+          if (res[0]) {
+            setDropoff({ lat: res[0].lat, lng: res[0].lng, address: res[0].label });
+            toast.success("Drop-off set");
+          } else {
+            toast.error("No place found");
+          }
+          setSearchOpen(false);
+        }}
+        onClear={() => {
+          setSearchState({ where: "", count: 1 });
+          setDropoff(null);
+        }}
+      />
     </div>
   );
 }
