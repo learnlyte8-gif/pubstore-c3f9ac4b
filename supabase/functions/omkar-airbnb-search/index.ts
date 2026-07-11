@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
 };
 
 function json(body: unknown, status = 200) {
@@ -44,6 +44,7 @@ const toNum = (v: unknown): number | null => {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "GET") return json({ error: "Use GET for Airbnb search" }, 405);
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -60,19 +61,23 @@ Deno.serve(async (req) => {
     const apiKey = Deno.env.get("OMKAR_API_KEY");
     if (!apiKey) return json({ error: "OMKAR_API_KEY not configured" }, 500);
 
-    const body = await req.json().catch(() => ({}));
-    const destination = String(body?.destination ?? "").trim();
-    const page = Math.max(1, parseInt(String(body?.page ?? 1), 10) || 1);
+    const requestUrl = new URL(req.url);
+    const destination = String(requestUrl.searchParams.get("destination") ?? "").trim();
+    const page = Math.max(1, parseInt(String(requestUrl.searchParams.get("page") ?? 1), 10) || 1);
     if (!destination) return json({ error: "destination is required" }, 400);
 
     const url = new URL("https://airbnb-scraper-api.omkar.cloud/airbnb/listings/search");
     url.searchParams.set("destination_query", destination);
     url.searchParams.set("page_number", String(page));
-    if (body?.arrival_date) url.searchParams.set("arrival_date", String(body.arrival_date));
-    if (body?.departure_date) url.searchParams.set("departure_date", String(body.departure_date));
-    if (body?.adult_guests) url.searchParams.set("adult_guests", String(body.adult_guests));
+    const arrivalDate = requestUrl.searchParams.get("arrival_date");
+    const departureDate = requestUrl.searchParams.get("departure_date");
+    const adultGuests = requestUrl.searchParams.get("adult_guests");
+    if (arrivalDate) url.searchParams.set("arrival_date", arrivalDate);
+    if (departureDate) url.searchParams.set("departure_date", departureDate);
+    if (adultGuests) url.searchParams.set("adult_guests", adultGuests);
 
     const r = await fetch(url.toString(), {
+      method: "GET",
       headers: { "API-Key": apiKey, Accept: "application/json" },
     });
     const text = await r.text();
