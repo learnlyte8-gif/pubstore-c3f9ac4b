@@ -42,6 +42,14 @@ const toNum = (v: unknown): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 
+const isoDate = /^\d{4}-\d{2}-\d{2}$/;
+
+function addDays(days: number) {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "GET") return json({ error: "Use GET for Airbnb search" }, 405);
@@ -58,32 +66,45 @@ Deno.serve(async (req) => {
     const { data: userData, error: userErr } = await sb.auth.getUser();
     if (userErr || !userData.user) return json({ error: "Unauthorized" }, 401);
 
-    const apiKey = Deno.env.get("OMKAR_API_KEY");
+    const apiKey = (Deno.env.get("OMKAR_AIRBNB_API_KEY") || Deno.env.get("OMKAR_API_KEY"))?.trim();
     if (!apiKey) return json({ error: "OMKAR_API_KEY not configured" }, 500);
 
     const requestUrl = new URL(req.url);
-    const destination = String(requestUrl.searchParams.get("destination") ?? "").trim();
-    const page = Math.max(1, parseInt(String(requestUrl.searchParams.get("page") ?? 1), 10) || 1);
+    const destination = String(requestUrl.searchParams.get("destination_query") ?? requestUrl.searchParams.get("destination") ?? "").trim();
+    const page = Math.max(1, parseInt(String(requestUrl.searchParams.get("page_number") ?? requestUrl.searchParams.get("page") ?? 1), 10) || 1);
     if (!destination) return json({ error: "destination is required" }, 400);
+
+    const arrivalDate = requestUrl.searchParams.get("arrival_date") || addDays(1);
+    const departureDate = requestUrl.searchParams.get("departure_date") || addDays(5);
+    const adultGuests = Math.max(1, Math.min(16, parseInt(String(requestUrl.searchParams.get("adult_guests") ?? 2), 10) || 2));
+    if (!isoDate.test(arrivalDate) || !isoDate.test(departureDate)) {
+      return json({ error: "arrival_date and departure_date must be YYYY-MM-DD" }, 400);
+    }
 
     const url = new URL("https://airbnb-scraper-api.omkar.cloud/airbnb/listings/search");
     url.searchParams.set("destination_query", destination);
-    url.searchParams.set("page_number", String(page));
-    const arrivalDate = requestUrl.searchParams.get("arrival_date");
-    const departureDate = requestUrl.searchParams.get("departure_date");
-    const adultGuests = requestUrl.searchParams.get("adult_guests");
-    if (arrivalDate) url.searchParams.set("arrival_date", arrivalDate);
-    if (departureDate) url.searchParams.set("departure_date", departureDate);
-    if (adultGuests) url.searchParams.set("adult_guests", adultGuests);
+    url.searchParams.set("arrival_date", arrivalDate);
+    url.searchParams.set("departure_date", departureDate);
+    url.searchParams.set("adult_guests", String(adultGuests));
+    if (page > 1) url.searchParams.set("page_number", String(page));
 
     const r = await fetch(url.toString(), {
       method: "GET",
-      headers: { "API-Key": apiKey, Accept: "application/json" },
+      headers: {
+        "API-Key": apiKey,
+        "Accept": "application/json",
+        "User-Agent": "python-requests/2.32.3",
+      },
     });
     const text = await r.text();
     if (!r.ok) {
       console.error("omkar airbnb search error", r.status, text.slice(0, 500));
-      return json({ error: `Airbnb search failed (${r.status})`, details: text.slice(0, 500) }, r.status);
+      return json({
+        error: r.status >= 500
+          ? "Airbnb API is returning a server error for this API key. Please check the omkar.cloud key or try again later."
+          : `Airbnb search failed (${r.status})`,
+        details: text.slice(0, 500),
+      }, r.status >= 500 ? 502 : r.status);
     }
 
     let data: any;
