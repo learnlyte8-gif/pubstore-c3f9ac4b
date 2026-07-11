@@ -203,8 +203,8 @@ function ImportView() {
         ))}
       </div>
 
-      {/* Markup controls — shared (aliexpress uses fixed 4x multiplier) */}
-      {mode !== "aliexpress" && (
+      {/* Markup controls — shared (aliexpress uses fixed 4x multiplier, stays has its own) */}
+      {mode !== "aliexpress" && mode !== "stays" && (
         <div className="rounded-2xl border bg-card p-3 shadow-card">
           <div className="flex items-center gap-2 mb-2">
             <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
@@ -240,8 +240,10 @@ function ImportView() {
         <SingleImport markupMode={markupMode} markupValue={Number(markupValue) || 0} qc={qc} navigate={navigate} />
       ) : mode === "bulk" ? (
         <BulkImport markupMode={markupMode} markupValue={Number(markupValue) || 0} qc={qc} />
-      ) : (
+      ) : mode === "aliexpress" ? (
         <AliExpressImport qc={qc} />
+      ) : (
+        <StaysImport qc={qc} navigate={navigate} />
       )}
     </div>
   );
