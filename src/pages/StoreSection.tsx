@@ -17,6 +17,7 @@ import { uploadProductImages } from "@/lib/uploadProductImages";
 import AddAdDialog from "@/components/store/AddAdDialog";
 import { VERTICALS } from "@/data/verticalsCatalog";
 import { importProductFromUrl } from "@/lib/importProduct";
+import { importStayFromUrl, type ImportedStay } from "@/lib/importStay";
 
 
 const titles: Record<string, { title: string; sub: string }> = {
@@ -157,7 +158,7 @@ function ImportView() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [email, setEmail] = useState<string | null>(null);
-  const [mode, setMode] = useState<"single" | "bulk" | "aliexpress">("single");
+  const [mode, setMode] = useState<"single" | "bulk" | "aliexpress" | "stays">("single");
 
   // markup (shared by both modes)
   const [markupMode, setMarkupMode] = useState<MarkupMode>("percent");
@@ -190,20 +191,20 @@ function ImportView() {
   return (
     <div className="px-4 py-4 space-y-4">
       {/* Mode toggle */}
-      <div className="flex bg-muted rounded-full p-1">
-        {(["single", "bulk", "aliexpress"] as const).map((m) => (
+      <div className="flex bg-muted rounded-full p-1 overflow-x-auto">
+        {(["single", "bulk", "aliexpress", "stays"] as const).map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
-            className={`flex-1 h-9 rounded-full text-xs font-bold transition ${mode === m ? "bg-background shadow-card" : "text-muted-foreground"}`}
+            className={`flex-1 min-w-[80px] h-9 rounded-full text-xs font-bold transition whitespace-nowrap px-3 ${mode === m ? "bg-background shadow-card" : "text-muted-foreground"}`}
           >
-            {m === "single" ? "Single URL" : m === "bulk" ? "Bulk import" : "AliExpress"}
+            {m === "single" ? "Single URL" : m === "bulk" ? "Bulk import" : m === "aliexpress" ? "AliExpress" : "Stays (Airbnb)"}
           </button>
         ))}
       </div>
 
-      {/* Markup controls — shared (aliexpress uses fixed 4x multiplier) */}
-      {mode !== "aliexpress" && (
+      {/* Markup controls — shared (aliexpress uses fixed 4x multiplier, stays has its own) */}
+      {mode !== "aliexpress" && mode !== "stays" && (
         <div className="rounded-2xl border bg-card p-3 shadow-card">
           <div className="flex items-center gap-2 mb-2">
             <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
@@ -239,8 +240,10 @@ function ImportView() {
         <SingleImport markupMode={markupMode} markupValue={Number(markupValue) || 0} qc={qc} navigate={navigate} />
       ) : mode === "bulk" ? (
         <BulkImport markupMode={markupMode} markupValue={Number(markupValue) || 0} qc={qc} />
-      ) : (
+      ) : mode === "aliexpress" ? (
         <AliExpressImport qc={qc} />
+      ) : (
+        <StaysImport qc={qc} navigate={navigate} />
       )}
     </div>
   );
@@ -299,6 +302,9 @@ function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: M
         category_slug: preview.category_slug ?? null,
         ship_from: supplier.country ?? null,
         active: true,
+        source: preview.source ?? null,
+        source_url: preview.source_url ?? null,
+        source_id: preview.source_id ?? null,
       }).select().single();
       if (error) throw error;
 
@@ -759,6 +765,9 @@ function AliExpressImport({ qc }: { qc: ReturnType<typeof useQueryClient> }) {
           category_slug: categorySlug || null,
           ship_from: supplier.country ?? null,
           active: finalPrice > 0,
+          source: "aliexpress",
+          source_url: it.url ?? null,
+          source_id: it.id ?? null,
         });
         if (insErr) throw insErr;
       } catch (err) {
@@ -4670,5 +4679,200 @@ function AgroFormDialog({ supplierId, initial, onClose, onSaved }: { supplierId:
       </div>
       <Button onClick={save} disabled={busy} className="w-full h-12">{busy ? "Saving…" : initial ? "Save changes" : "Publish listing"}</Button>
     </FormSheet>
+  );
+}
+
+// ---------------- Stays (Airbnb) import ----------------
+function StaysImport({ qc, navigate }: { qc: ReturnType<typeof useQueryClient>; navigate: ReturnType<typeof useNavigate> }) {
+  const [url, setUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [preview, setPreview] = useState<ImportedStay | null>(null);
+  const [bump, setBump] = useState<string>("15"); // % bump on price_per_night
+
+  const fetchStay = async () => {
+    if (!url.trim()) return;
+    setLoading(true);
+    setPreview(null);
+    try {
+      const s = await importStayFromUrl(url.trim());
+      setPreview(s);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Could not import that URL");
+    } finally { setLoading(false); }
+  };
+
+  const updatePreview = (patch: Partial<ImportedStay>) => setPreview((p) => (p ? { ...p, ...patch } : p));
+
+  const save = async () => {
+    if (!preview) return;
+    if (!preview.title.trim()) { toast.error("Title required"); return; }
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { navigate("/auth"); return; }
+      const supplier = await fetchMySupplier();
+      if (!supplier) { toast.error("Create your store first"); navigate("/become-supplier"); return; }
+
+      const stored = await mirrorImages(user.id, preview.images, `stay-${Date.now()}`);
+      const bumpPct = Math.max(0, Number(bump) || 0) / 100;
+      const basePrice = preview.price_per_night ?? 0;
+      const finalPrice = basePrice > 0 ? Math.round(basePrice * (1 + bumpPct) * 100) / 100 : 0;
+
+      const { data: stay, error } = await supabase.from("stays").insert({
+        supplier_id: supplier.id,
+        title: preview.title.trim().slice(0, 200),
+        kind: preview.kind || "apartment",
+        description: preview.description || null,
+        cover: stored[0] ?? null,
+        gallery: stored,
+        city: preview.city ?? null,
+        country: preview.country ?? null,
+        price_per_night: finalPrice,
+        currency: preview.currency ?? "USD",
+        bedrooms: preview.bedrooms ?? null,
+        beds: preview.beds ?? null,
+        baths: preview.baths ?? null,
+        guests: preview.guests ?? null,
+        amenities: preview.amenities?.length ? preview.amenities : null,
+        rating: preview.rating ?? null,
+        review_count: preview.review_count ?? 0,
+        superhost: !!preview.superhost,
+        active: true,
+        source: preview.source,
+        source_url: preview.source_url,
+        source_id: preview.source_id,
+      }).select().single();
+      if (error) throw error;
+
+      toast.success("Stay imported 🎉");
+      qc.invalidateQueries({ queryKey: ["my-stays"] });
+      qc.invalidateQueries({ queryKey: ["stays"] });
+      navigate(`/store/services/stays`);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to import");
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <>
+      <div className="rounded-2xl border bg-card p-4 shadow-card">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+            <Sparkles className="w-4 h-4" />
+          </span>
+          <div>
+            <p className="font-bold text-sm leading-tight">Paste an Airbnb link</p>
+            <p className="text-[11px] text-muted-foreground">Also works with Booking.com and Vrbo</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <div className="flex-1 relative">
+            <Link2 className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://www.airbnb.com/rooms/…"
+              className="w-full h-12 rounded-xl border bg-background pl-9 pr-3 text-sm"
+              onKeyDown={(e) => e.key === "Enter" && fetchStay()}
+            />
+          </div>
+          <Button onClick={fetchStay} disabled={loading} className="h-12 px-4">
+            {loading ? <CircleSpinner size={16} /> : <Download className="w-4 h-4" />}
+            <span className="ml-1.5 hidden sm:inline">Fetch</span>
+          </Button>
+        </div>
+        <div className="mt-3 flex items-center gap-2">
+          <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+            <Percent className="w-3.5 h-3.5" />
+          </span>
+          <p className="text-xs font-semibold">Markup on nightly price</p>
+          <input
+            type="number"
+            step="1"
+            value={bump}
+            onChange={(e) => setBump(e.target.value)}
+            className="w-20 h-9 rounded-lg border bg-background px-2 text-xs text-right"
+          />
+          <span className="text-xs text-muted-foreground">%</span>
+        </div>
+      </div>
+
+      {loading && !preview && (
+        <div className="rounded-2xl border bg-card p-8 flex flex-col items-center gap-2 text-muted-foreground">
+          <CircleSpinner size={24} />
+          <p className="text-xs">Reading that listing…</p>
+        </div>
+      )}
+
+      {preview && (
+        <div className="rounded-2xl border bg-card shadow-card overflow-hidden">
+          {preview.images.length > 0 && (
+            <div className="flex gap-1 overflow-x-auto p-2 bg-muted/30">
+              {preview.images.slice(0, 8).map((src, i) => (
+                <img key={i} src={src} alt="" className="w-28 h-28 rounded-lg object-cover bg-muted flex-shrink-0" />
+              ))}
+            </div>
+          )}
+          <div className="p-4 space-y-3">
+            <LabeledInput label="Title" value={preview.title} onChange={(v) => updatePreview({ title: v })} />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Kind</label>
+                <select
+                  value={preview.kind}
+                  onChange={(e) => updatePreview({ kind: e.target.value })}
+                  className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1"
+                >
+                  <option value="b&b">B&B</option>
+                  <option value="hotel">Hotel</option>
+                  <option value="apartment">Apartment</option>
+                  <option value="factory_tour">Factory tour</option>
+                  <option value="retreat">Retreat</option>
+                </select>
+              </div>
+              <LabeledInput label={`Price / night${preview.currency ? ` (${preview.currency})` : ""}`} type="number" value={preview.price_per_night ?? ""} onChange={(v) => updatePreview({ price_per_night: v === "" ? null : Number(v) })} />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <LabeledInput label="City" value={preview.city ?? ""} onChange={(v) => updatePreview({ city: v || null })} />
+              <LabeledInput label="Country" value={preview.country ?? ""} onChange={(v) => updatePreview({ country: v || null })} />
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              <LabeledInput label="Guests" type="number" value={preview.guests ?? ""} onChange={(v) => updatePreview({ guests: v === "" ? null : Number(v) })} />
+              <LabeledInput label="Bedrooms" type="number" value={preview.bedrooms ?? ""} onChange={(v) => updatePreview({ bedrooms: v === "" ? null : Number(v) })} />
+              <LabeledInput label="Beds" type="number" value={preview.beds ?? ""} onChange={(v) => updatePreview({ beds: v === "" ? null : Number(v) })} />
+              <LabeledInput label="Baths" type="number" value={preview.baths ?? ""} onChange={(v) => updatePreview({ baths: v === "" ? null : Number(v) })} />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Description</label>
+              <textarea
+                value={preview.description}
+                onChange={(e) => updatePreview({ description: e.target.value })}
+                rows={5}
+                className="w-full rounded-xl border bg-background p-3 text-sm mt-1"
+              />
+            </div>
+            {preview.amenities.length > 0 && (
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Amenities</label>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {preview.amenities.map((a, i) => (
+                    <span key={i} className="text-[11px] px-2 py-1 rounded-full bg-muted font-semibold">{a}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            <p className="text-[10px] text-muted-foreground break-all">
+              Source: <span className="font-semibold capitalize">{preview.source}</span>
+              {preview.source_id ? <> · id <span className="font-mono">{preview.source_id}</span></> : null}
+              {" · "}{preview.source_url}
+            </p>
+            <Button onClick={save} disabled={saving} className="w-full h-12">
+              {saving ? <><CircleSpinner size={16} className="mr-2" /> Importing…</> : <><Plus className="w-4 h-4 mr-2" /> Import to my stays</>}
+            </Button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

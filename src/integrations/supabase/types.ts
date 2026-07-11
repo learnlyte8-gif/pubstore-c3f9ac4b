@@ -3435,6 +3435,9 @@ export type Database = {
           review_count: number | null
           ship_from: string | null
           sold: number | null
+          source: string | null
+          source_id: string | null
+          source_url: string | null
           specs: Json | null
           supplier_id: string
           title: string
@@ -3469,6 +3472,9 @@ export type Database = {
           review_count?: number | null
           ship_from?: string | null
           sold?: number | null
+          source?: string | null
+          source_id?: string | null
+          source_url?: string | null
           specs?: Json | null
           supplier_id: string
           title: string
@@ -3503,6 +3509,9 @@ export type Database = {
           review_count?: number | null
           ship_from?: string | null
           sold?: number | null
+          source?: string | null
+          source_id?: string | null
+          source_url?: string | null
           specs?: Json | null
           supplier_id?: string
           title?: string
@@ -4808,6 +4817,9 @@ export type Database = {
           rating: number
           review_count: number
           slug: string | null
+          source: string | null
+          source_id: string | null
+          source_url: string | null
           superhost: boolean
           supplier_id: string | null
           title: string
@@ -4835,6 +4847,9 @@ export type Database = {
           rating?: number
           review_count?: number
           slug?: string | null
+          source?: string | null
+          source_id?: string | null
+          source_url?: string | null
           superhost?: boolean
           supplier_id?: string | null
           title: string
@@ -4862,6 +4877,9 @@ export type Database = {
           rating?: number
           review_count?: number
           slug?: string | null
+          source?: string | null
+          source_id?: string | null
+          source_url?: string | null
           superhost?: boolean
           supplier_id?: string | null
           title?: string
