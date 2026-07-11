@@ -762,6 +762,9 @@ function AliExpressImport({ qc }: { qc: ReturnType<typeof useQueryClient> }) {
           category_slug: categorySlug || null,
           ship_from: supplier.country ?? null,
           active: finalPrice > 0,
+          source: "aliexpress",
+          source_url: it.url ?? null,
+          source_id: it.id ?? null,
         });
         if (insErr) throw insErr;
       } catch (err) {
