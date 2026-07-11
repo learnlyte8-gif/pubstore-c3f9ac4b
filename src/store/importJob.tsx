@@ -196,6 +196,9 @@ export function ImportJobProvider({ children }: { children: React.ReactNode }) {
           category_slug: it.category_slug ?? p.category_slug ?? null,
           ship_from: supplier.country ?? null,
           active: !isDraft,
+          source: p.source ?? it.source ?? null,
+          source_url: p.source_url ?? it.url ?? null,
+          source_id: p.source_id ?? parseSourceIdFromUrl(p.source_url ?? it.url ?? "", p.source ?? it.source ?? ""),
         }).select("id").single();
         if (insErr) throw insErr;
 
