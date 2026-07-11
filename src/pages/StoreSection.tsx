@@ -191,14 +191,14 @@ function ImportView() {
   return (
     <div className="px-4 py-4 space-y-4">
       {/* Mode toggle */}
-      <div className="flex bg-muted rounded-full p-1">
-        {(["single", "bulk", "aliexpress"] as const).map((m) => (
+      <div className="flex bg-muted rounded-full p-1 overflow-x-auto">
+        {(["single", "bulk", "aliexpress", "stays"] as const).map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
-            className={`flex-1 h-9 rounded-full text-xs font-bold transition ${mode === m ? "bg-background shadow-card" : "text-muted-foreground"}`}
+            className={`flex-1 min-w-[80px] h-9 rounded-full text-xs font-bold transition whitespace-nowrap px-3 ${mode === m ? "bg-background shadow-card" : "text-muted-foreground"}`}
           >
-            {m === "single" ? "Single URL" : m === "bulk" ? "Bulk import" : "AliExpress"}
+            {m === "single" ? "Single URL" : m === "bulk" ? "Bulk import" : m === "aliexpress" ? "AliExpress" : "Stays (Airbnb)"}
           </button>
         ))}
       </div>
