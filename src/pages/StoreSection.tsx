@@ -17,7 +17,7 @@ import { uploadProductImages } from "@/lib/uploadProductImages";
 import AddAdDialog from "@/components/store/AddAdDialog";
 import { VERTICALS } from "@/data/verticalsCatalog";
 import { importProductFromUrl } from "@/lib/importProduct";
-import { importStayFromUrl, type ImportedStay } from "@/lib/importStay";
+
 
 
 const titles: Record<string, { title: string; sub: string }> = {
@@ -4683,106 +4683,168 @@ function AgroFormDialog({ supplierId, initial, onClose, onSaved }: { supplierId:
 }
 
 // ---------------- Stays (Airbnb) import ----------------
-function StaysImport({ qc, navigate }: { qc: ReturnType<typeof useQueryClient>; navigate: ReturnType<typeof useNavigate> }) {
-  const [url, setUrl] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [preview, setPreview] = useState<ImportedStay | null>(null);
-  const [bump, setBump] = useState<string>("15"); // % bump on price_per_night
+type AirbnbSearchItem = {
+  id: string;
+  title: string;
+  image: string | null;
+  images: string[];
+  price: number | null;
+  currency: string;
+  city: string | null;
+  country: string | null;
+  full_address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  property_type: string | null;
+  bedrooms: number | null;
+  beds: number | null;
+  baths: number | null;
+  guests: number | null;
+  rating: number | null;
+  review_count: number | null;
+  superhost: boolean;
+  url: string;
+};
 
-  const fetchStay = async () => {
-    if (!url.trim()) return;
+function mapKind(propType: string | null): string {
+  const p = (propType ?? "").toLowerCase();
+  if (p.includes("hotel")) return "hotel";
+  if (p.includes("b&b") || p.includes("bed and breakfast")) return "b&b";
+  return "apartment";
+}
+
+function StaysImport({ qc, navigate }: { qc: ReturnType<typeof useQueryClient>; navigate: ReturnType<typeof useNavigate> }) {
+  const [destination, setDestination] = useState("");
+  const [page, setPage] = useState(1);
+  const [items, setItems] = useState<AirbnbSearchItem[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [progress, setProgress] = useState({ done: 0, total: 0, errors: 0 });
+  const [bump, setBump] = useState<string>("15"); // % markup on nightly price
+
+  const runSearch = async (nextPage = 1) => {
+    const q = destination.trim();
+    if (!q) { toast.error("Type a destination (city, area, landmark)"); return; }
     setLoading(true);
-    setPreview(null);
     try {
-      const s = await importStayFromUrl(url.trim());
-      setPreview(s);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Please sign in again.");
+      const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/omkar-airbnb-search`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ destination: q, page: nextPage }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j?.error || `Search failed (${r.status})`);
+      const list = (j?.items ?? []) as AirbnbSearchItem[];
+      setItems(list);
+      setPage(j?.page ?? nextPage);
+      setSelected(new Set(list.map((x) => x.id)));
+      if (list.length === 0) toast.error("No stays found for that destination");
     } catch (err: any) {
-      toast.error(err?.message ?? "Could not import that URL");
-    } finally { setLoading(false); }
+      toast.error(err?.message ?? "Search failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updatePreview = (patch: Partial<ImportedStay>) => setPreview((p) => (p ? { ...p, ...patch } : p));
+  const toggle = (id: string) => {
+    setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  };
+  const selectAll = () => setSelected(new Set(items.map((x) => x.id)));
+  const clearAll = () => setSelected(new Set());
 
-  const save = async () => {
-    if (!preview) return;
-    if (!preview.title.trim()) { toast.error("Title required"); return; }
-    setSaving(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { navigate("/auth"); return; }
-      const supplier = await fetchMySupplier();
-      if (!supplier) { toast.error("Create your store first"); navigate("/become-supplier"); return; }
+  const importSelected = async () => {
+    const chosen = items.filter((it) => selected.has(it.id));
+    if (chosen.length === 0) { toast.error("Select at least one stay"); return; }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { navigate("/auth"); return; }
+    const supplier = await fetchMySupplier();
+    if (!supplier) { toast.error("Create your store first"); navigate("/become-supplier"); return; }
 
-      const stored = await mirrorImages(user.id, preview.images, `stay-${Date.now()}`);
-      const bumpPct = Math.max(0, Number(bump) || 0) / 100;
-      const basePrice = preview.price_per_night ?? 0;
-      const finalPrice = basePrice > 0 ? Math.round(basePrice * (1 + bumpPct) * 100) / 100 : 0;
+    const bumpPct = Math.max(0, Number(bump) || 0) / 100;
+    setImporting(true);
+    setProgress({ done: 0, total: chosen.length, errors: 0 });
+    let errors = 0;
 
-      const { data: stay, error } = await supabase.from("stays").insert({
-        supplier_id: supplier.id,
-        title: preview.title.trim().slice(0, 200),
-        kind: preview.kind || "apartment",
-        description: preview.description || null,
-        cover: stored[0] ?? null,
-        gallery: stored,
-        city: preview.city ?? null,
-        country: preview.country ?? null,
-        price_per_night: finalPrice,
-        currency: preview.currency ?? "USD",
-        bedrooms: preview.bedrooms ?? null,
-        beds: preview.beds ?? null,
-        baths: preview.baths ?? null,
-        guests: preview.guests ?? null,
-        amenities: preview.amenities?.length ? preview.amenities : null,
-        rating: preview.rating ?? null,
-        review_count: preview.review_count ?? 0,
-        superhost: !!preview.superhost,
-        active: true,
-        source: preview.source,
-        source_url: preview.source_url,
-        source_id: preview.source_id,
-      }).select().single();
-      if (error) throw error;
+    for (let i = 0; i < chosen.length; i++) {
+      const it = chosen[i];
+      try {
+        const stored = it.images.length
+          ? await mirrorImages(user.id, it.images, `airbnb-${it.id}`)
+          : [];
+        const base = it.price ?? 0;
+        const finalPrice = base > 0 ? Math.round(base * (1 + bumpPct) * 100) / 100 : 0;
 
-      toast.success("Stay imported 🎉");
-      qc.invalidateQueries({ queryKey: ["my-stays"] });
-      qc.invalidateQueries({ queryKey: ["stays"] });
-      navigate(`/store/services/stays`);
-    } catch (err: any) {
-      toast.error(err?.message ?? "Failed to import");
-    } finally { setSaving(false); }
+        const { error: insErr } = await supabase.from("stays").insert({
+          supplier_id: supplier.id,
+          title: it.title.slice(0, 200),
+          kind: mapKind(it.property_type),
+          description: it.full_address || null,
+          cover: stored[0] ?? it.image ?? null,
+          gallery: stored.length ? stored : (it.image ? [it.image] : []),
+          city: it.city,
+          country: it.country,
+          price_per_night: finalPrice,
+          currency: it.currency || "USD",
+          bedrooms: it.bedrooms,
+          beds: it.beds,
+          baths: it.baths,
+          guests: it.guests,
+          rating: it.rating,
+          review_count: it.review_count ?? 0,
+          superhost: it.superhost,
+          active: finalPrice > 0,
+          source: "airbnb",
+          source_url: it.url,
+          source_id: it.id,
+        });
+        if (insErr) throw insErr;
+      } catch (err) {
+        console.error("airbnb import err", err);
+        errors++;
+      }
+      setProgress({ done: i + 1, total: chosen.length, errors });
+    }
+
+    setImporting(false);
+    qc.invalidateQueries({ queryKey: ["my-stays"] });
+    qc.invalidateQueries({ queryKey: ["stays"] });
+    toast.success(`Imported ${chosen.length - errors}/${chosen.length} stays${errors ? ` (${errors} failed)` : ""}`);
   };
 
   return (
-    <>
-      <div className="rounded-2xl border bg-card p-4 shadow-card">
-        <div className="flex items-center gap-2 mb-2">
+    <div className="space-y-3">
+      <div className="rounded-2xl border bg-card p-3 shadow-card space-y-2">
+        <div className="flex items-center gap-2">
           <span className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
             <Sparkles className="w-4 h-4" />
           </span>
           <div>
-            <p className="font-bold text-sm leading-tight">Paste an Airbnb link</p>
-            <p className="text-[11px] text-muted-foreground">Also works with Booking.com and Vrbo</p>
+            <p className="font-bold text-sm leading-tight">Search Airbnb by destination</p>
+            <p className="text-[11px] text-muted-foreground">Live listings via omkar.cloud · pick & import in bulk</p>
           </div>
         </div>
         <div className="flex gap-2">
-          <div className="flex-1 relative">
-            <Link2 className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://www.airbnb.com/rooms/…"
-              className="w-full h-12 rounded-xl border bg-background pl-9 pr-3 text-sm"
-              onKeyDown={(e) => e.key === "Enter" && fetchStay()}
-            />
-          </div>
-          <Button onClick={fetchStay} disabled={loading} className="h-12 px-4">
-            {loading ? <CircleSpinner size={16} /> : <Download className="w-4 h-4" />}
-            <span className="ml-1.5 hidden sm:inline">Fetch</span>
+          <input
+            type="text"
+            value={destination}
+            onChange={(e) => setDestination(e.target.value)}
+            placeholder="e.g. Cape Town, Bali, Shibuya"
+            className="flex-1 h-10 rounded-xl border bg-background px-3 text-sm"
+            onKeyDown={(e) => e.key === "Enter" && runSearch(1)}
+          />
+          <Button onClick={() => runSearch(1)} disabled={loading || importing} className="h-10">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+            <span className="ml-1 text-xs">Search</span>
           </Button>
         </div>
-        <div className="mt-3 flex items-center gap-2">
+        <div className="flex items-center gap-2 pt-1">
           <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
             <Percent className="w-3.5 h-3.5" />
           </span>
@@ -4798,81 +4860,81 @@ function StaysImport({ qc, navigate }: { qc: ReturnType<typeof useQueryClient>; 
         </div>
       </div>
 
-      {loading && !preview && (
-        <div className="rounded-2xl border bg-card p-8 flex flex-col items-center gap-2 text-muted-foreground">
-          <CircleSpinner size={24} />
-          <p className="text-xs">Reading that listing…</p>
-        </div>
-      )}
-
-      {preview && (
-        <div className="rounded-2xl border bg-card shadow-card overflow-hidden">
-          {preview.images.length > 0 && (
-            <div className="flex gap-1 overflow-x-auto p-2 bg-muted/30">
-              {preview.images.slice(0, 8).map((src, i) => (
-                <img key={i} src={src} alt="" className="w-28 h-28 rounded-lg object-cover bg-muted flex-shrink-0" />
-              ))}
-            </div>
-          )}
-          <div className="p-4 space-y-3">
-            <LabeledInput label="Title" value={preview.title} onChange={(v) => updatePreview({ title: v })} />
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Kind</label>
-                <select
-                  value={preview.kind}
-                  onChange={(e) => updatePreview({ kind: e.target.value })}
-                  className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1"
-                >
-                  <option value="b&b">B&B</option>
-                  <option value="hotel">Hotel</option>
-                  <option value="apartment">Apartment</option>
-                  <option value="factory_tour">Factory tour</option>
-                  <option value="retreat">Retreat</option>
-                </select>
-              </div>
-              <LabeledInput label={`Price / night${preview.currency ? ` (${preview.currency})` : ""}`} type="number" value={preview.price_per_night ?? ""} onChange={(v) => updatePreview({ price_per_night: v === "" ? null : Number(v) })} />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <LabeledInput label="City" value={preview.city ?? ""} onChange={(v) => updatePreview({ city: v || null })} />
-              <LabeledInput label="Country" value={preview.country ?? ""} onChange={(v) => updatePreview({ country: v || null })} />
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              <LabeledInput label="Guests" type="number" value={preview.guests ?? ""} onChange={(v) => updatePreview({ guests: v === "" ? null : Number(v) })} />
-              <LabeledInput label="Bedrooms" type="number" value={preview.bedrooms ?? ""} onChange={(v) => updatePreview({ bedrooms: v === "" ? null : Number(v) })} />
-              <LabeledInput label="Beds" type="number" value={preview.beds ?? ""} onChange={(v) => updatePreview({ beds: v === "" ? null : Number(v) })} />
-              <LabeledInput label="Baths" type="number" value={preview.baths ?? ""} onChange={(v) => updatePreview({ baths: v === "" ? null : Number(v) })} />
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Description</label>
-              <textarea
-                value={preview.description}
-                onChange={(e) => updatePreview({ description: e.target.value })}
-                rows={5}
-                className="w-full rounded-xl border bg-background p-3 text-sm mt-1"
-              />
-            </div>
-            {preview.amenities.length > 0 && (
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Amenities</label>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {preview.amenities.map((a, i) => (
-                    <span key={i} className="text-[11px] px-2 py-1 rounded-full bg-muted font-semibold">{a}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-            <p className="text-[10px] text-muted-foreground break-all">
-              Source: <span className="font-semibold capitalize">{preview.source}</span>
-              {preview.source_id ? <> · id <span className="font-mono">{preview.source_id}</span></> : null}
-              {" · "}{preview.source_url}
+      {items.length > 0 && (
+        <>
+          <div className="flex items-center justify-between px-1">
+            <p className="text-[11px] text-muted-foreground">
+              {selected.size} / {items.length} selected · page {page}
             </p>
-            <Button onClick={save} disabled={saving} className="w-full h-12">
-              {saving ? <><CircleSpinner size={16} className="mr-2" /> Importing…</> : <><Plus className="w-4 h-4 mr-2" /> Import to my stays</>}
+            <div className="flex gap-1">
+              <button onClick={selectAll} className="text-[11px] font-bold text-primary px-2 py-1">All</button>
+              <button onClick={clearAll} className="text-[11px] font-bold text-muted-foreground px-2 py-1">None</button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            {items.map((it) => {
+              const isSel = selected.has(it.id);
+              const bumpPct = Math.max(0, Number(bump) || 0) / 100;
+              const markedUp = it.price != null ? (it.price * (1 + bumpPct)).toFixed(2) : null;
+              return (
+                <button
+                  key={it.id}
+                  onClick={() => toggle(it.id)}
+                  className={`text-left rounded-2xl border overflow-hidden bg-card transition ${isSel ? "border-primary ring-2 ring-primary/30" : "border-border"}`}
+                >
+                  <div className="aspect-square bg-muted relative">
+                    {it.image ? (
+                      <img src={it.image} alt={it.title} className="w-full h-full object-cover" loading="lazy" />
+                    ) : null}
+                    <div className={`absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center ${isSel ? "bg-primary text-primary-foreground" : "bg-background/80 border"}`}>
+                      {isSel ? <Check className="w-3 h-3" /> : null}
+                    </div>
+                    {it.superhost && (
+                      <span className="absolute top-1.5 left-1.5 text-[9px] px-1.5 py-0.5 rounded-full bg-background/90 font-bold">Superhost</span>
+                    )}
+                  </div>
+                  <div className="p-2 space-y-0.5">
+                    <p className="text-[11px] leading-tight line-clamp-2 font-semibold">{it.title}</p>
+                    <p className="text-[10px] text-muted-foreground line-clamp-1">{it.city ?? it.full_address ?? ""}</p>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-[11px] text-muted-foreground line-through">
+                        {it.price != null ? `${it.currency} ${it.price.toFixed(2)}` : "—"}
+                      </span>
+                      <span className="text-xs font-bold text-primary">
+                        {markedUp ? `${it.currency} ${markedUp}` : ""}
+                      </span>
+                    </div>
+                    {(it.rating != null || it.review_count != null) && (
+                      <p className="text-[10px] text-muted-foreground">
+                        {it.rating != null ? `★ ${it.rating}` : ""}{it.rating != null && it.review_count ? " · " : ""}{it.review_count ? `${it.review_count} reviews` : ""}
+                      </p>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex gap-2">
+            <Button variant="outline" className="flex-1 h-11" disabled={loading || page <= 1} onClick={() => runSearch(page - 1)}>Prev</Button>
+            <Button variant="outline" className="flex-1 h-11" disabled={loading} onClick={() => runSearch(page + 1)}>Next</Button>
+          </div>
+
+          <div className="sticky bottom-2 z-10">
+            <Button
+              className="w-full h-12 shadow-card"
+              disabled={importing || selected.size === 0}
+              onClick={importSelected}
+            >
+              {importing
+                ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Importing {progress.done}/{progress.total}…</>
+                : <><Download className="w-4 h-4 mr-2" /> Import {selected.size} stay{selected.size === 1 ? "" : "s"}</>}
             </Button>
           </div>
-        </div>
+        </>
       )}
-    </>
+    </div>
   );
 }
+
