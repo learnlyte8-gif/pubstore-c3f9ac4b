@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     const { data: userData, error: userErr } = await sb.auth.getUser();
     if (userErr || !userData.user) return json({ error: "Unauthorized" }, 401);
 
-    const apiKey = Deno.env.get("OMKAR_API_KEY");
+    const apiKey = Deno.env.get("OMKAR_API_KEY")?.trim();
     if (!apiKey) return json({ error: "OMKAR_API_KEY not configured" }, 500);
 
     const requestUrl = new URL(req.url);
@@ -90,7 +90,11 @@ Deno.serve(async (req) => {
 
     const r = await fetch(url.toString(), {
       method: "GET",
-      headers: { "API-Key": apiKey, Accept: "application/json" },
+      headers: {
+        "API-Key": apiKey,
+        "Accept": "application/json",
+        "User-Agent": "python-requests/2.32.3",
+      },
     });
     const text = await r.text();
     if (!r.ok) {
