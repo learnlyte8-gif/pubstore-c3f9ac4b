@@ -212,38 +212,110 @@ Deno.serve(async (req) => {
     const source = detectSource(url);
     const source_id = parseSourceId(url, source);
 
-    const scraped = await scrapeWithFirecrawl(url);
-    if (!scraped) return json({ error: "Could not load that page." }, 502);
+    let stay: ExtractedStay | null = null;
 
-    const extracted = await extractWithAI({
-      url,
-      source,
-      markdown: scraped.markdown,
-      metadata: scraped.metadata,
-    });
+    // Prefer omkar.cloud's Airbnb Scraper API for Airbnb URLs — real-time,
+    // structured data without AI extraction guesswork.
+    if (source === "airbnb" && source_id) {
+      const omkarKey = Deno.env.get("OMKAR_API_KEY");
+      if (!omkarKey) return json({ error: "OMKAR_API_KEY not configured" }, 500);
 
-    const stay: ExtractedStay = {
-      title: String(extracted.title || scraped.metadata?.title || "Imported stay").slice(0, 200),
-      kind: (extracted.kind as string) || "apartment",
-      description: String(extracted.description || "").slice(0, 4000),
-      images: Array.isArray(extracted.images) ? extracted.images.filter(Boolean).slice(0, 12) : [],
-      city: extracted.city ?? null,
-      country: extracted.country ?? null,
-      price_per_night:
-        typeof extracted.price_per_night === "number" ? extracted.price_per_night : null,
-      currency: extracted.currency ?? null,
-      bedrooms: typeof extracted.bedrooms === "number" ? extracted.bedrooms : null,
-      beds: typeof extracted.beds === "number" ? extracted.beds : null,
-      baths: typeof extracted.baths === "number" ? extracted.baths : null,
-      guests: typeof extracted.guests === "number" ? extracted.guests : null,
-      amenities: Array.isArray(extracted.amenities) ? extracted.amenities.filter(Boolean).slice(0, 30) : [],
-      rating: typeof extracted.rating === "number" ? extracted.rating : null,
-      review_count: typeof extracted.review_count === "number" ? extracted.review_count : null,
-      superhost: extracted.superhost === true,
-      source,
-      source_url: url,
-      source_id,
-    };
+      const detailsUrl = new URL("https://airbnb-scraper-api.omkar.cloud/airbnb/listings/details");
+      detailsUrl.searchParams.set("stay_id", source_id);
+      detailsUrl.searchParams.set("currency_code", "USD");
+
+      const r = await fetch(detailsUrl.toString(), {
+        headers: { "API-Key": omkarKey, Accept: "application/json" },
+      });
+      const text = await r.text();
+      if (!r.ok) {
+        console.error("omkar airbnb error", r.status, text.slice(0, 500));
+        return json({ error: `Airbnb fetch failed (${r.status})` }, 502);
+      }
+      let d: any;
+      try { d = JSON.parse(text); } catch { return json({ error: "Invalid Airbnb response" }, 502); }
+
+      const loc = String(d?.location ?? "");
+      const parts = loc.split(",").map((s: string) => s.trim()).filter(Boolean);
+      const city = parts[0] ?? null;
+      const country = parts.length > 1 ? parts[parts.length - 1] : null;
+      const rate = typeof d?.pricing?.rate === "number" ? d.pricing.rate : null;
+      const total = typeof d?.pricing?.total === "number" ? d.pricing.total : null;
+      const nights = (() => {
+        const q = String(d?.pricing?.qualifier ?? "");
+        const m = q.match(/(\d+)\s*night/i);
+        return m ? parseInt(m[1], 10) : null;
+      })();
+      const nightly = nights && total ? Math.round((total / nights) * 100) / 100 : rate;
+
+      const propType = String(d?.property_type ?? "").toLowerCase();
+      const kind: ExtractedStay["kind"] =
+        propType.includes("hotel") ? "hotel" :
+        propType.includes("b&b") || propType.includes("bed and breakfast") ? "b&b" :
+        "apartment";
+
+      const highlights: string[] = Array.isArray(d?.highlights) ? d.highlights : [];
+      const guests = typeof d?.guest_capacity === "number" ? d.guest_capacity : null;
+      const bedsMatch = highlights.map((h) => h.match(/(\d+)\s*bed(?!room)/i)).find(Boolean);
+      const bathMatch = highlights.map((h) => h.match(/(\d+)\s*bath/i)).find(Boolean);
+      const bedroomMatch = highlights.map((h) => h.match(/(\d+)\s*bedroom/i)).find(Boolean);
+
+      stay = {
+        title: String(d?.title || "Airbnb stay").slice(0, 200),
+        kind,
+        description: [d?.tagline, ...(highlights || [])].filter(Boolean).join("\n").slice(0, 4000),
+        images: Array.isArray(d?.photos) ? d.photos.filter(Boolean).slice(0, 12) : [],
+        city,
+        country,
+        price_per_night: nightly ?? null,
+        currency: String(d?.pricing?.currency ?? "USD"),
+        bedrooms: bedroomMatch ? parseInt(bedroomMatch[1], 10) : null,
+        beds: bedsMatch ? parseInt(bedsMatch[1], 10) : null,
+        baths: bathMatch ? parseInt(bathMatch[1], 10) : null,
+        guests,
+        amenities: highlights.slice(0, 30),
+        rating: typeof d?.overall_rating === "number" ? d.overall_rating : null,
+        review_count: typeof d?.review_count === "number" ? d.review_count : null,
+        superhost: d?.is_superhost === true,
+        source,
+        source_url: url,
+        source_id,
+      };
+    } else {
+      // Fallback: Firecrawl + AI extraction for booking / vrbo / other.
+      const scraped = await scrapeWithFirecrawl(url);
+      if (!scraped) return json({ error: "Could not load that page." }, 502);
+
+      const extracted = await extractWithAI({
+        url,
+        source,
+        markdown: scraped.markdown,
+        metadata: scraped.metadata,
+      });
+
+      stay = {
+        title: String(extracted.title || scraped.metadata?.title || "Imported stay").slice(0, 200),
+        kind: (extracted.kind as string) || "apartment",
+        description: String(extracted.description || "").slice(0, 4000),
+        images: Array.isArray(extracted.images) ? extracted.images.filter(Boolean).slice(0, 12) : [],
+        city: extracted.city ?? null,
+        country: extracted.country ?? null,
+        price_per_night:
+          typeof extracted.price_per_night === "number" ? extracted.price_per_night : null,
+        currency: extracted.currency ?? null,
+        bedrooms: typeof extracted.bedrooms === "number" ? extracted.bedrooms : null,
+        beds: typeof extracted.beds === "number" ? extracted.beds : null,
+        baths: typeof extracted.baths === "number" ? extracted.baths : null,
+        guests: typeof extracted.guests === "number" ? extracted.guests : null,
+        amenities: Array.isArray(extracted.amenities) ? extracted.amenities.filter(Boolean).slice(0, 30) : [],
+        rating: typeof extracted.rating === "number" ? extracted.rating : null,
+        review_count: typeof extracted.review_count === "number" ? extracted.review_count : null,
+        superhost: extracted.superhost === true,
+        source,
+        source_url: url,
+        source_id,
+      };
+    }
 
     return json({ stay });
   } catch (e) {
