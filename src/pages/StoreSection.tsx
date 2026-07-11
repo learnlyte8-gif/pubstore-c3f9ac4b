@@ -4730,14 +4730,15 @@ function StaysImport({ qc, navigate }: { qc: ReturnType<typeof useQueryClient>; 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Please sign in again.");
-      const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/omkar-airbnb-search`, {
-        method: "POST",
+      const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/omkar-airbnb-search`);
+      url.searchParams.set("destination", q);
+      url.searchParams.set("page", String(nextPage));
+      const r = await fetch(url.toString(), {
+        method: "GET",
         headers: {
-          "Content-Type": "application/json",
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ destination: q, page: nextPage }),
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j?.error || `Search failed (${r.status})`);
