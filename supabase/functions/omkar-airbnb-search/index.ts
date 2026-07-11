@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     const { data: userData, error: userErr } = await sb.auth.getUser();
     if (userErr || !userData.user) return json({ error: "Unauthorized" }, 401);
 
-    const apiKey = Deno.env.get("OMKAR_API_KEY")?.trim();
+    const apiKey = (Deno.env.get("OMKAR_AIRBNB_API_KEY") || Deno.env.get("OMKAR_API_KEY"))?.trim();
     if (!apiKey) return json({ error: "OMKAR_API_KEY not configured" }, 500);
 
     const requestUrl = new URL(req.url);
