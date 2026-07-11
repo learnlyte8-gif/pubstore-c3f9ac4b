@@ -13,10 +13,34 @@ export type ImportedProduct = {
   images: string[];
   source: string;
   source_url: string;
+  source_id?: string | null;
   moq?: number | null;
   unit?: string | null;
   category_slug?: string | null;
 };
+
+// Extract the original listing id from a source URL. Best-effort per marketplace.
+export function parseSourceIdFromUrl(url: string, source: string): string | null {
+  try {
+    if (source === "amazon") {
+      const m = url.match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})/i);
+      return m?.[1] ?? null;
+    }
+    if (source === "alibaba") {
+      const m = url.match(/[_/](\d{6,})\.html/i);
+      return m?.[1] ?? null;
+    }
+    if (source === "aliexpress") {
+      const m = url.match(/\/item\/(\d+)/i);
+      return m?.[1] ?? null;
+    }
+    if (source === "shopify") {
+      const m = url.match(/\/products\/([^/?#]+)/i);
+      return m?.[1] ?? null;
+    }
+  } catch { /* noop */ }
+  return null;
+}
 
 export type BulkCandidate = {
   url: string;
