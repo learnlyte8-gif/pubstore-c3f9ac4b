@@ -299,6 +299,9 @@ function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: M
         category_slug: preview.category_slug ?? null,
         ship_from: supplier.country ?? null,
         active: true,
+        source: preview.source ?? null,
+        source_url: preview.source_url ?? null,
+        source_id: preview.source_id ?? null,
       }).select().single();
       if (error) throw error;
 
