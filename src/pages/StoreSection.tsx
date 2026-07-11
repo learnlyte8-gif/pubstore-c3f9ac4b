@@ -158,7 +158,7 @@ function ImportView() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [email, setEmail] = useState<string | null>(null);
-  const [mode, setMode] = useState<"single" | "bulk" | "aliexpress">("single");
+  const [mode, setMode] = useState<"single" | "bulk" | "aliexpress" | "stays">("single");
 
   // markup (shared by both modes)
   const [markupMode, setMarkupMode] = useState<MarkupMode>("percent");
