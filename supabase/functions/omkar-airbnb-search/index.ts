@@ -99,7 +99,12 @@ Deno.serve(async (req) => {
     const text = await r.text();
     if (!r.ok) {
       console.error("omkar airbnb search error", r.status, text.slice(0, 500));
-      return json({ error: `Airbnb search failed (${r.status})`, details: text.slice(0, 500) }, r.status);
+      return json({
+        error: r.status >= 500
+          ? "Airbnb API is returning a server error for this API key. Please check the omkar.cloud key or try again later."
+          : `Airbnb search failed (${r.status})`,
+        details: text.slice(0, 500),
+      }, r.status >= 500 ? 502 : r.status);
     }
 
     let data: any;
