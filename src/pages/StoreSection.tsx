@@ -4715,6 +4715,17 @@ function mapKind(propType: string | null): string {
 
 function StaysImport({ qc, navigate }: { qc: ReturnType<typeof useQueryClient>; navigate: ReturnType<typeof useNavigate> }) {
   const [destination, setDestination] = useState("");
+  const [arrivalDate, setArrivalDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  });
+  const [departureDate, setDepartureDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 5);
+    return d.toISOString().slice(0, 10);
+  });
+  const [adultGuests, setAdultGuests] = useState("2");
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<AirbnbSearchItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -4731,8 +4742,11 @@ function StaysImport({ qc, navigate }: { qc: ReturnType<typeof useQueryClient>; 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Please sign in again.");
       const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/omkar-airbnb-search`);
-      url.searchParams.set("destination", q);
-      url.searchParams.set("page", String(nextPage));
+      url.searchParams.set("destination_query", q);
+      url.searchParams.set("arrival_date", arrivalDate);
+      url.searchParams.set("departure_date", departureDate);
+      url.searchParams.set("adult_guests", String(Math.max(1, Number(adultGuests) || 1)));
+      if (nextPage > 1) url.searchParams.set("page_number", String(nextPage));
       const r = await fetch(url.toString(), {
         method: "GET",
         headers: {
@@ -4844,6 +4858,37 @@ function StaysImport({ qc, navigate }: { qc: ReturnType<typeof useQueryClient>; 
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
             <span className="ml-1 text-xs">Search</span>
           </Button>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <label className="space-y-1">
+            <span className="text-[10px] font-semibold text-muted-foreground">Arrival</span>
+            <input
+              type="date"
+              value={arrivalDate}
+              onChange={(e) => setArrivalDate(e.target.value)}
+              className="w-full h-9 rounded-lg border bg-background px-2 text-xs"
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-[10px] font-semibold text-muted-foreground">Departure</span>
+            <input
+              type="date"
+              value={departureDate}
+              onChange={(e) => setDepartureDate(e.target.value)}
+              className="w-full h-9 rounded-lg border bg-background px-2 text-xs"
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-[10px] font-semibold text-muted-foreground">Adults</span>
+            <input
+              type="number"
+              min="1"
+              max="16"
+              value={adultGuests}
+              onChange={(e) => setAdultGuests(e.target.value)}
+              className="w-full h-9 rounded-lg border bg-background px-2 text-xs"
+            />
+          </label>
         </div>
         <div className="flex items-center gap-2 pt-1">
           <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
