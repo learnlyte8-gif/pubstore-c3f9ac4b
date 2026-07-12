@@ -1238,6 +1238,30 @@ export type Database = {
         }
         Relationships: []
       }
+      expo_push_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       finance_applications: {
         Row: {
           amount_due: number
@@ -3025,6 +3049,7 @@ export type Database = {
       notifications: {
         Row: {
           body: string | null
+          conversation_id: string | null
           created_at: string
           id: string
           link: string | null
@@ -3035,6 +3060,7 @@ export type Database = {
         }
         Insert: {
           body?: string | null
+          conversation_id?: string | null
           created_at?: string
           id?: string
           link?: string | null
@@ -3045,6 +3071,7 @@ export type Database = {
         }
         Update: {
           body?: string | null
+          conversation_id?: string | null
           created_at?: string
           id?: string
           link?: string | null
@@ -3053,7 +3080,15 @@ export type Database = {
           type?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notifications_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_items: {
         Row: {
