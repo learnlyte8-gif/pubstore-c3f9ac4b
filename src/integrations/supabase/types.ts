@@ -6084,6 +6084,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_email_by_username: { Args: { p_username: string }; Returns: string }
       get_user_tier_info: {
         Args: { _user_id: string }
         Returns: {
