@@ -1,6 +1,8 @@
 project_id = "ccprnnqxpnrkdrfsudjc"
 
 [functions]
+  [functions.semantic-search]
+    verify_jwt = false
   [functions.auth-email-hook]
     verify_jwt = false
   [functions.image-search]
