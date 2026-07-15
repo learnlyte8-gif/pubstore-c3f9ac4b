@@ -3480,6 +3480,7 @@ export type Database = {
           created_at: string
           deal_ends_at: string | null
           description: string | null
+          features: string[]
           free_shipping: boolean | null
           gallery: string[] | null
           has_reel: boolean | null
@@ -3494,6 +3495,7 @@ export type Database = {
           ready_to_ship: boolean
           reel_url: string | null
           review_count: number | null
+          search_vector: unknown
           ship_from: string | null
           sold: number | null
           source: string | null
@@ -3501,9 +3503,11 @@ export type Database = {
           source_url: string | null
           specs: Json | null
           supplier_id: string
+          target_audience: string[]
           title: string
           unit: string | null
           updated_at: string
+          use_cases: string[]
           video_url: string | null
         }
         Insert: {
@@ -3517,6 +3521,7 @@ export type Database = {
           created_at?: string
           deal_ends_at?: string | null
           description?: string | null
+          features?: string[]
           free_shipping?: boolean | null
           gallery?: string[] | null
           has_reel?: boolean | null
@@ -3531,6 +3536,7 @@ export type Database = {
           ready_to_ship?: boolean
           reel_url?: string | null
           review_count?: number | null
+          search_vector?: unknown
           ship_from?: string | null
           sold?: number | null
           source?: string | null
@@ -3538,9 +3544,11 @@ export type Database = {
           source_url?: string | null
           specs?: Json | null
           supplier_id: string
+          target_audience?: string[]
           title: string
           unit?: string | null
           updated_at?: string
+          use_cases?: string[]
           video_url?: string | null
         }
         Update: {
@@ -3554,6 +3562,7 @@ export type Database = {
           created_at?: string
           deal_ends_at?: string | null
           description?: string | null
+          features?: string[]
           free_shipping?: boolean | null
           gallery?: string[] | null
           has_reel?: boolean | null
@@ -3568,6 +3577,7 @@ export type Database = {
           ready_to_ship?: boolean
           reel_url?: string | null
           review_count?: number | null
+          search_vector?: unknown
           ship_from?: string | null
           sold?: number | null
           source?: string | null
@@ -3575,9 +3585,11 @@ export type Database = {
           source_url?: string | null
           specs?: Json | null
           supplier_id?: string
+          target_audience?: string[]
           title?: string
           unit?: string | null
           updated_at?: string
+          use_cases?: string[]
           video_url?: string | null
         }
         Relationships: [
@@ -6358,6 +6370,27 @@ export type Database = {
         Returns: string
       }
       reward_ad_view: { Args: { _campaign_id: string }; Returns: Json }
+      search_products: {
+        Args: { result_limit?: number; search_query: string }
+        Returns: {
+          badge: string
+          category_slug: string
+          description: string
+          free_shipping: boolean
+          id: string
+          image: string
+          lead_time: string
+          moq: number
+          price: number
+          rating: number
+          ready_to_ship: boolean
+          review_count: number
+          score: number
+          sold: number
+          supplier_id: string
+          title: string
+        }[]
+      }
       serve_ad: {
         Args: {
           _category?: string
