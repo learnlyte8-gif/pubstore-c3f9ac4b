@@ -3480,6 +3480,7 @@ export type Database = {
           created_at: string
           deal_ends_at: string | null
           description: string | null
+          embedding_updated_at: string | null
           features: string[]
           free_shipping: boolean | null
           gallery: string[] | null
@@ -3495,6 +3496,7 @@ export type Database = {
           ready_to_ship: boolean
           reel_url: string | null
           review_count: number | null
+          search_embedding: string | null
           search_vector: unknown
           ship_from: string | null
           sold: number | null
@@ -3521,6 +3523,7 @@ export type Database = {
           created_at?: string
           deal_ends_at?: string | null
           description?: string | null
+          embedding_updated_at?: string | null
           features?: string[]
           free_shipping?: boolean | null
           gallery?: string[] | null
@@ -3536,6 +3539,7 @@ export type Database = {
           ready_to_ship?: boolean
           reel_url?: string | null
           review_count?: number | null
+          search_embedding?: string | null
           search_vector?: unknown
           ship_from?: string | null
           sold?: number | null
@@ -3562,6 +3566,7 @@ export type Database = {
           created_at?: string
           deal_ends_at?: string | null
           description?: string | null
+          embedding_updated_at?: string | null
           features?: string[]
           free_shipping?: boolean | null
           gallery?: string[] | null
@@ -3577,6 +3582,7 @@ export type Database = {
           ready_to_ship?: boolean
           reel_url?: string | null
           review_count?: number | null
+          search_embedding?: string | null
           search_vector?: unknown
           ship_from?: string | null
           sold?: number | null
@@ -6372,6 +6378,31 @@ export type Database = {
       reward_ad_view: { Args: { _campaign_id: string }; Returns: Json }
       search_products: {
         Args: { result_limit?: number; search_query: string }
+        Returns: {
+          badge: string
+          category_slug: string
+          description: string
+          free_shipping: boolean
+          id: string
+          image: string
+          lead_time: string
+          moq: number
+          price: number
+          rating: number
+          ready_to_ship: boolean
+          review_count: number
+          score: number
+          sold: number
+          supplier_id: string
+          title: string
+        }[]
+      }
+      search_products_semantic: {
+        Args: {
+          query_embedding: string
+          result_limit?: number
+          search_query: string
+        }
         Returns: {
           badge: string
           category_slug: string
