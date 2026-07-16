@@ -457,21 +457,22 @@ function EscrowCard({ order, onUpdated }: { order: Order; onUpdated: (o: Order) 
   const status = order.escrow_status ?? "none";
   const amount = Number(order.escrow_amount ?? order.total ?? 0);
 
-  const update = async (patch: Partial<Order>) => {
-    const { error } = await supabase.from("orders").update(patch as any).eq("id", order.id);
-    if (error) return toast.error(error.message);
-    onUpdated({ ...order, ...patch });
-  };
-
   const release = async () => {
-    await update({ escrow_status: "released", escrow_released_at: new Date().toISOString() });
+    const { data, error } = await supabase.rpc("release_escrow", { _order_id: order.id });
+    if (error) return toast.error(error.message);
+    if (data) onUpdated({ ...order, ...(data as any) });
     toast.success("Funds released to supplier");
   };
 
   const dispute = async () => {
     const reason = prompt("Briefly describe the issue (item not received, damaged, wrong product…)");
     if (!reason) return;
-    await update({ escrow_status: "disputed", dispute_opened_at: new Date().toISOString(), dispute_reason: reason });
+    const { data, error } = await supabase.rpc("open_order_dispute", {
+      _order_id: order.id,
+      _reason: reason,
+    });
+    if (error) return toast.error(error.message);
+    if (data) onUpdated({ ...order, ...(data as any) });
     toast.success("Dispute opened — our team will mediate");
   };
 

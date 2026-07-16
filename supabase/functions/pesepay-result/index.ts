@@ -1,6 +1,7 @@
 // Pesepay webhook (resultUrl). Called server-to-server after payment completes.
-// Body is JSON with an encrypted `payload` field. We decrypt, then either credit
-// the wallet or mark the matching orders as paid — idempotently.
+// The body MUST be a JSON object with an encrypted `payload` field — we refuse
+// requests that don't include one so an attacker can't forge a plain-JSON
+// callback marking their own orders as paid.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -33,10 +34,19 @@ Deno.serve(async (req) => {
     let body: any = {};
     try { body = JSON.parse(raw); } catch { body = {}; }
 
-    let inner: any = body;
-    if (typeof body?.payload === "string") {
-      try { inner = JSON.parse(await decryptPayload(body.payload, encryptionKey)); }
-      catch (e) { console.error("pesepay-result decrypt", e); return new Response("bad payload", { status: 400 }); }
+    // SECURITY: only trust encrypted-payload callbacks. Anything else is
+    // treated as forged and rejected — never fall back to raw JSON.
+    if (!body || typeof body.payload !== "string" || body.payload.length === 0) {
+      console.warn("pesepay-result: rejected request without encrypted payload");
+      return new Response("bad payload", { status: 400 });
+    }
+
+    let inner: any;
+    try {
+      inner = JSON.parse(await decryptPayload(body.payload, encryptionKey));
+    } catch (e) {
+      console.error("pesepay-result decrypt", e);
+      return new Response("bad payload", { status: 400 });
     }
 
     const merchantReference: string = inner.merchantReference || inner.referenceNumber || "";
