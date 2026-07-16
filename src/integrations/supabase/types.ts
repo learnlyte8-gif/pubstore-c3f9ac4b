@@ -6183,6 +6183,47 @@ export type Database = {
         }
         Returns: number
       }
+      open_order_dispute: {
+        Args: { _order_id: string; _reason: string }
+        Returns: {
+          address_id: string | null
+          buyer_id: string
+          coupon_code: string | null
+          created_at: string
+          delivery_code: string | null
+          delivery_courier_user_id: string | null
+          delivery_option_label: string | null
+          discount: number
+          dispute_opened_at: string | null
+          dispute_reason: string | null
+          escrow_amount: number
+          escrow_released_at: string | null
+          escrow_status: string
+          eta: string | null
+          id: string
+          manual_payment_note: string | null
+          manual_payment_reference: string | null
+          manual_payment_submitted_at: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          payment_status: string
+          ref_code: string | null
+          ship_to: string | null
+          shipping: number
+          status: Database["public"]["Enums"]["order_status"]
+          subtotal: number
+          supplier_id: string
+          total: number
+          tracking: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       pay_order_with_wallet: {
         Args: { _order_id: string }
         Returns: {
@@ -6303,6 +6344,47 @@ export type Database = {
       }
       recompute_user_tier: { Args: { _user_id: string }; Returns: undefined }
       redeem_loyalty_points: { Args: { _points: number }; Returns: Json }
+      release_escrow: {
+        Args: { _order_id: string }
+        Returns: {
+          address_id: string | null
+          buyer_id: string
+          coupon_code: string | null
+          created_at: string
+          delivery_code: string | null
+          delivery_courier_user_id: string | null
+          delivery_option_label: string | null
+          discount: number
+          dispute_opened_at: string | null
+          dispute_reason: string | null
+          escrow_amount: number
+          escrow_released_at: string | null
+          escrow_status: string
+          eta: string | null
+          id: string
+          manual_payment_note: string | null
+          manual_payment_reference: string | null
+          manual_payment_submitted_at: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          payment_status: string
+          ref_code: string | null
+          ship_to: string | null
+          shipping: number
+          status: Database["public"]["Enums"]["order_status"]
+          subtotal: number
+          supplier_id: string
+          total: number
+          tracking: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       request_wallet_withdrawal:
         | {
             Args: {
