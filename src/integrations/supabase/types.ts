@@ -6286,13 +6286,21 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      personalized_feed: {
-        Args: { _limit?: number; _user_id: string }
-        Returns: {
-          product_id: string
-          score: number
-        }[]
-      }
+      personalized_feed:
+        | {
+            Args: { _limit?: number; _user_id: string }
+            Returns: {
+              product_id: string
+              score: number
+            }[]
+          }
+        | {
+            Args: { _limit?: number; _offset?: number; _user_id: string }
+            Returns: {
+              product_id: string
+              score: number
+            }[]
+          }
       place_group_buy_order: {
         Args: { _group_id: string }
         Returns: {
