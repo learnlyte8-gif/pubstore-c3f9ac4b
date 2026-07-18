@@ -241,6 +241,7 @@ export type Database = {
           created_at: string
           currency: string
           description: string | null
+          details: Json | null
           featured: boolean
           funding_goal: number | null
           funding_raised: number | null
@@ -273,6 +274,7 @@ export type Database = {
           created_at?: string
           currency?: string
           description?: string | null
+          details?: Json | null
           featured?: boolean
           funding_goal?: number | null
           funding_raised?: number | null
@@ -305,6 +307,7 @@ export type Database = {
           created_at?: string
           currency?: string
           description?: string | null
+          details?: Json | null
           featured?: boolean
           funding_goal?: number | null
           funding_raised?: number | null
@@ -453,6 +456,7 @@ export type Database = {
           delivery_fee: number | null
           deposit: number
           description: string | null
+          details: Json | null
           doors: number | null
           extra_km_fee: number | null
           featured: boolean
@@ -531,6 +535,7 @@ export type Database = {
           delivery_fee?: number | null
           deposit?: number
           description?: string | null
+          details?: Json | null
           doors?: number | null
           extra_km_fee?: number | null
           featured?: boolean
@@ -609,6 +614,7 @@ export type Database = {
           delivery_fee?: number | null
           deposit?: number
           description?: string | null
+          details?: Json | null
           doors?: number | null
           extra_km_fee?: number | null
           featured?: boolean
@@ -1339,6 +1345,7 @@ export type Database = {
           created_at: string
           currency: string
           description: string | null
+          details: Json | null
           featured: boolean
           features: string[]
           gallery: string[]
@@ -1366,6 +1373,7 @@ export type Database = {
           created_at?: string
           currency?: string
           description?: string | null
+          details?: Json | null
           featured?: boolean
           features?: string[]
           gallery?: string[]
@@ -1393,6 +1401,7 @@ export type Database = {
           created_at?: string
           currency?: string
           description?: string | null
+          details?: Json | null
           featured?: boolean
           features?: string[]
           gallery?: string[]
@@ -1663,6 +1672,7 @@ export type Database = {
           created_at: string
           currency: string
           description: string | null
+          details: Json | null
           gallery: string[]
           id: string
           lead_time: string | null
@@ -1688,6 +1698,7 @@ export type Database = {
           created_at?: string
           currency?: string
           description?: string | null
+          details?: Json | null
           gallery?: string[]
           id?: string
           lead_time?: string | null
@@ -1713,6 +1724,7 @@ export type Database = {
           created_at?: string
           currency?: string
           description?: string | null
+          details?: Json | null
           gallery?: string[]
           id?: string
           lead_time?: string | null
@@ -3688,6 +3700,7 @@ export type Database = {
           created_at: string
           currency: string
           description: string | null
+          details: Json | null
           featured: boolean
           furnished: boolean
           gallery: string[]
@@ -3722,6 +3735,7 @@ export type Database = {
           created_at?: string
           currency?: string
           description?: string | null
+          details?: Json | null
           featured?: boolean
           furnished?: boolean
           gallery?: string[]
@@ -3756,6 +3770,7 @@ export type Database = {
           created_at?: string
           currency?: string
           description?: string | null
+          details?: Json | null
           featured?: boolean
           furnished?: boolean
           gallery?: string[]
@@ -3976,6 +3991,7 @@ export type Database = {
           delivery_enabled: boolean
           delivery_fee: number
           description: string | null
+          details: Json | null
           featured: boolean
           gallery: string[]
           hours: Json
@@ -4008,6 +4024,7 @@ export type Database = {
           delivery_enabled?: boolean
           delivery_fee?: number
           description?: string | null
+          details?: Json | null
           featured?: boolean
           gallery?: string[]
           hours?: Json
@@ -4040,6 +4057,7 @@ export type Database = {
           delivery_enabled?: boolean
           delivery_fee?: number
           description?: string | null
+          details?: Json | null
           featured?: boolean
           gallery?: string[]
           hours?: Json
@@ -4888,6 +4906,7 @@ export type Database = {
           created_at: string
           currency: string
           description: string | null
+          details: Json | null
           gallery: string[]
           guests: number
           id: string
@@ -4918,6 +4937,7 @@ export type Database = {
           created_at?: string
           currency?: string
           description?: string | null
+          details?: Json | null
           gallery?: string[]
           guests?: number
           id?: string
@@ -4948,6 +4968,7 @@ export type Database = {
           created_at?: string
           currency?: string
           description?: string | null
+          details?: Json | null
           gallery?: string[]
           guests?: number
           id?: string
@@ -5509,6 +5530,7 @@ export type Database = {
           created_at: string
           currency: string
           description: string | null
+          details: Json | null
           drivetrain: string | null
           features: string[]
           fuel: string | null
@@ -5540,6 +5562,7 @@ export type Database = {
           created_at?: string
           currency?: string
           description?: string | null
+          details?: Json | null
           drivetrain?: string | null
           features?: string[]
           fuel?: string | null
@@ -5571,6 +5594,7 @@ export type Database = {
           created_at?: string
           currency?: string
           description?: string | null
+          details?: Json | null
           drivetrain?: string | null
           features?: string[]
           fuel?: string | null
