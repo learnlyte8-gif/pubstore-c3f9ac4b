@@ -6248,26 +6248,47 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      pay_order_with_wallet: {
-        Args: { _order_id: string }
-        Returns: {
-          account: string
-          amount: number
-          balance_after: number
-          created_at: string
-          description: string | null
-          id: string
-          kind: string
-          reference: string | null
-          user_id: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "wallet_transactions"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+      pay_order_with_wallet:
+        | {
+            Args: { _order_id: string }
+            Returns: {
+              account: string
+              amount: number
+              balance_after: number
+              created_at: string
+              description: string | null
+              id: string
+              kind: string
+              reference: string | null
+              user_id: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "wallet_transactions"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: { _buyer_id: string; _order_id: string }
+            Returns: {
+              account: string
+              amount: number
+              balance_after: number
+              created_at: string
+              description: string | null
+              id: string
+              kind: string
+              reference: string | null
+              user_id: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "wallet_transactions"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
       pay_service_action_with_wallet: {
         Args: { _kind: string; _record_id: string }
         Returns: Json
