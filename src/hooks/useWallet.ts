@@ -81,10 +81,13 @@ export function useWallet() {
 
   /** Pay an existing order from the wallet (personal balance). */
   const payOrder = useCallback(async (orderId: string) => {
-    const { data, error } = await sb.rpc("pay_order_with_wallet", { _order_id: orderId });
+    const { data, error } = await supabase.functions.invoke("pay-order-with-wallet", {
+      body: { orderId },
+    });
     if (error) throw error;
+    if (data?.error) throw new Error(data.error);
     refresh();
-    return data as WalletTx;
+    return data?.transaction as WalletTx;
   }, [refresh]);
 
   /** Move funds from sales balance to personal balance. */
