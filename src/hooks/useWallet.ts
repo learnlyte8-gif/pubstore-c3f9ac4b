@@ -81,7 +81,7 @@ export function useWallet() {
 
   /** Pay an existing order from the wallet (personal balance). */
   const payOrder = useCallback(async (orderId: string) => {
-    const { data, error } = await supabase.functions.invoke("pay-order-with-wallet", {
+    const { data, error } = await supabase.functions.invoke("pay-order", {
       body: { orderId },
     });
     if (error) throw error;
