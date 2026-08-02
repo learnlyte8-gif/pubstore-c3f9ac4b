@@ -2395,6 +2395,153 @@ export type Database = {
         }
         Relationships: []
       }
+      learnlyte_ai_chats: {
+        Row: {
+          created_at: string
+          id: string
+          messages: Json
+          resource_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          messages?: Json
+          resource_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          messages?: Json
+          resource_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learnlyte_ai_chats_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "learnlyte_resources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learnlyte_bookmarks: {
+        Row: {
+          created_at: string
+          id: string
+          resource_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          resource_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          resource_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learnlyte_bookmarks_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "learnlyte_resources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learnlyte_resources: {
+        Row: {
+          created_at: string
+          description: string | null
+          download_count: number
+          file_size: number
+          file_type: string
+          file_url: string
+          id: string
+          level: Database["public"]["Enums"]["learnlyte_level"]
+          resource_type: Database["public"]["Enums"]["learnlyte_resource_type"]
+          subject_id: string
+          title: string
+          uploaded_by: string | null
+          uploader_name: string | null
+          year: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          download_count?: number
+          file_size?: number
+          file_type?: string
+          file_url: string
+          id?: string
+          level: Database["public"]["Enums"]["learnlyte_level"]
+          resource_type: Database["public"]["Enums"]["learnlyte_resource_type"]
+          subject_id: string
+          title: string
+          uploaded_by?: string | null
+          uploader_name?: string | null
+          year?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          download_count?: number
+          file_size?: number
+          file_type?: string
+          file_url?: string
+          id?: string
+          level?: Database["public"]["Enums"]["learnlyte_level"]
+          resource_type?: Database["public"]["Enums"]["learnlyte_resource_type"]
+          subject_id?: string
+          title?: string
+          uploaded_by?: string | null
+          uploader_name?: string | null
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learnlyte_resources_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "learnlyte_subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learnlyte_subjects: {
+        Row: {
+          created_at: string
+          icon: string | null
+          id: string
+          level: Database["public"]["Enums"]["learnlyte_level"]
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          level: Database["public"]["Enums"]["learnlyte_level"]
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          level?: Database["public"]["Enums"]["learnlyte_level"]
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       live_messages: {
         Row: {
           body: string
@@ -6144,6 +6291,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_download_count: {
+        Args: { resource_id: string }
+        Returns: undefined
+      }
       is_cod_verified: { Args: { _user_id: string }; Returns: boolean }
       is_conversation_member: {
         Args: { _cid: string; _uid: string }
@@ -6248,47 +6399,26 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      pay_order_with_wallet:
-        | {
-            Args: { _order_id: string }
-            Returns: {
-              account: string
-              amount: number
-              balance_after: number
-              created_at: string
-              description: string | null
-              id: string
-              kind: string
-              reference: string | null
-              user_id: string
-            }
-            SetofOptions: {
-              from: "*"
-              to: "wallet_transactions"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
-        | {
-            Args: { _buyer_id: string; _order_id: string }
-            Returns: {
-              account: string
-              amount: number
-              balance_after: number
-              created_at: string
-              description: string | null
-              id: string
-              kind: string
-              reference: string | null
-              user_id: string
-            }
-            SetofOptions: {
-              from: "*"
-              to: "wallet_transactions"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
+      pay_order_with_wallet: {
+        Args: { _order_id: string }
+        Returns: {
+          account: string
+          amount: number
+          balance_after: number
+          created_at: string
+          description: string | null
+          id: string
+          kind: string
+          reference: string | null
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "wallet_transactions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       pay_service_action_with_wallet: {
         Args: { _kind: string; _record_id: string }
         Returns: Json
@@ -6397,6 +6527,10 @@ export type Database = {
       }
       recompute_user_tier: { Args: { _user_id: string }; Returns: undefined }
       redeem_loyalty_points: { Args: { _points: number }; Returns: Json }
+      register_push_token: {
+        Args: { p_token: string; p_user_id: string }
+        Returns: undefined
+      }
       release_escrow: {
         Args: { _order_id: string }
         Returns: {
@@ -6617,6 +6751,20 @@ export type Database = {
       group_buy_role: "owner" | "member" | "invited"
       group_buy_status: "open" | "locked" | "fulfilled" | "cancelled"
       invite_status: "pending" | "accepted" | "declined"
+      learnlyte_level:
+        | "grade_seven"
+        | "o_level"
+        | "a_level"
+        | "cambridge_primary"
+        | "cambridge_lower_secondary"
+        | "cambridge_igcse"
+        | "cambridge_o_level"
+        | "cambridge_as_a"
+      learnlyte_resource_type:
+        | "textbook"
+        | "past_paper"
+        | "specimen_paper"
+        | "marking_scheme"
       like_target: "product" | "supplier" | "catalog" | "post"
       live_status: "scheduled" | "live" | "ended"
       order_status:
@@ -6766,6 +6914,22 @@ export const Constants = {
       group_buy_role: ["owner", "member", "invited"],
       group_buy_status: ["open", "locked", "fulfilled", "cancelled"],
       invite_status: ["pending", "accepted", "declined"],
+      learnlyte_level: [
+        "grade_seven",
+        "o_level",
+        "a_level",
+        "cambridge_primary",
+        "cambridge_lower_secondary",
+        "cambridge_igcse",
+        "cambridge_o_level",
+        "cambridge_as_a",
+      ],
+      learnlyte_resource_type: [
+        "textbook",
+        "past_paper",
+        "specimen_paper",
+        "marking_scheme",
+      ],
       like_target: ["product", "supplier", "catalog", "post"],
       live_status: ["scheduled", "live", "ended"],
       order_status: [
