@@ -22,29 +22,29 @@ Be concise, friendly, and educational. Always ground your answers in the resourc
 
 async function extractPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
   try {
-    const pdfjs = await import("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.mjs");
-    pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs";
+    const { extractText, getDocumentProxy } = await import("npm:unpdf@0.12.1");
+    const pdf = await getDocumentProxy(new Uint8Array(arrayBuffer));
+    const { totalPages, text } = await extractText(pdf, { mergePages: false });
 
-    const data = new Uint8Array(arrayBuffer);
-    const loadingTask = pdfjs.getDocument({ data });
-    const pdf = await loadingTask.promise;
-
-    const maxPages = Math.min(pdf.numPages, 30);
+    const pages = Array.isArray(text) ? text : [String(text)];
+    const maxPages = Math.min(pages.length, 40);
     let fullText = "";
-
-    for (let i = 1; i <= maxPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map((item: any) => item.str).join(" ");
-      fullText += `--- Page ${i} ---\n${pageText}\n\n`;
+    for (let i = 0; i < maxPages; i++) {
+      const pageText = (pages[i] || "").replace(/\s+/g, " ").trim();
+      if (pageText) fullText += `--- Page ${i + 1} ---\n${pageText}\n\n`;
     }
 
-    return fullText || "(No extractable text found in PDF — it may be scanned images)";
+    console.log(`PDF extracted: ${totalPages} pages, ${fullText.length} chars`);
+    if (!fullText.trim()) {
+      return "(No extractable text found in this PDF — it looks like a scanned/image-only document.)";
+    }
+    return fullText;
   } catch (e) {
-    console.error("PDF extraction error:", e);
+    console.error("PDF extraction error:", e instanceof Error ? e.message : e);
     return "(Could not extract text from PDF)";
   }
 }
+
 
 async function fetchFileContent(fileUrl: string): Promise<string> {
   try {
