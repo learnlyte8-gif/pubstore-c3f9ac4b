@@ -16,6 +16,8 @@ async function embed(input: string | string[]) {
   return body.data.map((item: { embedding: number[] }) => item.embedding) as number[][];
 }
 
+import { chargeAiCredits } from '../_shared/ai-credits.ts';
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
@@ -54,6 +56,11 @@ Deno.serve(async (req) => {
       if (updateError) throw updateError;
       return new Response(JSON.stringify({ embedded: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
+    const charge = await chargeAiCredits(req, 'semantic_search');
+    if (!charge.ok) {
+      return new Response(JSON.stringify(charge.body), { status: charge.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     const query = String(body.query ?? '').trim();
     if (query.length < 2) return new Response(JSON.stringify({ results: [] }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     const [vector] = await embed(query);

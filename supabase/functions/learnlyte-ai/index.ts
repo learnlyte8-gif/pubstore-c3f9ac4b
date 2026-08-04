@@ -1,5 +1,7 @@
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
 
+import { chargeAiCredits } from "../_shared/ai-credits.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -297,6 +299,19 @@ Deno.serve(async (req) => {
         return jsonResponse(cached, true);
       }
       console.log(`cache MISS ${cacheKey}`);
+    }
+
+    // Only charge on a cache miss / live model call
+    const feature =
+      action === "extract-questions" ? "extract_questions"
+      : action === "mark-answers" ? "mark_answers"
+      : "learnlyte_chat";
+    const charge = await chargeAiCredits(req, feature, { reference: fileUrl ?? null });
+    if (!charge.ok) {
+      return new Response(JSON.stringify(charge.body), {
+        status: charge.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     let context = `Resource: ${resourceTitle || "Unknown"}

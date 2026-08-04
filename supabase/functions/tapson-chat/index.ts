@@ -1,4 +1,5 @@
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
+import { chargeAiCredits } from "../_shared/ai-credits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -58,6 +59,15 @@ Deno.serve(async (req) => {
 
   try {
     const { messages, context } = await req.json();
+
+    const charge = await chargeAiCredits(req, "tapson_chat");
+    if (!charge.ok) {
+      return new Response(JSON.stringify(charge.body), {
+        status: charge.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -100,7 +110,12 @@ Deno.serve(async (req) => {
     }
 
     return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "X-AI-Credits-Charged": String(charge.charged),
+        "X-AI-Credits-Balance": String(charge.balance),
+      },
     });
   } catch (e) {
     console.error("tapson error:", e);

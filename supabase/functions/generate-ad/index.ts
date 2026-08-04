@@ -3,6 +3,7 @@
 // the supplier's wallet is charged AD_FEE (in USD) per generation.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { chargeAiCredits, refundAiCredits } from "../_shared/ai-credits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,8 +11,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const FREE_TRIALS = 3;
-const AD_FEE = 2; // USD per ad after free trials
+const FREE_TRIALS = 3; // legacy supplier counter, kept for reporting
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -58,24 +58,15 @@ Deno.serve(async (req) => {
 
     const used = Number(supplier.ad_credits_used ?? 0);
     const isPro = !!supplier.ad_pro;
-    const needsPayment = !isPro && used >= FREE_TRIALS;
 
-    // Charge wallet up-front so we never charge for a failed generation later
-    if (needsPayment) {
-      const { error: payErr } = await admin.rpc("apply_wallet_transaction", {
-        _user_id: user.id,
-        _kind: "ad_fee",
-        _amount: -AD_FEE,
-        _description: `AI Ad for "${product.title}"`,
-        _reference: `ad:${product.id}`,
-      });
-      if (payErr) {
-        const msg = /insufficient/i.test(payErr.message)
-          ? "Not enough wallet balance. Top up your wallet to keep creating ads."
-          : payErr.message;
-        return json({ error: msg, code: "payment_required", fee: AD_FEE }, 402);
-      }
+    // Charge AI credits up-front so we never pay for a failed generation later
+    let charged = 0;
+    if (!isPro) {
+      const charge = await chargeAiCredits(req, "generate_ad", { reference: `ad:${product.id}` });
+      if (!charge.ok) return json(charge.body, charge.status);
+      charged = charge.charged;
     }
+    const needsPayment = charged > 0;
 
     // Generate marketing copy via Lovable AI
     const prompt = `You are a top-tier ecommerce copywriter. Rewrite this product to maximize click-through and conversions on a marketplace feed. Keep it honest — no fake claims.
@@ -105,6 +96,7 @@ Return STRICT JSON with keys:
     });
 
     if (!aiRes.ok) {
+      await refundAiCredits(user.id, "generate_ad", charged, `ad:${product.id}`);
       const text = await aiRes.text().catch(() => "");
       if (aiRes.status === 429) return json({ error: "AI is busy, try again in a moment." }, 429);
       if (aiRes.status === 402) return json({ error: "AI credits exhausted." }, 402);
@@ -157,7 +149,7 @@ Return STRICT JSON with keys:
     return json({
       ok: true,
       paid: needsPayment,
-      fee: needsPayment ? AD_FEE : 0,
+      ai_credits_charged: charged,
       credits_used: newUsed,
       free_trials: FREE_TRIALS,
       remaining_free: Math.max(0, FREE_TRIALS - newUsed),
