@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Promo3DCarousel from "@/components/marketplace/Promo3DCarousel";
 import MixedFeed from "@/components/marketplace/MixedFeed";
 import RecommendationStrip from "@/components/marketplace/RecommendationStrip";
+import SearchRecommendationStrip from "@/components/marketplace/SearchRecommendationStrip";
 import NewArrivals from "@/components/marketplace/NewArrivals";
 import ProductCard from "@/components/marketplace/ProductCard";
 import MasonryGrid from "@/components/marketplace/MasonryGrid";
@@ -81,6 +82,13 @@ const Home = () => {
                 <SectionHeader icon={Heart} title="Because you browsed" subtitle="Picked from your recent activity" />
                 <div className="mt-3 grid grid-cols-1"><RecommendationStrip title="Because you browsed" subtitle="Hand-picked for you" /></div>
               </section>
+
+              <section className="px-4 mt-6">
+                <SectionHeader icon={Sparkles} title="Because you searched" subtitle="AI matches from your recent searches" />
+                <div className="mt-3"><SearchRecommendationStrip /></div>
+              </section>
+
+
 
               <section className="px-4 mt-6">
                 <SectionHeader icon={Sparkles} title="New arrivals" subtitle="Latest products from suppliers" />
