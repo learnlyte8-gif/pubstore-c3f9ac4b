@@ -282,6 +282,7 @@ export default function MyStore() {
         </Section>
 
         <Section title="Storefront">
+          <Row icon={Crown} label="Selling plan & commission" hint="Plan tiers, commission rate, listing limits" to="/store/plans" />
           <Row icon={Store} label="Store profile" hint="Banner, logo, about" to="/store/profile" />
           <Row icon={Settings} label="Store settings" hint="Payouts, taxes" to="/store/settings" />
         </Section>
