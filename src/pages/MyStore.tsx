@@ -90,6 +90,7 @@ export default function MyStore() {
 
   const startStream = async () => {
     if (!supplier) return;
+    if (!canLive) { toast.error("Live selling requires the Pro or Elite plan"); navigate("/store/plans"); return; }
     if (!streamTitle.trim()) { toast.error("Add a stream title"); return; }
     setStarting(true);
     const cover = myProducts[0]?.image || supplier.banner || null;
