@@ -3,6 +3,7 @@
 // the supplier's wallet is charged AD_FEE (in USD) per generation.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { chargeAiCredits, refundAiCredits } from "../_shared/ai-credits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,8 +11,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const FREE_TRIALS = 3;
-const AD_FEE = 2; // USD per ad after free trials
+const FREE_TRIALS = 3; // legacy supplier counter, kept for reporting
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -96,6 +96,7 @@ Return STRICT JSON with keys:
     });
 
     if (!aiRes.ok) {
+      await refundAiCredits(user.id, "generate_ad", charged, `ad:${product.id}`);
       const text = await aiRes.text().catch(() => "");
       if (aiRes.status === 429) return json({ error: "AI is busy, try again in a moment." }, 429);
       if (aiRes.status === 402) return json({ error: "AI credits exhausted." }, 402);
@@ -148,7 +149,7 @@ Return STRICT JSON with keys:
     return json({
       ok: true,
       paid: needsPayment,
-      fee: needsPayment ? AD_FEE : 0,
+      ai_credits_charged: charged,
       credits_used: newUsed,
       free_trials: FREE_TRIALS,
       remaining_free: Math.max(0, FREE_TRIALS - newUsed),
