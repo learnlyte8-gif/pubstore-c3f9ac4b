@@ -239,11 +239,17 @@ function ImportView() {
       {mode === "single" ? (
         <SingleImport markupMode={markupMode} markupValue={Number(markupValue) || 0} qc={qc} navigate={navigate} />
       ) : mode === "bulk" ? (
-        <BulkImport markupMode={markupMode} markupValue={Number(markupValue) || 0} qc={qc} />
+        <PlanGate feature="bulk_import">
+          <BulkImport markupMode={markupMode} markupValue={Number(markupValue) || 0} qc={qc} />
+        </PlanGate>
       ) : mode === "aliexpress" ? (
-        <AliExpressImport qc={qc} />
+        <PlanGate feature="bulk_import">
+          <AliExpressImport qc={qc} />
+        </PlanGate>
       ) : (
-        <StaysImport qc={qc} navigate={navigate} />
+        <PlanGate feature="bulk_import">
+          <StaysImport qc={qc} navigate={navigate} />
+        </PlanGate>
       )}
     </div>
   );
