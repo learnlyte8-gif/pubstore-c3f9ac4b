@@ -5,6 +5,30 @@ import { fetchMySupplier } from "@/data/products";
 
 const sb = supabase as any;
 
+export type SupplierFeature =
+  | "basic_analytics"
+  | "full_analytics"
+  | "bulk_import"
+  | "live_selling"
+  | "ads"
+  | "coupons"
+  | "priority_placement"
+  | "featured_badge"
+  | "priority_support"
+  | "top_placement";
+
+export const FEATURE_LABEL: Record<string, string> = {
+  full_analytics: "Full analytics",
+  bulk_import: "Bulk & auto import",
+  live_selling: "Live selling",
+  ads: "PUBSTORE Ads",
+  coupons: "Coupons & promos",
+  priority_placement: "Priority search placement",
+  featured_badge: "Featured store badge",
+  priority_support: "Priority support",
+  top_placement: "Top search placement",
+};
+
 export type SupplierPlan = {
   code: string;
   name: string;
@@ -12,6 +36,7 @@ export type SupplierPlan = {
   commission_rate: number;
   product_limit: number | null;
   perks: string[];
+  features: string[];
   sort: number;
 };
 
