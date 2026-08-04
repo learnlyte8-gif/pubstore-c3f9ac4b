@@ -29,6 +29,7 @@ export default function AdCampaignWizard() {
     queryFn: () => fetchProducts({ supplierId: supplier!.id, limit: 100 }),
   });
 
+  const { allowed: canAds, loading: adsLoading } = usePlanFeature("ads");
   const [step, setStep] = useState(0);
   const [productId, setProductId] = useState<string>("");
   const [placement, setPlacement] = useState<Placement>("inline");
