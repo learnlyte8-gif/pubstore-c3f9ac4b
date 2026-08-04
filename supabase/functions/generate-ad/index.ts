@@ -58,24 +58,15 @@ Deno.serve(async (req) => {
 
     const used = Number(supplier.ad_credits_used ?? 0);
     const isPro = !!supplier.ad_pro;
-    const needsPayment = !isPro && used >= FREE_TRIALS;
 
-    // Charge wallet up-front so we never charge for a failed generation later
-    if (needsPayment) {
-      const { error: payErr } = await admin.rpc("apply_wallet_transaction", {
-        _user_id: user.id,
-        _kind: "ad_fee",
-        _amount: -AD_FEE,
-        _description: `AI Ad for "${product.title}"`,
-        _reference: `ad:${product.id}`,
-      });
-      if (payErr) {
-        const msg = /insufficient/i.test(payErr.message)
-          ? "Not enough wallet balance. Top up your wallet to keep creating ads."
-          : payErr.message;
-        return json({ error: msg, code: "payment_required", fee: AD_FEE }, 402);
-      }
+    // Charge AI credits up-front so we never pay for a failed generation later
+    let charged = 0;
+    if (!isPro) {
+      const charge = await chargeAiCredits(req, "generate_ad", { reference: `ad:${product.id}` });
+      if (!charge.ok) return json(charge.body, charge.status);
+      charged = charge.charged;
     }
+    const needsPayment = charged > 0;
 
     // Generate marketing copy via Lovable AI
     const prompt = `You are a top-tier ecommerce copywriter. Rewrite this product to maximize click-through and conversions on a marketplace feed. Keep it honest — no fake claims.
