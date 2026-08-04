@@ -406,25 +406,25 @@ Level: ${resourceLevel || "Unknown"}
 
       const data = await response.json();
       const content = data.choices?.[0]?.message?.content || "{}";
+      let parsed: any = null;
       try {
-        const parsed = JSON.parse(content);
-        return new Response(JSON.stringify(parsed), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        parsed = JSON.parse(content);
       } catch {
         const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
-          return new Response(JSON.stringify(parsed), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
+        if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
+      }
+      if (!parsed) {
         return new Response(JSON.stringify({ error: "Failed to parse marking results" }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      if (cacheKey && Array.isArray(parsed.results)) {
+        await cachePut(cacheKey, "mark-answers", parsed);
+      }
+      return jsonResponse(parsed);
     }
+
 
     // ── Default: streaming chat ──
     const sys = `${SYSTEM_PROMPT}\n\nRESOURCE CONTEXT:\n${context}`;
