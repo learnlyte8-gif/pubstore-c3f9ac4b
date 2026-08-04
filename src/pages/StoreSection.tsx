@@ -1699,6 +1699,7 @@ function PromoteView() {
     enabled: !!supplier,
   });
 
+  const { allowed: canCoupons } = usePlanFeature("coupons");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     code: "",
