@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Promo3DCarousel from "@/components/marketplace/Promo3DCarousel";
 import MixedFeed from "@/components/marketplace/MixedFeed";
 import RecommendationStrip from "@/components/marketplace/RecommendationStrip";
+import SearchRecommendationStrip from "@/components/marketplace/SearchRecommendationStrip";
 import NewArrivals from "@/components/marketplace/NewArrivals";
 import ProductCard from "@/components/marketplace/ProductCard";
 import MasonryGrid from "@/components/marketplace/MasonryGrid";
