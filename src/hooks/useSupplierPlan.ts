@@ -77,6 +77,7 @@ export function useSupplierPlan() {
         price_usd: Number(p.price_usd),
         commission_rate: Number(p.commission_rate),
         perks: Array.isArray(p.perks) ? p.perks : [],
+        features: Array.isArray(p.features) ? p.features : [],
       })) as SupplierPlan[];
     },
   });
