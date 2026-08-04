@@ -341,6 +341,179 @@ export type Database = {
           },
         ]
       }
+      ai_credit_accounts: {
+        Row: {
+          balance: number
+          created_at: string
+          lifetime_credits_purchased: number
+          lifetime_credits_spent: number
+          plan_code: string
+          plan_renews_at: string | null
+          plan_started_at: string | null
+          trial_used: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          lifetime_credits_purchased?: number
+          lifetime_credits_spent?: number
+          plan_code?: string
+          plan_renews_at?: string | null
+          plan_started_at?: string | null
+          trial_used?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          lifetime_credits_purchased?: number
+          lifetime_credits_spent?: number
+          plan_code?: string
+          plan_renews_at?: string | null
+          plan_started_at?: string | null
+          trial_used?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_credit_accounts_plan_code_fkey"
+            columns: ["plan_code"]
+            isOneToOne: false
+            referencedRelation: "ai_plans"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      ai_credit_ledger: {
+        Row: {
+          balance_after: number
+          created_at: string
+          delta: number
+          description: string | null
+          feature: string | null
+          id: string
+          kind: string
+          reference: string | null
+          user_id: string
+        }
+        Insert: {
+          balance_after: number
+          created_at?: string
+          delta: number
+          description?: string | null
+          feature?: string | null
+          id?: string
+          kind: string
+          reference?: string | null
+          user_id: string
+        }
+        Update: {
+          balance_after?: number
+          created_at?: string
+          delta?: number
+          description?: string | null
+          feature?: string | null
+          id?: string
+          kind?: string
+          reference?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_credit_packs: {
+        Row: {
+          bonus_label: string | null
+          code: string
+          created_at: string
+          credits: number
+          is_active: boolean
+          name: string
+          price_usd: number
+          sort_order: number
+        }
+        Insert: {
+          bonus_label?: string | null
+          code: string
+          created_at?: string
+          credits: number
+          is_active?: boolean
+          name: string
+          price_usd: number
+          sort_order?: number
+        }
+        Update: {
+          bonus_label?: string | null
+          code?: string
+          created_at?: string
+          credits?: number
+          is_active?: boolean
+          name?: string
+          price_usd?: number
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      ai_feature_costs: {
+        Row: {
+          credits: number
+          feature: string
+          is_active: boolean
+          label: string
+          notes: string | null
+        }
+        Insert: {
+          credits: number
+          feature: string
+          is_active?: boolean
+          label: string
+          notes?: string | null
+        }
+        Update: {
+          credits?: number
+          feature?: string
+          is_active?: boolean
+          label?: string
+          notes?: string | null
+        }
+        Relationships: []
+      }
+      ai_plans: {
+        Row: {
+          blurb: string | null
+          code: string
+          created_at: string
+          is_active: boolean
+          monthly_credits: number
+          name: string
+          price_usd: number
+          sort_order: number
+        }
+        Insert: {
+          blurb?: string | null
+          code: string
+          created_at?: string
+          is_active?: boolean
+          monthly_credits?: number
+          name: string
+          price_usd?: number
+          sort_order?: number
+        }
+        Update: {
+          blurb?: string | null
+          code?: string
+          created_at?: string
+          is_active?: boolean
+          monthly_credits?: number
+          name?: string
+          price_usd?: number
+          sort_order?: number
+        }
+        Relationships: []
+      }
       car_rental_bookings: {
         Row: {
           amount_due: number | null
@@ -6137,6 +6310,38 @@ export type Database = {
         Returns: undefined
       }
       _send_product_suggestions: { Args: never; Returns: undefined }
+      ai_buy_credit_pack: { Args: { _pack_code: string }; Returns: Json }
+      ai_consume_credits: {
+        Args: {
+          _feature: string
+          _quantity?: number
+          _reference?: string
+          _user_id: string
+        }
+        Returns: Json
+      }
+      ai_credits_account: {
+        Args: { _user_id: string }
+        Returns: {
+          balance: number
+          created_at: string
+          lifetime_credits_purchased: number
+          lifetime_credits_spent: number
+          plan_code: string
+          plan_renews_at: string | null
+          plan_started_at: string | null
+          trial_used: number
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "ai_credit_accounts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      ai_subscribe_plan: { Args: { _plan_code: string }; Returns: Json }
       apply_wallet_transaction: {
         Args: {
           _account?: string
