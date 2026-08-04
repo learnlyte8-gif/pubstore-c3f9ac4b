@@ -5396,6 +5396,60 @@ export type Database = {
           },
         ]
       }
+      supplier_commissions: {
+        Row: {
+          commission: number
+          created_at: string
+          gross: number
+          id: string
+          net: number
+          order_id: string
+          plan_code: string | null
+          rate: number
+          seller_id: string | null
+          supplier_id: string | null
+        }
+        Insert: {
+          commission: number
+          created_at?: string
+          gross: number
+          id?: string
+          net: number
+          order_id: string
+          plan_code?: string | null
+          rate: number
+          seller_id?: string | null
+          supplier_id?: string | null
+        }
+        Update: {
+          commission?: number
+          created_at?: string
+          gross?: number
+          id?: string
+          net?: number
+          order_id?: string
+          plan_code?: string | null
+          rate?: number
+          seller_id?: string | null
+          supplier_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_commissions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_commissions_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_courier_partnerships: {
         Row: {
           agreed_rate: number | null
@@ -5447,6 +5501,87 @@ export type Database = {
             foreignKeyName: "supplier_courier_partnerships_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_plans: {
+        Row: {
+          code: string
+          commission_rate: number
+          created_at: string
+          is_active: boolean
+          name: string
+          perks: Json
+          price_usd: number
+          product_limit: number | null
+          sort: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          commission_rate?: number
+          created_at?: string
+          is_active?: boolean
+          name: string
+          perks?: Json
+          price_usd?: number
+          product_limit?: number | null
+          sort?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          commission_rate?: number
+          created_at?: string
+          is_active?: boolean
+          name?: string
+          perks?: Json
+          price_usd?: number
+          product_limit?: number | null
+          sort?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      supplier_subscriptions: {
+        Row: {
+          created_at: string
+          plan_code: string
+          renews_at: string | null
+          started_at: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          plan_code?: string
+          renews_at?: string | null
+          started_at?: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          plan_code?: string
+          renews_at?: string | null
+          started_at?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_subscriptions_plan_code_fkey"
+            columns: ["plan_code"]
+            isOneToOne: false
+            referencedRelation: "supplier_plans"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "supplier_subscriptions_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
@@ -6946,6 +7081,28 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      supplier_effective_plan: {
+        Args: { _supplier_id: string }
+        Returns: {
+          code: string
+          commission_rate: number
+          created_at: string
+          is_active: boolean
+          name: string
+          perks: Json
+          price_usd: number
+          product_limit: number | null
+          sort: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "supplier_plans"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      supplier_subscribe_plan: { Args: { _plan_code: string }; Returns: Json }
       tier_from_points: { Args: { _pts: number }; Returns: string }
       track_ad_event: {
         Args: {
