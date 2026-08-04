@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import SupplierOnboarding, { buildOnboardingSteps, isOnboardingComplete, OnboardingBlockedBanner } from "@/components/SupplierOnboarding";
 import { useVerification } from "@/hooks/useVerification";
 import BackButton from "@/components/BackButton";
+import { usePlanFeature } from "@/components/store/PlanGate";
 
 export default function MyStore() {
   const navigate = useNavigate();
