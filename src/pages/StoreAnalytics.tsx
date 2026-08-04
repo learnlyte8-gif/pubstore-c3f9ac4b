@@ -34,7 +34,10 @@ function daysAgo(n: number) {
 }
 
 export default function StoreAnalytics() {
+  const navigate = useNavigate();
+  const { allowed: canFull } = usePlanFeature("full_analytics");
   const [range, setRange] = useState<Range>("30d");
+  useEffect(() => { if (!canFull) setRange("7d"); }, [canFull]);
   const days = RANGES.find((r) => r.id === range)!.days;
   const since = useMemo(() => daysAgo(days - 1), [days]);
   const prevSince = useMemo(() => daysAgo(days * 2 - 1), [days]);
