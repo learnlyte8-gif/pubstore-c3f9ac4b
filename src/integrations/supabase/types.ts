@@ -2395,6 +2395,36 @@ export type Database = {
         }
         Relationships: []
       }
+      learnlyte_ai_cache: {
+        Row: {
+          cache_key: string
+          created_at: string
+          hits: number
+          id: string
+          kind: string
+          last_used_at: string
+          result: Json
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string
+          hits?: number
+          id?: string
+          kind: string
+          last_used_at?: string
+          result: Json
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string
+          hits?: number
+          id?: string
+          kind?: string
+          last_used_at?: string
+          result?: Json
+        }
+        Relationships: []
+      }
       learnlyte_ai_chats: {
         Row: {
           created_at: string

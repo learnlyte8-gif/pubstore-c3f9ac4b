@@ -194,6 +194,85 @@ async function fetchFileContent(fileUrl: string): Promise<FileContent> {
   }
 }
 
+// ── Result cache (Postgres, service role) ──
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
+const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const CACHE_TABLE = "learnlyte_ai_cache";
+
+async function sha256Hex(input: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function cacheEnabled() {
+  return Boolean(SUPABASE_URL && SERVICE_ROLE_KEY);
+}
+
+async function cacheGet(key: string): Promise<unknown | null> {
+  if (!cacheEnabled()) return null;
+  try {
+    const resp = await fetch(
+      `${SUPABASE_URL}/rest/v1/${CACHE_TABLE}?cache_key=eq.${encodeURIComponent(key)}&select=result,hits`,
+      {
+        headers: {
+          apikey: SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+        },
+      },
+    );
+    if (!resp.ok) return null;
+    const rows = await resp.json();
+    if (!Array.isArray(rows) || rows.length === 0) return null;
+    // Best-effort usage bump; don't block the response on it.
+    fetch(`${SUPABASE_URL}/rest/v1/${CACHE_TABLE}?cache_key=eq.${encodeURIComponent(key)}`, {
+      method: "PATCH",
+      headers: {
+        apikey: SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({ hits: (rows[0].hits ?? 0) + 1, last_used_at: new Date().toISOString() }),
+    }).catch(() => {});
+    return rows[0].result ?? null;
+  } catch (e) {
+    console.error("cacheGet error:", e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+async function cachePut(key: string, kind: string, result: unknown): Promise<void> {
+  if (!cacheEnabled()) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/${CACHE_TABLE}?on_conflict=cache_key`, {
+      method: "POST",
+      headers: {
+        apikey: SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=minimal",
+      },
+      body: JSON.stringify({ cache_key: key, kind, result, last_used_at: new Date().toISOString() }),
+    });
+  } catch (e) {
+    console.error("cachePut error:", e instanceof Error ? e.message : e);
+  }
+}
+
+function stable(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value ?? null);
+  if (Array.isArray(value)) return `[${value.map(stable).join(",")}]`;
+  const obj = value as Record<string, unknown>;
+  return `{${Object.keys(obj).sort().map((k) => `${JSON.stringify(k)}:${stable(obj[k])}`).join(",")}}`;
+}
+
+const jsonResponse = (payload: unknown, cached = false) =>
+  new Response(JSON.stringify(payload), {
+    headers: { ...corsHeaders, "Content-Type": "application/json", "X-Cache": cached ? "HIT" : "MISS" },
+  });
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -202,6 +281,23 @@ Deno.serve(async (req) => {
     const { messages, fileUrl, resourceTitle, resourceType, resourceLevel, action, questions, answers } = body;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+    // ── Cache lookup happens BEFORE downloading/parsing the file ──
+    let cacheKey: string | null = null;
+    if (action === "extract-questions") {
+      cacheKey = `extract:${await sha256Hex(stable({ fileUrl, resourceTitle, resourceType, resourceLevel }))}`;
+    } else if (action === "mark-answers") {
+      cacheKey = `mark:${await sha256Hex(stable({ fileUrl, resourceTitle, questions, answers }))}`;
+    }
+
+    if (cacheKey) {
+      const cached = await cacheGet(cacheKey);
+      if (cached) {
+        console.log(`cache HIT ${cacheKey}`);
+        return jsonResponse(cached, true);
+      }
+      console.log(`cache MISS ${cacheKey}`);
+    }
 
     let context = `Resource: ${resourceTitle || "Unknown"}
 Type: ${resourceType || "Unknown"}
@@ -264,24 +360,20 @@ Level: ${resourceLevel || "Unknown"}
 
       const data = await response.json();
       const content = data.choices?.[0]?.message?.content || "{}";
+      let parsed: any = null;
       try {
-        const parsed = JSON.parse(content);
-        return new Response(JSON.stringify(parsed), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        parsed = JSON.parse(content);
       } catch {
         const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
-          return new Response(JSON.stringify(parsed), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        return new Response(JSON.stringify({ questions: [] }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
       }
+      if (!parsed) return jsonResponse({ questions: [] });
+      if (cacheKey && Array.isArray(parsed.questions) && parsed.questions.length > 0) {
+        await cachePut(cacheKey, "extract-questions", parsed);
+      }
+      return jsonResponse(parsed);
     }
+
 
     // ── Mark answers action ──
     if (action === "mark-answers") {
@@ -314,25 +406,25 @@ Level: ${resourceLevel || "Unknown"}
 
       const data = await response.json();
       const content = data.choices?.[0]?.message?.content || "{}";
+      let parsed: any = null;
       try {
-        const parsed = JSON.parse(content);
-        return new Response(JSON.stringify(parsed), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        parsed = JSON.parse(content);
       } catch {
         const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
-          return new Response(JSON.stringify(parsed), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
+        if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
+      }
+      if (!parsed) {
         return new Response(JSON.stringify({ error: "Failed to parse marking results" }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      if (cacheKey && Array.isArray(parsed.results)) {
+        await cachePut(cacheKey, "mark-answers", parsed);
+      }
+      return jsonResponse(parsed);
     }
+
 
     // ── Default: streaming chat ──
     const sys = `${SYSTEM_PROMPT}\n\nRESOURCE CONTEXT:\n${context}`;
