@@ -278,7 +278,10 @@ export default function StoreAnalytics() {
         </ChartCard>
       </div>
 
-      {/* Status + top products */}
+      {/* Status + top products (full analytics only) */}
+      {!canFull ? (
+        <div className="px-4 mt-3"><UpgradeNotice feature="full_analytics" compact /></div>
+      ) : (
       <div className="px-4 mt-3 grid grid-cols-1 gap-3">
         <ChartCard title="Order status mix" icon={Eye}>
           {isLoading || !data || data.statusData.length === 0 ? (
