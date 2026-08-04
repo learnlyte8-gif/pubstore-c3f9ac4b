@@ -134,3 +134,28 @@ it in `navigation/RootNavigator.tsx` + `screens/MoreScreen.tsx`.
 - **Location + maps** — `@react-native-community/geolocation`, `react-native-maps`.
 - **Image cache** — `react-native-fast-image`.
 - **Session persistence** — `@react-native-async-storage/async-storage`.
+
+## Troubleshooting: `AuthRetryableFetchError: Network request failed` on iOS
+
+React Native's `fetch` (whatwg-fetch over NSURLSession) reports every transport
+problem with the same opaque `Network request failed`. The client in
+`src/services/supabase.ts` now retries transient failures with backoff and a
+20s timeout, and exposes `checkBackendReachable()` for a quick probe.
+
+If it still fails on device, check the native side in this order:
+
+1. **App Transport Security** — in `ios/<App>/Info.plist` make sure there is no
+   `NSAllowsArbitraryLoads: false` combined with a missing exception domain, and
+   that no proxy/debug ATS block is shipped in the release build. All backend
+   traffic is HTTPS, so no cleartext exception is needed.
+2. **Missing `NSAppTransportSecurity` for local dev** — if you point the app at
+   `http://localhost` Metro/dev backend, iOS blocks cleartext; use HTTPS or add
+   a localhost exception (`NSAllowsLocalNetworking: true`).
+3. **Local Network / VPN permission** — iOS 14+ silently fails requests when a
+   VPN or Local Network prompt was denied. Reset via Settings → General →
+   Transfer or Reset → Reset Location & Privacy.
+4. **Wrong bundle env** — confirm the built binary carries the correct
+   `SUPABASE_URL` from `src/config/env.ts`; a blank/undefined URL produces the
+   exact same error.
+5. **Simulator DNS** — a stale simulator loses DNS after a Mac network change.
+   `xcrun simctl shutdown all` then relaunch.
