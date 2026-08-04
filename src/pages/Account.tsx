@@ -255,6 +255,8 @@ export default function Account() {
 
         <Section title="Account">
           <Row icon={Wallet} label="PUBSTORE Pay" hint={`${fmt(balance)} available`} to="/wallet" />
+          <Row icon={Sparkles} label="AI credits & plans" hint="Tapson, AI ads, smart search" to="/ai-credits" />
+
           <Row icon={MapPin} label="Addresses" hint={profile?.address || "Add address"} to="/addresses" />
           <Row icon={CreditCard} label="Payment methods" hint="Cards, wallets" to="/payment-methods" />
           <Row icon={ShieldCheck} label="Identity verification" hint="Required for Cash on delivery" to="/verification" />
