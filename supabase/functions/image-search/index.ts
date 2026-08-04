@@ -3,6 +3,8 @@
 // Gemini Vision. The frontend then runs those keywords through the
 // existing universal search ranker.
 
+import { chargeAiCredits } from "../_shared/ai-credits.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -20,6 +22,9 @@ Deno.serve(async (req) => {
     if (!image || (!image.startsWith("data:image/") && !/^https?:\/\//i.test(image))) {
       return json({ error: "Provide image as data URL or http(s) URL" }, 400);
     }
+
+    const charge = await chargeAiCredits(req, "image_search");
+    if (!charge.ok) return json(charge.body, charge.status);
 
     const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -58,7 +63,7 @@ Deno.serve(async (req) => {
       .slice(0, 8)
       .join(" ");
 
-    return json({ keywords, raw: text });
+    return json({ keywords, raw: text, ai_credits_charged: charge.charged, ai_credits_balance: charge.balance });
   } catch (e) {
     console.error(e);
     return json({ error: e instanceof Error ? e.message : "Unexpected error" }, 500);
