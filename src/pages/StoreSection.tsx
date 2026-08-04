@@ -1757,11 +1757,12 @@ function PromoteView() {
 
   return (
     <div className="px-4 py-4 space-y-3">
-      <Button onClick={() => setShowForm(!showForm)} className="w-full h-11">
+      {!canCoupons && <UpgradeNotice feature="coupons" compact />}
+      <Button onClick={() => setShowForm(!showForm)} className="w-full h-11" disabled={!canCoupons}>
         <Plus className="w-4 h-4 mr-2" /> {showForm ? "Cancel" : "New coupon"}
       </Button>
 
-      {showForm && (
+      {showForm && canCoupons && (
         <div className="bg-card rounded-2xl border shadow-card p-4 space-y-3">
           <input
             value={form.code}
