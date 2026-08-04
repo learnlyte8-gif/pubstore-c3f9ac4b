@@ -360,24 +360,20 @@ Level: ${resourceLevel || "Unknown"}
 
       const data = await response.json();
       const content = data.choices?.[0]?.message?.content || "{}";
+      let parsed: any = null;
       try {
-        const parsed = JSON.parse(content);
-        return new Response(JSON.stringify(parsed), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        parsed = JSON.parse(content);
       } catch {
         const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
-          return new Response(JSON.stringify(parsed), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        return new Response(JSON.stringify({ questions: [] }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
       }
+      if (!parsed) return jsonResponse({ questions: [] });
+      if (cacheKey && Array.isArray(parsed.questions) && parsed.questions.length > 0) {
+        await cachePut(cacheKey, "extract-questions", parsed);
+      }
+      return jsonResponse(parsed);
     }
+
 
     // ── Mark answers action ──
     if (action === "mark-answers") {
