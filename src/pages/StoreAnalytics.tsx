@@ -166,10 +166,10 @@ export default function StoreAnalytics() {
               {RANGES.map((r) => (
                 <button
                   key={r.id}
-                  onClick={() => setRange(r.id)}
+                  onClick={() => (canFull || r.id === "7d" ? setRange(r.id) : navigate("/store/plans"))}
                   className={`px-2.5 h-7 rounded-full text-[10px] font-black tracking-tight transition ${
                     range === r.id ? "bg-primary-foreground text-primary shadow" : "text-primary-foreground/80"
-                  }`}
+                  } ${!canFull && r.id !== "7d" ? "opacity-50" : ""}`}
                 >
                   {r.label}
                 </button>
