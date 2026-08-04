@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { fetchMySupplier, fetchProducts } from "@/data/products";
+import { usePlanFeature, UpgradeNotice } from "@/components/store/PlanGate";
 
 const sb = supabase as any;
 
@@ -28,6 +29,7 @@ export default function AdCampaignWizard() {
     queryFn: () => fetchProducts({ supplierId: supplier!.id, limit: 100 }),
   });
 
+  const { allowed: canAds, loading: adsLoading } = usePlanFeature("ads");
   const [step, setStep] = useState(0);
   const [productId, setProductId] = useState<string>("");
   const [placement, setPlacement] = useState<Placement>("inline");
@@ -100,6 +102,8 @@ export default function AdCampaignWizard() {
     setCta("Shop now");
     toast.success("Creative prefilled");
   };
+
+  if (!adsLoading && !canAds) return <UpgradeNotice feature="ads" />;
 
   return (
     <div className="pb-40">

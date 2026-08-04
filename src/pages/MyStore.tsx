@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import SupplierOnboarding, { buildOnboardingSteps, isOnboardingComplete, OnboardingBlockedBanner } from "@/components/SupplierOnboarding";
 import { useVerification } from "@/hooks/useVerification";
 import BackButton from "@/components/BackButton";
+import { usePlanFeature } from "@/components/store/PlanGate";
 
 export default function MyStore() {
   const navigate = useNavigate();
@@ -87,9 +88,11 @@ export default function MyStore() {
 
 
   const canImport = userEmail === "kukistacks8@gmail.com";
+  const { allowed: canLive } = usePlanFeature("live_selling");
 
   const startStream = async () => {
     if (!supplier) return;
+    if (!canLive) { toast.error("Live selling requires the Pro or Elite plan"); navigate("/store/plans"); return; }
     if (!streamTitle.trim()) { toast.error("Add a stream title"); return; }
     setStarting(true);
     const cover = myProducts[0]?.image || supplier.banner || null;
@@ -215,9 +218,14 @@ export default function MyStore() {
               <span className="text-[10px] font-semibold text-center leading-tight">Live now</span>
             </Link>
           ) : (
-            <button onClick={() => setShowGoLive(true)} className="bg-card border rounded-2xl p-3 flex flex-col items-center gap-1.5 shadow-card hover:shadow-elevated transition">
-              <span className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center"><Video className="w-4 h-4" /></span>
-              <span className="text-[10px] font-semibold text-center leading-tight">Go live</span>
+            <button
+              onClick={() => (canLive ? setShowGoLive(true) : navigate("/store/plans"))}
+              className={`rounded-2xl p-3 flex flex-col items-center gap-1.5 shadow-card transition ${canLive ? "bg-card border hover:shadow-elevated" : "bg-muted/50 border border-dashed opacity-80"}`}
+            >
+              <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${canLive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                {canLive ? <Video className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+              </span>
+              <span className="text-[10px] font-semibold text-center leading-tight">{canLive ? "Go live" : "Go live · Pro"}</span>
             </button>
           )}
           <Link to="/store/promote" className="bg-card border rounded-2xl p-3 flex flex-col items-center gap-1.5 shadow-card hover:shadow-elevated transition">

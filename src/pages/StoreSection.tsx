@@ -12,6 +12,7 @@ import { fetchProducts, fetchMySupplier, fetchCategories } from "@/data/products
 import EmptyState from "@/components/EmptyState";
 import LocationPicker from "@/components/LocationPicker";
 import { useImportJob, type BulkCandidate, type ImportedProduct, type MarkupMode } from "@/store/importJob";
+import PlanGate, { UpgradeNotice, usePlanFeature } from "@/components/store/PlanGate";
 import ImageUpload from "@/components/ImageUpload";
 import { uploadProductImages } from "@/lib/uploadProductImages";
 import AddAdDialog from "@/components/store/AddAdDialog";
@@ -239,11 +240,17 @@ function ImportView() {
       {mode === "single" ? (
         <SingleImport markupMode={markupMode} markupValue={Number(markupValue) || 0} qc={qc} navigate={navigate} />
       ) : mode === "bulk" ? (
-        <BulkImport markupMode={markupMode} markupValue={Number(markupValue) || 0} qc={qc} />
+        <PlanGate feature="bulk_import">
+          <BulkImport markupMode={markupMode} markupValue={Number(markupValue) || 0} qc={qc} />
+        </PlanGate>
       ) : mode === "aliexpress" ? (
-        <AliExpressImport qc={qc} />
+        <PlanGate feature="bulk_import">
+          <AliExpressImport qc={qc} />
+        </PlanGate>
       ) : (
-        <StaysImport qc={qc} navigate={navigate} />
+        <PlanGate feature="bulk_import">
+          <StaysImport qc={qc} navigate={navigate} />
+        </PlanGate>
       )}
     </div>
   );
@@ -1692,6 +1699,7 @@ function PromoteView() {
     enabled: !!supplier,
   });
 
+  const { allowed: canCoupons } = usePlanFeature("coupons");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     code: "",
@@ -1750,11 +1758,12 @@ function PromoteView() {
 
   return (
     <div className="px-4 py-4 space-y-3">
-      <Button onClick={() => setShowForm(!showForm)} className="w-full h-11">
+      {!canCoupons && <UpgradeNotice feature="coupons" compact />}
+      <Button onClick={() => setShowForm(!showForm)} className="w-full h-11" disabled={!canCoupons}>
         <Plus className="w-4 h-4 mr-2" /> {showForm ? "Cancel" : "New coupon"}
       </Button>
 
-      {showForm && (
+      {showForm && canCoupons && (
         <div className="bg-card rounded-2xl border shadow-card p-4 space-y-3">
           <input
             value={form.code}

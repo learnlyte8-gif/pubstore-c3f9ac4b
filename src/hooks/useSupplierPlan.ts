@@ -5,6 +5,30 @@ import { fetchMySupplier } from "@/data/products";
 
 const sb = supabase as any;
 
+export type SupplierFeature =
+  | "basic_analytics"
+  | "full_analytics"
+  | "bulk_import"
+  | "live_selling"
+  | "ads"
+  | "coupons"
+  | "priority_placement"
+  | "featured_badge"
+  | "priority_support"
+  | "top_placement";
+
+export const FEATURE_LABEL: Record<string, string> = {
+  full_analytics: "Full analytics",
+  bulk_import: "Bulk & auto import",
+  live_selling: "Live selling",
+  ads: "PUBSTORE Ads",
+  coupons: "Coupons & promos",
+  priority_placement: "Priority search placement",
+  featured_badge: "Featured store badge",
+  priority_support: "Priority support",
+  top_placement: "Top search placement",
+};
+
 export type SupplierPlan = {
   code: string;
   name: string;
@@ -12,6 +36,7 @@ export type SupplierPlan = {
   commission_rate: number;
   product_limit: number | null;
   perks: string[];
+  features: string[];
   sort: number;
 };
 
@@ -52,6 +77,7 @@ export function useSupplierPlan() {
         price_usd: Number(p.price_usd),
         commission_rate: Number(p.commission_rate),
         perks: Array.isArray(p.perks) ? p.perks : [],
+        features: Array.isArray(p.features) ? p.features : [],
       })) as SupplierPlan[];
     },
   });
@@ -121,6 +147,14 @@ export function useSupplierPlan() {
   const lapsed = !!subQ.data?.renews_at && new Date(subQ.data.renews_at) <= new Date();
   const activeCode = subQ.data && !lapsed ? subQ.data.plan_code : "free";
   const plan = plans.find((p) => p.code === activeCode) ?? plans.find((p) => p.code === "free") ?? null;
+  const features = plan?.features ?? [];
+  const can = (feature: SupplierFeature) => features.includes(feature);
+  const limit = plan?.product_limit ?? null;
+  const productCount = productCountQ.data ?? 0;
+  const atProductLimit = limit != null && productCount >= limit;
+  /** Cheapest active plan that unlocks a given feature. */
+  const upgradeFor = (feature: SupplierFeature) =>
+    plans.find((p) => p.features.includes(feature)) ?? null;
 
   return {
     supplier: supplierQ.data ?? null,
@@ -130,8 +164,13 @@ export function useSupplierPlan() {
     subscription: subQ.data ?? null,
     lapsed,
     commissions: commissionsQ.data ?? [],
-    productCount: productCountQ.data ?? 0,
-    loading: plansQ.isLoading || supplierQ.isLoading,
+    productCount,
+    productLimit: limit,
+    atProductLimit,
+    features,
+    can,
+    upgradeFor,
+    loading: plansQ.isLoading || supplierQ.isLoading || subQ.isLoading,
     subscribe,
     refresh,
   };

@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { UpgradeNotice, usePlanFeature } from "@/components/store/PlanGate";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchMySupplier } from "@/data/products";
@@ -33,7 +34,10 @@ function daysAgo(n: number) {
 }
 
 export default function StoreAnalytics() {
+  const navigate = useNavigate();
+  const { allowed: canFull } = usePlanFeature("full_analytics");
   const [range, setRange] = useState<Range>("30d");
+  useEffect(() => { if (!canFull) setRange("7d"); }, [canFull]);
   const days = RANGES.find((r) => r.id === range)!.days;
   const since = useMemo(() => daysAgo(days - 1), [days]);
   const prevSince = useMemo(() => daysAgo(days * 2 - 1), [days]);
@@ -166,10 +170,10 @@ export default function StoreAnalytics() {
               {RANGES.map((r) => (
                 <button
                   key={r.id}
-                  onClick={() => setRange(r.id)}
+                  onClick={() => (canFull || r.id === "7d" ? setRange(r.id) : navigate("/store/plans"))}
                   className={`px-2.5 h-7 rounded-full text-[10px] font-black tracking-tight transition ${
                     range === r.id ? "bg-primary-foreground text-primary shadow" : "text-primary-foreground/80"
-                  }`}
+                  } ${!canFull && r.id !== "7d" ? "opacity-50" : ""}`}
                 >
                   {r.label}
                 </button>
@@ -278,7 +282,10 @@ export default function StoreAnalytics() {
         </ChartCard>
       </div>
 
-      {/* Status + top products */}
+      {/* Status + top products (full analytics only) */}
+      {!canFull ? (
+        <div className="px-4 mt-3"><UpgradeNotice feature="full_analytics" compact /></div>
+      ) : (
       <div className="px-4 mt-3 grid grid-cols-1 gap-3">
         <ChartCard title="Order status mix" icon={Eye}>
           {isLoading || !data || data.statusData.length === 0 ? (
@@ -342,6 +349,8 @@ export default function StoreAnalytics() {
           )}
         </ChartCard>
       </div>
+      )}
+
 
       {/* Quality strip */}
       <div className="px-4 mt-3 grid grid-cols-2 gap-2">

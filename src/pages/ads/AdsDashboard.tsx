@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/EmptyState";
 import { toast } from "sonner";
 import { fetchMySupplier } from "@/data/products";
+import PlanGate from "@/components/store/PlanGate";
 
 const sb = supabase as any;
 
@@ -63,6 +64,7 @@ export default function AdsDashboard() {
         </div>
       </header>
 
+      <PlanGate feature="ads">
       <div className="px-4 mt-4 grid grid-cols-3 gap-2">
         <Stat icon={Eye} label="Impressions" value={totals.impressions.toLocaleString()} />
         <Stat icon={MousePointerClick} label="Clicks" value={totals.clicks.toLocaleString()} />
@@ -119,6 +121,7 @@ export default function AdsDashboard() {
           </ul>
         )}
       </div>
+      </PlanGate>
     </div>
   );
 }
