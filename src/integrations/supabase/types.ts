@@ -5511,6 +5511,7 @@ export type Database = {
           code: string
           commission_rate: number
           created_at: string
+          features: Json
           is_active: boolean
           name: string
           perks: Json
@@ -5523,6 +5524,7 @@ export type Database = {
           code: string
           commission_rate?: number
           created_at?: string
+          features?: Json
           is_active?: boolean
           name: string
           perks?: Json
@@ -5535,6 +5537,7 @@ export type Database = {
           code?: string
           commission_rate?: number
           created_at?: string
+          features?: Json
           is_active?: boolean
           name?: string
           perks?: Json
@@ -7087,6 +7090,7 @@ export type Database = {
           code: string
           commission_rate: number
           created_at: string
+          features: Json
           is_active: boolean
           name: string
           perks: Json
@@ -7101,6 +7105,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      supplier_has_feature: {
+        Args: { _feature: string; _supplier_id: string }
+        Returns: boolean
       }
       supplier_subscribe_plan: { Args: { _plan_code: string }; Returns: Json }
       tier_from_points: { Args: { _pts: number }; Returns: string }
