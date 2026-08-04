@@ -87,6 +87,7 @@ export default function MyStore() {
 
 
   const canImport = userEmail === "kukistacks8@gmail.com";
+  const { allowed: canLive } = usePlanFeature("live_selling");
 
   const startStream = async () => {
     if (!supplier) return;
