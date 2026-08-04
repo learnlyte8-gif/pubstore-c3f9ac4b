@@ -40,6 +40,7 @@ import NotificationPreferences from "./pages/NotificationPreferences.tsx";
 import Placeholder from "./pages/Placeholder.tsx";
 import Wallet from "./pages/Wallet.tsx";
 import AiCredits from "./pages/AiCredits.tsx";
+import SupplierPlans from "./pages/SupplierPlans.tsx";
 import Verification from "./pages/Verification.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Unsubscribe from "./pages/Unsubscribe.tsx";
