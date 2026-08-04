@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { fetchMySupplier, fetchProducts } from "@/data/products";
+import { usePlanFeature, UpgradeNotice } from "@/components/store/PlanGate";
 
 const sb = supabase as any;
 
