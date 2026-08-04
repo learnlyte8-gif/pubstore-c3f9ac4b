@@ -102,6 +102,8 @@ export default function AdCampaignWizard() {
     toast.success("Creative prefilled");
   };
 
+  if (!adsLoading && !canAds) return <UpgradeNotice feature="ads" />;
+
   return (
     <div className="pb-40">
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b">
