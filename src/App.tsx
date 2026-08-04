@@ -40,6 +40,7 @@ import NotificationPreferences from "./pages/NotificationPreferences.tsx";
 import Placeholder from "./pages/Placeholder.tsx";
 import Wallet from "./pages/Wallet.tsx";
 import AiCredits from "./pages/AiCredits.tsx";
+import SupplierPlans from "./pages/SupplierPlans.tsx";
 import Verification from "./pages/Verification.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Unsubscribe from "./pages/Unsubscribe.tsx";
@@ -160,6 +161,7 @@ const App = () => (
                 <Route path="/settings/notifications" element={<NotificationPreferences />} />
                 <Route path="/wallet" element={<Wallet />} />
                 <Route path="/ai-credits" element={<AiCredits />} />
+                <Route path="/store/plans" element={<SupplierPlans />} />
                 <Route path="/verification" element={<Verification />} />
                 <Route path="/news" element={<News />} />
                 <Route path="/news/:slug" element={<News />} />

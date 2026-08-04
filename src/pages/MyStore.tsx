@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useNavigate } from "react-router-dom";
-import { Store, Package, BarChart3, Megaphone, Truck, Star, Plus, ShoppingBag, Video, MessageCircle, Settings, ChevronRight, ImagePlus, Radio, StopCircle, Loader2, Download, BedDouble, Car, Factory, Newspaper, Sparkles, Navigation, Wrench, Home as HomeIcon, Banknote, Lock, Sprout, Inbox, UtensilsCrossed } from "lucide-react";
+import { Store, Package, BarChart3, Megaphone, Truck, Star, Plus, ShoppingBag, Video, MessageCircle, Settings, ChevronRight, ImagePlus, Radio, StopCircle, Loader2, Download, BedDouble, Car, Factory, Newspaper, Sparkles, Navigation, Wrench, Home as HomeIcon, Banknote, Lock, Sprout, Inbox, UtensilsCrossed, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -282,6 +282,7 @@ export default function MyStore() {
         </Section>
 
         <Section title="Storefront">
+          <Row icon={Crown} label="Selling plan & commission" hint="Plan tiers, commission rate, listing limits" to="/store/plans" />
           <Row icon={Store} label="Store profile" hint="Banner, logo, about" to="/store/profile" />
           <Row icon={Settings} label="Store settings" hint="Payouts, taxes" to="/store/settings" />
         </Section>
