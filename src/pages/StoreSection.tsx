@@ -12,6 +12,7 @@ import { fetchProducts, fetchMySupplier, fetchCategories } from "@/data/products
 import EmptyState from "@/components/EmptyState";
 import LocationPicker from "@/components/LocationPicker";
 import { useImportJob, type BulkCandidate, type ImportedProduct, type MarkupMode } from "@/store/importJob";
+import PlanGate, { UpgradeNotice, usePlanFeature } from "@/components/store/PlanGate";
 import ImageUpload from "@/components/ImageUpload";
 import { uploadProductImages } from "@/lib/uploadProductImages";
 import AddAdDialog from "@/components/store/AddAdDialog";
