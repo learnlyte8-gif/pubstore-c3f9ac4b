@@ -4789,6 +4789,27 @@ export type Database = {
         }
         Relationships: []
       }
+      search_reco_cache: {
+        Row: {
+          created_at: string
+          product_ids: Json
+          query: string
+          query_key: string
+        }
+        Insert: {
+          created_at?: string
+          product_ids?: Json
+          query: string
+          query_key: string
+        }
+        Update: {
+          created_at?: string
+          product_ids?: Json
+          query?: string
+          query_key?: string
+        }
+        Relationships: []
+      }
       service_bids: {
         Row: {
           created_at: string
