@@ -147,6 +147,14 @@ export function useSupplierPlan() {
   const lapsed = !!subQ.data?.renews_at && new Date(subQ.data.renews_at) <= new Date();
   const activeCode = subQ.data && !lapsed ? subQ.data.plan_code : "free";
   const plan = plans.find((p) => p.code === activeCode) ?? plans.find((p) => p.code === "free") ?? null;
+  const features = plan?.features ?? [];
+  const can = (feature: SupplierFeature) => features.includes(feature);
+  const limit = plan?.product_limit ?? null;
+  const productCount = productCountQ.data ?? 0;
+  const atProductLimit = limit != null && productCount >= limit;
+  /** Cheapest active plan that unlocks a given feature. */
+  const upgradeFor = (feature: SupplierFeature) =>
+    plans.find((p) => p.features.includes(feature)) ?? null;
 
   return {
     supplier: supplierQ.data ?? null,
@@ -156,8 +164,13 @@ export function useSupplierPlan() {
     subscription: subQ.data ?? null,
     lapsed,
     commissions: commissionsQ.data ?? [],
-    productCount: productCountQ.data ?? 0,
-    loading: plansQ.isLoading || supplierQ.isLoading,
+    productCount,
+    productLimit: limit,
+    atProductLimit,
+    features,
+    can,
+    upgradeFor,
+    loading: plansQ.isLoading || supplierQ.isLoading || subQ.isLoading,
     subscribe,
     refresh,
   };
