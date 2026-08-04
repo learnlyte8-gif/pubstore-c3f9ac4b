@@ -17,47 +17,76 @@ HOW TO HELP:
 - Provide study tips and strategies
 - Break down complex topics into simple terms
 - Use markdown formatting (bold, lists, headers) for readability
+- When referencing mathematical expressions, use LaTeX notation (e.g. $x^2 + y^2 = r^2$)
+- When referencing code, use markdown code blocks with language tags
+- When referencing tables, use markdown table syntax
 
 Be concise, friendly, and educational. Always ground your answers in the resource content provided in the context.`;
 
-const EXTRACT_PROMPT = `You are LearnLyte AI, an exam paper analyzer. Your task is to extract ALL questions from the provided exam paper content.
+const EXTRACT_PROMPT = `You are LearnLyte AI, an expert exam paper analyzer. Your task is to extract ALL questions from the provided exam paper.
 
-Return ONLY a JSON object with this exact structure (no markdown, no explanation):
+Carefully examine the paper content for questions, including those that contain:
+- Mathematical expressions and equations (preserve in LaTeX: $...$ for inline, $$...$$ for block)
+- Graphs and diagrams (describe them in the question text so the student understands what to reference)
+- Tables of data (include the full table in markdown table format within the question text)
+- Code snippets (include in markdown code blocks within the question text)
+- Chemical equations and structures (use standard notation)
+- Geometric figures (describe the figure and any given measurements)
+
+Return ONLY a JSON object with this exact structure (no markdown, no explanation outside JSON):
 {
   "questions": [
     {
       "number": 1,
       "type": "mcq",
-      "question": "The full question text",
-      "options": { "A": "option text", "B": "option text", "C": "option text", "D": "option text" }
+      "question": "The full question text with all mathematical expressions in LaTeX, tables in markdown, code in code blocks, and descriptions of any diagrams or graphs",
+      "options": { "A": "option text (with LaTeX if mathematical)", "B": "option text", "C": "option text", "D": "option text" },
+      "maxMarks": 1,
+      "imageHint": "Brief description of any diagram/graph the student should reference (omit if none)"
     },
     {
       "number": 2,
       "type": "short_answer",
-      "question": "The full question text",
-      "maxMarks": 2
+      "question": "The full question text with all notation preserved",
+      "maxMarks": 2,
+      "imageHint": "Description of any figure referenced (omit if none)"
     },
     {
       "number": 3,
       "type": "essay",
       "question": "The full question text",
-      "maxMarks": 10
+      "maxMarks": 10,
+      "imageHint": "Description of any figure referenced (omit if none)"
     }
   ]
 }
 
 Rules:
 - type is "mcq" for multiple choice, "short_answer" for short answers, "essay" for long answers
-- For MCQ, include all options as a map with keys A, B, C, D, E etc.
+- For MCQ, include all options as a map with keys A, B, C, D, E etc. Preserve any mathematical notation in options
 - For non-MCQ, include maxMarks if visible in the paper
 - Extract questions in order as they appear
-- If the paper has sections, still number questions sequentially
+- If the paper has sections (A, B, C etc.), still number questions sequentially but include the section in the question text (e.g. "Section A, Question 1: ...")
+- PRESERVE all mathematical expressions using LaTeX notation
+- PRESERVE all tables using markdown table syntax
+- PRESERVE all code using markdown code blocks with language tags
+- For questions referencing diagrams/graphs/figures, include an "imageHint" field describing what the student should see
+- If a question has sub-parts (a, b, c), treat each sub-part as a separate question with the parent context in the question text
 - If no questions can be extracted, return {"questions": []}`;
 
-const MARK_PROMPT = `You are LearnLyte AI, an exam marker. Your task is to mark student answers against the exam paper.
+const MARK_PROMPT = `You are LearnLyte AI, an expert exam marker. Your task is to mark student answers against the exam paper.
 
-You will receive the paper content, the list of questions, and the student's answers.
-Return ONLY a JSON object with this exact structure (no markdown, no explanation):
+You have access to the original paper content and the extracted questions with the student's answers.
+
+When marking:
+- For mathematical questions: verify the student's working and final answer. Accept equivalent forms of equations. Award partial marks for correct method even if final answer is wrong.
+- For questions with diagrams/graphs: the student's answer should address what the diagram shows. Be lenient if they describe rather than draw.
+- For code questions: check logic, syntax, and correctness. Accept equivalent algorithms in different languages if the question doesn't specify a language.
+- For table-based questions: check that the student has correctly read and used the data from the table.
+- For essay/long answer questions: award marks for key points covered. Be generous with partial credit.
+- For MCQ: compare the letter. "correct" is boolean.
+
+Return ONLY a JSON object with this exact structure (no markdown, no explanation outside JSON):
 {
   "results": [
     {
@@ -66,17 +95,17 @@ Return ONLY a JSON object with this exact structure (no markdown, no explanation
       "studentAnswer": "A",
       "correctAnswer": "B",
       "correct": false,
-      "explanation": "Brief explanation of why B is correct"
+      "explanation": "Brief explanation of why B is correct. Use LaTeX for any math: $...$"
     },
     {
       "number": 2,
       "type": "short_answer",
       "studentAnswer": "student's answer text",
-      "correctAnswer": "model answer",
+      "correctAnswer": "model answer with LaTeX math $...$ and markdown if needed",
       "correct": true,
       "marks": 2,
       "maxMarks": 2,
-      "explanation": "Brief feedback"
+      "explanation": "Brief feedback with any corrections. Use LaTeX for math notation."
     }
   ],
   "score": 15,
@@ -86,14 +115,15 @@ Return ONLY a JSON object with this exact structure (no markdown, no explanation
 }
 
 Rules:
-- For MCQ: compare the letter. "correct" is boolean.
-- For short_answer/essay: award marks out of maxMarks. "correct" is true if marks >= maxMarks * 0.5.
 - Only include questions the student answered (has a non-empty studentAnswer).
 - "completedQuestions" = number of questions the student answered.
 - "totalQuestions" = total questions in the paper.
 - "score" = sum of marks awarded (for MCQ, each correct = 1 mark unless paper specifies otherwise).
 - "totalMarks" = sum of all maxMarks (for MCQ, count = 1 each).
-- Be fair but strict. Give partial credit for partially correct short answers.`;
+- "correctAnswer" should be a full model answer, not just a keyword. Include LaTeX for math, markdown for formatting.
+- "explanation" should be educational — explain WHY the answer is correct or what the student got wrong.
+- Be fair but strict. Give partial credit for partially correct short answers.
+- For MCQ with no maxMarks in the question, use maxMarks = 1.`;
 
 async function extractPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
   try {
@@ -120,28 +150,47 @@ async function extractPdfText(arrayBuffer: ArrayBuffer): Promise<string> {
   }
 }
 
-async function fetchFileContent(fileUrl: string): Promise<string> {
+type FileContent = {
+  text: string;
+  images: string[];
+};
+
+function toBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+async function fetchFileContent(fileUrl: string): Promise<FileContent> {
   try {
     const resp = await fetch(fileUrl);
-    if (!resp.ok) return `(Failed to download file: ${resp.status})`;
+    if (!resp.ok) return { text: `(Failed to download file: ${resp.status})`, images: [] };
 
     const contentType = resp.headers.get("content-type") || "";
     const arrayBuffer = await resp.arrayBuffer();
 
     if (contentType.includes("pdf") || fileUrl.toLowerCase().includes(".pdf")) {
       const text = await extractPdfText(arrayBuffer);
-      return text.slice(0, 50000);
+      return { text: text.slice(0, 50000), images: [] };
+    }
+
+    if (contentType.includes("image")) {
+      const dataUrl = `data:${contentType};base64,${toBase64(new Uint8Array(arrayBuffer))}`;
+      return { text: "(Image file provided)", images: [dataUrl] };
     }
 
     if (contentType.includes("text") || contentType.includes("json")) {
       const text = new TextDecoder().decode(arrayBuffer);
-      return text.slice(0, 50000);
+      return { text: text.slice(0, 50000), images: [] };
     }
 
-    return `(File type: ${contentType}. This appears to be an image or non-text file.)`;
+    return { text: `(File type: ${contentType}. This appears to be a non-text file.)`, images: [] };
   } catch (e) {
     console.error("File fetch error:", e);
-    return "(Could not download the resource file)";
+    return { text: "(Could not download the resource file)", images: [] };
   }
 }
 
@@ -159,17 +208,35 @@ Type: ${resourceType || "Unknown"}
 Level: ${resourceLevel || "Unknown"}
 `;
 
+    let fileImages: string[] = [];
     if (fileUrl) {
       const fileContent = await fetchFileContent(fileUrl);
-      context += `\nFILE CONTENT:\n${fileContent}`;
+      context += `\nFILE CONTENT (text extraction):\n${fileContent.text}`;
+      fileImages = fileContent.images;
+    }
+
+    // Helper: build messages with image content for vision models
+    function buildVisionMessages(systemPrompt: string, userText: string, images: string[]) {
+      const msgs: any[] = [{ role: "system", content: `${systemPrompt}\n\nRESOURCE CONTEXT:\n${context}` }];
+      if (images.length > 0) {
+        const content: any[] = [{ type: "text", text: userText }];
+        for (const img of images) {
+          content.push({ type: "image_url", image_url: { url: img } });
+        }
+        msgs.push({ role: "user", content });
+      } else {
+        msgs.push({ role: "user", content: userText });
+      }
+      return msgs;
     }
 
     // ── Extract questions action ──
     if (action === "extract-questions") {
-      const extractMessages = [
-        { role: "system", content: `${EXTRACT_PROMPT}\n\nRESOURCE CONTEXT:\n${context}` },
-        { role: "user", content: "Extract all questions from this exam paper. Return ONLY the JSON object." },
-      ];
+      const extractMessages = buildVisionMessages(
+        EXTRACT_PROMPT,
+        "Extract all questions from this exam paper. Examine the content carefully for questions containing mathematical expressions, graphs, diagrams, tables, and code. Return ONLY the JSON object.",
+        fileImages,
+      );
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -182,6 +249,7 @@ Level: ${resourceLevel || "Unknown"}
           messages: extractMessages,
           stream: false,
           response_format: { type: "json_object" },
+          max_tokens: 16000,
         }),
       });
 
@@ -217,10 +285,8 @@ Level: ${resourceLevel || "Unknown"}
 
     // ── Mark answers action ──
     if (action === "mark-answers") {
-      const markMessages = [
-        { role: "system", content: `${MARK_PROMPT}\n\nRESOURCE CONTEXT:\n${context}` },
-        { role: "user", content: `Questions: ${JSON.stringify(questions)}\n\nStudent Answers: ${JSON.stringify(answers)}\n\nMark the student's answers. Return ONLY the JSON result object.` },
-      ];
+      const userText = `Questions: ${JSON.stringify(questions)}\n\nStudent Answers: ${JSON.stringify(answers)}\n\nMark the student's answers. For each answer, check against the original paper content and the extracted questions. Return ONLY the JSON result object.`;
+      const markMessages = buildVisionMessages(MARK_PROMPT, userText, fileImages);
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -233,6 +299,7 @@ Level: ${resourceLevel || "Unknown"}
           messages: markMessages,
           stream: false,
           response_format: { type: "json_object" },
+          max_tokens: 16000,
         }),
       });
 
@@ -270,6 +337,22 @@ Level: ${resourceLevel || "Unknown"}
     // ── Default: streaming chat ──
     const sys = `${SYSTEM_PROMPT}\n\nRESOURCE CONTEXT:\n${context}`;
 
+    let chatMessages: any[];
+    if (fileImages.length > 0 && messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      const content: any[] = [{ type: "text", text: lastMsg.content }];
+      for (const img of fileImages.slice(0, 5)) {
+        content.push({ type: "image_url", image_url: { url: img } });
+      }
+      chatMessages = [
+        { role: "system", content: sys },
+        ...messages.slice(0, -1),
+        { role: lastMsg.role, content },
+      ];
+    } else {
+      chatMessages = [{ role: "system", content: sys }, ...messages];
+    }
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -278,7 +361,7 @@ Level: ${resourceLevel || "Unknown"}
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        messages: [{ role: "system", content: sys }, ...messages],
+        messages: chatMessages,
         stream: true,
       }),
     });
