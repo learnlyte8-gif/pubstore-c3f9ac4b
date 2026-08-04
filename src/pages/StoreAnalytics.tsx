@@ -345,6 +345,8 @@ export default function StoreAnalytics() {
           )}
         </ChartCard>
       </div>
+      )}
+
 
       {/* Quality strip */}
       <div className="px-4 mt-3 grid grid-cols-2 gap-2">
