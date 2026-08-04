@@ -83,6 +83,13 @@ const Home = () => {
               </section>
 
               <section className="px-4 mt-6">
+                <SectionHeader icon={Sparkles} title="Because you searched" subtitle="AI matches from your recent searches" />
+                <div className="mt-3"><SearchRecommendationStrip /></div>
+              </section>
+
+
+
+              <section className="px-4 mt-6">
                 <SectionHeader icon={Sparkles} title="New arrivals" subtitle="Latest products from suppliers" />
                 <NewArrivals />
               </section>
