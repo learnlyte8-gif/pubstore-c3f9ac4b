@@ -416,6 +416,24 @@ export async function fetchProducts(opts: {
   return ((data ?? []) as unknown as DbProductWithSupplier[]).map(mapProduct);
 }
 
+/** Fetch products by explicit ids, preserving the order of `ids`. */
+export async function fetchProductsByIds(ids: string[]): Promise<Product[]> {
+  if (!ids.length) return [];
+  const { data, error } = await supabase
+    .from("products")
+    .select(
+      "id, supplier_id, title, image, gallery, video_url, price, original_price, category_slug, badge, free_shipping, moq, unit, lead_time, ship_from, rating, review_count, sold, deal_ends_at, ad_has_reel, ad_headline, ad_tagline, suppliers!inner(name, verified, gold, country, location_address, latitude, longitude, trade_type)"
+    )
+    .eq("active", true)
+    .in("id", ids.slice(0, 40));
+  if (error) throw error;
+  const mapped = ((data ?? []) as unknown as DbProductWithSupplier[]).map(mapProduct);
+  const order = new Map(ids.map((id, i) => [id, i]));
+  return mapped.sort((a, b) => (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999));
+}
+
+
+
 export async function fetchProduct(id: string): Promise<Product | null> {
   const { data, error } = await supabase
     .from("products")
