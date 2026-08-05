@@ -804,6 +804,14 @@ class _OrdersViewState extends State<_OrdersView> {
     } catch (e) { if (mounted) _toast(context, '$e', err: true); }
   }
 
+  Future<void> _markDelivered(Map<String, dynamic> o) async {
+    try {
+      await supabase.rpc('supplier_mark_order_delivered', params: {'_order_id': o['id']});
+      if (mounted) _toast(context, 'Marked delivered — buyer must confirm to release payment');
+      await _load();
+    } catch (e) { if (mounted) _toast(context, '$e', err: true); }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) return Skeletons.list(count: 4);
