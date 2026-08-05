@@ -174,10 +174,7 @@ export default function SearchPage() {
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-search`;
       const res = await fetch(url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
+        headers: await aiFunctionHeaders(),
         body: JSON.stringify({ image: dataUrl }),
       });
       const j = await res.json();
