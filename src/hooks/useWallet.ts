@@ -130,7 +130,9 @@ export function useWallet() {
     isLoading: balanceQuery.isLoading,
     transactions: txQuery.data ?? [],
     refresh,
+    applyOptimisticHold,
     payOrder,
     moveSalesToPersonal,
+
   };
 }
