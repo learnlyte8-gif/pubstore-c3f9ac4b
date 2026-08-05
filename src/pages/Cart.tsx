@@ -707,7 +707,11 @@ export default function Cart() {
           <div className="flex-1">
             <p className="text-[11px] text-muted-foreground">
               {totalDiscount > 0 ? `Saved ${fmt(totalDiscount)} · ` : ""}
-              {shipping === 0 ? "Free shipping" : `+ ${fmt(shipping)} ship`}
+              {Object.values(shippingBySupplier).some((s) => s.negotiated)
+                ? "Delivery negotiated with supplier"
+                : shipping === 0
+                ? "Free delivery"
+                : `+ ${fmt(shipping)} delivery`}
             </p>
             <p className="text-lg font-bold text-destructive leading-tight">{fmt(total)}</p>
           </div>
