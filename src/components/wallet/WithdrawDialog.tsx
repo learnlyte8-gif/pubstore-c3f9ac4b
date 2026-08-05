@@ -27,7 +27,7 @@ export default function WithdrawDialog({
   personalBalance: number;
   salesBalance: number;
   defaultAccount?: Account;
-  onSubmitted?: (held?: { amount: number; account: Account }) => void;
+  onSubmitted?: () => void;
 }) {
   const [account, setAccount] = useState<Account>(defaultAccount);
   const [method, setMethod] = useState<Method>("ecocash");
@@ -66,8 +66,7 @@ export default function WithdrawDialog({
       if (error) throw error;
       toast.success(`Withdrawal of $${numAmount.toFixed(2)} from ${account} requested`);
       onOpenChange(false);
-      onSubmitted?.({ amount: numAmount, account });
-
+      onSubmitted?.();
     } catch (e: any) {
       toast.error(e?.message ?? "Could not submit withdrawal");
     } finally {
