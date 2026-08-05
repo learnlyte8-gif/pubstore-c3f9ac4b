@@ -6450,7 +6450,7 @@ export type Database = {
           notes?: string | null
           payout_tx_id?: string | null
           processed_at?: string | null
-          reference: string
+          reference?: string
           status?: string
           updated_at?: string
           user_id: string
@@ -7200,74 +7200,40 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      request_wallet_withdrawal:
-        | {
-            Args: {
-              _account_name?: string
-              _amount: number
-              _destination: string
-              _method: string
-              _notes?: string
-            }
-            Returns: {
-              account: string
-              account_name: string | null
-              admin_note: string | null
-              amount: number
-              created_at: string
-              destination: string
-              hold_tx_id: string | null
-              id: string
-              method: string
-              notes: string | null
-              payout_tx_id: string | null
-              processed_at: string | null
-              reference: string
-              status: string
-              updated_at: string
-              user_id: string
-            }
-            SetofOptions: {
-              from: "*"
-              to: "withdrawal_requests"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
-        | {
-            Args: {
-              _account?: string
-              _account_name?: string
-              _amount: number
-              _destination: string
-              _method: string
-              _notes?: string
-            }
-            Returns: {
-              account: string
-              account_name: string | null
-              admin_note: string | null
-              amount: number
-              created_at: string
-              destination: string
-              hold_tx_id: string | null
-              id: string
-              method: string
-              notes: string | null
-              payout_tx_id: string | null
-              processed_at: string | null
-              reference: string
-              status: string
-              updated_at: string
-              user_id: string
-            }
-            SetofOptions: {
-              from: "*"
-              to: "withdrawal_requests"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
+      request_wallet_withdrawal: {
+        Args: {
+          _account?: string
+          _account_name?: string
+          _amount: number
+          _destination: string
+          _method: string
+          _notes?: string
+        }
+        Returns: {
+          account: string
+          account_name: string | null
+          admin_note: string | null
+          amount: number
+          created_at: string
+          destination: string
+          hold_tx_id: string | null
+          id: string
+          method: string
+          notes: string | null
+          payout_tx_id: string | null
+          processed_at: string | null
+          reference: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "withdrawal_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       resolve_master_supplier: {
         Args: { _supplier_id: string }
         Returns: string
