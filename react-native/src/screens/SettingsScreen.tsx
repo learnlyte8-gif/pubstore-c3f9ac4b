@@ -58,6 +58,7 @@ export function SettingsScreen() {
         <Row icon="shield-checkmark-outline" label="Verification" onPress={() => navigation.navigate('Verification')} />
         <Row icon="help-circle-outline" label="Help center" onPress={() => navigation.navigate('HelpCenter')} />
         <Row icon="document-text-outline" label="Privacy" onPress={() => navigation.navigate('Privacy')} />
+        <Row icon="document-text-outline" label="Terms of Service" onPress={() => navigation.navigate('Terms')} />
 
         <TouchableOpacity style={styles.signout} onPress={signOut}>
           <Text style={styles.signoutText}>Sign out</Text>
