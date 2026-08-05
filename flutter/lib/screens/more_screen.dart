@@ -196,6 +196,11 @@ class MoreScreen extends StatelessWidget {
               onTap: () => Navigator.of(context).push(MaterialPageRoute(
                   builder: (_) => const TermsScreen()))),
           _QuickRow(
+              icon: LucideIcons.shieldCheck,
+              label: 'Privacy policy',
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const PrivacyScreen()))),
+          _QuickRow(
               icon: LucideIcons.settings,
               label: 'Settings',
               onTap: () => Navigator.of(context).push(MaterialPageRoute(
