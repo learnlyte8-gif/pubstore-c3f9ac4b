@@ -1610,7 +1610,7 @@ function OrdersView() {
             )}
             {refundPending && (
               <p className="text-[11px] mt-2 px-2 py-1 rounded-md bg-destructive/10 text-destructive">
-                Buyer requested a refund{o.refund_reason ? `: ${o.refund_reason}` : ""}.
+                Buyer requested a refund{o.refund_reason ? `: ${o.refund_reason}` : ""}. Only support admins can approve or decline it.
               </p>
             )}
             {supplierMarked && o.status !== "delivered" && (

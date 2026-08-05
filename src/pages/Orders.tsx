@@ -235,7 +235,7 @@ function OrderDetail({
     const { data, error } = await supabase.rpc("cancel_order_by_buyer" as never, { _order_id: order.id } as never);
     if (error) return toast.error(error.message);
     onUpdated({ ...order, ...((data as any) ?? {}), status: "cancelled", items: order.items, supplier: order.supplier });
-    toast.success("Order cancelled");
+    toast.success("Order cancelled — any payment held was returned to your wallet");
   };
 
   const reorder = async () => {
