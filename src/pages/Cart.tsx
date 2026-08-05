@@ -588,12 +588,15 @@ export default function Cart() {
             const opts = deliveryOptionsBySupplier[sid] ?? [];
             const group = supplierGroups.get(sid);
             const supplierName = group?.items[0]?.product.supplierName ?? "Supplier";
-            const fee = shippingBySupplier[sid]?.fee ?? 0;
+            const ship = shippingBySupplier[sid];
+            const fee = ship?.fee ?? 0;
             return (
               <div key={sid} className="rounded-xl border p-2.5">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-2 gap-2">
                   <p className="text-[11px] font-bold text-muted-foreground truncate">{supplierName}</p>
-                  <p className="text-[11px] font-bold text-destructive">{fee === 0 ? "FREE" : fmt(fee)}</p>
+                  <p className="text-[11px] font-bold text-destructive shrink-0">
+                    {ship?.negotiated ? "TO BE NEGOTIATED" : fee === 0 ? "FREE" : fmt(fee)}
+                  </p>
                 </div>
                 <div className="space-y-1.5">
                   {opts.map((opt) => {
