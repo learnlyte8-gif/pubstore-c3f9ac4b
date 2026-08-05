@@ -1,0 +1,2 @@
+ALTER TABLE public.wallet_transactions DROP CONSTRAINT IF EXISTS wallet_transactions_kind_check;
+ALTER TABLE public.wallet_transactions ADD CONSTRAINT wallet_transactions_kind_check CHECK (kind = ANY (ARRAY['topup','purchase','refund','adjustment','sale','sales_to_personal_out','sales_to_personal_in','transfer_in','transfer_out','withdrawal_hold','payout','commission']));
