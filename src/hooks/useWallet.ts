@@ -66,6 +66,26 @@ export function useWallet() {
     qc.invalidateQueries({ queryKey: ["wallet-tx", userId] });
   }, [qc, userId]);
 
+  /**
+   * Immediately reflect a withdrawal hold in the cached balances so the UI
+   * updates the instant the request is accepted, before the refetch lands.
+   */
+  const applyOptimisticHold = useCallback(
+    (amount: number, account: WalletAccount = "personal") => {
+      const amt = Number(amount) || 0;
+      if (amt <= 0) return;
+      qc.setQueryData<{ personal: number; sales: number }>(["wallet", userId], (prev) => {
+        const base = prev ?? { personal: 0, sales: 0 };
+        return account === "sales"
+          ? { ...base, sales: Math.max(0, base.sales - amt) }
+          : { ...base, personal: Math.max(0, base.personal - amt) };
+      });
+      refresh();
+    },
+    [qc, userId, refresh],
+  );
+
+
   useEffect(() => {
     if (!userId) return;
     const ch = supabase
@@ -110,7 +130,9 @@ export function useWallet() {
     isLoading: balanceQuery.isLoading,
     transactions: txQuery.data ?? [],
     refresh,
+    applyOptimisticHold,
     payOrder,
     moveSalesToPersonal,
+
   };
 }

@@ -22,7 +22,7 @@ type Provider = "paypal" | "ecocash" | "onemoney" | "visa" | "mastercard";
 const PESEPAY_PROVIDERS: Provider[] = ["ecocash", "onemoney", "visa", "mastercard"];
 
 export default function WalletPage() {
-  const { balance, personalBalance, salesBalance, transactions, isLoading, userId, refresh, moveSalesToPersonal } = useWallet();
+  const { balance, personalBalance, salesBalance, transactions, isLoading, userId, refresh, applyOptimisticHold, moveSalesToPersonal } = useWallet();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selected, setSelected] = useState<number | null>(null);
@@ -284,7 +284,12 @@ export default function WalletPage() {
         personalBalance={personalBalance}
         salesBalance={salesBalance}
         defaultAccount={withdrawAccount}
-        onSubmitted={() => { refresh(); refetchWithdrawals(); }}
+        onSubmitted={(held) => {
+          if (held) applyOptimisticHold(held.amount, held.account);
+          else refresh();
+          refetchWithdrawals();
+        }}
+
       />
 
       {/* Pending withdrawals */}
