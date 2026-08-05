@@ -22,7 +22,7 @@ type Provider = "paypal" | "ecocash" | "onemoney" | "visa" | "mastercard";
 const PESEPAY_PROVIDERS: Provider[] = ["ecocash", "onemoney", "visa", "mastercard"];
 
 export default function WalletPage() {
-  const { balance, personalBalance, salesBalance, transactions, isLoading, userId, refresh, moveSalesToPersonal } = useWallet();
+  const { balance, personalBalance, salesBalance, transactions, isLoading, userId, refresh, applyOptimisticHold, moveSalesToPersonal } = useWallet();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selected, setSelected] = useState<number | null>(null);
