@@ -59,6 +59,7 @@ export default function Admin() {
       <div className="p-4">
         {tab === "topups" && <ManualTopupsPanel />}
         {tab === "withdrawals" && <WithdrawalsPanel />}
+        {tab === "refunds" && <RefundsPanel />}
         {tab === "assurance" && <AssurancePanel />}
         {tab === "reviews" && <ReviewsPanel />}
         {tab === "settings" && <PlatformSettingsPanel />}
