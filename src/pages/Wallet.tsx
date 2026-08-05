@@ -284,7 +284,12 @@ export default function WalletPage() {
         personalBalance={personalBalance}
         salesBalance={salesBalance}
         defaultAccount={withdrawAccount}
-        onSubmitted={() => { refresh(); refetchWithdrawals(); }}
+        onSubmitted={(held) => {
+          if (held) applyOptimisticHold(held.amount, held.account);
+          else refresh();
+          refetchWithdrawals();
+        }}
+
       />
 
       {/* Pending withdrawals */}
