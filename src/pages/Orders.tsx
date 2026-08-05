@@ -43,6 +43,12 @@ type Order = {
   escrow_released_at?: string | null;
   dispute_opened_at?: string | null;
   dispute_reason?: string | null;
+  payment_status?: string | null;
+  supplier_marked_delivered_at?: string | null;
+  buyer_confirmed_delivered_at?: string | null;
+  refund_status?: "none" | "requested" | "declined" | "refunded" | string;
+  refund_reason?: string | null;
+  refund_admin_note?: string | null;
   supplier?: { id: string; name: string; logo: string | null; country: string | null };
   items: Item[];
 };
@@ -226,9 +232,9 @@ function OrderDetail({
   const [reviewItem, setReviewItem] = useState<Item | null>(null);
 
   const cancel = async () => {
-    const { error } = await supabase.from("orders").update({ status: "cancelled" }).eq("id", order.id);
-    if (error) return toast.error("Could not cancel");
-    onUpdated({ ...order, status: "cancelled" });
+    const { data, error } = await supabase.rpc("cancel_order_by_buyer" as never, { _order_id: order.id } as never);
+    if (error) return toast.error(error.message);
+    onUpdated({ ...order, ...((data as any) ?? {}), status: "cancelled", items: order.items, supplier: order.supplier });
     toast.success("Order cancelled");
   };
 
@@ -238,6 +244,7 @@ function OrderDetail({
   };
 
   const isDelivered = order.status === "delivered";
+  const canCancel = order.status === "placed" || order.status === "awaiting_payment";
 
   return (
     <div className="pb-8">
@@ -305,8 +312,10 @@ function OrderDetail({
           </div>
         )}
 
+        <BuyerProtectionCard order={order} onUpdated={onUpdated} />
+
         {order.escrow_status && order.escrow_status !== "none" && (
-          <EscrowCard order={order} onUpdated={onUpdated} />
+          <EscrowCard order={order} />
         )}
 
         <div className="rounded-2xl bg-card border border-border shadow-card p-4 mt-3">
@@ -365,7 +374,7 @@ function OrderDetail({
           <button onClick={reorder} className="h-10 rounded-full bg-foreground text-background text-sm font-semibold flex items-center justify-center gap-1.5 shadow-card">
             <RotateCcw className="w-4 h-4" /> Reorder
           </button>
-          {order.status === "placed" ? (
+          {canCancel ? (
             <button onClick={cancel} className="h-10 rounded-full bg-destructive/10 text-destructive text-sm font-semibold flex items-center justify-center gap-1.5 shadow-soft">
               <XCircle className="w-4 h-4" /> Cancel
             </button>
@@ -453,28 +462,189 @@ function ReviewModal({ item, onClose, onDone }: { item: Item; onClose: () => voi
   );
 }
 
-function EscrowCard({ order, onUpdated }: { order: Order; onUpdated: (o: Order) => void }) {
+function BuyerProtectionCard({ order, onUpdated }: { order: Order; onUpdated: (o: Order) => void }) {
+  const [busy, setBusy] = useState(false);
+  const [refundOpen, setRefundOpen] = useState(false);
+
+  const supplierMarked = !!order.supplier_marked_delivered_at;
+  const buyerConfirmed = !!order.buyer_confirmed_delivered_at || order.status === "delivered";
+  const refundStatus = order.refund_status ?? "none";
+  const cancelled = order.status === "cancelled";
+  const refundPending = refundStatus === "requested";
+  const canRequestRefund =
+    !buyerConfirmed && !cancelled && !refundPending && refundStatus !== "refunded" && order.payment_status === "paid";
+
+  const patch = (data: any) =>
+    onUpdated({ ...order, ...(data ?? {}), items: order.items, supplier: order.supplier });
+
+  const confirmDelivered = async () => {
+    setBusy(true);
+    const { data, error } = await supabase.rpc("buyer_confirm_order_delivered" as never, { _order_id: order.id } as never);
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    patch(data);
+    toast.success("Delivery confirmed — payment released to the seller");
+  };
+
+  return (
+    <div className="rounded-2xl bg-card border border-border shadow-card p-4 mt-3">
+      <div className="flex items-center gap-2">
+        <ShieldCheck className="w-5 h-5 text-primary" />
+        <p className="text-xs font-bold flex-1">Buyer protection</p>
+      </div>
+      <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">
+        The seller is only paid once both of you confirm the parcel arrived.
+      </p>
+
+      <div className="mt-3 space-y-1.5">
+        <ConfirmRow label="Seller marked as delivered" done={supplierMarked} at={order.supplier_marked_delivered_at} />
+        <ConfirmRow label="You confirmed delivery" done={buyerConfirmed} at={order.buyer_confirmed_delivered_at} />
+      </div>
+
+      {!cancelled && (
+        <div className="grid grid-cols-2 gap-2 mt-3">
+          <button
+            onClick={confirmDelivered}
+            disabled={!supplierMarked || buyerConfirmed || refundPending || busy}
+            className="h-10 rounded-full bg-emerald-600 text-white text-xs font-semibold flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            {buyerConfirmed ? "Delivered" : busy ? "Confirming…" : "Mark as delivered"}
+          </button>
+          <button
+            onClick={() => setRefundOpen(true)}
+            disabled={!canRequestRefund}
+            className="h-10 rounded-full bg-destructive/10 text-destructive text-xs font-semibold flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <AlertTriangle className="w-3.5 h-3.5" />
+            {refundPending ? "Refund pending" : "Request refund"}
+          </button>
+        </div>
+      )}
+
+      {!supplierMarked && !buyerConfirmed && !cancelled && (
+        <p className="text-[10px] text-muted-foreground mt-1.5 text-center">
+          You can confirm delivery once the seller marks the order as delivered.
+        </p>
+      )}
+      {buyerConfirmed && (
+        <p className="text-[10px] text-muted-foreground mt-1.5 text-center">
+          A refund can no longer be requested for a delivered order.
+        </p>
+      )}
+      {refundPending && (
+        <p className="text-[11px] mt-2 px-2 py-1.5 rounded-md bg-destructive/10 text-destructive">
+          Refund requested{order.refund_reason ? `: ${order.refund_reason}` : ""} — our team is reviewing it.
+        </p>
+      )}
+      {refundStatus === "declined" && (
+        <p className="text-[11px] mt-2 px-2 py-1.5 rounded-md bg-muted text-muted-foreground">
+          Refund request declined{order.refund_admin_note ? `: ${order.refund_admin_note}` : ""}.
+        </p>
+      )}
+      {refundStatus === "refunded" && (
+        <p className="text-[11px] mt-2 px-2 py-1.5 rounded-md bg-emerald-500/10 text-emerald-600">
+          Refunded to your wallet.
+        </p>
+      )}
+
+      {refundOpen && (
+        <RefundSheet
+          order={order}
+          onClose={() => setRefundOpen(false)}
+          onDone={(data) => { patch(data); setRefundOpen(false); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function ConfirmRow({ label, done, at }: { label: string; done: boolean; at?: string | null }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className={`w-4 h-4 rounded-full flex items-center justify-center ${done ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}>
+        {done ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-2.5 h-2.5" />}
+      </span>
+      <span className={`text-[11px] ${done ? "text-foreground font-medium" : "text-muted-foreground"}`}>{label}</span>
+      {done && at && <span className="text-[10px] text-muted-foreground ml-auto">{new Date(at).toLocaleDateString()}</span>}
+    </div>
+  );
+}
+
+const REFUND_REASONS = [
+  "Item not received",
+  "Delivery is taking too long",
+  "Wrong item shipped",
+  "Item damaged or faulty",
+  "I no longer need it",
+  "Other",
+];
+
+function RefundSheet({ order, onClose, onDone }: { order: Order; onClose: () => void; onDone: (data: any) => void }) {
+  const [reason, setReason] = useState(REFUND_REASONS[0]);
+  const [details, setDetails] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const submit = async () => {
+    const full = [reason, details.trim()].filter(Boolean).join(" — ");
+    if (full.trim().length < 5) { toast.error("Please describe the reason"); return; }
+    setSaving(true);
+    const { data, error } = await supabase.rpc("request_order_refund" as never, {
+      _order_id: order.id,
+      _reason: full,
+    } as never);
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("Refund requested — our team will review it");
+    onDone(data);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-foreground/60 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
+      <div className="w-full max-w-md bg-card rounded-3xl p-5 shadow-elevated" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 mb-3">
+          <AlertTriangle className="w-4 h-4 text-destructive" />
+          <p className="text-sm font-bold flex-1">Request a refund</p>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-muted" aria-label="Close">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <p className="text-[11px] text-muted-foreground mb-3">
+          Order {order.ref_code ?? order.id.slice(0, 8)} · ${Number(order.total).toFixed(2)} held in escrow.
+        </p>
+        <div className="space-y-1.5">
+          {REFUND_REASONS.map((r) => (
+            <button
+              key={r}
+              onClick={() => setReason(r)}
+              className={`w-full text-left text-xs px-3 h-10 rounded-xl border ${reason === r ? "border-primary bg-primary/10 font-semibold" : "border-border bg-background"}`}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+        <textarea
+          value={details}
+          onChange={(e) => setDetails(e.target.value)}
+          placeholder="Add any details that help us review (optional)"
+          rows={3}
+          maxLength={500}
+          className="w-full rounded-xl border bg-background p-3 text-sm mt-3"
+        />
+        <div className="flex gap-2 mt-3">
+          <Button variant="outline" className="flex-1 h-11" onClick={onClose}>Close</Button>
+          <Button variant="destructive" className="flex-1 h-11" onClick={submit} disabled={saving}>
+            {saving ? "Submitting…" : "Submit request"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EscrowCard({ order }: { order: Order }) {
   const status = order.escrow_status ?? "none";
   const amount = Number(order.escrow_amount ?? order.total ?? 0);
-
-  const release = async () => {
-    const { data, error } = await supabase.rpc("release_escrow", { _order_id: order.id });
-    if (error) return toast.error(error.message);
-    if (data) onUpdated({ ...order, ...(data as any) });
-    toast.success("Funds released to supplier");
-  };
-
-  const dispute = async () => {
-    const reason = prompt("Briefly describe the issue (item not received, damaged, wrong product…)");
-    if (!reason) return;
-    const { data, error } = await supabase.rpc("open_order_dispute", {
-      _order_id: order.id,
-      _reason: reason,
-    });
-    if (error) return toast.error(error.message);
-    if (data) onUpdated({ ...order, ...(data as any) });
-    toast.success("Dispute opened — our team will mediate");
-  };
 
   const tone = status === "held" ? "bg-amber-500/10 border-amber-500/30"
     : status === "released" ? "bg-emerald-500/10 border-emerald-500/30"
@@ -497,7 +667,7 @@ function EscrowCard({ order, onUpdated }: { order: Order; onUpdated: (o: Order) 
         </span>
       </div>
       <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">
-        ${amount.toFixed(2)} {status === "held" && "is securely held until you confirm delivery."}
+        ${amount.toFixed(2)} {status === "held" && "is securely held until both you and the seller confirm delivery."}
         {status === "released" && order.escrow_released_at && `released on ${new Date(order.escrow_released_at).toLocaleDateString()}.`}
         {status === "disputed" && "Our trade team is reviewing this case."}
       </p>
@@ -505,21 +675,6 @@ function EscrowCard({ order, onUpdated }: { order: Order; onUpdated: (o: Order) 
         <p className="text-[11px] mt-1 px-2 py-1 rounded-md bg-destructive/10 text-destructive">
           Reason: {order.dispute_reason}
         </p>
-      )}
-      {status === "held" && (
-        <div className="grid grid-cols-2 gap-2 mt-3">
-          <button onClick={release} disabled={order.status !== "delivered"}
-            className="h-9 rounded-full bg-emerald-600 text-white text-xs font-semibold flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
-            <CheckCircle2 className="w-3.5 h-3.5" /> Release funds
-          </button>
-          <button onClick={dispute}
-            className="h-9 rounded-full bg-destructive/10 text-destructive text-xs font-semibold flex items-center justify-center gap-1.5">
-            <AlertTriangle className="w-3.5 h-3.5" /> Open dispute
-          </button>
-        </div>
-      )}
-      {status === "held" && order.status !== "delivered" && (
-        <p className="text-[10px] text-muted-foreground mt-1 text-center">You can release funds once the order is delivered.</p>
       )}
     </div>
   );

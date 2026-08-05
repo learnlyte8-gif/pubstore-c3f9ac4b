@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, ShieldCheck, Banknote, CreditCard, MessageSquare, Star, Settings as SettingsIcon, Check, X, RefreshCw, Save } from "lucide-react";
+import { ArrowLeft, ShieldCheck, Banknote, CreditCard, MessageSquare, Star, Settings as SettingsIcon, Check, X, RefreshCw, Save, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 const sb = supabase as any;
 const fmt = (n: number) => `$${Number(n).toFixed(2)}`;
 
-type Tab = "topups" | "withdrawals" | "assurance" | "reviews" | "settings";
+type Tab = "topups" | "withdrawals" | "refunds" | "assurance" | "reviews" | "settings";
 
 export default function Admin() {
   const { isAdmin, ready } = useIsAdmin();
@@ -29,6 +29,7 @@ export default function Admin() {
   const tabs: { id: Tab; label: string; icon: any }[] = [
     { id: "topups", label: "Top-ups", icon: CreditCard },
     { id: "withdrawals", label: "Withdrawals", icon: Banknote },
+    { id: "refunds", label: "Refunds", icon: RotateCcw },
     { id: "assurance", label: "Trade Assurance", icon: ShieldCheck },
     { id: "reviews", label: "Reviews", icon: Star },
     { id: "settings", label: "Settings", icon: SettingsIcon },
@@ -58,6 +59,7 @@ export default function Admin() {
       <div className="p-4">
         {tab === "topups" && <ManualTopupsPanel />}
         {tab === "withdrawals" && <WithdrawalsPanel />}
+        {tab === "refunds" && <RefundsPanel />}
         {tab === "assurance" && <AssurancePanel />}
         {tab === "reviews" && <ReviewsPanel />}
         {tab === "settings" && <PlatformSettingsPanel />}
@@ -276,6 +278,86 @@ function AssurancePanel() {
     </div>
   );
 }
+
+// ----------------------------- Refunds --------------------------------------
+
+function RefundsPanel() {
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<"requested" | "refunded" | "declined" | "all">("requested");
+  const [note, setNote] = useState<Record<string, string>>({});
+
+  const load = async () => {
+    setLoading(true);
+    let q = sb.from("orders")
+      .select("id,ref_code,total,status,buyer_id,supplier_id,refund_status,refund_reason,refund_admin_note,escrow_status,escrow_amount,created_at")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    q = filter === "all" ? q.neq("refund_status", "none") : q.eq("refund_status", filter);
+    const { data } = await q;
+    setRows(data ?? []);
+    setLoading(false);
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [filter]);
+
+  const resolve = async (id: string, approve: boolean) => {
+    const { error } = await sb.rpc("resolve_order_refund", {
+      _order_id: id,
+      _approve: approve,
+      _admin_note: note[id] ?? null,
+    });
+    if (error) return toast.error(error.message);
+    toast.success(approve ? "Refund issued to buyer wallet" : "Refund declined");
+    load();
+  };
+
+  return (
+    <div>
+      <FilterRow filter={filter} setFilter={setFilter} onRefresh={load} />
+      {loading ? <SkeletonList /> : rows.length === 0 ? <Empty label="No refund requests" /> : (
+        <div className="space-y-2">
+          {rows.map((r) => (
+            <div key={r.id} className="rounded-2xl border bg-card p-3 shadow-card">
+              <div className="flex items-center gap-2">
+                <span className="w-9 h-9 rounded-xl bg-destructive/15 text-destructive flex items-center justify-center"><RotateCcw className="w-4 h-4" /></span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold truncate">{r.ref_code ?? String(r.id).slice(0, 8)} · {fmt(r.total)}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">Buyer {String(r.buyer_id).slice(0, 8)} · order {r.status} · escrow {r.escrow_status}</p>
+                  <p className="text-[10px] text-muted-foreground">{new Date(r.created_at).toLocaleString()}</p>
+                </div>
+                <StatusBadge status={r.refund_status} />
+              </div>
+              {r.refund_reason && <p className="text-[11px] text-muted-foreground mt-2 whitespace-pre-line">Reason: {r.refund_reason}</p>}
+              {r.refund_admin_note && <p className="text-[11px] text-muted-foreground mt-1">Note: {r.refund_admin_note}</p>}
+              {r.refund_status === "requested" && (
+                <>
+                  <Field label="Admin note (optional)">
+                    <input
+                      value={note[r.id] ?? ""}
+                      onChange={(e) => setNote((n) => ({ ...n, [r.id]: e.target.value }))}
+                      className="w-full h-9 rounded-xl border bg-background px-3 text-xs"
+                      placeholder="Visible to the buyer"
+                    />
+                  </Field>
+                  <div className="flex justify-end gap-2 mt-2">
+                    <Button size="sm" variant="outline" className="h-8" onClick={() => resolve(r.id, false)}>
+                      <X className="w-3.5 h-3.5 mr-1" /> Decline
+                    </Button>
+                    <Button size="sm" className="h-8" onClick={() => resolve(r.id, true)}>
+                      <Check className="w-3.5 h-3.5 mr-1" /> Refund buyer
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 
 // ----------------------------- Reviews --------------------------------------
 
