@@ -174,18 +174,14 @@ export default function Cart() {
 
   // Compute shipping fee per supplier from picked option using courier rate quote.
   const shippingBySupplier = useMemo(() => {
-    const map: Record<string, { fee: number; label: string; courierUserId: string | null }> = {};
+    const map: Record<string, { fee: number; label: string; courierUserId: string | null; negotiated: boolean }> = {};
     for (const [sid, group] of supplierGroups) {
       const opts = deliveryOptionsBySupplier[sid] ?? [];
       const pickId = deliveryPicks[sid] ?? opts[0]?.id;
       const opt = opts.find((o) => o.id === pickId) ?? opts[0];
       const subtotalAfterDiscount = Math.max(0, group.subtotal - (coupons.find((c) => c.supplierId === sid)?.discount ?? 0));
-      let fee: number;
-      if (!opt) {
-        fee = subtotalAfterDiscount > 25 || subtotalAfterDiscount === 0 ? 0 : 4.99;
-      } else if (!opt.courier) {
-        fee = subtotalAfterDiscount > 25 || subtotalAfterDiscount === 0 ? 0 : 4.99;
-      } else {
+      let fee = 0;
+      if (opt?.courier) {
         // Default to a nominal 5km / 1kg estimate when no geo/weight data is available.
         const totalWeight = group.items.reduce((s, it) => s + it.qty, 0);
         const quote = quoteCourierRate(courierToRate(opt.courier), {
@@ -195,10 +191,16 @@ export default function Cart() {
         });
         fee = quote.amount;
       }
-      map[sid] = { fee, label: opt?.label ?? "Standard shipping", courierUserId: opt?.courierUserId ?? null };
+      map[sid] = {
+        fee,
+        label: opt?.label ?? "To be negotiated with supplier",
+        courierUserId: opt?.courierUserId ?? null,
+        negotiated: !opt?.courier,
+      };
     }
     return map;
   }, [supplierGroups, deliveryPicks, deliveryOptionsBySupplier, coupons]);
+
 
   const totalDiscount = coupons.reduce((s, c) => s + c.discount, 0);
   const discountedSubtotal = Math.max(0, cartTotal - totalDiscount);
