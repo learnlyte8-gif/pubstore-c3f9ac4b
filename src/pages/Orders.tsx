@@ -469,7 +469,8 @@ function BuyerProtectionCard({ order, onUpdated }: { order: Order; onUpdated: (o
   const [refundOpen, setRefundOpen] = useState(false);
 
   const supplierMarked = !!order.supplier_marked_delivered_at;
-  const buyerConfirmed = !!order.buyer_confirmed_delivered_at || order.status === "delivered";
+  // Only the buyer's own confirmation counts — a seller marking delivered must never tick this row.
+  const buyerConfirmed = !!order.buyer_confirmed_delivered_at;
   const refundStatus = order.refund_status ?? "none";
   const cancelled = order.status === "cancelled";
   const refundPending = refundStatus === "requested";
