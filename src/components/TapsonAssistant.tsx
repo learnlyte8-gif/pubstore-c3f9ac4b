@@ -16,6 +16,7 @@ import {
   type Supplier,
 } from "@/data/products";
 import { useShop } from "@/store/shop";
+import { aiFunctionHeaders } from "@/lib/aiAuth";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -154,10 +155,7 @@ export default function TapsonAssistant() {
       const context = await buildLiveContext().catch(() => "");
       const resp = await fetch(CHAT_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
+        headers: await aiFunctionHeaders(),
         body: JSON.stringify({ messages: next, context }),
         signal: controller.signal,
       });

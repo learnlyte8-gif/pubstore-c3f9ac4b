@@ -11,6 +11,7 @@ import { suggestCompletions, tokenize } from "@/lib/search";
 import { useUniversalPool, searchUniversal, type UniversalHit } from "@/hooks/useUniversalSearch";
 import { toast } from "sonner";
 import BackButton from "@/components/BackButton";
+import { aiFunctionHeaders } from "@/lib/aiAuth";
 
 const SORTS = [
   { id: "relevance", label: "Relevance" },
@@ -117,7 +118,7 @@ export default function SearchPage() {
     try {
       const resp = await fetch(TAPSON_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: await aiFunctionHeaders(),
         signal: ctrl.signal,
         body: JSON.stringify({ messages: [{ role: "user", content: `A buyer searched: "${q}". In 2-3 short sentences, suggest what to look for and key specs to compare.` }] }),
       });
@@ -174,10 +175,7 @@ export default function SearchPage() {
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-search`;
       const res = await fetch(url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
+        headers: await aiFunctionHeaders(),
         body: JSON.stringify({ image: dataUrl }),
       });
       const j = await res.json();
