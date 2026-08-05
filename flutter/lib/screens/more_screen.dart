@@ -190,6 +190,11 @@ class MoreScreen extends StatelessWidget {
               onTap: () => Navigator.of(context).push(MaterialPageRoute(
                   builder: (_) => const AdminScreen()))),
           _QuickRow(
+              icon: LucideIcons.fileText,
+              label: 'Terms of service',
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const TermsScreen()))),
+          _QuickRow(
               icon: LucideIcons.settings,
               label: 'Settings',
               onTap: () => Navigator.of(context).push(MaterialPageRoute(
