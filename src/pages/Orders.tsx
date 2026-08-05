@@ -244,7 +244,9 @@ function OrderDetail({
   };
 
   const isDelivered = order.status === "delivered";
-  const canCancel = order.status === "placed" || order.status === "awaiting_payment";
+  const canCancel =
+    (order.status === "placed" || order.status === "awaiting_payment") &&
+    (order.refund_status ?? "none") !== "requested";
 
   return (
     <div className="pb-8">
@@ -522,6 +524,12 @@ function BuyerProtectionCard({ order, onUpdated }: { order: Order; onUpdated: (o
         </div>
       )}
 
+      {cancelled && (
+        <p className="text-[11px] mt-3 px-2 py-1.5 rounded-md bg-muted text-muted-foreground">
+          This order was cancelled, so delivery confirmation and refund requests are closed. Any payment held was
+          returned to your wallet automatically.
+        </p>
+      )}
       {!supplierMarked && !buyerConfirmed && !cancelled && (
         <p className="text-[10px] text-muted-foreground mt-1.5 text-center">
           You can confirm delivery once the seller marks the order as delivered.

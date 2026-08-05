@@ -1588,7 +1588,9 @@ function OrdersView() {
         const next = idx >= 0 && idx < 2 ? ORDER_STATUSES[idx + 1] : null;
         const supplierMarked = !!o.supplier_marked_delivered_at;
         const refundPending = o.refund_status === "requested";
-        const done = o.status === "delivered" || o.status === "cancelled";
+        const cancelled = o.status === "cancelled";
+        const refunded = o.refund_status === "refunded";
+        const done = o.status === "delivered" || cancelled || refunded;
         return (
           <div key={o.id} className="bg-card border rounded-2xl shadow-card p-4">
             <div className="flex items-center justify-between gap-2">
@@ -1613,8 +1615,15 @@ function OrdersView() {
                 Buyer requested a refund{o.refund_reason ? `: ${o.refund_reason}` : ""}. Only support admins can approve or decline it.
               </p>
             )}
-            {supplierMarked && o.status !== "delivered" && (
+            {supplierMarked && !done && (
               <p className="text-[11px] mt-2 text-muted-foreground">Waiting for the buyer to confirm delivery.</p>
+            )}
+            {(cancelled || refunded) && (
+              <p className="text-[11px] mt-2 px-2 py-1 rounded-md bg-muted text-muted-foreground">
+                {refunded && !cancelled
+                  ? "This order was refunded to the buyer. No further actions are available."
+                  : "This order was cancelled and settled automatically. No further actions are available."}
+              </p>
             )}
             <div className="flex gap-2 mt-3">
               {next && !refundPending && (
