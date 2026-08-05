@@ -617,9 +617,9 @@ export default function Cart() {
                           <span className="flex items-center gap-1.5">
                             <span className="text-xs font-bold truncate">{opt.label}</span>
                             {opt.isSelf && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground">SELF</span>}
-                            {opt.isDefault && !opt.isSelf && <BadgeCheck className="w-3 h-3 text-primary" />}
+                            {opt.isDefault && !opt.isSelf && !opt.negotiated && <BadgeCheck className="w-3 h-3 text-primary" />}
                           </span>
-                          <span className="block text-[10px] text-muted-foreground truncate">{opt.sub}</span>
+                          <span className="block text-[10px] text-muted-foreground line-clamp-2">{opt.sub}</span>
                         </span>
                       </button>
                     );
