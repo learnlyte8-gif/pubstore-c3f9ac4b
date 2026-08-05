@@ -11,6 +11,7 @@ import { suggestCompletions, tokenize } from "@/lib/search";
 import { useUniversalPool, searchUniversal, type UniversalHit } from "@/hooks/useUniversalSearch";
 import { toast } from "sonner";
 import BackButton from "@/components/BackButton";
+import { aiFunctionHeaders } from "@/lib/aiAuth";
 
 const SORTS = [
   { id: "relevance", label: "Relevance" },
