@@ -27,7 +27,7 @@ export default function WithdrawDialog({
   personalBalance: number;
   salesBalance: number;
   defaultAccount?: Account;
-  onSubmitted?: () => void;
+  onSubmitted?: (held?: { amount: number; account: Account }) => void;
 }) {
   const [account, setAccount] = useState<Account>(defaultAccount);
   const [method, setMethod] = useState<Method>("ecocash");
