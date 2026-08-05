@@ -804,6 +804,14 @@ class _OrdersViewState extends State<_OrdersView> {
     } catch (e) { if (mounted) _toast(context, '$e', err: true); }
   }
 
+  Future<void> _markDelivered(Map<String, dynamic> o) async {
+    try {
+      await supabase.rpc('supplier_mark_order_delivered', params: {'_order_id': o['id']});
+      if (mounted) _toast(context, 'Marked delivered — buyer must confirm to release payment');
+      await _load();
+    } catch (e) { if (mounted) _toast(context, '$e', err: true); }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) return Skeletons.list(count: 4);
@@ -817,7 +825,10 @@ class _OrdersViewState extends State<_OrdersView> {
         itemBuilder: (context, i) {
           final o = _orders[i];
           final idx = _kStatuses.indexOf(o['status'] ?? '');
-          final next = idx >= 0 && idx < 3 ? _kStatuses[idx + 1] : null;
+          // Delivery goes through the escrow RPC, never a plain status bump.
+          final next = idx >= 0 && idx < 2 ? _kStatuses[idx + 1] : null;
+          final supplierMarked = o['supplier_marked_delivered_at'] != null;
+          final done = o['status'] == 'delivered' || o['status'] == 'cancelled' || o['refund_status'] == 'refunded';
           final items = (o['order_items'] as List?) ?? const [];
           return Container(
             padding: const EdgeInsets.all(14),
@@ -840,13 +851,21 @@ class _OrdersViewState extends State<_OrdersView> {
               ),
               const SizedBox(height: 10),
               Row(children: [
-                if (next != null) Expanded(child: FilledButton(
+                if (next != null && !done) Expanded(child: FilledButton(
                   onPressed: () => _updateStatus(o, next),
                   style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(36)),
                   child: Text('Mark $next'),
                 )),
-                if (o['status'] != 'cancelled' && o['status'] != 'delivered') ...[
+                if (!done && !supplierMarked) ...[
                   if (next != null) const SizedBox(width: 8),
+                  Expanded(child: FilledButton(
+                    onPressed: () => _markDelivered(o),
+                    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(36)),
+                    child: const Text('Mark delivered'),
+                  )),
+                ],
+                if (!done) ...[
+                  const SizedBox(width: 8),
                   OutlinedButton(
                     onPressed: () => _updateStatus(o, 'cancelled'),
                     style: OutlinedButton.styleFrom(minimumSize: const Size(0, 36)),
@@ -854,6 +873,10 @@ class _OrdersViewState extends State<_OrdersView> {
                   ),
                 ],
               ]),
+              if (supplierMarked && !done) const Padding(
+                padding: EdgeInsets.only(top: 6),
+                child: Text('Waiting for the buyer to confirm delivery.', style: TextStyle(fontSize: 11, color: AppColors.muted)),
+              ),
             ]),
           );
         },
