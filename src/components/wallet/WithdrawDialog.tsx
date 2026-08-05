@@ -66,7 +66,8 @@ export default function WithdrawDialog({
       if (error) throw error;
       toast.success(`Withdrawal of $${numAmount.toFixed(2)} from ${account} requested`);
       onOpenChange(false);
-      onSubmitted?.();
+      onSubmitted?.({ amount: numAmount, account });
+
     } catch (e: any) {
       toast.error(e?.message ?? "Could not submit withdrawal");
     } finally {
