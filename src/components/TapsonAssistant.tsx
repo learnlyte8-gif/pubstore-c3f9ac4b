@@ -16,6 +16,7 @@ import {
   type Supplier,
 } from "@/data/products";
 import { useShop } from "@/store/shop";
+import { aiFunctionHeaders } from "@/lib/aiAuth";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
