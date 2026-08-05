@@ -20,6 +20,7 @@ import 'my_store_screen.dart';
 import 'news_screen.dart';
 import 'notifications_screen.dart';
 import 'orders_screen.dart';
+import 'privacy_screen.dart';
 import 'properties_screen.dart';
 import 'restaurants_screen.dart';
 import 'rfq_screen.dart';
@@ -28,6 +29,7 @@ import 'search_screen.dart';
 import 'services_screen.dart';
 import 'settings_screen.dart';
 import 'stays_screen.dart';
+import 'terms_screen.dart';
 import 'wallet_screen.dart';
 import 'wishlist_screen.dart';
 
@@ -189,6 +191,16 @@ class MoreScreen extends StatelessWidget {
               label: 'Admin console',
               onTap: () => Navigator.of(context).push(MaterialPageRoute(
                   builder: (_) => const AdminScreen()))),
+          _QuickRow(
+              icon: LucideIcons.fileText,
+              label: 'Terms of service',
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const TermsScreen()))),
+          _QuickRow(
+              icon: LucideIcons.shieldCheck,
+              label: 'Privacy policy',
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const PrivacyScreen()))),
           _QuickRow(
               icon: LucideIcons.settings,
               label: 'Settings',

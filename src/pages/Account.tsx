@@ -273,7 +273,12 @@ export default function Account() {
           <LogOut className="w-4 h-4 mr-2" /> Sign out
         </Button>
 
-        <p className="text-center text-[11px] text-muted-foreground pt-2">PUBSTORE · v1.0</p>
+        <p className="text-center text-[11px] text-muted-foreground pt-2">
+          <Link to="/terms" className="underline hover:text-primary">Terms of Service</Link>
+          {" · "}
+          <Link to="/privacy-policy" className="underline hover:text-primary">Privacy Policy</Link>
+          {" · PUBSTORE v1.0"}
+        </p>
       </div>
     </div>
   );

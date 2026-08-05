@@ -35,6 +35,8 @@ import PaymentMethods from "./pages/PaymentMethods.tsx";
 import BecomeSupplier from "./pages/BecomeSupplier.tsx";
 import HelpCenter from "./pages/HelpCenter.tsx";
 import Privacy from "./pages/Privacy.tsx";
+import PrivacyPolicy from "./pages/PrivacyPolicy.tsx";
+import Terms from "./pages/Terms.tsx";
 import Settings from "./pages/Settings.tsx";
 import NotificationPreferences from "./pages/NotificationPreferences.tsx";
 import Placeholder from "./pages/Placeholder.tsx";
@@ -155,9 +157,11 @@ const App = () => (
                 <Route path="/addresses" element={<Addresses />} />
                 <Route path="/payment-methods" element={<PaymentMethods />} />
                 <Route path="/become-supplier" element={<BecomeSupplier />} />
-                <Route path="/help" element={<HelpCenter />} />
-                <Route path="/privacy" element={<Privacy />} />
-                <Route path="/settings" element={<Settings />} />
+              <Route path="/help" element={<HelpCenter />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/settings" element={<Settings />} />
                 <Route path="/settings/notifications" element={<NotificationPreferences />} />
                 <Route path="/wallet" element={<Wallet />} />
                 <Route path="/ai-credits" element={<AiCredits />} />

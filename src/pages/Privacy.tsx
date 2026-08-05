@@ -48,7 +48,12 @@ export default function Privacy() {
 
         <div className="bg-muted rounded-2xl p-4 flex gap-3">
           <AlertTriangle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-          <p className="text-xs text-muted-foreground leading-relaxed">Pubstore complies with GDPR & CCPA. Read our <span className="text-primary font-bold">Privacy Policy</span> and <span className="text-primary font-bold">Terms of Service</span>.</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            PUBSTORE is designed to support privacy rights around the world. Read our{" "}
+            <Link to="/privacy-policy" className="text-primary font-bold">Privacy Policy</Link>{" "}
+            and{" "}
+            <Link to="/terms" className="text-primary font-bold">Terms of Service</Link>.
+          </p>
         </div>
       </div>
     </div>
