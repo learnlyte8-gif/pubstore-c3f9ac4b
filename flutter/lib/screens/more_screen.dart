@@ -20,6 +20,7 @@ import 'my_store_screen.dart';
 import 'news_screen.dart';
 import 'notifications_screen.dart';
 import 'orders_screen.dart';
+import 'privacy_screen.dart';
 import 'properties_screen.dart';
 import 'restaurants_screen.dart';
 import 'rfq_screen.dart';
