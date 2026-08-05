@@ -140,13 +140,14 @@ export default function Cart() {
         }
         if (opts.length === 0) {
           opts.push({
-            id: `flat-${s.id}`,
+            id: `negotiate-${s.id}`,
             supplierId: s.id,
             courierUserId: null,
-            label: "Standard shipping",
-            sub: "Flat $4.99 · free over $25",
+            label: "To be negotiated with supplier",
+            sub: "This supplier has no delivery partners — arrange delivery and its cost directly in chat",
             courier: null,
             isDefault: true,
+            negotiated: true,
           });
         }
         result[s.id] = opts;
