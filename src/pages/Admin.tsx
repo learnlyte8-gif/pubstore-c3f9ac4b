@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, ShieldCheck, Banknote, CreditCard, MessageSquare, Star, Settings as SettingsIcon, Check, X, RefreshCw, Save } from "lucide-react";
+import { ArrowLeft, ShieldCheck, Banknote, CreditCard, MessageSquare, Star, Settings as SettingsIcon, Check, X, RefreshCw, Save, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
