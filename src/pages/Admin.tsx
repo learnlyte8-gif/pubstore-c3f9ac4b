@@ -29,6 +29,7 @@ export default function Admin() {
   const tabs: { id: Tab; label: string; icon: any }[] = [
     { id: "topups", label: "Top-ups", icon: CreditCard },
     { id: "withdrawals", label: "Withdrawals", icon: Banknote },
+    { id: "refunds", label: "Refunds", icon: RotateCcw },
     { id: "assurance", label: "Trade Assurance", icon: ShieldCheck },
     { id: "reviews", label: "Reviews", icon: Star },
     { id: "settings", label: "Settings", icon: SettingsIcon },
