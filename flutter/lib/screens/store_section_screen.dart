@@ -851,13 +851,21 @@ class _OrdersViewState extends State<_OrdersView> {
               ),
               const SizedBox(height: 10),
               Row(children: [
-                if (next != null) Expanded(child: FilledButton(
+                if (next != null && !done) Expanded(child: FilledButton(
                   onPressed: () => _updateStatus(o, next),
                   style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(36)),
                   child: Text('Mark $next'),
                 )),
-                if (o['status'] != 'cancelled' && o['status'] != 'delivered') ...[
+                if (!done && !supplierMarked) ...[
                   if (next != null) const SizedBox(width: 8),
+                  Expanded(child: FilledButton(
+                    onPressed: () => _markDelivered(o),
+                    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(36)),
+                    child: const Text('Mark delivered'),
+                  )),
+                ],
+                if (!done) ...[
+                  const SizedBox(width: 8),
                   OutlinedButton(
                     onPressed: () => _updateStatus(o, 'cancelled'),
                     style: OutlinedButton.styleFrom(minimumSize: const Size(0, 36)),
@@ -865,6 +873,10 @@ class _OrdersViewState extends State<_OrdersView> {
                   ),
                 ],
               ]),
+              if (supplierMarked && !done) const Padding(
+                padding: EdgeInsets.only(top: 6),
+                child: Text('Waiting for the buyer to confirm delivery.', style: TextStyle(fontSize: 11, color: AppColors.muted)),
+              ),
             ]),
           );
         },
