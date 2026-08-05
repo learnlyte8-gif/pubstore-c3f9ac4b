@@ -20,5 +20,7 @@
   <url><loc>https://pubstore.app/live</loc><changefreq>hourly</changefreq><priority>0.7</priority></url>
   <url><loc>https://pubstore.app/help</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>
   <url><loc>https://pubstore.app/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://pubstore.app/privacy-policy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://pubstore.app/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
   <url><loc>https://pubstore.app/become-supplier</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
 </urlset>

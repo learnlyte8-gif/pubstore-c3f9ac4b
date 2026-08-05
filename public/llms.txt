@@ -25,7 +25,9 @@ PUBSTORE blends a B2B/B2C marketplace with social discovery. Buyers browse curat
 - [Live](/live): Live shopping streams from suppliers.
 - [RFQ](/rfq): Request a quote from suppliers.
 - [Help center](/help): Support articles and FAQs.
-- [Privacy](/privacy): Privacy policy.
+- [Privacy settings](/privacy): App privacy and security settings.
+- [Privacy policy](/privacy-policy): Detailed privacy policy.
+- [Terms of service](/terms): Detailed terms of service.
 
 ## Optional
 
