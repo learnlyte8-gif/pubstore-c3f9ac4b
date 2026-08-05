@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 const sb = supabase as any;
 const fmt = (n: number) => `$${Number(n).toFixed(2)}`;
 
-type Tab = "topups" | "withdrawals" | "assurance" | "reviews" | "settings";
+type Tab = "topups" | "withdrawals" | "refunds" | "assurance" | "reviews" | "settings";
 
 export default function Admin() {
   const { isAdmin, ready } = useIsAdmin();
