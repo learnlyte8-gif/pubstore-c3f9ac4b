@@ -42,6 +42,8 @@ type DeliveryOption = {
   courier: any;
   isDefault: boolean;
   isSelf?: boolean;
+  /** No courier available — buyer arranges delivery directly with the supplier. */
+  negotiated?: boolean;
 };
 
 const sb = supabase as any;
@@ -138,13 +140,14 @@ export default function Cart() {
         }
         if (opts.length === 0) {
           opts.push({
-            id: `flat-${s.id}`,
+            id: `negotiate-${s.id}`,
             supplierId: s.id,
             courierUserId: null,
-            label: "Standard shipping",
-            sub: "Flat $4.99 · free over $25",
+            label: "To be negotiated with supplier",
+            sub: "This supplier has no delivery partners — arrange delivery and its cost directly in chat",
             courier: null,
             isDefault: true,
+            negotiated: true,
           });
         }
         result[s.id] = opts;
@@ -171,18 +174,14 @@ export default function Cart() {
 
   // Compute shipping fee per supplier from picked option using courier rate quote.
   const shippingBySupplier = useMemo(() => {
-    const map: Record<string, { fee: number; label: string; courierUserId: string | null }> = {};
+    const map: Record<string, { fee: number; label: string; courierUserId: string | null; negotiated: boolean }> = {};
     for (const [sid, group] of supplierGroups) {
       const opts = deliveryOptionsBySupplier[sid] ?? [];
       const pickId = deliveryPicks[sid] ?? opts[0]?.id;
       const opt = opts.find((o) => o.id === pickId) ?? opts[0];
       const subtotalAfterDiscount = Math.max(0, group.subtotal - (coupons.find((c) => c.supplierId === sid)?.discount ?? 0));
-      let fee: number;
-      if (!opt) {
-        fee = subtotalAfterDiscount > 25 || subtotalAfterDiscount === 0 ? 0 : 4.99;
-      } else if (!opt.courier) {
-        fee = subtotalAfterDiscount > 25 || subtotalAfterDiscount === 0 ? 0 : 4.99;
-      } else {
+      let fee = 0;
+      if (opt?.courier) {
         // Default to a nominal 5km / 1kg estimate when no geo/weight data is available.
         const totalWeight = group.items.reduce((s, it) => s + it.qty, 0);
         const quote = quoteCourierRate(courierToRate(opt.courier), {
@@ -192,10 +191,16 @@ export default function Cart() {
         });
         fee = quote.amount;
       }
-      map[sid] = { fee, label: opt?.label ?? "Standard shipping", courierUserId: opt?.courierUserId ?? null };
+      map[sid] = {
+        fee,
+        label: opt?.label ?? "To be negotiated with supplier",
+        courierUserId: opt?.courierUserId ?? null,
+        negotiated: !opt?.courier,
+      };
     }
     return map;
   }, [supplierGroups, deliveryPicks, deliveryOptionsBySupplier, coupons]);
+
 
   const totalDiscount = coupons.reduce((s, c) => s + c.discount, 0);
   const discountedSubtotal = Math.max(0, cartTotal - totalDiscount);
@@ -313,7 +318,7 @@ export default function Cart() {
       const discount = coupon?.discount ?? 0;
       const afterDiscount = Math.max(0, subtotal - discount);
       const shipInfo = shippingBySupplier[supplierId];
-      const ship = shipInfo?.fee ?? (afterDiscount > 25 ? 0 : 4.99);
+      const ship = shipInfo?.fee ?? 0;
       const orderTotal = afterDiscount + ship;
 
       const { data: order, error: orderErr } = await supabase
@@ -583,12 +588,15 @@ export default function Cart() {
             const opts = deliveryOptionsBySupplier[sid] ?? [];
             const group = supplierGroups.get(sid);
             const supplierName = group?.items[0]?.product.supplierName ?? "Supplier";
-            const fee = shippingBySupplier[sid]?.fee ?? 0;
+            const ship = shippingBySupplier[sid];
+            const fee = ship?.fee ?? 0;
             return (
               <div key={sid} className="rounded-xl border p-2.5">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-2 gap-2">
                   <p className="text-[11px] font-bold text-muted-foreground truncate">{supplierName}</p>
-                  <p className="text-[11px] font-bold text-destructive">{fee === 0 ? "FREE" : fmt(fee)}</p>
+                  <p className="text-[11px] font-bold text-destructive shrink-0">
+                    {ship?.negotiated ? "TO BE NEGOTIATED" : fee === 0 ? "FREE" : fmt(fee)}
+                  </p>
                 </div>
                 <div className="space-y-1.5">
                   {opts.map((opt) => {
@@ -609,9 +617,9 @@ export default function Cart() {
                           <span className="flex items-center gap-1.5">
                             <span className="text-xs font-bold truncate">{opt.label}</span>
                             {opt.isSelf && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground">SELF</span>}
-                            {opt.isDefault && !opt.isSelf && <BadgeCheck className="w-3 h-3 text-primary" />}
+                            {opt.isDefault && !opt.isSelf && !opt.negotiated && <BadgeCheck className="w-3 h-3 text-primary" />}
                           </span>
-                          <span className="block text-[10px] text-muted-foreground truncate">{opt.sub}</span>
+                          <span className="block text-[10px] text-muted-foreground line-clamp-2">{opt.sub}</span>
                         </span>
                       </button>
                     );
@@ -699,7 +707,11 @@ export default function Cart() {
           <div className="flex-1">
             <p className="text-[11px] text-muted-foreground">
               {totalDiscount > 0 ? `Saved ${fmt(totalDiscount)} · ` : ""}
-              {shipping === 0 ? "Free shipping" : `+ ${fmt(shipping)} ship`}
+              {Object.values(shippingBySupplier).some((s) => s.negotiated)
+                ? "Delivery negotiated with supplier"
+                : shipping === 0
+                ? "Free delivery"
+                : `+ ${fmt(shipping)} delivery`}
             </p>
             <p className="text-lg font-bold text-destructive leading-tight">{fmt(total)}</p>
           </div>
