@@ -117,7 +117,7 @@ export default function SearchPage() {
     try {
       const resp = await fetch(TAPSON_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: await aiFunctionHeaders(),
         signal: ctrl.signal,
         body: JSON.stringify({ messages: [{ role: "user", content: `A buyer searched: "${q}". In 2-3 short sentences, suggest what to look for and key specs to compare.` }] }),
       });
