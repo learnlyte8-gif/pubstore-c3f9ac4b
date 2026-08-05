@@ -825,7 +825,10 @@ class _OrdersViewState extends State<_OrdersView> {
         itemBuilder: (context, i) {
           final o = _orders[i];
           final idx = _kStatuses.indexOf(o['status'] ?? '');
-          final next = idx >= 0 && idx < 3 ? _kStatuses[idx + 1] : null;
+          // Delivery goes through the escrow RPC, never a plain status bump.
+          final next = idx >= 0 && idx < 2 ? _kStatuses[idx + 1] : null;
+          final supplierMarked = o['supplier_marked_delivered_at'] != null;
+          final done = o['status'] == 'delivered' || o['status'] == 'cancelled' || o['refund_status'] == 'refunded';
           final items = (o['order_items'] as List?) ?? const [];
           return Container(
             padding: const EdgeInsets.all(14),
