@@ -42,6 +42,8 @@ type DeliveryOption = {
   courier: any;
   isDefault: boolean;
   isSelf?: boolean;
+  /** No courier available — buyer arranges delivery directly with the supplier. */
+  negotiated?: boolean;
 };
 
 const sb = supabase as any;
