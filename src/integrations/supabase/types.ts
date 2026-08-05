@@ -3500,6 +3500,7 @@ export type Database = {
       orders: {
         Row: {
           address_id: string | null
+          buyer_confirmed_delivered_at: string | null
           buyer_id: string
           coupon_code: string | null
           created_at: string
@@ -3521,17 +3522,24 @@ export type Database = {
           payment_reference: string | null
           payment_status: string
           ref_code: string | null
+          refund_admin_note: string | null
+          refund_reason: string | null
+          refund_requested_at: string | null
+          refund_resolved_at: string | null
+          refund_status: string
           ship_to: string | null
           shipping: number
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number
           supplier_id: string
+          supplier_marked_delivered_at: string | null
           total: number
           tracking: string | null
           updated_at: string
         }
         Insert: {
           address_id?: string | null
+          buyer_confirmed_delivered_at?: string | null
           buyer_id: string
           coupon_code?: string | null
           created_at?: string
@@ -3553,17 +3561,24 @@ export type Database = {
           payment_reference?: string | null
           payment_status?: string
           ref_code?: string | null
+          refund_admin_note?: string | null
+          refund_reason?: string | null
+          refund_requested_at?: string | null
+          refund_resolved_at?: string | null
+          refund_status?: string
           ship_to?: string | null
           shipping?: number
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
           supplier_id: string
+          supplier_marked_delivered_at?: string | null
           total?: number
           tracking?: string | null
           updated_at?: string
         }
         Update: {
           address_id?: string | null
+          buyer_confirmed_delivered_at?: string | null
           buyer_id?: string
           coupon_code?: string | null
           created_at?: string
@@ -3585,11 +3600,17 @@ export type Database = {
           payment_reference?: string | null
           payment_status?: string
           ref_code?: string | null
+          refund_admin_note?: string | null
+          refund_reason?: string | null
+          refund_requested_at?: string | null
+          refund_resolved_at?: string | null
+          refund_status?: string
           ship_to?: string | null
           shipping?: number
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
           supplier_id?: string
+          supplier_marked_delivered_at?: string | null
           total?: number
           tracking?: string | null
           updated_at?: string
@@ -6469,6 +6490,54 @@ export type Database = {
         Returns: undefined
       }
       _send_product_suggestions: { Args: never; Returns: undefined }
+      _settle_order_escrow: {
+        Args: { _order_id: string }
+        Returns: {
+          address_id: string | null
+          buyer_confirmed_delivered_at: string | null
+          buyer_id: string
+          coupon_code: string | null
+          created_at: string
+          delivery_code: string | null
+          delivery_courier_user_id: string | null
+          delivery_option_label: string | null
+          discount: number
+          dispute_opened_at: string | null
+          dispute_reason: string | null
+          escrow_amount: number
+          escrow_released_at: string | null
+          escrow_status: string
+          eta: string | null
+          id: string
+          manual_payment_note: string | null
+          manual_payment_reference: string | null
+          manual_payment_submitted_at: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          payment_status: string
+          ref_code: string | null
+          refund_admin_note: string | null
+          refund_reason: string | null
+          refund_requested_at: string | null
+          refund_resolved_at: string | null
+          refund_status: string
+          ship_to: string | null
+          shipping: number
+          status: Database["public"]["Enums"]["order_status"]
+          subtotal: number
+          supplier_id: string
+          supplier_marked_delivered_at: string | null
+          total: number
+          tracking: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       ai_buy_credit_pack: { Args: { _pack_code: string }; Returns: Json }
       ai_consume_credits: {
         Args: {
@@ -6575,6 +6644,102 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "withdrawal_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      buyer_confirm_order_delivered: {
+        Args: { _order_id: string }
+        Returns: {
+          address_id: string | null
+          buyer_confirmed_delivered_at: string | null
+          buyer_id: string
+          coupon_code: string | null
+          created_at: string
+          delivery_code: string | null
+          delivery_courier_user_id: string | null
+          delivery_option_label: string | null
+          discount: number
+          dispute_opened_at: string | null
+          dispute_reason: string | null
+          escrow_amount: number
+          escrow_released_at: string | null
+          escrow_status: string
+          eta: string | null
+          id: string
+          manual_payment_note: string | null
+          manual_payment_reference: string | null
+          manual_payment_submitted_at: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          payment_status: string
+          ref_code: string | null
+          refund_admin_note: string | null
+          refund_reason: string | null
+          refund_requested_at: string | null
+          refund_resolved_at: string | null
+          refund_status: string
+          ship_to: string | null
+          shipping: number
+          status: Database["public"]["Enums"]["order_status"]
+          subtotal: number
+          supplier_id: string
+          supplier_marked_delivered_at: string | null
+          total: number
+          tracking: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      cancel_order_by_buyer: {
+        Args: { _order_id: string }
+        Returns: {
+          address_id: string | null
+          buyer_confirmed_delivered_at: string | null
+          buyer_id: string
+          coupon_code: string | null
+          created_at: string
+          delivery_code: string | null
+          delivery_courier_user_id: string | null
+          delivery_option_label: string | null
+          discount: number
+          dispute_opened_at: string | null
+          dispute_reason: string | null
+          escrow_amount: number
+          escrow_released_at: string | null
+          escrow_status: string
+          eta: string | null
+          id: string
+          manual_payment_note: string | null
+          manual_payment_reference: string | null
+          manual_payment_submitted_at: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          payment_status: string
+          ref_code: string | null
+          refund_admin_note: string | null
+          refund_reason: string | null
+          refund_requested_at: string | null
+          refund_resolved_at: string | null
+          refund_status: string
+          ship_to: string | null
+          shipping: number
+          status: Database["public"]["Enums"]["order_status"]
+          subtotal: number
+          supplier_id: string
+          supplier_marked_delivered_at: string | null
+          total: number
+          tracking: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "orders"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -6756,6 +6921,7 @@ export type Database = {
         Args: { _order_id: string; _reason: string }
         Returns: {
           address_id: string | null
+          buyer_confirmed_delivered_at: string | null
           buyer_id: string
           coupon_code: string | null
           created_at: string
@@ -6777,11 +6943,17 @@ export type Database = {
           payment_reference: string | null
           payment_status: string
           ref_code: string | null
+          refund_admin_note: string | null
+          refund_reason: string | null
+          refund_requested_at: string | null
+          refund_resolved_at: string | null
+          refund_status: string
           ship_to: string | null
           shipping: number
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number
           supplier_id: string
+          supplier_marked_delivered_at: string | null
           total: number
           tracking: string | null
           updated_at: string
@@ -6874,6 +7046,7 @@ export type Database = {
         Args: { _group_id: string }
         Returns: {
           address_id: string | null
+          buyer_confirmed_delivered_at: string | null
           buyer_id: string
           coupon_code: string | null
           created_at: string
@@ -6895,11 +7068,17 @@ export type Database = {
           payment_reference: string | null
           payment_status: string
           ref_code: string | null
+          refund_admin_note: string | null
+          refund_reason: string | null
+          refund_requested_at: string | null
+          refund_resolved_at: string | null
+          refund_status: string
           ship_to: string | null
           shipping: number
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number
           supplier_id: string
+          supplier_marked_delivered_at: string | null
           total: number
           tracking: string | null
           updated_at: string
@@ -6929,6 +7108,7 @@ export type Database = {
         Args: { _order_id: string }
         Returns: {
           address_id: string | null
+          buyer_confirmed_delivered_at: string | null
           buyer_id: string
           coupon_code: string | null
           created_at: string
@@ -6950,11 +7130,65 @@ export type Database = {
           payment_reference: string | null
           payment_status: string
           ref_code: string | null
+          refund_admin_note: string | null
+          refund_reason: string | null
+          refund_requested_at: string | null
+          refund_resolved_at: string | null
+          refund_status: string
           ship_to: string | null
           shipping: number
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number
           supplier_id: string
+          supplier_marked_delivered_at: string | null
+          total: number
+          tracking: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      request_order_refund: {
+        Args: { _order_id: string; _reason: string }
+        Returns: {
+          address_id: string | null
+          buyer_confirmed_delivered_at: string | null
+          buyer_id: string
+          coupon_code: string | null
+          created_at: string
+          delivery_code: string | null
+          delivery_courier_user_id: string | null
+          delivery_option_label: string | null
+          discount: number
+          dispute_opened_at: string | null
+          dispute_reason: string | null
+          escrow_amount: number
+          escrow_released_at: string | null
+          escrow_status: string
+          eta: string | null
+          id: string
+          manual_payment_note: string | null
+          manual_payment_reference: string | null
+          manual_payment_submitted_at: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          payment_status: string
+          ref_code: string | null
+          refund_admin_note: string | null
+          refund_reason: string | null
+          refund_requested_at: string | null
+          refund_resolved_at: string | null
+          refund_status: string
+          ship_to: string | null
+          shipping: number
+          status: Database["public"]["Enums"]["order_status"]
+          subtotal: number
+          supplier_id: string
+          supplier_marked_delivered_at: string | null
           total: number
           tracking: string | null
           updated_at: string
@@ -7037,6 +7271,54 @@ export type Database = {
       resolve_master_supplier: {
         Args: { _supplier_id: string }
         Returns: string
+      }
+      resolve_order_refund: {
+        Args: { _approve: boolean; _note?: string; _order_id: string }
+        Returns: {
+          address_id: string | null
+          buyer_confirmed_delivered_at: string | null
+          buyer_id: string
+          coupon_code: string | null
+          created_at: string
+          delivery_code: string | null
+          delivery_courier_user_id: string | null
+          delivery_option_label: string | null
+          discount: number
+          dispute_opened_at: string | null
+          dispute_reason: string | null
+          escrow_amount: number
+          escrow_released_at: string | null
+          escrow_status: string
+          eta: string | null
+          id: string
+          manual_payment_note: string | null
+          manual_payment_reference: string | null
+          manual_payment_submitted_at: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          payment_status: string
+          ref_code: string | null
+          refund_admin_note: string | null
+          refund_reason: string | null
+          refund_requested_at: string | null
+          refund_resolved_at: string | null
+          refund_status: string
+          ship_to: string | null
+          shipping: number
+          status: Database["public"]["Enums"]["order_status"]
+          subtotal: number
+          supplier_id: string
+          supplier_marked_delivered_at: string | null
+          total: number
+          tracking: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       reward_ad_view: { Args: { _campaign_id: string }; Returns: Json }
       search_products: {
@@ -7130,6 +7412,54 @@ export type Database = {
       supplier_has_feature: {
         Args: { _feature: string; _supplier_id: string }
         Returns: boolean
+      }
+      supplier_mark_order_delivered: {
+        Args: { _order_id: string }
+        Returns: {
+          address_id: string | null
+          buyer_confirmed_delivered_at: string | null
+          buyer_id: string
+          coupon_code: string | null
+          created_at: string
+          delivery_code: string | null
+          delivery_courier_user_id: string | null
+          delivery_option_label: string | null
+          discount: number
+          dispute_opened_at: string | null
+          dispute_reason: string | null
+          escrow_amount: number
+          escrow_released_at: string | null
+          escrow_status: string
+          eta: string | null
+          id: string
+          manual_payment_note: string | null
+          manual_payment_reference: string | null
+          manual_payment_submitted_at: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          payment_status: string
+          ref_code: string | null
+          refund_admin_note: string | null
+          refund_reason: string | null
+          refund_requested_at: string | null
+          refund_resolved_at: string | null
+          refund_status: string
+          ship_to: string | null
+          shipping: number
+          status: Database["public"]["Enums"]["order_status"]
+          subtotal: number
+          supplier_id: string
+          supplier_marked_delivered_at: string | null
+          total: number
+          tracking: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       supplier_subscribe_plan: { Args: { _plan_code: string }; Returns: Json }
       tier_from_points: { Args: { _pts: number }; Returns: string }

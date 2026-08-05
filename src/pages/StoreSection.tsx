@@ -1568,6 +1568,13 @@ function OrdersView() {
     qc.invalidateQueries({ queryKey: ["store-orders"] });
   };
 
+  const markDelivered = async (orderId: string) => {
+    const { error } = await supabase.rpc("supplier_mark_order_delivered" as never, { _order_id: orderId } as never);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Marked delivered — buyer must confirm to release the payment");
+    qc.invalidateQueries({ queryKey: ["store-orders"] });
+  };
+
   if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm"><CircleSpinner size={28} /></div>;
   if (!orders.length) {
     return <EmptyState icon={<ShoppingBag className="w-7 h-7 text-muted-foreground" />} title="No orders yet" description="When buyers purchase your products they'll appear here." />;
@@ -1577,7 +1584,11 @@ function OrdersView() {
     <div className="px-4 py-4 space-y-3">
       {orders.map((o: any) => {
         const idx = ORDER_STATUSES.indexOf(o.status);
-        const next = idx >= 0 && idx < 3 ? ORDER_STATUSES[idx + 1] : null;
+        // Delivery is confirmed through the escrow flow, not a plain status bump.
+        const next = idx >= 0 && idx < 2 ? ORDER_STATUSES[idx + 1] : null;
+        const supplierMarked = !!o.supplier_marked_delivered_at;
+        const refundPending = o.refund_status === "requested";
+        const done = o.status === "delivered" || o.status === "cancelled";
         return (
           <div key={o.id} className="bg-card border rounded-2xl shadow-card p-4">
             <div className="flex items-center justify-between gap-2">
@@ -1587,13 +1598,36 @@ function OrdersView() {
             <p className="text-sm font-semibold mt-2">{o.order_items?.length ?? 0} items · ${Number(o.total).toFixed(2)}</p>
             <p className="text-[11px] text-muted-foreground">{new Date(o.created_at).toLocaleString()}</p>
             {o.ship_to && <p className="text-[11px] text-muted-foreground mt-1">Ship to: {o.ship_to}</p>}
+            {o.escrow_status === "held" && (
+              <p className="text-[11px] mt-2 px-2 py-1 rounded-md bg-amber-500/10 text-amber-600">
+                ${Number(o.escrow_amount ?? o.total).toFixed(2)} held in escrow until the buyer confirms delivery.
+              </p>
+            )}
+            {o.escrow_status === "released" && (
+              <p className="text-[11px] mt-2 px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-600">
+                Payment released to your sales balance.
+              </p>
+            )}
+            {refundPending && (
+              <p className="text-[11px] mt-2 px-2 py-1 rounded-md bg-destructive/10 text-destructive">
+                Buyer requested a refund{o.refund_reason ? `: ${o.refund_reason}` : ""}.
+              </p>
+            )}
+            {supplierMarked && o.status !== "delivered" && (
+              <p className="text-[11px] mt-2 text-muted-foreground">Waiting for the buyer to confirm delivery.</p>
+            )}
             <div className="flex gap-2 mt-3">
-              {next && (
+              {next && !refundPending && (
                 <Button size="sm" className="flex-1 h-9" onClick={() => updateStatus(o.id, o.buyer_id, next)}>
                   Mark {next}
                 </Button>
               )}
-              {o.status !== "cancelled" && o.status !== "delivered" && (
+              {!done && !supplierMarked && (
+                <Button size="sm" className="flex-1 h-9" disabled={refundPending} onClick={() => markDelivered(o.id)}>
+                  Mark delivered
+                </Button>
+              )}
+              {!done && (
                 <Button size="sm" variant="outline" className="h-9" onClick={() => updateStatus(o.id, o.buyer_id, "cancelled")}>
                   Cancel
                 </Button>
