@@ -318,7 +318,7 @@ export default function Cart() {
       const discount = coupon?.discount ?? 0;
       const afterDiscount = Math.max(0, subtotal - discount);
       const shipInfo = shippingBySupplier[supplierId];
-      const ship = shipInfo?.fee ?? (afterDiscount > 25 ? 0 : 4.99);
+      const ship = shipInfo?.fee ?? 0;
       const orderTotal = afterDiscount + ship;
 
       const { data: order, error: orderErr } = await supabase
