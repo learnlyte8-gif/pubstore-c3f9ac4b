@@ -28,6 +28,7 @@ import 'search_screen.dart';
 import 'services_screen.dart';
 import 'settings_screen.dart';
 import 'stays_screen.dart';
+import 'terms_screen.dart';
 import 'wallet_screen.dart';
 import 'wishlist_screen.dart';
 
