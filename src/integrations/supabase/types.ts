@@ -4712,6 +4712,8 @@ export type Database = {
           dropoff_lng: number
           final_fare: number | null
           id: string
+          is_carpool: boolean
+          max_passengers: number | null
           notes: string | null
           pickup_address: string
           pickup_lat: number
@@ -4721,6 +4723,8 @@ export type Database = {
           rider_lng: number | null
           rider_offer: number
           rider_rating: number | null
+          scheduled_at: string | null
+          seats_requested: number
           started_at: string | null
           status: string
           updated_at: string
@@ -4741,6 +4745,8 @@ export type Database = {
           dropoff_lng: number
           final_fare?: number | null
           id?: string
+          is_carpool?: boolean
+          max_passengers?: number | null
           notes?: string | null
           pickup_address: string
           pickup_lat: number
@@ -4750,6 +4756,8 @@ export type Database = {
           rider_lng?: number | null
           rider_offer: number
           rider_rating?: number | null
+          scheduled_at?: string | null
+          seats_requested?: number
           started_at?: string | null
           status?: string
           updated_at?: string
@@ -4770,6 +4778,8 @@ export type Database = {
           dropoff_lng?: number
           final_fare?: number | null
           id?: string
+          is_carpool?: boolean
+          max_passengers?: number | null
           notes?: string | null
           pickup_address?: string
           pickup_lat?: number
@@ -4779,6 +4789,8 @@ export type Database = {
           rider_lng?: number | null
           rider_offer?: number
           rider_rating?: number | null
+          scheduled_at?: string | null
+          seats_requested?: number
           started_at?: string | null
           status?: string
           updated_at?: string
@@ -6607,6 +6619,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      activate_scheduled_rides: { Args: never; Returns: undefined }
       ai_buy_credit_pack: { Args: { _pack_code: string }; Returns: Json }
       ai_consume_credits: {
         Args: {
@@ -6901,6 +6914,22 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      find_carpool_matches: {
+        Args: {
+          _dropoff_radius_km?: number
+          _pickup_radius_km?: number
+          _ride_id: string
+          _time_window_minutes?: number
+        }
+        Returns: {
+          distance_km: number
+          dropoff_address: string
+          pickup_address: string
+          ride_id: string
+          rider_id: string
+          scheduled_at: string
+        }[]
+      }
       get_email_by_username: { Args: { p_username: string }; Returns: string }
       get_user_tier_info: {
         Args: { _user_id: string }
@@ -7075,6 +7104,8 @@ export type Database = {
           dropoff_lng: number
           final_fare: number | null
           id: string
+          is_carpool: boolean
+          max_passengers: number | null
           notes: string | null
           pickup_address: string
           pickup_lat: number
@@ -7084,6 +7115,8 @@ export type Database = {
           rider_lng: number | null
           rider_offer: number
           rider_rating: number | null
+          scheduled_at: string | null
+          seats_requested: number
           started_at: string | null
           status: string
           updated_at: string
