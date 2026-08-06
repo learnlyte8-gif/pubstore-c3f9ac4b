@@ -113,7 +113,12 @@ Deno.serve(async (req) => {
     if (purpose !== "wallet_topup" && purpose !== "order") {
       return json({ error: "purpose is required" }, 400);
     }
-    if (!returnUrl) return json({ error: "returnUrl required" }, 400);
+    if (!returnUrl || typeof returnUrl !== "string") {
+      return json({ error: "returnUrl required" }, 400);
+    }
+    if (!isAllowedReturnUrl(returnUrl)) {
+      return json({ error: "returnUrl scheme not allowed" }, 400);
+    }
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
