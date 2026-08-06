@@ -36,6 +36,29 @@ function cleanHeader(v: string): string {
   return v.replace(/[^\x21-\x7E]/g, "");
 }
 
+/**
+ * Allowed returnUrl schemes: web (http/https) plus our mobile deep-link schemes
+ * so Pesepay can hand the user back into the native app (e.g.
+ * tapson-mobile://payment-callback).
+ */
+const ALLOWED_RETURN_SCHEMES = [
+  "http:",
+  "https:",
+  "tapson-mobile:",
+  "tapson:",
+  "pubstore:",
+  "com.pubstore.app:",
+];
+
+function isAllowedReturnUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url.trim());
+    return ALLOWED_RETURN_SCHEMES.includes(parsed.protocol.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
 function b64encode(bytes: Uint8Array): string {
   let s = "";
   for (let i = 0; i < bytes.length; i += 1) s += String.fromCharCode(bytes[i]);
