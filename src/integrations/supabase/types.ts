@@ -3993,12 +3993,16 @@ export type Database = {
       }
       profiles: {
         Row: {
+          activity_tracking: boolean | null
           address: string | null
+          ads_personalization: boolean | null
           avatar_url: string | null
           buyer_points: number
           buyer_tier: string
           contact: string | null
           created_at: string
+          data_sharing: boolean | null
+          date_of_birth: string | null
           display_name: string | null
           id: string
           interests: string[]
@@ -4013,12 +4017,16 @@ export type Database = {
           verticals: string[]
         }
         Insert: {
+          activity_tracking?: boolean | null
           address?: string | null
+          ads_personalization?: boolean | null
           avatar_url?: string | null
           buyer_points?: number
           buyer_tier?: string
           contact?: string | null
           created_at?: string
+          data_sharing?: boolean | null
+          date_of_birth?: string | null
           display_name?: string | null
           id?: string
           interests?: string[]
@@ -4033,12 +4041,16 @@ export type Database = {
           verticals?: string[]
         }
         Update: {
+          activity_tracking?: boolean | null
           address?: string | null
+          ads_personalization?: boolean | null
           avatar_url?: string | null
           buyer_points?: number
           buyer_tier?: string
           contact?: string | null
           created_at?: string
+          data_sharing?: boolean | null
+          date_of_birth?: string | null
           display_name?: string | null
           id?: string
           interests?: string[]
@@ -5861,6 +5873,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       user_follows: {
         Row: {
           created_at: string
@@ -5879,6 +5912,42 @@ export type Database = {
           followee_id?: string
           follower_id?: string
           id?: string
+        }
+        Relationships: []
+      }
+      user_reports: {
+        Row: {
+          content_id: string | null
+          content_type: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          reason: string
+          reported_id: string
+          reporter_id: string
+          status: string
+        }
+        Insert: {
+          content_id?: string | null
+          content_type?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          reason: string
+          reported_id: string
+          reporter_id: string
+          status?: string
+        }
+        Update: {
+          content_id?: string | null
+          content_type?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          reason?: string
+          reported_id?: string
+          reporter_id?: string
+          status?: string
         }
         Relationships: []
       }
