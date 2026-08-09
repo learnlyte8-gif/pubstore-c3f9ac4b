@@ -75,9 +75,22 @@ export function useWallet() {
         { event: "INSERT", schema: "public", table: "wallet_transactions", filter: `user_id=eq.${userId}` },
         () => refresh(),
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "wallets", filter: `user_id=eq.${userId}` },
+        () => refresh(),
+      )
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    const onFocus = () => refresh();
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      supabase.removeChannel(ch);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
   }, [userId, refresh]);
+
 
   /** Pay an existing order from the wallet (personal balance). */
   const payOrder = useCallback(async (orderId: string) => {
