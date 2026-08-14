@@ -109,7 +109,7 @@ export default function ConsoleShell() {
 
   return createPortal(
     (
-      <div className="fixed inset-0 z-[60] flex flex-col bg-muted/40">
+      <div className="fixed inset-0 z-[60] flex flex-col bg-background">
         {/* Top app bar */}
         <header className="h-14 shrink-0 bg-card border-b flex items-center gap-3 px-3">
           <button
@@ -231,7 +231,7 @@ export default function ConsoleShell() {
               })}
             </div>
 
-            <main className="flex-1 min-h-0 overflow-y-auto">
+            <main className="flex-1 min-h-0 overflow-y-auto bg-muted/40">
               <Outlet />
             </main>
           </div>
