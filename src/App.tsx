@@ -171,7 +171,6 @@ const App = () => (
                 <Route path="/settings/notifications" element={<NotificationPreferences />} />
                 <Route path="/wallet" element={<Wallet />} />
                 <Route path="/ai-credits" element={<AiCredits />} />
-                <Route path="/store/plans" element={<SupplierPlans />} />
                 <Route path="/verification" element={<Verification />} />
                 <Route path="/news" element={<News />} />
                 <Route path="/news/:slug" element={<News />} />
