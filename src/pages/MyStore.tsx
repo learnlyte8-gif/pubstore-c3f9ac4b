@@ -306,8 +306,8 @@ export default function MyStore() {
 
         {liveBanner && <div className="mx-4 -mt-3 relative z-10">{liveBanner}</div>}
 
-        <SupplierOnboarding steps={onboardingSteps} />
-        {!canPublish && <OnboardingBlockedBanner steps={onboardingSteps} />}
+        {onboardingReady && <SupplierOnboarding steps={onboardingSteps} />}
+        {onboardingReady && !canPublish && <OnboardingBlockedBanner steps={onboardingSteps} />}
 
         <div className="px-4 mt-5 grid grid-cols-3 gap-2">
           <Stat label="Products" value={String(myProducts.length)} icon={Package} />
