@@ -2226,7 +2226,7 @@ function ProfileView() {
   const { data: supplier } = useQuery({ queryKey: ["my-supplier"], queryFn: fetchMySupplier });
   const qc = useQueryClient();
   const [form, setForm] = useState({
-    name: "", country: "", about: "", logo: "", banner: "",
+    name: "", country: "", city: "", about: "", logo: "", banner: "",
     latitude: null as number | null, longitude: null as number | null, locationAddress: "",
     businessType: "", phone: "", email: "", website: "",
     tradeType: "both" as "retail" | "wholesale" | "both",
@@ -2247,6 +2247,7 @@ function ProfileView() {
     if (supplier) setForm({
       name: supplier.name,
       country: supplier.country,
+      city: (supplier as any).city || "",
       about: supplier.about,
       logo: supplier.logo || "",
       banner: supplier.banner || "",
@@ -2344,7 +2345,9 @@ function ProfileView() {
     if (!supplier) return;
     setSaving(true);
     const { error } = await (supabase.from("suppliers") as any).update({
-      name: form.name, country: form.country, about: form.about,
+      name: form.name, country: form.country, city: form.city || null, about: form.about,
+      latitude: form.latitude, longitude: form.longitude,
+      location_address: form.locationAddress || null,
       business_type: form.businessType || null,
       phone: form.phone || null,
       email: form.email || null,
@@ -2423,6 +2426,7 @@ function ProfileView() {
 
       <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Store name" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
       <input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} placeholder="Country" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+      <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="City / Town" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
       <textarea value={form.about} onChange={(e) => setForm({ ...form, about: e.target.value })} placeholder="About your store" rows={4} className="w-full rounded-xl border bg-background p-4 text-sm" />
 
       {/* Location pin */}
