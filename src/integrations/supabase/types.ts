@@ -5670,6 +5670,7 @@ export type Database = {
           banner: string | null
           business_type: string | null
           categories: string[]
+          city: string | null
           country: string | null
           country_code: string | null
           created_at: string
@@ -5710,6 +5711,7 @@ export type Database = {
           banner?: string | null
           business_type?: string | null
           categories?: string[]
+          city?: string | null
           country?: string | null
           country_code?: string | null
           created_at?: string
@@ -5750,6 +5752,7 @@ export type Database = {
           banner?: string | null
           business_type?: string | null
           categories?: string[]
+          city?: string | null
           country?: string | null
           country_code?: string | null
           created_at?: string
