@@ -317,7 +317,7 @@ export const mapProduct = (p: DbProduct | DbProductWithSupplier): Product => {
     supplierGold: sup ? !!sup.gold : undefined,
     supplierName: sup?.name ?? undefined,
     supplierLocation:
-      sup?.location_address ??
+      sup?.location_address ||
       [sup?.city, sup?.country].filter(Boolean).join(", ") ||
       null,
     supplierLat: Number.isFinite(supLat as number) ? (supLat as number) : null,
