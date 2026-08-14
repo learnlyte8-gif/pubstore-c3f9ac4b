@@ -109,7 +109,7 @@ export default function ConsoleShell() {
   return (
     <>
       {/* Desktop: Google Cloud-like console */}
-      <div className="flex flex-col h-screen bg-muted/40">
+      <div className="fixed inset-0 z-[45] flex flex-col bg-muted/40">
         {/* Top app bar */}
         <header className="h-14 shrink-0 bg-card border-b flex items-center gap-3 px-3">
           <button
