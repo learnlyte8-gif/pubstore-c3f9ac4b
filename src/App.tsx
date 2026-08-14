@@ -27,6 +27,8 @@ import Notifications from "./pages/Notifications.tsx";
 import Compare from "./pages/Compare.tsx";
 import Live from "./pages/Live.tsx";
 import MyStore from "./pages/MyStore.tsx";
+import ConsoleShell from "@/components/store/ConsoleShell";
+
 import StoreSection from "./pages/StoreSection.tsx";
 import StoreActions from "./pages/StoreActions.tsx";
 import StoreAnalytics from "./pages/StoreAnalytics.tsx";
