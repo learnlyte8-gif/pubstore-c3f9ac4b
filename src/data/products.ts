@@ -36,6 +36,7 @@ export type Supplier = {
   logo: string;
   banner: string;
   about: string;
+  city: string | null;
   latitude: number | null;
   longitude: number | null;
   locationAddress: string | null;
@@ -201,6 +202,7 @@ type DbSupplier = {
   logo: string | null;
   banner: string | null;
   about: string | null;
+  city?: string | null;
   latitude?: number | string | null;
   longitude?: number | string | null;
   location_address?: string | null;
@@ -262,6 +264,7 @@ export const mapSupplier = (s: DbSupplier): Supplier => ({
   logo: s.logo ?? PLACEHOLDER_IMG,
   banner: s.banner ?? PLACEHOLDER_IMG,
   about: s.about ?? "",
+  city: s.city ?? null,
   latitude: s.latitude != null ? Number(s.latitude) : null,
   longitude: s.longitude != null ? Number(s.longitude) : null,
   locationAddress: s.location_address ?? null,
@@ -283,6 +286,7 @@ type DbProductWithSupplier = DbProduct & {
     verified: boolean | null;
     gold: boolean | null;
     country: string | null;
+    city: string | null;
     location_address: string | null;
     latitude: number | string | null;
     longitude: number | string | null;
@@ -312,7 +316,10 @@ export const mapProduct = (p: DbProduct | DbProductWithSupplier): Product => {
     supplierVerified: sup ? !!sup.verified : undefined,
     supplierGold: sup ? !!sup.gold : undefined,
     supplierName: sup?.name ?? undefined,
-    supplierLocation: sup?.location_address ?? sup?.country ?? null,
+    supplierLocation:
+      sup?.location_address ||
+      [sup?.city, sup?.country].filter(Boolean).join(", ") ||
+      null,
     supplierLat: Number.isFinite(supLat as number) ? (supLat as number) : null,
     supplierLng: Number.isFinite(supLng as number) ? (supLng as number) : null,
     moq: p.moq ?? 1,
@@ -380,7 +387,7 @@ export async function fetchProducts(opts: {
     // Narrow the column set so we never pull large `description`/`specs` blobs
     // for list views — list cards only need a handful of fields.
     .select(
-      "id, supplier_id, title, image, gallery, video_url, price, original_price, category_slug, badge, free_shipping, moq, unit, lead_time, ship_from, rating, review_count, sold, deal_ends_at, ad_has_reel, ad_headline, ad_tagline, suppliers!inner(name, verified, gold, country, location_address, latitude, longitude, trade_type)"
+      "id, supplier_id, title, image, gallery, video_url, price, original_price, category_slug, badge, free_shipping, moq, unit, lead_time, ship_from, rating, review_count, sold, deal_ends_at, ad_has_reel, ad_headline, ad_tagline, suppliers!inner(name, verified, gold, country, city, location_address, latitude, longitude, trade_type)"
     )
     .eq("active", true);
   if (opts.category) q = q.eq("category_slug", opts.category);
@@ -422,7 +429,7 @@ export async function fetchProductsByIds(ids: string[]): Promise<Product[]> {
   const { data, error } = await supabase
     .from("products")
     .select(
-      "id, supplier_id, title, image, gallery, video_url, price, original_price, category_slug, badge, free_shipping, moq, unit, lead_time, ship_from, rating, review_count, sold, deal_ends_at, ad_has_reel, ad_headline, ad_tagline, suppliers!inner(name, verified, gold, country, location_address, latitude, longitude, trade_type)"
+      "id, supplier_id, title, image, gallery, video_url, price, original_price, category_slug, badge, free_shipping, moq, unit, lead_time, ship_from, rating, review_count, sold, deal_ends_at, ad_has_reel, ad_headline, ad_tagline, suppliers!inner(name, verified, gold, country, city, location_address, latitude, longitude, trade_type)"
     )
     .eq("active", true)
     .in("id", ids.slice(0, 40));
@@ -437,7 +444,7 @@ export async function fetchProductsByIds(ids: string[]): Promise<Product[]> {
 export async function fetchProduct(id: string): Promise<Product | null> {
   const { data, error } = await supabase
     .from("products")
-    .select("*, suppliers!inner(name, verified, gold, country, location_address, latitude, longitude)")
+    .select("*, suppliers!inner(name, verified, gold, country, city, location_address, latitude, longitude)")
     .eq("id", id)
     .maybeSingle();
   if (error) throw error;
