@@ -396,8 +396,8 @@ export default function MyStore() {
           <div className="mt-4 space-y-4">
             {liveBanner}
 
-            <SupplierOnboarding steps={onboardingSteps} />
-            {!canPublish && <OnboardingBlockedBanner steps={onboardingSteps} />}
+            {onboardingReady && <SupplierOnboarding steps={onboardingSteps} />}
+            {onboardingReady && !canPublish && <OnboardingBlockedBanner steps={onboardingSteps} />}
 
             <div className="grid grid-cols-4 gap-4">
               <KpiCard label="Products" value={String(myProducts.length)} icon={Package} hint="Live listings" />
