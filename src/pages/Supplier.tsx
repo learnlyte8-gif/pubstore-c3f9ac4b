@@ -130,7 +130,7 @@ export default function Supplier() {
 
         <h1 className="text-lg font-bold mt-2 leading-tight">{supplier.name}</h1>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {supplier.country}</span>
+          <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {[supplier.city, supplier.country].filter(Boolean).join(", ") || supplier.locationAddress || "—"}</span>
           <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {supplier.yearsActive} yrs on PUBSTORE</span>
           <span className="flex items-center gap-1"><Star className="w-3 h-3 fill-amber-500 text-amber-500" /><span className="font-medium text-foreground">{supplier.rating.toFixed(1)}</span></span>
           <span className="flex items-center gap-1"><Heart className="w-3 h-3" /> {followerCount} follower{followerCount === 1 ? "" : "s"}</span>
