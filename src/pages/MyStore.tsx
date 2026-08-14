@@ -42,8 +42,9 @@ export default function MyStore() {
     queryFn: fetchMySupplier,
     enabled: !!userId,
   });
-  const { status: verificationStatus } = useVerification();
+  const { status: verificationStatus, loading: verificationLoading } = useVerification();
   const onboardingSteps = buildOnboardingSteps(supplier ?? null, verificationStatus);
+  const onboardingReady = !isLoading && !verificationLoading && !!supplier;
   const canPublish = isOnboardingComplete(onboardingSteps);
   const { data: myProducts = [] } = useQuery({
     queryKey: ["my-products", supplier?.id],
