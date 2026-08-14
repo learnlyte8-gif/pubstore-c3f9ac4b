@@ -368,62 +368,31 @@ export default function MyStore() {
         </div>
       </div>
 
-      {/* ================= DESKTOP DASHBOARD ================= */}
-      <div className="hidden lg:block bg-muted/30 min-h-screen">
-        <div className="mx-auto max-w-[1500px] grid grid-cols-[264px_1fr] gap-6 px-6 py-6">
-          {/* Sidebar */}
-          <aside className="sticky top-6 self-start max-h-[calc(100vh-3rem)] overflow-y-auto space-y-5">
-            <div className="rounded-2xl border bg-card shadow-card p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-muted ring-1 ring-border overflow-hidden flex items-center justify-center shrink-0">
-                  {supplier.logo && supplier.logo !== "/placeholder.svg" ? (
-                    <img src={supplier.logo} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <ImagePlus className="w-5 h-5 text-muted-foreground" />
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <p className="font-bold truncate">{supplier.name}</p>
-                  <p className="text-[11px] text-muted-foreground truncate">
-                    {supplier.verified ? "Verified seller" : "New seller"}{supplier.country ? ` · ${supplier.country}` : ""}
-                  </p>
-                </div>
-              </div>
-              <Button asChild variant="outline" size="sm" className="w-full mt-3">
-                <Link to="/store/profile">Edit store profile</Link>
+      {/* ================= DESKTOP CONSOLE (inside ConsoleShell) ================= */}
+      <div className="hidden lg:block">
+        <div className="px-6 py-5 max-w-[1500px]">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-[22px] font-normal tracking-tight">Store dashboard</h1>
+              <p className="text-[13px] text-muted-foreground mt-0.5">Overview of your listings, orders and revenue.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="rounded-md" asChild>
+                <Link to="/store/analytics"><BarChart3 className="w-4 h-4 mr-2" /> Analytics</Link>
               </Button>
+              {canPublish ? (
+                <Button size="sm" className="rounded-md" asChild><Link to="/store/products/new"><Plus className="w-4 h-4 mr-2" /> Add product</Link></Button>
+              ) : (
+                <Button size="sm" variant="outline" className="rounded-md" asChild>
+                  <Link to={onboardingSteps.find((s) => !s.done)?.to ?? "/store/profile"}>
+                    <Lock className="w-4 h-4 mr-2" /> Finish onboarding
+                  </Link>
+                </Button>
+              )}
             </div>
+          </div>
 
-            <SideGroup title="Manage" items={manageItems} />
-            <SideGroup title="Grow" items={growItems} />
-            <SideGroup title="Services & verticals" items={verticalItems} />
-            <SideGroup title="Storefront" items={storefrontItems} />
-            <Link to="/store/profile?step=verticals" className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-primary hover:underline">
-              <Sparkles className="w-4 h-4" /> Change what you provide
-            </Link>
-          </aside>
-
-          {/* Main */}
-          <main className="min-w-0 space-y-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight">Store dashboard</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">Overview of your listings, orders and revenue.</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" asChild><Link to="/store/analytics"><BarChart3 className="w-4 h-4 mr-2" /> Analytics</Link></Button>
-                {canPublish ? (
-                  <Button asChild><Link to="/store/products/new"><Plus className="w-4 h-4 mr-2" /> Add product</Link></Button>
-                ) : (
-                  <Button variant="outline" asChild>
-                    <Link to={onboardingSteps.find((s) => !s.done)?.to ?? "/store/profile"}>
-                      <Lock className="w-4 h-4 mr-2" /> Finish onboarding
-                    </Link>
-                  </Button>
-                )}
-              </div>
-            </div>
-
+          <div className="mt-4 space-y-4">
             {liveBanner}
 
             <SupplierOnboarding steps={onboardingSteps} />
@@ -436,40 +405,45 @@ export default function MyStore() {
               <KpiCard label="Revenue" value={`$${(stats?.revenue ?? 0).toFixed(0)}`} icon={TrendingUp} hint="Gross sales" />
             </div>
 
-            <section className="rounded-2xl border bg-card shadow-card p-5">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Quick actions</p>
-              <div className="grid grid-cols-6 gap-3">{quickActions}</div>
+            <section className="rounded-lg border bg-card">
+              <div className="px-5 h-11 flex items-center border-b">
+                <p className="text-[13px] font-medium">Quick actions</p>
+              </div>
+              <div className="p-5 grid grid-cols-6 gap-3">{quickActions}</div>
             </section>
 
-            <section className="rounded-2xl border bg-card shadow-card p-5">
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-sm font-bold">My products</p>
-                <Link to="/store/products" className="text-xs font-bold text-primary hover:underline">See all</Link>
+            <section className="rounded-lg border bg-card">
+              <div className="px-5 h-11 flex items-center justify-between border-b">
+                <p className="text-[13px] font-medium">My products</p>
+                <Link to="/store/products" className="text-[13px] text-primary hover:underline">View all</Link>
               </div>
-              {myProducts.length === 0 ? (
-                <EmptyState
-                  title="No products yet"
-                  action={<Button asChild size="sm"><Link to="/store/products/new"><Plus className="w-4 h-4 mr-1.5" /> Add product</Link></Button>}
-                />
-              ) : (
-                <div className="grid grid-cols-6 gap-3">
-                  {myProducts.slice(0, 12).map((p) => (
-                    <Link key={p.id} to={`/product/${p.id}`} className="group rounded-xl overflow-hidden border bg-background hover:shadow-elevated transition">
-                      <div className="aspect-square bg-muted overflow-hidden">
-                        <img src={p.image} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition" />
-                      </div>
-                      <div className="p-2">
-                        <p className="text-[11px] font-semibold truncate">{p.title}</p>
-                        <p className="text-[11px] font-bold text-primary">${p.price}</p>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
+              <div className="p-5">
+                {myProducts.length === 0 ? (
+                  <EmptyState
+                    title="No products yet"
+                    action={<Button asChild size="sm"><Link to="/store/products/new"><Plus className="w-4 h-4 mr-1.5" /> Add product</Link></Button>}
+                  />
+                ) : (
+                  <div className="grid grid-cols-6 gap-3">
+                    {myProducts.slice(0, 12).map((p) => (
+                      <Link key={p.id} to={`/product/${p.id}`} className="group rounded-lg overflow-hidden border bg-background hover:shadow-card transition">
+                        <div className="aspect-square bg-muted overflow-hidden">
+                          <img src={p.image} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition" />
+                        </div>
+                        <div className="p-2">
+                          <p className="text-[12px] truncate">{p.title}</p>
+                          <p className="text-[12px] font-medium text-primary">${p.price}</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             </section>
-          </main>
+          </div>
         </div>
       </div>
+
 
       {goLiveModal}
     </>
@@ -497,29 +471,6 @@ function KpiCard({ label, value, icon: Icon, hint }: { label: string; value: str
       </div>
       <p className="text-2xl font-bold mt-2 truncate">{value}</p>
       {hint && <p className="text-[11px] text-muted-foreground mt-0.5">{hint}</p>}
-    </div>
-  );
-}
-
-function SideGroup({ title, items }: { title: string; items: NavItem[] }) {
-  return (
-    <div>
-      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5 px-3">{title}</p>
-      <nav className="rounded-2xl border bg-card shadow-card overflow-hidden">
-        {items.map((i) => (
-          <div key={i.label} className="flex items-center gap-1 pr-2 hover:bg-muted/50 transition">
-            <Link to={i.to} className="flex items-center gap-2.5 px-3 py-2.5 flex-1 min-w-0">
-              <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0"><i.icon className="w-3.5 h-3.5" /></span>
-              <span className="text-[13px] font-semibold truncate">{i.label}</span>
-            </Link>
-            {i.manageTo && (
-              <Link to={i.manageTo} className="shrink-0 px-2 h-6 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center">
-                Actions
-              </Link>
-            )}
-          </div>
-        ))}
-      </nav>
     </div>
   );
 }

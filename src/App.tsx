@@ -27,6 +27,8 @@ import Notifications from "./pages/Notifications.tsx";
 import Compare from "./pages/Compare.tsx";
 import Live from "./pages/Live.tsx";
 import MyStore from "./pages/MyStore.tsx";
+import ConsoleShell from "@/components/store/ConsoleShell";
+
 import StoreSection from "./pages/StoreSection.tsx";
 import StoreActions from "./pages/StoreActions.tsx";
 import StoreAnalytics from "./pages/StoreAnalytics.tsx";
@@ -147,13 +149,17 @@ const App = () => (
                 <Route path="/supplier/:id" element={<Supplier />} />
                 <Route path="/profile" element={<Account />} />
                 <Route path="/account" element={<Account />} />
-                <Route path="/store" element={<MyStore />} />
-                <Route path="/store/actions" element={<StoreActions />} />
-                <Route path="/store/analytics" element={<StoreAnalytics />} />
-                <Route path="/store/ads" element={<AdsDashboard />} />
-                <Route path="/store/ads/new" element={<AdCampaignWizard />} />
-                <Route path="/store/:section" element={<StoreSection />} />
-                <Route path="/store/:section/:sub" element={<StoreSection />} />
+                <Route element={<ConsoleShell />}>
+                  <Route path="/store" element={<MyStore />} />
+                  <Route path="/store/actions" element={<StoreActions />} />
+                  <Route path="/store/analytics" element={<StoreAnalytics />} />
+                  <Route path="/store/ads" element={<AdsDashboard />} />
+                  <Route path="/store/ads/new" element={<AdCampaignWizard />} />
+                  <Route path="/store/plans" element={<SupplierPlans />} />
+                  <Route path="/store/:section" element={<StoreSection />} />
+                  <Route path="/store/:section/:sub" element={<StoreSection />} />
+                </Route>
+
                 <Route path="/addresses" element={<Addresses />} />
                 <Route path="/payment-methods" element={<PaymentMethods />} />
                 <Route path="/become-supplier" element={<BecomeSupplier />} />
@@ -165,7 +171,6 @@ const App = () => (
                 <Route path="/settings/notifications" element={<NotificationPreferences />} />
                 <Route path="/wallet" element={<Wallet />} />
                 <Route path="/ai-credits" element={<AiCredits />} />
-                <Route path="/store/plans" element={<SupplierPlans />} />
                 <Route path="/verification" element={<Verification />} />
                 <Route path="/news" element={<News />} />
                 <Route path="/news/:slug" element={<News />} />
