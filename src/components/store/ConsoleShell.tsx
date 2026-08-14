@@ -14,7 +14,20 @@ const TAB_STORAGE_KEY = "pubstore.console.tabs";
  * Google Cloud-console style shell for all /store screens (desktop only).
  * Mobile keeps the existing native app layout — the shell is transparent there.
  */
+function useIsDesktop() {
+  const [desktop, setDesktop] = useState(() => (typeof window !== "undefined" ? window.innerWidth >= 1024 : true));
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1024px)");
+    const onChange = () => setDesktop(mql.matches);
+    mql.addEventListener("change", onChange);
+    setDesktop(mql.matches);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+  return desktop;
+}
+
 export default function ConsoleShell() {
+  const isDesktop = useIsDesktop();
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
@@ -91,13 +104,12 @@ export default function ConsoleShell() {
     if (hit) { navigate(hit.to); setQuery(""); }
   };
 
+  if (!isDesktop) return <Outlet />;
+
   return (
     <>
-      {/* Mobile / tablet: no console chrome */}
-      <div className="lg:hidden"><Outlet /></div>
-
       {/* Desktop: Google Cloud-like console */}
-      <div className="hidden lg:flex flex-col h-screen bg-muted/40">
+      <div className="flex flex-col h-screen bg-muted/40">
         {/* Top app bar */}
         <header className="h-14 shrink-0 bg-card border-b flex items-center gap-3 px-3">
           <button

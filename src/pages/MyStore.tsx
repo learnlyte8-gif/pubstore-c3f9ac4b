@@ -475,29 +475,6 @@ function KpiCard({ label, value, icon: Icon, hint }: { label: string; value: str
   );
 }
 
-function SideGroup({ title, items }: { title: string; items: NavItem[] }) {
-  return (
-    <div>
-      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5 px-3">{title}</p>
-      <nav className="rounded-2xl border bg-card shadow-card overflow-hidden">
-        {items.map((i) => (
-          <div key={i.label} className="flex items-center gap-1 pr-2 hover:bg-muted/50 transition">
-            <Link to={i.to} className="flex items-center gap-2.5 px-3 py-2.5 flex-1 min-w-0">
-              <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0"><i.icon className="w-3.5 h-3.5" /></span>
-              <span className="text-[13px] font-semibold truncate">{i.label}</span>
-            </Link>
-            {i.manageTo && (
-              <Link to={i.manageTo} className="shrink-0 px-2 h-6 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center">
-                Actions
-              </Link>
-            )}
-          </div>
-        ))}
-      </nav>
-    </div>
-  );
-}
-
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
