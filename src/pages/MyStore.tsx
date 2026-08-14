@@ -42,8 +42,9 @@ export default function MyStore() {
     queryFn: fetchMySupplier,
     enabled: !!userId,
   });
-  const { status: verificationStatus } = useVerification();
+  const { status: verificationStatus, loading: verificationLoading } = useVerification();
   const onboardingSteps = buildOnboardingSteps(supplier ?? null, verificationStatus);
+  const onboardingReady = !isLoading && !verificationLoading && !!supplier;
   const canPublish = isOnboardingComplete(onboardingSteps);
   const { data: myProducts = [] } = useQuery({
     queryKey: ["my-products", supplier?.id],
@@ -305,8 +306,8 @@ export default function MyStore() {
 
         {liveBanner && <div className="mx-4 -mt-3 relative z-10">{liveBanner}</div>}
 
-        <SupplierOnboarding steps={onboardingSteps} />
-        {!canPublish && <OnboardingBlockedBanner steps={onboardingSteps} />}
+        {onboardingReady && <SupplierOnboarding steps={onboardingSteps} />}
+        {onboardingReady && !canPublish && <OnboardingBlockedBanner steps={onboardingSteps} />}
 
         <div className="px-4 mt-5 grid grid-cols-3 gap-2">
           <Stat label="Products" value={String(myProducts.length)} icon={Package} />
@@ -395,8 +396,8 @@ export default function MyStore() {
           <div className="mt-4 space-y-4">
             {liveBanner}
 
-            <SupplierOnboarding steps={onboardingSteps} />
-            {!canPublish && <OnboardingBlockedBanner steps={onboardingSteps} />}
+            {onboardingReady && <SupplierOnboarding steps={onboardingSteps} />}
+            {onboardingReady && !canPublish && <OnboardingBlockedBanner steps={onboardingSteps} />}
 
             <div className="grid grid-cols-4 gap-4">
               <KpiCard label="Products" value={String(myProducts.length)} icon={Package} hint="Live listings" />
