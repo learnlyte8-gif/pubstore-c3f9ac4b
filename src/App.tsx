@@ -147,13 +147,17 @@ const App = () => (
                 <Route path="/supplier/:id" element={<Supplier />} />
                 <Route path="/profile" element={<Account />} />
                 <Route path="/account" element={<Account />} />
-                <Route path="/store" element={<MyStore />} />
-                <Route path="/store/actions" element={<StoreActions />} />
-                <Route path="/store/analytics" element={<StoreAnalytics />} />
-                <Route path="/store/ads" element={<AdsDashboard />} />
-                <Route path="/store/ads/new" element={<AdCampaignWizard />} />
-                <Route path="/store/:section" element={<StoreSection />} />
-                <Route path="/store/:section/:sub" element={<StoreSection />} />
+                <Route element={<ConsoleShell />}>
+                  <Route path="/store" element={<MyStore />} />
+                  <Route path="/store/actions" element={<StoreActions />} />
+                  <Route path="/store/analytics" element={<StoreAnalytics />} />
+                  <Route path="/store/ads" element={<AdsDashboard />} />
+                  <Route path="/store/ads/new" element={<AdCampaignWizard />} />
+                  <Route path="/store/plans" element={<SupplierPlans />} />
+                  <Route path="/store/:section" element={<StoreSection />} />
+                  <Route path="/store/:section/:sub" element={<StoreSection />} />
+                </Route>
+
                 <Route path="/addresses" element={<Addresses />} />
                 <Route path="/payment-methods" element={<PaymentMethods />} />
                 <Route path="/become-supplier" element={<BecomeSupplier />} />
