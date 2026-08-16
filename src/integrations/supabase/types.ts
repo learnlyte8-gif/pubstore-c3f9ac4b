@@ -4003,6 +4003,7 @@ export type Database = {
           address: string | null
           ads_personalization: boolean | null
           avatar_url: string | null
+          bio: string | null
           buyer_points: number
           buyer_tier: string
           contact: string | null
@@ -4027,6 +4028,7 @@ export type Database = {
           address?: string | null
           ads_personalization?: boolean | null
           avatar_url?: string | null
+          bio?: string | null
           buyer_points?: number
           buyer_tier?: string
           contact?: string | null
@@ -4051,6 +4053,7 @@ export type Database = {
           address?: string | null
           ads_personalization?: boolean | null
           avatar_url?: string | null
+          bio?: string | null
           buyer_points?: number
           buyer_tier?: string
           contact?: string | null
