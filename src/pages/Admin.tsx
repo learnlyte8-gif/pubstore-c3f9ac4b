@@ -11,6 +11,7 @@ import {
   OverviewPanel, VerificationsPanel, ReportsPanel, OrdersPanel, SuppliersPanel,
   ProductsPanel, AdsPanel, CouponsPanel, NewsPanel, UsersPanel, AiCreditsPanel, PlansPanel,
 } from "@/components/admin/panels";
+import RevenuePanel from "@/components/admin/RevenuePanel";
 
 const sb = supabase as any;
 
@@ -60,6 +61,7 @@ export default function Admin() {
 function AdminSection({ section }: { section: string }) {
   switch (section) {
     case "": return <OverviewPanel />;
+    case "revenue": return <RevenuePanel />;
     case "verifications": return <VerificationsPanel />;
     case "reports": return <ReportsPanel />;
     case "reviews": return <ReviewsPanel />;
