@@ -26,6 +26,7 @@ export default function GroupBuyDetail() {
   const { data: myInvite } = useMyInviteForGroup(id);
   useGroupBuyRealtime(id);
   const join = useJoinGroupBuy();
+  const { payGroupBuyOrder } = useWallet();
   const [qty, setQty] = useState(1);
   const [busy, setBusy] = useState(false);
   const [ordering, setOrdering] = useState(false);
