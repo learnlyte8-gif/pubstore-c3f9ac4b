@@ -103,6 +103,26 @@ export function useWallet() {
     return data?.transaction as WalletTx;
   }, [refresh]);
 
+  /**
+   * Pay a group buy: creates the pooled order and debits every member's personal
+   * balance for their share. All-or-nothing — a failed share reverses the rest.
+   */
+  const payGroupBuyOrder = useCallback(async (groupId: string) => {
+    const { data, error } = await supabase.functions.invoke("pay-group-buy-order", {
+      body: { groupId },
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    refresh();
+    return data as {
+      orderId: string;
+      orderTotal: number;
+      totalCollected: number;
+      allPaid: boolean;
+      members: Array<{ user_id: string; qty: number; share: number; status: string; error?: string }>;
+    };
+  }, [refresh]);
+
   /** Move funds from sales balance to personal balance. */
   const moveSalesToPersonal = useCallback(async (amount: number) => {
     const { error } = await sb.rpc("move_sales_to_personal", { _amount: amount });
@@ -124,6 +144,7 @@ export function useWallet() {
     transactions: txQuery.data ?? [],
     refresh,
     payOrder,
+    payGroupBuyOrder,
     moveSalesToPersonal,
   };
 }

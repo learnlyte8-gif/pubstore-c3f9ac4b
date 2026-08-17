@@ -7214,6 +7214,10 @@ export type Database = {
       }
       recompute_user_tier: { Args: { _user_id: string }; Returns: undefined }
       redeem_loyalty_points: { Args: { _points: number }; Returns: Json }
+      refund_order_contributors: {
+        Args: { _label?: string; _order_id: string }
+        Returns: number
+      }
       register_push_token: {
         Args: { p_token: string; p_user_id: string }
         Returns: undefined

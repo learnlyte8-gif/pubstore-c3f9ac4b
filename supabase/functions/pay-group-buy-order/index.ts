@@ -79,10 +79,13 @@ Deno.serve(async (req) => {
     const orderId: string = order.id;
     const orderTotal = Number(order.total ?? 0);
 
-    // 4. Split the order total across members by pledged quantity and debit wallets
+    // 4. Split the order total across members by pledged quantity and debit wallets.
+    //    All-or-nothing, exactly like pay-order: a single failed debit rolls the
+    //    whole collection back so escrow is never partially funded.
     const results: Array<{ user_id: string; qty: number; share: number; status: string; error?: string }> = [];
+    const collected: Array<{ user_id: string; share: number }> = [];
     let totalCollected = 0;
-    let allPaid = true;
+    let failure: { user_id: string; error: string } | null = null;
 
     for (const m of members as any[]) {
       const qty = Number(m.qty ?? 0);
@@ -100,31 +103,74 @@ Deno.serve(async (req) => {
         _account: 'personal',
       });
       if (txErr) {
-        allPaid = false;
+        failure = { user_id: m.user_id, error: txErr.message };
         results.push({ user_id: m.user_id, qty, share, status: 'failed', error: txErr.message });
-        continue;
+        break;
       }
+      collected.push({ user_id: m.user_id, share });
       totalCollected += share;
       results.push({ user_id: m.user_id, qty, share, status: 'paid' });
     }
 
-    // 5. Reflect collection state on the order (service role bypasses the escrow guard)
-    const paid = allPaid && totalCollected > 0;
+    if (failure) {
+      // Roll back every debit that already went through, then cancel the order.
+      for (const c of collected) {
+        const { error: rbErr } = await admin.rpc('apply_wallet_transaction', {
+          _user_id: c.user_id,
+          _kind: 'refund',
+          _amount: c.share,
+          _description: `Group buy payment reversed — "${gb.title ?? 'order'}"`,
+          _reference: orderId,
+          _account: 'personal',
+        });
+        if (rbErr) console.error('[pay-group-buy-order] rollback failed', c.user_id, rbErr.message);
+      }
+      await admin.from('orders').update({ status: 'cancelled', payment_status: 'pending' }).eq('id', orderId);
+      await admin.from('group_buys').update({ status: 'open' }).eq('id', groupId);
+      return json(
+        {
+          error: 'One or more members could not pay their share, so no one was charged.',
+          detail: failure.error,
+          members: results,
+        },
+        400,
+      );
+    }
+
+    // 5. Funds fully collected -> hold in escrow (mirrors pay_order_with_wallet)
+    const escrowAmount = Math.round(totalCollected * 100) / 100;
     await admin
       .from('orders')
       .update({
+        status: 'placed',
         payment_method: 'wallet',
-        payment_status: paid ? 'paid' : 'partially_paid',
-        escrow_status: paid ? 'held' : 'none',
-        escrow_amount: paid ? Math.round(totalCollected * 100) / 100 : 0,
+        payment_status: 'paid',
+        payment_reference: `group_buy:${groupId}`,
+        escrow_status: 'held',
+        escrow_amount: escrowAmount,
       })
       .eq('id', orderId);
 
+    await admin.from('group_buys').update({ status: 'fulfilled' }).eq('id', groupId);
+
+    // Notify the seller that funds are held, same wording as single-buyer orders
+    const { data: sup } = await admin.from('suppliers').select('owner_id').eq('id', gb.supplier_id).maybeSingle();
+    if (sup?.owner_id) {
+      await admin.from('notifications').insert({
+        user_id: sup.owner_id,
+        type: 'payment_received',
+        title: 'Order paid (funds held)',
+        body: `Group buy paid $${escrowAmount.toFixed(2)}. Funds are held in escrow until delivery is confirmed.`,
+        link: '/store/orders',
+      });
+    }
+
     return json({
+      ok: true,
       orderId,
       orderTotal,
-      totalCollected: Math.round(totalCollected * 100) / 100,
-      allPaid: paid,
+      totalCollected: escrowAmount,
+      allPaid: true,
       members: results,
     });
   } catch (error: any) {

@@ -8,8 +8,8 @@ import {
   useJoinGroupBuy,
   useMyInviteForGroup,
   respondToGroupBuyInvite,
-  placeGroupBuyOrder,
 } from "@/hooks/useGroupBuy";
+import { useWallet } from "@/hooks/useWallet";
 import { useAuthUserId } from "@/hooks/useSocial";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -26,6 +26,7 @@ export default function GroupBuyDetail() {
   const { data: myInvite } = useMyInviteForGroup(id);
   useGroupBuyRealtime(id);
   const join = useJoinGroupBuy();
+  const { payGroupBuyOrder } = useWallet();
   const [qty, setQty] = useState(1);
   const [busy, setBusy] = useState(false);
   const [ordering, setOrdering] = useState(false);
@@ -84,10 +85,10 @@ export default function GroupBuyDetail() {
   const handlePlaceOrder = async () => {
     setOrdering(true);
     try {
-      const order = await placeGroupBuyOrder(gb.id);
-      toast.success("Group order placed");
+      const res = await payGroupBuyOrder(gb.id);
+      toast.success("Group order placed — every member's share was charged and is held in escrow");
       qc.invalidateQueries({ queryKey: ["group-buy", id] });
-      if (order?.id) navigate(`/orders?ref=${order.id}`);
+      if (res?.orderId) navigate(`/orders?ref=${res.orderId}`);
       else navigate("/orders");
     } catch (e: any) {
       toast.error(e?.message ?? "Couldn't place order");
