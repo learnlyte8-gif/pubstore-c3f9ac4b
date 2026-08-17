@@ -144,6 +144,7 @@ export function useWallet() {
     transactions: txQuery.data ?? [],
     refresh,
     payOrder,
+    payGroupBuyOrder,
     moveSalesToPersonal,
   };
 }
