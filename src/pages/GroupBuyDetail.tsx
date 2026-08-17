@@ -8,8 +8,8 @@ import {
   useJoinGroupBuy,
   useMyInviteForGroup,
   respondToGroupBuyInvite,
-  placeGroupBuyOrder,
 } from "@/hooks/useGroupBuy";
+import { useWallet } from "@/hooks/useWallet";
 import { useAuthUserId } from "@/hooks/useSocial";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
