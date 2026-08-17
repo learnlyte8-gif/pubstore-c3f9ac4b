@@ -84,10 +84,10 @@ export default function GroupBuyDetail() {
   const handlePlaceOrder = async () => {
     setOrdering(true);
     try {
-      const order = await placeGroupBuyOrder(gb.id);
-      toast.success("Group order placed");
+      const res = await payGroupBuyOrder(gb.id);
+      toast.success("Group order placed — every member's share was charged and is held in escrow");
       qc.invalidateQueries({ queryKey: ["group-buy", id] });
-      if (order?.id) navigate(`/orders?ref=${order.id}`);
+      if (res?.orderId) navigate(`/orders?ref=${res.orderId}`);
       else navigate("/orders");
     } catch (e: any) {
       toast.error(e?.message ?? "Couldn't place order");
