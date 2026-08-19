@@ -18,6 +18,8 @@ import { uploadProductImages } from "@/lib/uploadProductImages";
 import AddAdDialog from "@/components/store/AddAdDialog";
 import { VERTICALS } from "@/data/verticalsCatalog";
 import { importProductFromUrl } from "@/lib/importProduct";
+import ExcelProductImport from "@/components/store/ExcelProductImport";
+
 
 
 
@@ -1435,7 +1437,19 @@ function NewProductView() {
 
   return (
     <form onSubmit={submit} className="px-4 py-4 space-y-4">
+      <ExcelProductImport
+        onDone={() => {
+          qc.invalidateQueries({ queryKey: ["my-products"] });
+          qc.invalidateQueries({ queryKey: ["products"] });
+        }}
+      />
+      <div className="flex items-center gap-3">
+        <span className="h-px flex-1 bg-border" />
+        <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">or add one manually</span>
+        <span className="h-px flex-1 bg-border" />
+      </div>
       <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => onFiles(e.target.files)} />
+
       {previews.length === 0 && urlImages.length === 0 ? (
         <button type="button" onClick={() => fileRef.current?.click()} className="w-full aspect-video rounded-2xl border-2 border-dashed bg-muted/40 flex flex-col items-center justify-center gap-2 text-muted-foreground">
           <ImageIcon className="w-8 h-8" />
