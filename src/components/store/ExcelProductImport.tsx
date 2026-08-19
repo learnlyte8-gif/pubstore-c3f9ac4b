@@ -131,6 +131,30 @@ export default function ExcelProductImport({ onDone }: { onDone?: () => void }) 
   const [fileName, setFileName] = useState("");
   const [busy, setBusy] = useState(false);
   const [parsing, setParsing] = useState(false);
+  const [drafts, setDrafts] = useState<Record<number, string>>({});
+
+  const addImages = (index: number) => {
+    const raw = drafts[index];
+    if (!raw?.trim()) return;
+    const urls = splitUrls(raw);
+    setDrafts((p) => ({ ...p, [index]: "" }));
+    if (!urls.length) {
+      toast.error("Enter a valid http(s) image URL");
+      return;
+    }
+    setRows((p) =>
+      p.map((x, i) =>
+        i === index ? { ...x, images: Array.from(new Set([...x.images, ...urls])).slice(0, 8) } : x
+      )
+    );
+  };
+
+  const removeImage = (index: number, imgIdx: number) => {
+    setRows((p) =>
+      p.map((x, i) => (i === index ? { ...x, images: x.images.filter((_, k) => k !== imgIdx) } : x))
+    );
+  };
+
 
   const handleFile = async (file: File | null | undefined) => {
     if (!file) return;
@@ -240,33 +264,68 @@ export default function ExcelProductImport({ onDone }: { onDone?: () => void }) 
             </button>
           </div>
 
-          <div className="max-h-72 overflow-auto rounded-xl border divide-y">
+          <div className="max-h-[26rem] overflow-auto rounded-xl border divide-y">
             {rows.map((r, i) => (
-              <div key={i} className="flex items-center gap-2 p-2">
-                {r.images[0] ? (
-                  <img src={r.images[0]} alt="" loading="lazy" className="w-10 h-10 rounded-lg object-cover bg-muted shrink-0" />
-                ) : (
-                  <span className="w-10 h-10 rounded-lg bg-muted shrink-0" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold truncate">{r.title}</p>
-                  <p className="text-[10px] text-muted-foreground truncate">
-                    {r.price != null ? `$${r.price.toFixed(2)}` : "no price → draft"}
-                    {r.category_slug ? ` · ${r.category_slug}` : ""}
-                    {r.images.length ? ` · ${r.images.length} image(s)` : " · no images"}
-                    {r.video_url ? " · video" : ""}
-                  </p>
-                  {r.error && <p className="text-[10px] text-destructive truncate">{r.error}</p>}
+              <div key={i} className="p-2 space-y-2">
+                <div className="flex items-center gap-2">
+                  {r.images[0] ? (
+                    <img src={r.images[0]} alt="" loading="lazy" className="w-10 h-10 rounded-lg object-cover bg-muted shrink-0" />
+                  ) : (
+                    <span className="w-10 h-10 rounded-lg bg-muted shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold truncate">{r.title}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      {r.price != null ? `$${r.price.toFixed(2)}` : "no price → draft"}
+                      {r.category_slug ? ` · ${r.category_slug}` : ""}
+                      {r.images.length ? ` · ${r.images.length} image(s)` : " · no images"}
+                      {r.video_url ? " · video" : ""}
+                    </p>
+                    {r.error && <p className="text-[10px] text-destructive truncate">{r.error}</p>}
+                  </div>
+                  <span className="shrink-0">
+                    {r.status === "saving" && <CircleSpinner size={14} />}
+                    {r.status === "done" && <Check className="w-4 h-4 text-emerald-600" />}
+                    {r.status === "error" && <AlertCircle className="w-4 h-4 text-destructive" />}
+                    {r.status === "pending" && <X className="w-3.5 h-3.5 text-muted-foreground opacity-0" />}
+                  </span>
                 </div>
-                <span className="shrink-0">
-                  {r.status === "saving" && <CircleSpinner size={14} />}
-                  {r.status === "done" && <Check className="w-4 h-4 text-emerald-600" />}
-                  {r.status === "error" && <AlertCircle className="w-4 h-4 text-destructive" />}
-                  {r.status === "pending" && <X className="w-3.5 h-3.5 text-muted-foreground opacity-0" />}
-                </span>
+
+                {r.status !== "done" && (
+                  <div className="pl-12 space-y-1.5">
+                    {r.images.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {r.images.map((url, imgIdx) => (
+                          <span key={url + imgIdx} className="relative group">
+                            <img src={url} alt="" loading="lazy" className="w-9 h-9 rounded-md object-cover bg-muted border" />
+                            <button
+                              type="button"
+                              aria-label="Remove image"
+                              onClick={() => removeImage(i, imgIdx)}
+                              className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-background border flex items-center justify-center shadow-sm"
+                            >
+                              <X className="w-2.5 h-2.5" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <input
+                      value={drafts[i] ?? ""}
+                      onChange={(e) => setDrafts((p) => ({ ...p, [i]: e.target.value }))}
+                      onBlur={() => addImages(i)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") { e.preventDefault(); addImages(i); }
+                      }}
+                      placeholder="Paste image URL(s) — comma or newline separated"
+                      className="w-full h-8 px-2.5 rounded-lg border bg-background text-[11px]"
+                    />
+                  </div>
+                )}
               </div>
             ))}
           </div>
+
 
           <Button type="button" className="w-full h-11" disabled={busy || !rows.some((r) => r.status !== "done")} onClick={importAll}>
             {busy ? <><CircleSpinner size={14} className="mr-2" /> Importing…</> : `Import ${pending || rows.filter((r) => r.status === "error").length} product(s)`}
