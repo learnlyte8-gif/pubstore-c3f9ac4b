@@ -18,6 +18,8 @@ import { uploadProductImages } from "@/lib/uploadProductImages";
 import AddAdDialog from "@/components/store/AddAdDialog";
 import { VERTICALS } from "@/data/verticalsCatalog";
 import { importProductFromUrl } from "@/lib/importProduct";
+import ExcelProductImport from "@/components/store/ExcelProductImport";
+
 
 
 
