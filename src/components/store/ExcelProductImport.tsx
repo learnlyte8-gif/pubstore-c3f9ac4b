@@ -131,6 +131,30 @@ export default function ExcelProductImport({ onDone }: { onDone?: () => void }) 
   const [fileName, setFileName] = useState("");
   const [busy, setBusy] = useState(false);
   const [parsing, setParsing] = useState(false);
+  const [drafts, setDrafts] = useState<Record<number, string>>({});
+
+  const addImages = (index: number) => {
+    const raw = drafts[index];
+    if (!raw?.trim()) return;
+    const urls = splitUrls(raw);
+    setDrafts((p) => ({ ...p, [index]: "" }));
+    if (!urls.length) {
+      toast.error("Enter a valid http(s) image URL");
+      return;
+    }
+    setRows((p) =>
+      p.map((x, i) =>
+        i === index ? { ...x, images: Array.from(new Set([...x.images, ...urls])).slice(0, 8) } : x
+      )
+    );
+  };
+
+  const removeImage = (index: number, imgIdx: number) => {
+    setRows((p) =>
+      p.map((x, i) => (i === index ? { ...x, images: x.images.filter((_, k) => k !== imgIdx) } : x))
+    );
+  };
+
 
   const handleFile = async (file: File | null | undefined) => {
     if (!file) return;
