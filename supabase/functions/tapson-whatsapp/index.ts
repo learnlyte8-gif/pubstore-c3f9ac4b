@@ -641,7 +641,7 @@ Deno.serve(async (req) => {
     }
 
 
-    return new Response(JSON.stringify({ ok: true, reply: finalText }), { headers: json });
+    return new Response(JSON.stringify({ ok: true, reply: finalText, images: imagesSent, fallback: usedFallback }), { headers: json });
   } catch (e: any) {
     console.error("tapson-whatsapp", e);
     return new Response(JSON.stringify({ error: e?.message || "internal" }), { status: 500, headers: json });
