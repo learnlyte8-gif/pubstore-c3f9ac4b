@@ -147,7 +147,7 @@ async function handleOrderPlaced(orderId: string) {
     `Reply here to talk to the seller.`;
   await deliver({
     user_id: o.buyer_id, event: "order_placed", entity_id: o.id,
-    category: "orders", refKind: "order", body,
+    category: "orders", refKind: "order", body, image_url: await orderImage(o.id),
   });
 }
 
