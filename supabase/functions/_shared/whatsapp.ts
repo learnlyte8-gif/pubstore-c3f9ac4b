@@ -39,9 +39,55 @@ function toWaapiChatId(value: string): string {
   return `${value.replace(/\D/g, "")}@c.us`;
 }
 
+// wasenderapi.com expects a plain E.164 phone (or a raw JID like
+// "263771234567@s.whatsapp.net" / group "...@g.us").
+function toWasenderTo(value: string): string {
+  const v = String(value);
+  if (/@(?:g\.us|s\.whatsapp\.net|lid)$/i.test(v)) return v;
+  if (v.includes("@")) {
+    // waapi-style "<digits>@c.us"
+    const digits = v.split("@")[0].replace(/\D/g, "");
+    return "+" + digits;
+  }
+  const digits = v.replace(/\D/g, "");
+  return "+" + digits;
+}
+
+// Preferred provider: wasenderapi.com
+// POST https://wasenderapi.com/api/send-message  { to, text }
+async function sendViaWasender(toE164: string, body: string): Promise<WhatsAppSendResult> {
+  const token = Deno.env.get("WASENDER_API_KEY")!;
+  const baseUrl = Deno.env.get("WASENDER_BASE_URL") || "https://wasenderapi.com";
+  const to = toWasenderTo(toE164);
+
+  const res = await fetch(`${baseUrl}/api/send-message`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({ to, text: body }),
+  });
+
+  const text = await res.text();
+  let data: any = null;
+  try { data = JSON.parse(text); } catch { /* not json */ }
+
+  if (!res.ok || data?.success === false) {
+    return {
+      ok: false,
+      status: res.status,
+      error: data?.message || data?.error || text || `HTTP ${res.status}`,
+    };
+  }
+  const sid = String(data?.data?.msgId ?? data?.data?.messageId ?? data?.msgId ?? "");
+  return { ok: true, sid };
+}
+
 // waapi.app endpoint: POST /api/v1/instances/{id}/client/action/send-message
 // Body: { chatId: "<digits>@c.us", message: "..." }
-export async function sendWhatsApp(toE164: string, body: string): Promise<WhatsAppSendResult> {
+async function sendViaWaapi(toE164: string, body: string): Promise<WhatsAppSendResult> {
   const token = Deno.env.get("WAAPI_ACCESS_TOKEN");
   const instanceId = Deno.env.get("WAAPI_INSTANCE_ID");
   const baseUrl = Deno.env.get("WAAPI_BASE_URL") || "https://waapi.app";
@@ -51,9 +97,6 @@ export async function sendWhatsApp(toE164: string, body: string): Promise<WhatsA
   // Accept either a raw waapi chatId ("12345@c.us" / "12345@lid" / "12345@g.us")
   // or an E.164 phone. LIDs cannot be converted to phone numbers, so we must
   // reply to the same chatId we received the message from.
-  // waapi trial instances can only send to one allowed WhatsApp chat. When the
-  // trial target is configured, force every outbound message to that exact
-  // chatId. This prevents @lid privacy addresses from being rejected by waapi.
   const trialTarget = Deno.env.get("WAAPI_TRIAL_NUMBER")?.trim();
   const chatId = trialTarget ? toWaapiChatId(trialTarget) : toWaapiChatId(toE164);
 
@@ -82,3 +125,9 @@ export async function sendWhatsApp(toE164: string, body: string): Promise<WhatsA
   const sid = data?.data?.messageId || data?.data?.id?._serialized || data?.messageId || "";
   return { ok: true, sid };
 }
+
+export async function sendWhatsApp(toE164: string, body: string): Promise<WhatsAppSendResult> {
+  if (Deno.env.get("WASENDER_API_KEY")) return await sendViaWasender(toE164, body);
+  return await sendViaWaapi(toE164, body);
+}
+
