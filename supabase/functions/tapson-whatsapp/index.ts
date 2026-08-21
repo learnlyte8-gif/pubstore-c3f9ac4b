@@ -549,6 +549,7 @@ Deno.serve(async (req) => {
     let finalText = "";
     let usedFallback = false;
     const aiAvailable = !!LOVABLE_API_KEY;
+    const media: MediaItem[] = [];
 
     if (aiAvailable) {
       try {
@@ -566,7 +567,7 @@ Deno.serve(async (req) => {
           for (const tc of toolCalls) {
             let args: any = {};
             try { args = JSON.parse(tc.function.arguments || "{}"); } catch { /* ignore */ }
-            const result = await runTool(tc.function.name, args, user_id || null);
+            const result = await runTool(tc.function.name, args, user_id || null, media);
             messages.push({
               role: "tool",
               tool_call_id: tc.id,
@@ -584,7 +585,8 @@ Deno.serve(async (req) => {
 
     if (!finalText) {
       usedFallback = true;
-      finalText = await runWithoutAI(body, user_id || null);
+      media.length = 0;
+      finalText = await runWithoutAI(body, user_id || null, media);
     }
 
     // Persist thread (keep last 20 messages incl tool messages compressed)
@@ -597,6 +599,9 @@ Deno.serve(async (req) => {
       updated_at: new Date().toISOString(),
     }, { onConflict: "phone" });
 
+    // Strip any raw image URLs the model may have pasted into the text
+    finalText = finalText.replace(/https?:\/\/\S+\.(?:png|jpe?g|webp|gif|avif)(\?\S*)?/gi, "").trim();
+
     // Send WhatsApp reply
     const sendResult = await sendWhatsApp(phone, finalText.slice(0, 3500));
     await admin.from("whatsapp_send_log").insert({
@@ -608,6 +613,33 @@ Deno.serve(async (req) => {
       twilio_sid: sendResult.ok ? sendResult.sid : null,
       error: !sendResult.ok ? sendResult.error : null,
     });
+
+    // Send photos for the items actually mentioned in the reply (max 4)
+    let imagesSent = 0;
+    if (sendResult.ok && media.length) {
+      // Prefer media whose deep link / id appears in the reply text
+      const mentioned = media.filter((m) => {
+        const link = (m.caption || "").match(/https?:\/\/\S+/)?.[0];
+        const id = link?.split("/").pop();
+        return !!id && finalText.includes(id);
+      });
+      const toSend = (mentioned.length ? mentioned : media).slice(0, 4);
+      const results = await sendWhatsAppImages(phone, toSend, 4);
+      imagesSent = results.filter((r) => r.ok).length;
+      for (let i = 0; i < results.length; i++) {
+        const r = results[i];
+        await admin.from("whatsapp_send_log").insert({
+          user_id: user_id || null,
+          event: "tapson_reply_image",
+          to_phone: phone,
+          body: toSend[i]?.url || "",
+          status: r.ok ? "sent" : "failed",
+          twilio_sid: r.ok ? r.sid : null,
+          error: !r.ok ? r.error : null,
+        });
+      }
+    }
+
 
     return new Response(JSON.stringify({ ok: true, reply: finalText }), { headers: json });
   } catch (e: any) {
