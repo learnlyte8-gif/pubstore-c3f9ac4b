@@ -181,7 +181,7 @@ async function handleOrderStatus(orderId: string) {
     `Open: ${APP_BASE_URL}/orders`;
   await deliver({
     user_id: o.buyer_id, event: "order_status", entity_id: o.id,
-    category: "orders", refKind: "order", body,
+    category: "orders", refKind: "order", body, image_url: await orderImage(o.id),
   });
 }
 
