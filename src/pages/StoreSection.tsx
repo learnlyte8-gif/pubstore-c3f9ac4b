@@ -19,6 +19,8 @@ import AddAdDialog from "@/components/store/AddAdDialog";
 import { VERTICALS } from "@/data/verticalsCatalog";
 import { importProductFromUrl } from "@/lib/importProduct";
 import ExcelProductImport from "@/components/store/ExcelProductImport";
+import ProductsTable from "@/components/store/ProductsTable";
+
 
 
 
@@ -979,7 +981,23 @@ function ProductsView() {
   if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm"><CircleSpinner size={28} /></div>;
 
   return (
-    <div className="px-4 py-4 space-y-3 ">
+    <>
+      {/* Desktop: full management table */}
+      {supplier && (
+        <div className="hidden lg:block">
+          <AddAdDialog open={adOpen} onOpenChange={setAdOpen} />
+          <div className="px-5 pt-5">
+            <Button variant="outline" className="h-9 border-primary/40 text-primary hover:bg-primary/10" onClick={() => setAdOpen(true)}>
+              <Sparkles className="w-4 h-4 mr-1.5" /> Create AI ad
+            </Button>
+          </div>
+          <ProductsTable supplierId={supplier.id} categories={cats as any} />
+        </div>
+      )}
+
+      {/* Mobile: card list */}
+      <div className="lg:hidden px-4 py-4 space-y-3 ">
+
       <AddAdDialog open={adOpen} onOpenChange={setAdOpen} />
       {!selectMode ? (
         <div className="flex gap-2">
@@ -1130,8 +1148,10 @@ function ProductsView() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
+
 }
 
 // ---------------- Edit product ----------------
