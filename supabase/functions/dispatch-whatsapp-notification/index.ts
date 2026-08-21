@@ -21,7 +21,7 @@ const admin = createClient(
 
 type Recipient = {
   user_id: string;
-  category: "orders" | "sales" | "inquiries";
+  category: "orders" | "sales" | "inquiries" | "general";
 };
 
 async function recipientPhone(r: Recipient): Promise<{ phone: string; sandboxJoined: boolean } | null> {
@@ -31,16 +31,23 @@ async function recipientPhone(r: Recipient): Promise<{ phone: string; sandboxJoi
       "whatsapp_enabled, whatsapp_orders, whatsapp_sales, whatsapp_inquiries, whatsapp_sandbox_joined",
     ).eq("user_id", r.user_id).maybeSingle(),
   ]);
-  if (!prefs?.whatsapp_enabled) return null;
+  const phone = normalizePhoneE164(profile?.phone);
+  if (!phone) return null;
+
+  // No preferences row yet → treat a saved phone number as opted-in so every
+  // user gets WhatsApp updates out of the box (they can turn it off in Settings).
+  if (!prefs) return { phone, sandboxJoined: false };
+
+  if (!prefs.whatsapp_enabled) return null;
   const catOk =
+    r.category === "general" ||
     (r.category === "orders" && prefs.whatsapp_orders) ||
     (r.category === "sales" && prefs.whatsapp_sales) ||
     (r.category === "inquiries" && prefs.whatsapp_inquiries);
   if (!catOk) return null;
-  const phone = normalizePhoneE164(profile?.phone);
-  if (!phone) return null;
   return { phone, sandboxJoined: !!prefs.whatsapp_sandbox_joined };
 }
+
 
 async function logSend(opts: {
   user_id: string | null;
