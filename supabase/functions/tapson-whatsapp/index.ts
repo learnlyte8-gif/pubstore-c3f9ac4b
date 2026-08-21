@@ -389,15 +389,17 @@ async function runTool(
       case "add_to_cart": {
         if (!userId) return { error: "Sign in first at " + APP_BASE_URL + "/auth" };
         const qty = Math.max(1, Math.min(args.quantity || 1, 99));
-        const { data: prod } = await admin.from("products").select("id, title, price")
+        const { data: prod } = await admin.from("products").select("id, title, price, image, moq, unit")
           .eq("id", args.product_id).maybeSingle();
         if (!prod) return { error: "Product not found" };
         const { error } = await admin.from("cart_items").insert({
           user_id: userId, product_id: args.product_id, quantity: qty,
         });
         if (error) return { error: error.message };
+        pushMedia(prod.image, `Added to cart: ${prod.title} × ${qty}\n${APP_BASE_URL}/cart`);
         return {
-          ok: true, title: prod.title, quantity: qty,
+          ok: true, title: prod.title, quantity: qty, unit_price: prod.price,
+          moq: prod.moq, unit: prod.unit,
           subtotal: Number(prod.price) * qty,
           checkout_link: `${APP_BASE_URL}/cart`,
         };
@@ -416,31 +418,42 @@ async function runTool(
           .limit(Math.min(args.limit || 5, 10));
         return (data || []).map((o: any) => ({
           ref: o.ref_code || o.id.slice(0, 8), total: o.total, status: o.status,
+          created_at: o.created_at,
           link: `${APP_BASE_URL}/orders`,
         }));
       }
       case "search_services": {
         let q = admin.from("service_providers")
-          .select("id, name, category, city, rate_per_hour, rating").limit(args.limit || 5);
+          .select("id, name, category, city, rate_per_hour, rating, cover").limit(args.limit || 5);
         if (args.category) q = q.ilike("category", `%${args.category}%`);
         if (args.city) q = q.ilike("city", `%${args.city}%`);
         const { data } = await q;
-        return (data || []).map((s: any) => ({ ...s, link: `${APP_BASE_URL}/services` }));
+        return (data || []).map((s: any) => {
+          pushMedia(s.cover, `${s.name}${s.city ? " — " + s.city : ""}\n${APP_BASE_URL}/services`);
+          return { ...s, cover: undefined, link: `${APP_BASE_URL}/services` };
+        });
       }
       case "search_stays": {
-        let q = admin.from("stays").select("id, title, city, price_per_night").limit(args.limit || 5);
+        let q = admin.from("stays").select("id, title, city, price_per_night, cover").limit(args.limit || 5);
         if (args.city) q = q.ilike("city", `%${args.city}%`);
         const { data } = await q;
-        return (data || []).map((s: any) => ({ ...s, link: `${APP_BASE_URL}/stays` }));
+        return (data || []).map((s: any) => {
+          pushMedia(s.cover, `${s.title}${s.city ? " — " + s.city : ""}\n${APP_BASE_URL}/stays`);
+          return { ...s, cover: undefined, link: `${APP_BASE_URL}/stays` };
+        });
       }
       case "search_properties": {
-        let q = admin.from("properties").select("id, title, city, price, kind").limit(args.limit || 5);
+        let q = admin.from("properties").select("id, title, city, price, kind, cover").limit(args.limit || 5);
         if (args.city) q = q.ilike("city", `%${args.city}%`);
         if (args.kind) q = q.eq("kind", args.kind);
         if (args.max_price) q = q.lte("price", args.max_price);
         const { data } = await q;
-        return (data || []).map((p: any) => ({ ...p, link: `${APP_BASE_URL}/properties` }));
+        return (data || []).map((p: any) => {
+          pushMedia(p.cover, `${p.title}${p.city ? " — " + p.city : ""}\n${APP_BASE_URL}/properties`);
+          return { ...p, cover: undefined, link: `${APP_BASE_URL}/properties` };
+        });
       }
+
       case "create_ride_request": {
         if (!userId) return { error: "Sign in first" };
         const { data, error } = await admin.from("rides").insert({
