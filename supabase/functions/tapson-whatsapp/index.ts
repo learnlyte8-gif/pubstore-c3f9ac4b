@@ -2,7 +2,13 @@
 // Tapson WhatsApp Agent — invoked by waapi-inbound after the sender is matched
 // to a PUBSTORE user (or anonymous). Uses Lovable AI Gateway with tool calls.
 import { createClient } from "@supabase/supabase-js";
-import { sendWhatsApp, APP_BRAND, APP_BASE_URL } from "../_shared/whatsapp.ts";
+import {
+  sendWhatsApp,
+  sendWhatsAppImages,
+  firstImageUrl,
+  APP_BRAND,
+  APP_BASE_URL,
+} from "../_shared/whatsapp.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const admin = createClient(
