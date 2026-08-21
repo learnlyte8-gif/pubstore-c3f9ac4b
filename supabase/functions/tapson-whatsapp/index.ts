@@ -288,29 +288,104 @@ const tools: any[] = [
 ];
 
 // ---------- Tool implementations ----------
-async function runTool(name: string, args: any, userId: string | null): Promise<any> {
+export type MediaItem = { url: string; caption?: string };
+
+async function supplierNames(ids: string[]): Promise<Record<string, any>> {
+  const uniq = [...new Set(ids.filter(Boolean))];
+  if (!uniq.length) return {};
+  const { data } = await admin.from("suppliers")
+    .select("id, name, city, country, rating, verified, logo").in("id", uniq);
+  const map: Record<string, any> = {};
+  for (const s of data || []) map[s.id] = s;
+  return map;
+}
+
+async function runTool(
+  name: string,
+  args: any,
+  userId: string | null,
+  media: MediaItem[] = [],
+): Promise<any> {
+  const pushMedia = (value: unknown, caption?: string) => {
+    const url = firstImageUrl(value);
+    if (url) media.push({ url, caption });
+  };
   try {
     switch (name) {
       case "search_products": {
         let q = admin.from("products")
-          .select("id, title, price, image, category_slug, supplier_id")
+          .select("id, title, price, original_price, image, gallery, category_slug, supplier_id, rating, review_count, sold, moq, unit, lead_time, ready_to_ship, free_shipping, ship_from")
           .eq("active", true).limit(Math.min(args.limit || 6, 10));
         if (args.query) q = q.ilike("title", `%${args.query}%`);
         if (args.category) q = q.eq("category_slug", args.category);
         if (args.max_price) q = q.lte("price", args.max_price);
         const { data } = await q;
-        return (data || []).map((p: any) => ({
-          id: p.id, title: p.title, price: p.price, category: p.category_slug,
-          link: `${APP_BASE_URL}/product/${p.id}`,
-        }));
+        const sup = await supplierNames((data || []).map((p: any) => p.supplier_id));
+        return (data || []).map((p: any) => {
+          const s = sup[p.supplier_id];
+          pushMedia(p.image ?? p.gallery, `${p.title} — $${Number(p.price || 0).toFixed(2)}\n${APP_BASE_URL}/product/${p.id}`);
+          return {
+            id: p.id, title: p.title, price: p.price, original_price: p.original_price,
+            category: p.category_slug, rating: p.rating, review_count: p.review_count, sold: p.sold,
+            moq: p.moq, unit: p.unit, lead_time: p.lead_time, ready_to_ship: p.ready_to_ship,
+            free_shipping: p.free_shipping, ship_from: p.ship_from,
+            store: s ? { id: s.id, name: s.name, city: s.city, country: s.country, rating: s.rating, verified: s.verified } : null,
+            link: `${APP_BASE_URL}/product/${p.id}`,
+          };
+        });
       }
       case "get_product": {
         const { data } = await admin.from("products")
-          .select("id, title, price, description, image, supplier_id, sold, rating")
+          .select("id, title, price, original_price, description, image, gallery, video_url, specs, features, use_cases, category_slug, supplier_id, sold, rating, review_count, moq, unit, lead_time, lead_time_days, ready_to_ship, free_shipping, ship_from, badge")
           .eq("id", args.id).maybeSingle();
         if (!data) return { error: "Product not found" };
-        return { ...data, link: `${APP_BASE_URL}/product/${data.id}` };
+        const sup = await supplierNames([data.supplier_id]);
+        const s = sup[data.supplier_id];
+        pushMedia(data.image ?? data.gallery, `${data.title} — $${Number(data.price || 0).toFixed(2)}\n${APP_BASE_URL}/product/${data.id}`);
+        const gal = Array.isArray(data.gallery) ? data.gallery.slice(0, 2) : [];
+        for (const g of gal) pushMedia(g);
+        return {
+          ...data, image: undefined, gallery: undefined,
+          store: s ? { id: s.id, name: s.name, city: s.city, country: s.country, rating: s.rating, verified: s.verified } : null,
+          link: `${APP_BASE_URL}/product/${data.id}`,
+        };
       }
+      case "search_suppliers": {
+        let q = admin.from("suppliers")
+          .select("id, name, slug, logo, city, country, rating, verified, gold, about, categories, years_active, response_rate, on_time_delivery, trade_assurance")
+          .limit(Math.min(args.limit || 5, 8));
+        if (args.query) q = q.ilike("name", `%${args.query}%`);
+        if (args.city) q = q.ilike("city", `%${args.city}%`);
+        if (args.country) q = q.ilike("country", `%${args.country}%`);
+        if (args.verified_only) q = q.eq("verified", true);
+        const { data } = await q;
+        return (data || []).map((s: any) => {
+          const link = `${APP_BASE_URL}/supplier/${s.slug || s.id}`;
+          pushMedia(s.logo, `${s.name}${s.city ? " — " + s.city : ""}\n${link}`);
+          return { ...s, logo: undefined, link };
+        });
+      }
+      case "get_supplier": {
+        let q = admin.from("suppliers")
+          .select("id, name, slug, logo, banner, city, country, location_address, rating, verified, gold, about, categories, years_active, response_rate, response_time, on_time_delivery, trade_assurance, website");
+        q = args.id ? q.eq("id", args.id) : q.eq("slug", args.slug);
+        const { data } = await q.maybeSingle();
+        if (!data) return { error: "Store not found" };
+        const link = `${APP_BASE_URL}/supplier/${data.slug || data.id}`;
+        pushMedia(data.logo, `${data.name}\n${link}`);
+        const { data: prods } = await admin.from("products")
+          .select("id, title, price, image").eq("supplier_id", data.id).eq("active", true).limit(4);
+        for (const p of prods || []) {
+          pushMedia(p.image, `${p.title} — $${Number(p.price || 0).toFixed(2)}\n${APP_BASE_URL}/product/${p.id}`);
+        }
+        return {
+          ...data, logo: undefined, banner: undefined, link,
+          products: (prods || []).map((p: any) => ({
+            id: p.id, title: p.title, price: p.price, link: `${APP_BASE_URL}/product/${p.id}`,
+          })),
+        };
+      }
+
       case "add_to_cart": {
         if (!userId) return { error: "Sign in first at " + APP_BASE_URL + "/auth" };
         const qty = Math.max(1, Math.min(args.quantity || 1, 99));
