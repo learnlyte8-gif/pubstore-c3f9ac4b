@@ -391,7 +391,48 @@ function TabItem({
   );
 }
 
+function BarTabItem({
+  to,
+  iconOutline: IconOutline,
+  iconFilled: IconFilled,
+  label,
+  badge,
+}: {
+  to: string;
+  iconOutline: IconType;
+  iconFilled: IconType;
+  label: string;
+  badge?: number;
+}) {
+  return (
+    <li>
+      <NavLink to={to} aria-label={label} className="block">
+        {({ isActive }) => (
+          <span
+            className={`relative flex items-center gap-1.5 h-9 px-3 rounded-full transition ${
+              isActive
+                ? "bg-[hsl(24_100%_56%/0.12)] text-[hsl(24_100%_56%)] font-semibold"
+                : "text-foreground/70 hover:bg-muted/70 hover:text-foreground font-medium"
+            }`}
+          >
+            <span className="relative flex items-center justify-center">
+              {isActive ? <IconFilled className="w-5 h-5" /> : <IconOutline className="w-5 h-5" />}
+              {badge !== undefined && badge > 0 && (
+                <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-background">
+                  {badge > 99 ? "99+" : badge}
+                </span>
+              )}
+            </span>
+            <span className="text-[13px] tracking-tight">{label}</span>
+          </span>
+        )}
+      </NavLink>
+    </li>
+  );
+}
+
 type RailItem = { to: string; label: string; icon: typeof Home; hint: string };
+
 const RAIL_SECTIONS: { title: string; items: RailItem[] }[] = [
   {
     title: "Commerce",
