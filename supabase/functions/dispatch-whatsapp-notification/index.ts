@@ -328,6 +328,7 @@ Deno.serve(async (req) => {
       case "property_inquiry_new":   await handlePropertyInquiryNew(entity_id); break;
       case "finance_application_new": await handleFinanceApplicationNew(entity_id); break;
       case "rfq_submitted":          await handleRfqSubmitted(entity_id); break;
+      case "generic_notification":   await handleGenericNotification(entity_id); break;
       default:
         return new Response(JSON.stringify({ error: `unknown event ${event}` }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
