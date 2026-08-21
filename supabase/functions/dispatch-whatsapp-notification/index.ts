@@ -248,6 +248,65 @@ async function handleRfqSubmitted(rfqId: string) {
   });
 }
 
+// ---------- Generic: every in-app notification → WhatsApp ----------
+// Any notification row inserted anywhere in the app (rides, jobs, chats, live,
+// bookings, wallet, verifications, group buys, …) is mirrored to WhatsApp.
+// Types already covered by a dedicated renderer above are skipped so users
+// never get the same update twice.
+const COVERED_TYPE_PREFIXES = [
+  "order", "sale", "inquiry", "rfq", "property_inquiry", "finance_application",
+];
+
+function categoryForType(type: string): Recipient["category"] {
+  if (/^order|delivery|shipping|payment|refund|escrow/.test(type)) return "orders";
+  if (/^sale|payout|commission/.test(type)) return "sales";
+  if (/inquiry|quote|bid|application/.test(type)) return "inquiries";
+  return "general";
+}
+
+function emojiForType(type: string): string {
+  if (/message|chat/.test(type)) return "💬";
+  if (/order|delivery|shipping/.test(type)) return "📦";
+  if (/payment|wallet|payout|refund/.test(type)) return "💰";
+  if (/ride|trip|driver/.test(type)) return "🚗";
+  if (/job|application/.test(type)) return "💼";
+  if (/live/.test(type)) return "🔴";
+  if (/booking|reservation|stay/.test(type)) return "🏠";
+  if (/verification/.test(type)) return "🛡️";
+  if (/group_buy/.test(type)) return "👥";
+  return "🔔";
+}
+
+async function handleGenericNotification(notificationId: string) {
+  const { data: n } = await admin
+    .from("notifications")
+    .select("id, user_id, type, title, body, link")
+    .eq("id", notificationId).maybeSingle();
+  if (!n?.user_id) return;
+
+  const type = String(n.type || "");
+  if (COVERED_TYPE_PREFIXES.some((p) => type.startsWith(p))) return;
+
+  // Idempotency — pg_net retries / duplicate triggers must not double-send.
+  const { data: already } = await admin.from("whatsapp_send_log")
+    .select("id").eq("event", "notification").eq("entity_id", n.id).limit(1).maybeSingle();
+  if (already) return;
+
+  const link = n.link
+    ? (String(n.link).startsWith("http") ? String(n.link) : `${APP_BASE_URL}${n.link}`)
+    : APP_BASE_URL;
+  const body =
+    `${emojiForType(type)} ${APP_BRAND} — ${n.title || "Update"}\n` +
+    (n.body ? `${String(n.body).slice(0, 300)}\n` : "") +
+    `Open: ${link}`;
+
+  await deliver({
+    user_id: n.user_id, event: "notification", entity_id: n.id,
+    category: categoryForType(type), refKind: "notification", body,
+  });
+}
+
+
 // ---------- HTTP handler ----------
 
 Deno.serve(async (req) => {
