@@ -2,6 +2,8 @@
 import { createClient } from "@supabase/supabase-js";
 import {
   sendWhatsApp,
+  sendWhatsAppImage,
+  firstImageUrl,
   normalizePhoneE164,
   buildRefTag,
   APP_BRAND,
@@ -81,12 +83,21 @@ async function deliver(opts: {
   category: Recipient["category"];
   refKind: string;
   body: string;
+  image_url?: string | null;
 }) {
   const recip = await recipientPhone({ user_id: opts.user_id, category: opts.category });
   if (!recip) return;
   const ref = buildRefTag(opts.refKind, opts.entity_id);
   const fullBody = `${opts.body}\n\n${ref}`;
-  const result = await sendWhatsApp(recip.phone, fullBody);
+  const image = firstImageUrl(opts.image_url);
+  // When the event has a picture (product, listing, store), send it as an image
+  // message with the text as caption so WhatsApp shows one rich bubble.
+  const result = image
+    ? await sendWhatsAppImage(recip.phone, image, fullBody)
+    : await sendWhatsApp(recip.phone, fullBody);
+  const finalResult = !result.ok && image
+    ? await sendWhatsApp(recip.phone, fullBody) // fall back to plain text
+    : result;
   await logSend({
     user_id: opts.user_id,
     event: opts.event,
@@ -94,11 +105,32 @@ async function deliver(opts: {
     to_phone: recip.phone,
     body: fullBody,
     ref_tag: ref,
-    result: result.ok
-      ? { kind: "sent", sid: result.sid }
-      : { kind: "failed", error: `${result.code ?? ""} ${result.error}`.trim() },
+    result: finalResult.ok
+      ? { kind: "sent", sid: finalResult.sid }
+      : { kind: "failed", error: `${finalResult.code ?? ""} ${finalResult.error}`.trim() },
   });
 }
+
+// ---------- image lookups ----------
+async function orderImage(orderId: string): Promise<string | null> {
+  const { data } = await admin.from("order_items")
+    .select("image, product_id").eq("order_id", orderId).limit(1).maybeSingle();
+  if (data?.image) return firstImageUrl(data.image);
+  if (data?.product_id) {
+    const { data: p } = await admin.from("products").select("image, gallery")
+      .eq("id", data.product_id).maybeSingle();
+    return firstImageUrl(p?.image ?? p?.gallery);
+  }
+  return null;
+}
+
+async function productImage(productId: string | null | undefined): Promise<string | null> {
+  if (!productId) return null;
+  const { data } = await admin.from("products").select("image, gallery")
+    .eq("id", productId).maybeSingle();
+  return firstImageUrl(data?.image ?? data?.gallery);
+}
+
 
 // ---------- event renderers ----------
 
@@ -115,7 +147,7 @@ async function handleOrderPlaced(orderId: string) {
     `Reply here to talk to the seller.`;
   await deliver({
     user_id: o.buyer_id, event: "order_placed", entity_id: o.id,
-    category: "orders", refKind: "order", body,
+    category: "orders", refKind: "order", body, image_url: await orderImage(o.id),
   });
 }
 
@@ -135,7 +167,7 @@ async function handleOrderNewSale(orderId: string) {
     `Reply here to message the buyer.`;
   await deliver({
     user_id: s.owner_id, event: "order_new_sale", entity_id: o.id,
-    category: "sales", refKind: "order", body,
+    category: "sales", refKind: "order", body, image_url: await orderImage(o.id),
   });
 }
 
@@ -149,14 +181,14 @@ async function handleOrderStatus(orderId: string) {
     `Open: ${APP_BASE_URL}/orders`;
   await deliver({
     user_id: o.buyer_id, event: "order_status", entity_id: o.id,
-    category: "orders", refKind: "order", body,
+    category: "orders", refKind: "order", body, image_url: await orderImage(o.id),
   });
 }
 
 async function handleInquiryNew(inqId: string) {
   const { data: i } = await admin
     .from("product_inquiries")
-    .select("id, supplier_id, product_title, message, buyer_id")
+    .select("id, supplier_id, product_id, product_title, message, buyer_id")
     .eq("id", inqId).maybeSingle();
   if (!i) return;
   const { data: s } = await admin.from("suppliers").select("owner_id")
@@ -171,6 +203,7 @@ async function handleInquiryNew(inqId: string) {
   await deliver({
     user_id: s.owner_id, event: "inquiry_new", entity_id: i.id,
     category: "inquiries", refKind: "inquiry", body,
+    image_url: await productImage(i.product_id),
   });
 }
 
@@ -187,6 +220,7 @@ async function handleInquiryDecision(inqId: string) {
   await deliver({
     user_id: i.buyer_id, event: "inquiry_decision", entity_id: i.id,
     category: "inquiries", refKind: "inquiry", body,
+    image_url: approved ? await productImage(i.product_id) : null,
   });
 }
 
@@ -197,7 +231,7 @@ async function handlePropertyInquiryNew(inqId: string) {
     .eq("id", inqId).maybeSingle();
   if (!i) return;
   const { data: p } = await admin.from("properties")
-    .select("owner_user_id, title").eq("id", i.property_id).maybeSingle();
+    .select("owner_user_id, title, cover").eq("id", i.property_id).maybeSingle();
   if (!p?.owner_user_id) return;
   const body =
     `🏠 ${APP_BRAND} — New property inquiry\n` +
@@ -208,8 +242,10 @@ async function handlePropertyInquiryNew(inqId: string) {
   await deliver({
     user_id: p.owner_user_id, event: "property_inquiry_new", entity_id: i.id,
     category: "inquiries", refKind: "property_inquiry", body,
+    image_url: firstImageUrl(p.cover),
   });
 }
+
 
 async function handleFinanceApplicationNew(appId: string) {
   const { data: a } = await admin
@@ -300,9 +336,23 @@ async function handleGenericNotification(notificationId: string) {
     (n.body ? `${String(n.body).slice(0, 300)}\n` : "") +
     `Open: ${link}`;
 
+  // If the notification points at a product/store/listing, attach its picture.
+  let image: string | null = null;
+  const rawLink = String(n.link || "");
+  const prodM = rawLink.match(/\/product\/([0-9a-f-]{6,})/i);
+  const supM = rawLink.match(/\/supplier\/([^/?#]+)/i);
+  if (prodM) image = await productImage(prodM[1]);
+  else if (supM) {
+    const key = supM[1];
+    const isUuid = /^[0-9a-f-]{32,36}$/i.test(key);
+    const { data: s } = await admin.from("suppliers").select("logo, banner")
+      .eq(isUuid ? "id" : "slug", key).maybeSingle();
+    image = firstImageUrl(s?.logo ?? s?.banner);
+  }
+
   await deliver({
     user_id: n.user_id, event: "notification", entity_id: n.id,
-    category: categoryForType(type), refKind: "notification", body,
+    category: categoryForType(type), refKind: "notification", body, image_url: image,
   });
 }
 
