@@ -83,12 +83,21 @@ async function deliver(opts: {
   category: Recipient["category"];
   refKind: string;
   body: string;
+  image_url?: string | null;
 }) {
   const recip = await recipientPhone({ user_id: opts.user_id, category: opts.category });
   if (!recip) return;
   const ref = buildRefTag(opts.refKind, opts.entity_id);
   const fullBody = `${opts.body}\n\n${ref}`;
-  const result = await sendWhatsApp(recip.phone, fullBody);
+  const image = firstImageUrl(opts.image_url);
+  // When the event has a picture (product, listing, store), send it as an image
+  // message with the text as caption so WhatsApp shows one rich bubble.
+  const result = image
+    ? await sendWhatsAppImage(recip.phone, image, fullBody)
+    : await sendWhatsApp(recip.phone, fullBody);
+  const finalResult = !result.ok && image
+    ? await sendWhatsApp(recip.phone, fullBody) // fall back to plain text
+    : result;
   await logSend({
     user_id: opts.user_id,
     event: opts.event,
@@ -96,11 +105,32 @@ async function deliver(opts: {
     to_phone: recip.phone,
     body: fullBody,
     ref_tag: ref,
-    result: result.ok
-      ? { kind: "sent", sid: result.sid }
-      : { kind: "failed", error: `${result.code ?? ""} ${result.error}`.trim() },
+    result: finalResult.ok
+      ? { kind: "sent", sid: finalResult.sid }
+      : { kind: "failed", error: `${finalResult.code ?? ""} ${finalResult.error}`.trim() },
   });
 }
+
+// ---------- image lookups ----------
+async function orderImage(orderId: string): Promise<string | null> {
+  const { data } = await admin.from("order_items")
+    .select("image, product_id").eq("order_id", orderId).limit(1).maybeSingle();
+  if (data?.image) return firstImageUrl(data.image);
+  if (data?.product_id) {
+    const { data: p } = await admin.from("products").select("image, gallery")
+      .eq("id", data.product_id).maybeSingle();
+    return firstImageUrl(p?.image ?? p?.gallery);
+  }
+  return null;
+}
+
+async function productImage(productId: string | null | undefined): Promise<string | null> {
+  if (!productId) return null;
+  const { data } = await admin.from("products").select("image, gallery")
+    .eq("id", productId).maybeSingle();
+  return firstImageUrl(data?.image ?? data?.gallery);
+}
+
 
 // ---------- event renderers ----------
 
