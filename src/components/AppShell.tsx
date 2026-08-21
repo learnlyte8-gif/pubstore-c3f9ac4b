@@ -189,6 +189,17 @@ export default function AppShell() {
               </Link>
             )}
 
+            {/* Desktop: primary navigation lives in the app bar */}
+            <nav className="hidden lg:flex items-center gap-1 shrink-0 mr-2" aria-label="Primary">
+              <ul className="flex items-center gap-1">
+                <BarTabItem to="/home" iconOutline={IoHomeOutline} iconFilled={IoHome} label="Home" />
+                <BarTabItem to="/categories" iconOutline={IoBagHandleOutline} iconFilled={IoBagHandle} label="Shop" />
+                <BarTabItem to="/messages" iconOutline={IoChatbubbleOutline} iconFilled={IoChatbubble} label="Chats" badge={chatsWithUnread} />
+                <BarTabItem to="/wishlist" iconOutline={IoHeartOutline} iconFilled={IoHeart} label="Saved" badge={wishlist.length} />
+                <BarTabItem to="/profile" iconOutline={IoPersonOutline} iconFilled={IoPerson} label="You" />
+              </ul>
+            </nav>
+
             <div className="flex items-center gap-0.5 shrink-0">
               <Link to="/notifications" aria-label="Notifications" className="relative p-2 rounded-full active:scale-90 active:bg-muted transition">
                 <Bell className="w-[22px] h-[22px]" strokeWidth={1.8} />
@@ -207,6 +218,7 @@ export default function AppShell() {
                 )}
               </Link>
             </div>
+
           </div>
 
           {/* Row 2: full-width search */}
@@ -252,8 +264,7 @@ export default function AppShell() {
 
 
       <main
-        className="flex-1 max-w-2xl lg:max-w-[1600px] w-full mx-auto lg:px-6"
-        style={{ paddingBottom: "64px" }}
+        className="flex-1 max-w-2xl lg:max-w-[1600px] w-full mx-auto lg:px-6 pb-16 lg:pb-6"
       >
 
         <div key={location.pathname} className="page-transition">
@@ -261,11 +272,12 @@ export default function AppShell() {
         </div>
       </main>
 
-      {/* Bottom nav — flush to bottom edge, iOS-style icons */}
+      {/* Bottom nav — mobile/tablet only; on desktop the tabs live in the app bar */}
       <nav
-        className="fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border"
+        className="fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border lg:hidden"
         aria-label="Primary"
       >
+
         <ul className="relative flex flex-row items-stretch gap-0.5 max-w-2xl lg:max-w-[1600px] mx-auto px-1 h-[56px]">
           <TabItem to="/home" iconOutline={IoHomeOutline} iconFilled={IoHome} label="Home" />
           <TabItem to="/categories" iconOutline={IoBagHandleOutline} iconFilled={IoBagHandle} label="Shop" />
@@ -379,7 +391,48 @@ function TabItem({
   );
 }
 
+function BarTabItem({
+  to,
+  iconOutline: IconOutline,
+  iconFilled: IconFilled,
+  label,
+  badge,
+}: {
+  to: string;
+  iconOutline: IconType;
+  iconFilled: IconType;
+  label: string;
+  badge?: number;
+}) {
+  return (
+    <li>
+      <NavLink to={to} aria-label={label} className="block">
+        {({ isActive }) => (
+          <span
+            className={`relative flex items-center gap-1.5 h-9 px-3 rounded-full transition ${
+              isActive
+                ? "bg-[hsl(24_100%_56%/0.12)] text-[hsl(24_100%_56%)] font-semibold"
+                : "text-foreground/70 hover:bg-muted/70 hover:text-foreground font-medium"
+            }`}
+          >
+            <span className="relative flex items-center justify-center">
+              {isActive ? <IconFilled className="w-5 h-5" /> : <IconOutline className="w-5 h-5" />}
+              {badge !== undefined && badge > 0 && (
+                <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-background">
+                  {badge > 99 ? "99+" : badge}
+                </span>
+              )}
+            </span>
+            <span className="text-[13px] tracking-tight">{label}</span>
+          </span>
+        )}
+      </NavLink>
+    </li>
+  );
+}
+
 type RailItem = { to: string; label: string; icon: typeof Home; hint: string };
+
 const RAIL_SECTIONS: { title: string; items: RailItem[] }[] = [
   {
     title: "Commerce",
