@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.dispatch_notification_whatsapp() FROM PUBLIC, anon, authenticated;
