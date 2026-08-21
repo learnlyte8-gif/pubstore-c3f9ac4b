@@ -1146,8 +1146,10 @@ function ProductsView() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
+
 }
 
 // ---------------- Edit product ----------------
