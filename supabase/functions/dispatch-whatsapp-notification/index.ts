@@ -343,8 +343,10 @@ async function handleGenericNotification(notificationId: string) {
   const supM = rawLink.match(/\/supplier\/([^/?#]+)/i);
   if (prodM) image = await productImage(prodM[1]);
   else if (supM) {
+    const key = supM[1];
+    const isUuid = /^[0-9a-f-]{32,36}$/i.test(key);
     const { data: s } = await admin.from("suppliers").select("logo, banner")
-      .or(`slug.eq.${supM[1]},id.eq.${supM[1]}`).maybeSingle();
+      .eq(isUuid ? "id" : "slug", key).maybeSingle();
     image = firstImageUrl(s?.logo ?? s?.banner);
   }
 
