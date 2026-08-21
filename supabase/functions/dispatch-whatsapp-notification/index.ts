@@ -2,6 +2,8 @@
 import { createClient } from "@supabase/supabase-js";
 import {
   sendWhatsApp,
+  sendWhatsAppImage,
+  firstImageUrl,
   normalizePhoneE164,
   buildRefTag,
   APP_BRAND,
