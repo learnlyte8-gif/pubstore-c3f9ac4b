@@ -33,7 +33,7 @@ function helpText(signedIn: boolean): string {
   const acct = signedIn
     ? `• orders — your recent orders\n• wallet — your balance\n• cart — open your cart\n• ride <pickup> to <dropoff> — request a ride\n`
     : `• Sign in: ${APP_BASE_URL}/auth (needed for cart, orders, wallet, rides)\n`;
-  return `Hi! I'm Tapson on ${APP_BRAND}.\n\nTry:\n• find <keyword>  e.g. find wireless earbuds\n• product <id>\n• add <product_id> [qty]\n• services <city>\n• stays <city>\n• properties <city>\n${acct}• help — this menu\n\nOpen the app: ${APP_BASE_URL}`;
+  return `Hi! I'm Tapson on ${APP_BRAND}.\n\nTry:\n• find <keyword>  e.g. find wireless earbuds\n• product <id>\n• add <product_id> [qty]\n• store <name> — a supplier/store profile\n• services <city>\n• stays <city>\n• properties <city>\n${acct}• help — this menu\n\nOpen the app: ${APP_BASE_URL}`;
 }
 
 function renderList(title: string, items: any[], render: (x: any) => string): string {
@@ -41,7 +41,20 @@ function renderList(title: string, items: any[], render: (x: any) => string): st
   return `${title}:\n` + items.slice(0, 6).map((it, i) => `${i + 1}. ${render(it)}`).join("\n");
 }
 
-async function runWithoutAI(body: string, userId: string | null): Promise<string> {
+function productLine(p: any): string {
+  const facts: string[] = [];
+  if (p.store?.name) facts.push(p.store.name + (p.store.verified ? " ✅" : ""));
+  if (p.rating) facts.push(`★ ${Number(p.rating).toFixed(1)}${p.review_count ? ` (${p.review_count})` : ""}`);
+  if (p.sold) facts.push(`${p.sold} sold`);
+  if (p.moq) facts.push(`MOQ ${p.moq}${p.unit ? " " + p.unit : ""}`);
+  if (p.ship_from) facts.push(`from ${p.ship_from}`);
+  if (p.free_shipping) facts.push("free shipping");
+  const was = p.original_price && Number(p.original_price) > Number(p.price)
+    ? ` (was ${fmtMoney(p.original_price)})` : "";
+  return `${p.title} — ${fmtMoney(p.price)}${was}\n   ${facts.join(" • ")}\n   ${p.link}\n   (add ${p.id})`;
+}
+
+async function runWithoutAI(body: string, userId: string | null, media: MediaItem[] = []): Promise<string> {
   const text = body.trim();
   const lower = text.toLowerCase();
   const signedIn = !!userId;
@@ -53,14 +66,14 @@ async function runWithoutAI(body: string, userId: string | null): Promise<string
 
   // wallet
   if (/^wallet\b|^balance\b/.test(lower)) {
-    const r = await runTool("wallet_balance", {}, userId);
+    const r = await runTool("wallet_balance", {}, userId, media);
     if (r?.error) return `${r.error}\n${APP_BASE_URL}/wallet`;
     return `Wallet 💰\nPersonal: ${fmtMoney(r.personal_balance)}\nSales: ${fmtMoney(r.sales_balance)}\n\n${APP_BASE_URL}/wallet`;
   }
 
   // orders
   if (/^orders?\b/.test(lower)) {
-    const r = await runTool("recent_orders", { limit: 5 }, userId);
+    const r = await runTool("recent_orders", { limit: 5 }, userId, media);
     if (r?.error) return `${r.error}\n${APP_BASE_URL}/orders`;
     return renderList("Recent orders", r, (o: any) => `#${o.ref} — ${fmtMoney(o.total)} — ${o.status}`) + `\n\n${APP_BASE_URL}/orders`;
   }
@@ -73,55 +86,73 @@ async function runWithoutAI(body: string, userId: string | null): Promise<string
   // add <product_id> [qty]
   const addM = text.match(/^add\s+([a-f0-9-]{6,})(?:\s+(\d+))?/i);
   if (addM) {
-    const r = await runTool("add_to_cart", { product_id: addM[1], quantity: addM[2] ? Number(addM[2]) : 1 }, userId);
+    const r = await runTool("add_to_cart", { product_id: addM[1], quantity: addM[2] ? Number(addM[2]) : 1 }, userId, media);
     if (r?.error) return `${r.error}`;
-    return `✅ Added ${r.quantity} × ${r.title}\nSubtotal: ${fmtMoney(r.subtotal)}\nCheckout: ${r.checkout_link}`;
+    return `✅ Added ${r.quantity} × ${r.title}\nUnit price: ${fmtMoney(r.unit_price)}\nSubtotal: ${fmtMoney(r.subtotal)}\nCheckout (pay from wallet): ${r.checkout_link}`;
   }
 
   // product <id>
   const prodM = text.match(/^product\s+([a-f0-9-]{6,})/i);
   if (prodM) {
-    const r = await runTool("get_product", { id: prodM[1] }, userId);
+    const r = await runTool("get_product", { id: prodM[1] }, userId, media);
     if (r?.error) return r.error;
-    return `${r.title}\nPrice: ${fmtMoney(r.price)}\n${r.description ? r.description.slice(0, 200) + "\n" : ""}${r.link}`;
+    const bits: string[] = [r.title, `Price: ${fmtMoney(r.price)}${r.original_price && Number(r.original_price) > Number(r.price) ? ` (was ${fmtMoney(r.original_price)})` : ""}`];
+    if (r.store?.name) bits.push(`Store: ${r.store.name}${r.store.verified ? " ✅" : ""}${r.store.city ? ` — ${r.store.city}` : ""}`);
+    if (r.rating) bits.push(`Rating: ★ ${Number(r.rating).toFixed(1)}${r.review_count ? ` (${r.review_count} reviews)` : ""}${r.sold ? ` • ${r.sold} sold` : ""}`);
+    if (r.moq) bits.push(`MOQ: ${r.moq}${r.unit ? " " + r.unit : ""}`);
+    if (r.lead_time || r.ready_to_ship) bits.push(`Delivery: ${r.ready_to_ship ? "ready to ship" : ""}${r.lead_time ? `${r.ready_to_ship ? " • " : ""}${r.lead_time}` : ""}`);
+    if (r.free_shipping) bits.push("Free shipping ✅");
+    if (r.description) bits.push(`\n${String(r.description).slice(0, 400)}`);
+    bits.push(`\n${r.link}\nReply "add ${r.id}" to add it to your cart.`);
+    return bits.join("\n");
   }
 
   // ride <pickup> to <dropoff>
   const rideM = text.match(/^ride\s+(.+?)\s+to\s+(.+)/i);
   if (rideM) {
     const r = await runTool("create_ride_request",
-      { pickup_address: rideM[1].trim(), dropoff_address: rideM[2].trim() }, userId);
+      { pickup_address: rideM[1].trim(), dropoff_address: rideM[2].trim() }, userId, media);
     if (r?.error) return `${r.error}\n${r.hint || APP_BASE_URL + "/rides"}`;
-    return `🚗 Ride requested!\nTrack: ${r.link}`;
+    return `🚗 Ride requested!\nPickup: ${rideM[1].trim()}\nDrop-off: ${rideM[2].trim()}\nTrack & pay: ${r.link}`;
+  }
+
+  // store / supplier <name>
+  const storeM = text.match(/^(?:store|shop|supplier)s?\s*(.*)/i);
+  if (storeM) {
+    const r = await runTool("search_suppliers", { query: storeM[1] || undefined, limit: 5 }, userId, media);
+    return renderList("Stores", r, (s: any) =>
+      `${s.name}${s.verified ? " ✅" : ""}\n   ${[s.city, s.country].filter(Boolean).join(", ")}${s.rating ? ` • ★ ${Number(s.rating).toFixed(1)}` : ""}${s.years_active ? ` • ${s.years_active}y active` : ""}\n   ${s.link}`)
+      + `\n\nBrowse all: ${APP_BASE_URL}`;
   }
 
   // services / stays / properties
   const svcM = text.match(/^services?\s*(.*)/i);
   if (svcM) {
-    const r = await runTool("search_services", { city: svcM[1] || undefined, limit: 5 }, userId);
-    return renderList("Services", r, (s: any) => `${s.name} — ${s.category || ""} ${s.city ? "("+s.city+")" : ""} ${s.rate_per_hour ? "— "+fmtMoney(s.rate_per_hour)+"/hr" : ""}`) + `\n\n${APP_BASE_URL}/services`;
+    const r = await runTool("search_services", { city: svcM[1] || undefined, limit: 5 }, userId, media);
+    return renderList("Services", r, (s: any) => `${s.name} — ${s.category || ""} ${s.city ? "("+s.city+")" : ""} ${s.rate_per_hour ? "— "+fmtMoney(s.rate_per_hour)+"/hr" : ""}${s.rating ? ` • ★ ${Number(s.rating).toFixed(1)}` : ""}`) + `\n\n${APP_BASE_URL}/services`;
   }
   const stayM = text.match(/^stays?\s*(.*)/i);
   if (stayM) {
-    const r = await runTool("search_stays", { city: stayM[1] || undefined, limit: 5 }, userId);
+    const r = await runTool("search_stays", { city: stayM[1] || undefined, limit: 5 }, userId, media);
     return renderList("Stays", r, (s: any) => `${s.title} (${s.city || "?"}) — ${fmtMoney(s.price_per_night)}/night`) + `\n\n${APP_BASE_URL}/stays`;
   }
   const propM = text.match(/^propert(?:y|ies)\s*(.*)/i);
   if (propM) {
-    const r = await runTool("search_properties", { city: propM[1] || undefined, limit: 5 }, userId);
+    const r = await runTool("search_properties", { city: propM[1] || undefined, limit: 5 }, userId, media);
     return renderList("Properties", r, (p: any) => `${p.title} (${p.city || "?"}) — ${fmtMoney(p.price)} ${p.kind || ""}`) + `\n\n${APP_BASE_URL}/properties`;
   }
 
   // find / search <query>
   const findM = text.match(/^(?:find|search|look for|show)\s+(.+)/i);
   const query = findM ? findM[1] : text;
-  const r = await runTool("search_products", { query, limit: 6 }, userId);
+  const r = await runTool("search_products", { query, limit: 5 }, userId, media);
   if (Array.isArray(r) && r.length) {
-    return renderList(`Results for "${query}"`, r, (p: any) => `${p.title} — ${fmtMoney(p.price)}\n   ${p.link}\n   (add ${p.id})`) +
-      `\n\nMore on ${APP_BASE_URL}`;
+    return renderList(`Results for "${query}"`, r, productLine) +
+      `\n\nReply "product <id>" for full details or "add <id>" to buy.\nMore on ${APP_BASE_URL}`;
   }
   return `No matches for "${query}". Browse all on ${APP_BASE_URL}\n\nType "help" for commands.`;
 }
+
 
 const SYSTEM_PROMPT = `You are Tapson, the AI assistant for ${APP_BRAND} (a global B2B/B2C marketplace) on WhatsApp.
 
