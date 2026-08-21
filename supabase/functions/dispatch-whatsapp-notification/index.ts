@@ -188,7 +188,7 @@ async function handleOrderStatus(orderId: string) {
 async function handleInquiryNew(inqId: string) {
   const { data: i } = await admin
     .from("product_inquiries")
-    .select("id, supplier_id, product_title, message, buyer_id")
+    .select("id, supplier_id, product_id, product_title, message, buyer_id")
     .eq("id", inqId).maybeSingle();
   if (!i) return;
   const { data: s } = await admin.from("suppliers").select("owner_id")
@@ -203,6 +203,7 @@ async function handleInquiryNew(inqId: string) {
   await deliver({
     user_id: s.owner_id, event: "inquiry_new", entity_id: i.id,
     category: "inquiries", refKind: "inquiry", body,
+    image_url: await productImage(i.product_id),
   });
 }
 
@@ -219,6 +220,7 @@ async function handleInquiryDecision(inqId: string) {
   await deliver({
     user_id: i.buyer_id, event: "inquiry_decision", entity_id: i.id,
     category: "inquiries", refKind: "inquiry", body,
+    image_url: approved ? await productImage(i.product_id) : null,
   });
 }
 
@@ -229,7 +231,7 @@ async function handlePropertyInquiryNew(inqId: string) {
     .eq("id", inqId).maybeSingle();
   if (!i) return;
   const { data: p } = await admin.from("properties")
-    .select("owner_user_id, title").eq("id", i.property_id).maybeSingle();
+    .select("owner_user_id, title, cover").eq("id", i.property_id).maybeSingle();
   if (!p?.owner_user_id) return;
   const body =
     `🏠 ${APP_BRAND} — New property inquiry\n` +
@@ -240,8 +242,10 @@ async function handlePropertyInquiryNew(inqId: string) {
   await deliver({
     user_id: p.owner_user_id, event: "property_inquiry_new", entity_id: i.id,
     category: "inquiries", refKind: "property_inquiry", body,
+    image_url: firstImageUrl(p.cover),
   });
 }
+
 
 async function handleFinanceApplicationNew(appId: string) {
   const { data: a } = await admin
