@@ -616,7 +616,7 @@ Deno.serve(async (req) => {
 
     // Send photos for the items actually mentioned in the reply (max 4)
     let imagesSent = 0;
-    if (sendResult.ok && media.length) {
+    if (media.length) {
       // Prefer media whose deep link / id appears in the reply text
       const mentioned = media.filter((m) => {
         const link = (m.caption || "").match(/https?:\/\/\S+/)?.[0];
