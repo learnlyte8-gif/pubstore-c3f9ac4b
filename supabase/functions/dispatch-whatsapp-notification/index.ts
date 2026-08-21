@@ -336,9 +336,21 @@ async function handleGenericNotification(notificationId: string) {
     (n.body ? `${String(n.body).slice(0, 300)}\n` : "") +
     `Open: ${link}`;
 
+  // If the notification points at a product/store/listing, attach its picture.
+  let image: string | null = null;
+  const rawLink = String(n.link || "");
+  const prodM = rawLink.match(/\/product\/([0-9a-f-]{6,})/i);
+  const supM = rawLink.match(/\/supplier\/([^/?#]+)/i);
+  if (prodM) image = await productImage(prodM[1]);
+  else if (supM) {
+    const { data: s } = await admin.from("suppliers").select("logo, banner")
+      .or(`slug.eq.${supM[1]},id.eq.${supM[1]}`).maybeSingle();
+    image = firstImageUrl(s?.logo ?? s?.banner);
+  }
+
   await deliver({
     user_id: n.user_id, event: "notification", entity_id: n.id,
-    category: categoryForType(type), refKind: "notification", body,
+    category: categoryForType(type), refKind: "notification", body, image_url: image,
   });
 }
 
