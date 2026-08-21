@@ -623,8 +623,9 @@ Deno.serve(async (req) => {
         const id = link?.split("/").pop();
         return !!id && finalText.includes(id);
       });
-      const toSend = (mentioned.length ? mentioned : media).slice(0, 4);
-      const results = await sendWhatsAppImages(phone, toSend, 4);
+      const maxImages = Math.max(0, Math.min(Number(Deno.env.get("TAPSON_MAX_IMAGES") || 3), 6));
+      const toSend = (mentioned.length ? mentioned : media).slice(0, maxImages);
+      const results = await sendWhatsAppImages(phone, toSend, maxImages);
       imagesSent = results.filter((r) => r.ok).length;
       for (let i = 0; i < results.length; i++) {
         const r = results[i];
