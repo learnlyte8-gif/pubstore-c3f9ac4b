@@ -167,7 +167,7 @@ async function handleOrderNewSale(orderId: string) {
     `Reply here to message the buyer.`;
   await deliver({
     user_id: s.owner_id, event: "order_new_sale", entity_id: o.id,
-    category: "sales", refKind: "order", body,
+    category: "sales", refKind: "order", body, image_url: await orderImage(o.id),
   });
 }
 
