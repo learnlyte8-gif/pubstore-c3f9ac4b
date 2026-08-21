@@ -264,8 +264,7 @@ export default function AppShell() {
 
 
       <main
-        className="flex-1 max-w-2xl lg:max-w-[1600px] w-full mx-auto lg:px-6"
-        style={{ paddingBottom: "64px" }}
+        className="flex-1 max-w-2xl lg:max-w-[1600px] w-full mx-auto lg:px-6 pb-16 lg:pb-6"
       >
 
         <div key={location.pathname} className="page-transition">
@@ -273,11 +272,12 @@ export default function AppShell() {
         </div>
       </main>
 
-      {/* Bottom nav — flush to bottom edge, iOS-style icons */}
+      {/* Bottom nav — mobile/tablet only; on desktop the tabs live in the app bar */}
       <nav
-        className="fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border"
+        className="fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border lg:hidden"
         aria-label="Primary"
       >
+
         <ul className="relative flex flex-row items-stretch gap-0.5 max-w-2xl lg:max-w-[1600px] mx-auto px-1 h-[56px]">
           <TabItem to="/home" iconOutline={IoHomeOutline} iconFilled={IoHome} label="Home" />
           <TabItem to="/categories" iconOutline={IoBagHandleOutline} iconFilled={IoBagHandle} label="Shop" />
