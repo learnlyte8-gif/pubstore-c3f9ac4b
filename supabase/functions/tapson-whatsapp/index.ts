@@ -170,9 +170,32 @@ const tools: any[] = [
     type: "function",
     function: {
       name: "get_product",
-      description: "Get details for one product by id.",
+      description: "Get full details for one product by id (price, description, specs, MOQ, lead time, supplier, rating). Use before recommending a specific item.",
       parameters: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
     },
+  },
+  {
+    type: "function",
+    function: {
+      name: "search_suppliers",
+      description: "Search PUBSTORE suppliers/stores by name, category, city or country. Returns store profiles with logo, rating and verification.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string" }, city: { type: "string" }, country: { type: "string" },
+          verified_only: { type: "boolean" }, limit: { type: "integer", default: 5 },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_supplier",
+      description: "Get one supplier/store profile plus a few of its products, by supplier id or slug.",
+      parameters: { type: "object", properties: { id: { type: "string" }, slug: { type: "string" } } },
+    },
+
   },
   {
     type: "function",
