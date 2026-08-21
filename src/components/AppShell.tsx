@@ -189,6 +189,17 @@ export default function AppShell() {
               </Link>
             )}
 
+            {/* Desktop: primary navigation lives in the app bar */}
+            <nav className="hidden lg:flex items-center gap-1 shrink-0 mr-2" aria-label="Primary">
+              <ul className="flex items-center gap-1">
+                <BarTabItem to="/home" iconOutline={IoHomeOutline} iconFilled={IoHome} label="Home" />
+                <BarTabItem to="/categories" iconOutline={IoBagHandleOutline} iconFilled={IoBagHandle} label="Shop" />
+                <BarTabItem to="/messages" iconOutline={IoChatbubbleOutline} iconFilled={IoChatbubble} label="Chats" badge={chatsWithUnread} />
+                <BarTabItem to="/wishlist" iconOutline={IoHeartOutline} iconFilled={IoHeart} label="Saved" badge={wishlist.length} />
+                <BarTabItem to="/profile" iconOutline={IoPersonOutline} iconFilled={IoPerson} label="You" />
+              </ul>
+            </nav>
+
             <div className="flex items-center gap-0.5 shrink-0">
               <Link to="/notifications" aria-label="Notifications" className="relative p-2 rounded-full active:scale-90 active:bg-muted transition">
                 <Bell className="w-[22px] h-[22px]" strokeWidth={1.8} />
@@ -207,6 +218,7 @@ export default function AppShell() {
                 )}
               </Link>
             </div>
+
           </div>
 
           {/* Row 2: full-width search */}
