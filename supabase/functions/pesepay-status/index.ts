@@ -87,9 +87,19 @@ Deno.serve(async (req) => {
       } catch (e) { console.error("decrypt failed", e); }
     }
 
-    const status: string = String(inner.transactionStatus || inner.status || "").toUpperCase();
-    const paid = status === "SUCCESS" || status === "PAID" || status === "AUTHORIZED";
-    const amount = Number(inner.amount || inner?.amountDetails?.amount || 0);
+    const outcome = interpretPesepay(inner);
+    const { status, paid, amount } = outcome;
+    // Prefer the merchant reference Pesepay echoes back over the client-supplied one.
+    const merchantRef = outcome.merchantReference || reference;
+    console.log("pesepay-status outcome", {
+      pesepayReference,
+      merchantRef,
+      status,
+      paid,
+      amount,
+      rawPaid: inner?.paid,
+    });
+
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
