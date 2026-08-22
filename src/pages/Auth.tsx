@@ -80,6 +80,28 @@ export default function Auth() {
     return metadata;
   };
 
+  /** Sends the emailed verification code (OTP). Uses signInWithOtp, which is the
+   *  channel that actually delivers a numeric code for this project. */
+  const sendCode = async (targetEmail: string, phoneE164?: string) => {
+    const metadata = buildMetadata(phoneE164);
+    const { error } = await supabase.auth.signInWithOtp({
+      email: targetEmail,
+      options: {
+        shouldCreateUser: true,
+        data: Object.keys(metadata).length ? metadata : undefined,
+      },
+    });
+    if (error) {
+      toast.error(error.message);
+      return false;
+    }
+    toast.success("Verification code sent — check your email");
+    setStep("code");
+    setResendIn(45);
+    return true;
+  };
+
+
   /** Step 1 — password first: sign in if the account exists, otherwise sign up
    *  with the password and send an email verification code. */
   const submitCredentials = async (e?: React.FormEvent) => {
