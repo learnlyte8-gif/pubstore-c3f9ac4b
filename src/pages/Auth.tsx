@@ -80,6 +80,28 @@ export default function Auth() {
     return metadata;
   };
 
+  /** Sends the emailed verification code (OTP). Uses signInWithOtp, which is the
+   *  channel that actually delivers a numeric code for this project. */
+  const sendCode = async (targetEmail: string, phoneE164?: string) => {
+    const metadata = buildMetadata(phoneE164);
+    const { error } = await supabase.auth.signInWithOtp({
+      email: targetEmail,
+      options: {
+        shouldCreateUser: true,
+        data: Object.keys(metadata).length ? metadata : undefined,
+      },
+    });
+    if (error) {
+      toast.error(error.message);
+      return false;
+    }
+    toast.success("Verification code sent — check your email");
+    setStep("code");
+    setResendIn(45);
+    return true;
+  };
+
+
   /** Step 1 — password first: sign in if the account exists, otherwise sign up
    *  with the password and send an email verification code. */
   const submitCredentials = async (e?: React.FormEvent) => {
@@ -116,11 +138,7 @@ export default function Auth() {
 
       const msg = signIn.error.message.toLowerCase();
       if (msg.includes("email not confirmed")) {
-        const { error } = await supabase.auth.resend({ type: "signup", email: parsedEmail.data });
-        if (error) return toast.error(error.message);
-        toast.success("Verification code sent — check your email");
-        setStep("code");
-        setResendIn(45);
+        await sendCode(parsedEmail.data, phoneE164);
         return;
       }
       if (!msg.includes("invalid login credentials")) {
@@ -147,9 +165,9 @@ export default function Auth() {
         toast.success("Welcome to PUBSTORE 🎉");
         return;
       }
-      toast.success("Verification code sent — check your email");
-      setStep("code");
-      setResendIn(45);
+      // Signup confirmation mail doesn't carry a code — send an OTP instead.
+      await sendCode(parsedEmail.data, phoneE164);
+
     } finally {
       setLoading(false);
     }
@@ -191,14 +209,16 @@ export default function Auth() {
     if (resendIn > 0 || loading) return;
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resend({ type: "signup", email: email.trim() });
-      if (error) return toast.error(error.message);
-      toast.success("New code sent");
-      setResendIn(45);
+      const phoneDigits = phone.replace(/\D/g, "");
+      await sendCode(
+        email.trim(),
+        phoneDigits ? toE164(country.dial, phoneDigits) : undefined,
+      );
     } finally {
       setLoading(false);
     }
   };
+
 
   const forgotPassword = async () => {
     const parsedEmail = emailSchema.safeParse(email);
