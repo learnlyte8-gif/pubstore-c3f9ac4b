@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { ImagePlus, Loader2, X, Film, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ensureUploadIdentity } from "@/lib/uploadAuth";
 
 type Props = {
   images: string[];
