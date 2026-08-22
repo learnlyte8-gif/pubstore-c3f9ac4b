@@ -4,6 +4,7 @@
 // callback marking their own orders as paid.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { interpretPesepay } from "../_shared/pesepay-status.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,23 +50,27 @@ Deno.serve(async (req) => {
       return new Response("bad payload", { status: 400 });
     }
 
-    const merchantReference: string = inner.merchantReference || inner.referenceNumber || "";
-    const pesepayReference: string = inner.referenceNumber || inner.applicationCode || "";
-    const status: string = String(inner.transactionStatus || inner.status || "").toUpperCase();
-    const amount = Number(inner.amount || inner?.amountDetails?.amount || 0);
+    const outcome = interpretPesepay(inner);
+    const merchantReference = outcome.merchantReference || outcome.referenceNumber;
+    const pesepayReference = outcome.referenceNumber;
+    const status = outcome.status;
+    const amount = outcome.amount;
+    console.log("pesepay-result outcome", { merchantReference, pesepayReference, status, paid: outcome.paid, amount });
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const paid = status === "SUCCESS" || status === "PAID" || status === "AUTHORIZED";
+    const paid = outcome.paid;
 
     if (!paid) {
-      if (merchantReference.startsWith("order_")) {
+      // Only mark terminal outcomes — a PROCESSING/PENDING callback must not
+      // flip the order to failed.
+      if (merchantReference.startsWith("order_") && (outcome.cancelled || outcome.failed)) {
         await admin
           .from("orders")
-          .update({ payment_status: status === "CANCELLED" ? "cancelled" : "failed" })
+          .update({ payment_status: outcome.cancelled ? "cancelled" : "failed" })
           .eq("payment_reference", merchantReference);
       }
       return new Response("ok", { status: 200 });

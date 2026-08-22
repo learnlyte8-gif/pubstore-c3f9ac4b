@@ -9,6 +9,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { pesepayRequest } from "../_shared/pesepay-http.ts";
+import { interpretPesepay } from "../_shared/pesepay-status.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -87,52 +88,70 @@ Deno.serve(async (req) => {
       } catch (e) { console.error("decrypt failed", e); }
     }
 
-    const status: string = String(inner.transactionStatus || inner.status || "").toUpperCase();
-    const paid = status === "SUCCESS" || status === "PAID" || status === "AUTHORIZED";
-    const amount = Number(inner.amount || inner?.amountDetails?.amount || 0);
+    const outcome = interpretPesepay(inner);
+    const { status, paid, amount } = outcome;
+    // Prefer the merchant reference Pesepay echoes back over the client-supplied one.
+    const merchantRef = outcome.merchantReference || reference;
+    console.log("pesepay-status outcome", {
+      pesepayReference,
+      merchantRef,
+      status,
+      paid,
+      amount,
+      rawPaid: inner?.paid,
+    });
+
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    if (paid && reference.startsWith("wallet_topup_")) {
+    let credited = false;
+    if (paid && merchantRef.startsWith("wallet_topup_")) {
       const internalRef = `pesepay:${pesepayReference}`;
       const { data: existing } = await admin
         .from("wallet_transactions")
         .select("id")
         .eq("reference", internalRef)
         .maybeSingle();
-      if (!existing && amount > 0) {
-        await admin.rpc("apply_wallet_transaction", {
+      if (existing) {
+        credited = true; // webhook already applied it
+      } else if (amount > 0) {
+        const { error: rpcErr } = await admin.rpc("apply_wallet_transaction", {
           _user_id: userId,
           _kind: "topup",
           _amount: amount,
           _description: `Pesepay top-up $${amount.toFixed(2)}`,
           _reference: internalRef,
         });
+        if (rpcErr) console.error("wallet credit failed", rpcErr);
+        else credited = true;
+      } else {
+        console.error("pesepay-status: paid but no amount in payload", inner);
       }
     }
 
-    if (paid && reference.startsWith("order_")) {
+    if (paid && merchantRef.startsWith("order_")) {
       await admin
         .from("orders")
         .update({
           payment_status: "paid",
-          payment_reference: pesepayReference || reference,
+          payment_reference: pesepayReference || merchantRef,
           status: "placed",
         })
-        .eq("payment_reference", reference);
+        .eq("payment_reference", merchantRef);
     }
 
-    if (!paid && reference.startsWith("order_") && (status === "CANCELLED" || status === "FAILED")) {
+    if (!paid && merchantRef.startsWith("order_") && (outcome.cancelled || outcome.failed)) {
       await admin
         .from("orders")
-        .update({ payment_status: status === "CANCELLED" ? "cancelled" : "failed" })
-        .eq("payment_reference", reference);
+        .update({ payment_status: outcome.cancelled ? "cancelled" : "failed" })
+        .eq("payment_reference", merchantRef);
     }
 
-    return json({ ok: true, paid, status, amount });
+    return json({ ok: true, paid, status, amount, credited, pending: outcome.pending });
+
   } catch (e) {
     console.error("pesepay-status error", e);
     return json({ error: e instanceof Error ? e.message : "Unexpected error" }, 500);
