@@ -76,12 +76,26 @@ export default function WalletPage() {
     setCapturing(true);
     (async () => {
       try {
-        const { data, error } = await sb.functions.invoke("pesepay-status", {
-          body: { reference: ref, pesepayReference: pref },
-        });
-        if (error) throw error;
+        let data: any = null;
+        // Pesepay can still be "processing" the instant the user returns —
+        // poll check-payment a few times before calling it pending.
+        for (let attempt = 0; attempt < 4; attempt += 1) {
+          const res = await sb.functions.invoke("pesepay-status", {
+            body: { reference: ref, pesepayReference: pref },
+          });
+          if (res.error) throw res.error;
+          data = res.data;
+          if (data?.paid || !data?.pending) break;
+          await new Promise((r) => setTimeout(r, 2500));
+        }
         if (data?.paid) {
-          toast.success(`Added ${fmt(Number(data.amount || 0))} to PUBSTORE Pay 🎉`);
+          if (data?.credited === false) {
+            toast.warning("Payment received — balance is syncing", {
+              description: "If it doesn't show in a minute, contact support with your reference.",
+            });
+          } else {
+            toast.success(`Added ${fmt(Number(data.amount || 0))} to PUBSTORE Pay 🎉`);
+          }
           refresh();
         } else {
           toast.message("Payment is still pending", { description: "We'll update your balance once it clears." });
@@ -96,6 +110,7 @@ export default function WalletPage() {
         setSearchParams(next, { replace: true });
       }
     })();
+
   }, [searchParams, setSearchParams, refresh]);
 
   // After PayPal redirects back, capture the order and credit the wallet.
