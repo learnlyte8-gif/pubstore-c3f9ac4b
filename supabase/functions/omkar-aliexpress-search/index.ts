@@ -177,6 +177,150 @@ async function scrapeAliExpressSearch(query: string, page: number): Promise<{ it
   };
 }
 
+const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
+
+type AliDetail = {
+  id: string;
+  title: string | null;
+  images: string[];
+  video_url: string | null;
+  description: string | null;
+  specs: Record<string, string>;
+  price: number | null;
+  original_price: number | null;
+  currency: string | null;
+  rating: number | null;
+  orders_count: number | null;
+  brand: string | null;
+  ship_from: string | null;
+  variants: string[];
+  url: string;
+};
+
+function normalizeImage(url: unknown): string {
+  let v = absoluteUrl(url);
+  if (!v) return "";
+  // Strip AliExpress thumbnail suffixes (e.g. _220x220q75.jpg_.webp) to get full size
+  v = v.replace(/_\d+x\d+[^/]*?(\.(jpg|jpeg|png|webp))?(_\.webp)?$/i, "");
+  if (!/\.(jpg|jpeg|png|webp|avif)$/i.test(v)) v = `${v}.jpg`;
+  return v;
+}
+
+async function scrapeAliExpressDetail(rawId: string, rawUrl: string): Promise<AliDetail> {
+  const id = String(rawId || "").replace(/[^0-9]/g, "");
+  const url = rawUrl || (id ? `https://www.aliexpress.com/item/${id}.html` : "");
+  if (!url) throw new Error("id or url is required");
+
+  const r = await fetch(url, {
+    headers: {
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9",
+      Cookie: "aep_usuc_f=site=glo&c_tp=USD&region=US&b_locale=en_US",
+      "User-Agent": UA,
+    },
+  });
+  const html = await r.text();
+  if (!r.ok) throw new Error(`AliExpress detail failed (${r.status})`);
+
+  const imageSet: string[] = [];
+  const pushImg = (u: unknown) => {
+    const v = normalizeImage(u);
+    if (v && !imageSet.includes(v)) imageSet.push(v);
+  };
+
+  // Primary gallery sources
+  const imagePathList = findJsonValue(html, "imagePathList");
+  if (Array.isArray(imagePathList)) imagePathList.forEach(pushImg);
+  const summImagePathList = findJsonValue(html, "summImagePathList");
+  if (Array.isArray(summImagePathList)) summImagePathList.forEach(pushImg);
+  const imageModule = findJsonValue(html, "imageModule") as any;
+  if (Array.isArray(imageModule?.imagePathList)) imageModule.imagePathList.forEach(pushImg);
+
+  // SKU / variant images
+  const skuModule = findJsonValue(html, "skuModule") as any;
+  const variants: string[] = [];
+  const skuProps = skuModule?.productSKUPropertyList ?? findJsonValue(html, "skuProperties");
+  if (Array.isArray(skuProps)) {
+    for (const prop of skuProps) {
+      const values = prop?.skuPropertyValues ?? prop?.values ?? [];
+      if (!Array.isArray(values)) continue;
+      for (const v of values) {
+        if (v?.skuPropertyImagePath) pushImg(v.skuPropertyImagePath);
+        const label = String(v?.propertyValueDisplayName ?? v?.propertyValueName ?? "").trim();
+        if (label && !variants.includes(label)) variants.push(label);
+      }
+    }
+  }
+
+  // Fallback: harvest every alicdn image on the page
+  if (imageSet.length < 3) {
+    const matches = html.match(/https?:\/\/[a-z0-9.\-]*alicdn\.com\/[^"'\\\s)]+\.(?:jpg|jpeg|png|webp)/gi) ?? [];
+    for (const m of matches) {
+      if (/(logo|icon|avatar|placeholder|sprite)/i.test(m)) continue;
+      pushImg(m);
+      if (imageSet.length >= 20) break;
+    }
+  }
+
+  // Video
+  let video_url: string | null = null;
+  const videoId = findJsonValue(html, "videoModule") as any;
+  const vId = videoId?.videoId ?? videoId?.mediaId;
+  const vUid = videoId?.videoUid ?? videoId?.uid;
+  if (vId && vUid) video_url = `https://cloud.video.taobao.com/play/u/${vUid}/p/1/e/6/t/1/${vId}.mp4`;
+  if (!video_url) {
+    const mp4 = html.match(/https?:\/\/[^"'\\\s]+\.mp4/i);
+    if (mp4) video_url = mp4[0];
+  }
+
+  // Specs
+  const specs: Record<string, string> = {};
+  const specsModule = findJsonValue(html, "specsModule") as any;
+  const specProps = specsModule?.props ?? findJsonValue(html, "specs");
+  if (Array.isArray(specProps)) {
+    for (const p of specProps) {
+      const k = String(p?.attrName ?? p?.name ?? "").trim();
+      const v = String(p?.attrValue ?? p?.value ?? "").trim();
+      if (k && v) specs[k.slice(0, 60)] = v.slice(0, 200);
+    }
+  }
+
+  // Title / price / rating
+  const titleModule = findJsonValue(html, "titleModule") as any;
+  const priceModule = findJsonValue(html, "priceModule") as any;
+  const ogTitle = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)?.[1]
+    ?? html.match(/<title>([^<]+)<\/title>/i)?.[1];
+  const title = String(titleModule?.subject ?? findJsonValue(html, "subject") ?? ogTitle ?? "").trim() || null;
+
+  const salePrice = priceModule?.formatedActivityPrice ?? priceModule?.formatedPrice
+    ?? (priceModule?.minActivityAmount ?? priceModule?.minAmount)?.value;
+  const origPrice = (priceModule?.maxAmount ?? priceModule?.minAmount)?.value ?? priceModule?.formatedPrice;
+
+  const description = [
+    title,
+    Object.entries(specs).slice(0, 20).map(([k, v]) => `• ${k}: ${v}`).join("\n"),
+    url ? `Source: ${url}` : "",
+  ].filter(Boolean).join("\n\n").slice(0, 4000) || null;
+
+  return {
+    id: id || String(findJsonValue(html, "productId") ?? ""),
+    title,
+    images: imageSet.slice(0, 20),
+    video_url,
+    description,
+    specs,
+    price: toNum(salePrice),
+    original_price: toNum(origPrice),
+    currency: String(priceModule?.currencyCode ?? "USD"),
+    rating: toNum((findJsonValue(html, "titleModule") as any)?.feedbackRating?.averageStar),
+    orders_count: parseOrders(titleModule?.tradeCount ?? titleModule?.formatTradeCount),
+    brand: specs["Brand Name"] ?? specs["Brand"] ?? null,
+    ship_from: specs["Ships From"] ?? specs["Origin"] ?? null,
+    variants: variants.slice(0, 40),
+    url,
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: { ...corsHeaders, "Access-Control-Allow-Methods": "POST, OPTIONS" } });
 
@@ -193,9 +337,22 @@ Deno.serve(async (req) => {
     if (userErr || !userData.user) return json({ error: "Unauthorized" }, 401);
 
     const body = await req.json().catch(() => ({}));
+    const action = String(body?.action ?? "search");
+
+    if (action === "detail") {
+      try {
+        const detail = await scrapeAliExpressDetail(String(body?.id ?? ""), String(body?.url ?? ""));
+        return json({ detail });
+      } catch (e) {
+        console.error("ali detail error", e);
+        return json({ error: (e as Error).message || "Detail scrape failed" }, 502);
+      }
+    }
+
     const query = String(body?.query ?? "").trim();
     const page = Math.max(1, parseInt(String(body?.page ?? 1), 10) || 1);
     if (!query) return json({ error: "query is required" }, 400);
+
 
     let data: any;
     const apiKey = Deno.env.get("OMKAR_API_KEY");
