@@ -135,10 +135,10 @@ function applyMarkup(price: number | null, mode: MarkupMode, value: number): num
   return Math.round(out * 100) / 100;
 }
 
-// Mirror up to 6 remote images into our storage so they stay available.
-async function mirrorImages(userId: string, urls: string[], slug: string) {
+// Mirror remote images into our storage so they stay available.
+async function mirrorImages(userId: string, urls: string[], slug: string, limit = 6) {
   const stored: string[] = [];
-  for (let i = 0; i < Math.min(urls.length, 6); i++) {
+  for (let i = 0; i < Math.min(urls.length, limit); i++) {
     const src = urls[i];
     try {
       const r = await fetch(src);
