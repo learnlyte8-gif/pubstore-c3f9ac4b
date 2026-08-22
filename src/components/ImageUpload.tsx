@@ -39,14 +39,14 @@ export default function ImageUpload({
       return;
     }
     setBusy(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    const identity = await ensureUploadIdentity();
+    if (identity.error) {
       setBusy(false);
-      toast.error("Sign in to upload");
+      toast.error(identity.error);
       return;
     }
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-    const path = `${user.id}/${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const path = `${identity.userId}/${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const { error } = await supabase.storage.from(bucket).upload(path, file, {
       cacheControl: "3600",
       upsert: false,
@@ -54,7 +54,11 @@ export default function ImageUpload({
     });
     setBusy(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(
+        /row-level security/i.test(error.message)
+          ? "Upload blocked — your session expired. Sign in again and retry."
+          : error.message,
+      );
       return;
     }
     const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(path);
