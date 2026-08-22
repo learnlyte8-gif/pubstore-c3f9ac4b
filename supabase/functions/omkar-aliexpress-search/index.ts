@@ -217,11 +217,10 @@ async function omkarDetail(id: string, url: string): Promise<any | null> {
   if (!apiKey || (!id && !url)) return null;
   const base = "https://aliexpress-scraper-api.omkar.cloud/aliexpress";
   const candidates = [
-    `${base}/product?id=${encodeURIComponent(id)}`,
-    `${base}/product-detail?id=${encodeURIComponent(id)}`,
-    `${base}/product?url=${encodeURIComponent(url)}`,
-    `${base}/detail?id=${encodeURIComponent(id)}`,
+    `${base}/product?product_id=${encodeURIComponent(id)}`,
+    `${base}/product?product_id=${encodeURIComponent(id)}&country=US&currency=USD`,
   ];
+
   for (const c of candidates) {
     try {
       const r = await fetch(c, { headers: { "API-Key": apiKey, Accept: "application/json" } });
