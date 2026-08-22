@@ -299,6 +299,9 @@ async function scrapeAliExpressDetail(rawId: string, rawUrl: string): Promise<Al
     }
   }
 
+  const omkarSpecs: Record<string, string> = {};
+
+
 
 
 
