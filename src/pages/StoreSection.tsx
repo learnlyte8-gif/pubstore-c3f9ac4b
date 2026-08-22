@@ -806,7 +806,7 @@ function AliExpressImport({ qc }: { qc: ReturnType<typeof useQueryClient> }) {
           unit: "piece",
           category_slug: categorySlug || null,
           ship_from: detail?.ship_from ?? supplier.country ?? null,
-          brand: detail?.brand ?? null,
+          
           specs: detail?.specs && Object.keys(detail.specs).length ? detail.specs : null,
           active: finalPrice > 0,
           source: "aliexpress",
