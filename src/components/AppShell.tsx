@@ -12,7 +12,6 @@ import RotatingHint from "@/components/RotatingHint";
 import LiveActivityToaster from "@/components/LiveActivityToaster";
 import ActiveRideMonitor from "@/components/rides/ActiveRideMonitor";
 import NativeSuggestionToaster from "@/components/NativeSuggestionToaster";
-import InstallPrompt from "@/components/InstallPrompt";
 import BannerAdSlot from "@/components/ads/BannerAdSlot";
 import ImportProgressBanner from "@/components/ImportProgressBanner";
 import TapsonAssistant from "@/components/TapsonAssistant";
@@ -293,7 +292,6 @@ export default function AppShell() {
       <ActiveRideMonitor />
       {(location.pathname === "/home" || location.pathname === "/categories") && <BannerAdSlot />}
       <ImportProgressBanner />
-      <InstallPrompt />
     </div>
   );
 }
