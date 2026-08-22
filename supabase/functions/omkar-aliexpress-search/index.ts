@@ -342,16 +342,28 @@ async function scrapeAliExpressDetail(rawId: string, rawUrl: string): Promise<Al
     }
   }
 
-  // Last resort: ask the Omkar product API and harvest every image it returns.
-  let omkar: any = null;
-  if (imageSet.length < 2) {
-    omkar = await omkarDetail(id, url);
-    if (omkar) {
-      const found: string[] = [];
-      harvestImages(omkar, found);
-      found.forEach(pushImg);
+  // Harvest every image the Omkar product payload contains.
+  let omkar: any = omkarEarly;
+  if (imageSet.length < 2 && !omkar) omkar = await omkarDetail(id, url);
+  if (omkar) {
+    const found: string[] = [];
+    harvestImages(omkar, found);
+    found.forEach(pushImg);
+    // Specs from the API payload
+    const apiSpecs = omkar.specs ?? omkar.specifications ?? omkar.attributes;
+    if (Array.isArray(apiSpecs)) {
+      for (const p of apiSpecs) {
+        const k = String(p?.name ?? p?.attrName ?? p?.key ?? "").trim();
+        const v = String(p?.value ?? p?.attrValue ?? "").trim();
+        if (k && v) omkarSpecs[k.slice(0, 60)] = v.slice(0, 200);
+      }
+    } else if (apiSpecs && typeof apiSpecs === "object") {
+      for (const [k, v] of Object.entries(apiSpecs)) {
+        if (k && v != null) omkarSpecs[k.slice(0, 60)] = String(v).slice(0, 200);
+      }
     }
   }
+
 
 
   // Video
