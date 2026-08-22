@@ -337,7 +337,7 @@ async function scrapeAliExpressDetail(rawId: string, rawUrl: string): Promise<Al
 
   // Fallback: harvest every alicdn image on the page
   if (imageSet.length < 3) {
-    const matches = html.match(/https?:\/\/[a-z0-9.\-]*alicdn\.com\/[^"'\\\s)]+\.(?:jpg|jpeg|png|webp)/gi) ?? [];
+    const matches = html.match(/https?:\/\/[a-z0-9.\-]*(?:alicdn\.com|aliexpress-media\.com)\/[^"'\\\s)]+\.(?:jpg|jpeg|png|webp)/gi) ?? [];
     for (const m of matches) {
       if (/(logo|icon|avatar|placeholder|sprite)/i.test(m)) continue;
       pushImg(m);
