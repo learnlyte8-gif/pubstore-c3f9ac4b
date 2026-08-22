@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { ImagePlus, Loader2, X, Film, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ensureUploadIdentity } from "@/lib/uploadAuth";
 
 type Props = {
   images: string[];
@@ -41,16 +42,23 @@ export default function MediaUpload({
   const [vidBusy, setVidBusy] = useState(false);
 
   const uploadOne = async (file: File, kind: "image" | "video"): Promise<string | null> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { toast.error("Sign in to upload"); return null; }
+    const identity = await ensureUploadIdentity();
+    if (identity.error) { toast.error(identity.error); return null; }
     const ext = (file.name.split(".").pop() || (kind === "video" ? "mp4" : "jpg")).toLowerCase();
-    const path = `${user.id}/${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const path = `${identity.userId}/${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const { error } = await supabase.storage.from(bucket).upload(path, file, {
       cacheControl: "3600",
       upsert: false,
       contentType: file.type || (kind === "video" ? `video/${ext}` : `image/${ext}`),
     });
-    if (error) { toast.error(error.message); return null; }
+    if (error) {
+      toast.error(
+        /row-level security/i.test(error.message)
+          ? "Upload blocked — your session expired. Sign in again and retry."
+          : error.message,
+      );
+      return null;
+    }
     return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
   };
 
