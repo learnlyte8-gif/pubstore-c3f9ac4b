@@ -381,7 +381,7 @@ async function scrapeAliExpressDetail(rawId: string, rawUrl: string): Promise<Al
   }
 
   // Specs
-  const specs: Record<string, string> = {};
+  const specs: Record<string, string> = { ...omkarSpecs };
   const specsModule = findJsonValue(html, "specsModule") as any;
   const specProps = specsModule?.props ?? findJsonValue(html, "specs");
   if (Array.isArray(specProps)) {
@@ -391,6 +391,7 @@ async function scrapeAliExpressDetail(rawId: string, rawUrl: string): Promise<Al
       if (k && v) specs[k.slice(0, 60)] = v.slice(0, 200);
     }
   }
+
 
   // Title / price / rating
   const titleModule = findJsonValue(html, "titleModule") as any;
