@@ -6960,6 +6960,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_ad_clicks: { Args: { _ad_id: string }; Returns: undefined }
+      increment_ad_impressions: { Args: { _ad_id: string }; Returns: undefined }
       increment_download_count: {
         Args: { resource_id: string }
         Returns: undefined
