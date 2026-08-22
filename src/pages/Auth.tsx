@@ -138,11 +138,7 @@ export default function Auth() {
 
       const msg = signIn.error.message.toLowerCase();
       if (msg.includes("email not confirmed")) {
-        const { error } = await supabase.auth.resend({ type: "signup", email: parsedEmail.data });
-        if (error) return toast.error(error.message);
-        toast.success("Verification code sent — check your email");
-        setStep("code");
-        setResendIn(45);
+        await sendCode(parsedEmail.data, phoneE164);
         return;
       }
       if (!msg.includes("invalid login credentials")) {
@@ -169,9 +165,9 @@ export default function Auth() {
         toast.success("Welcome to PUBSTORE 🎉");
         return;
       }
-      toast.success("Verification code sent — check your email");
-      setStep("code");
-      setResendIn(45);
+      // Signup confirmation mail doesn't carry a code — send an OTP instead.
+      await sendCode(parsedEmail.data, phoneE164);
+
     } finally {
       setLoading(false);
     }
