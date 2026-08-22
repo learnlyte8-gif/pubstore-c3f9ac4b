@@ -760,24 +760,57 @@ function AliExpressImport({ qc }: { qc: ReturnType<typeof useQueryClient> }) {
     for (let i = 0; i < chosen.length; i++) {
       const it = chosen[i];
       try {
-        const basePrice = it.price ?? 0;
+        // Scrape the full product page: all gallery images, video, specs, description
+        let detail: any = null;
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) {
+            const dr = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/omkar-aliexpress-search`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                Authorization: `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({ action: "detail", id: it.id, url: it.url }),
+            });
+            const dj = await dr.json().catch(() => ({}));
+            if (dr.ok) detail = dj?.detail ?? null;
+          }
+        } catch (detailErr) {
+          console.warn("ali detail scrape failed", detailErr);
+        }
+
+        const basePrice = it.price ?? detail?.price ?? 0;
         const finalPrice = Math.round(basePrice * ALI_PRICE_MULTIPLIER * 100) / 100;
-        const stored = it.image ? await mirrorImages(user.id, [it.image], `ali-${it.id}`) : [];
+        const sourceImages: string[] = Array.from(
+          new Set([...(detail?.images ?? []), ...(it.image ? [it.image] : [])].filter(Boolean)),
+        );
+        const stored = sourceImages.length
+          ? await mirrorImages(user.id, sourceImages, `ali-${it.id}`, 10)
+          : [];
+        const gallery = stored.length ? stored : sourceImages;
+        const description = detail?.description
+          ? `${detail.description}`.slice(0, 4000)
+          : `Imported from AliExpress · ${it.url ?? ""}`.trim();
         const { error: insErr } = await supabase.from("products").insert({
           supplier_id: supplier.id,
-          title: it.title.slice(0, 200),
-          description: `Imported from AliExpress · ${it.url ?? ""}`.trim(),
-          image: stored[0] ?? it.image ?? null,
-          gallery: stored.length ? stored : (it.image ? [it.image] : []),
+          title: (detail?.title || it.title).slice(0, 200),
+          description,
+          image: gallery[0] ?? null,
+          gallery,
+          video_url: detail?.video_url ?? null,
           price: finalPrice,
           original_price: basePrice || null,
           moq: 1,
           unit: "piece",
           category_slug: categorySlug || null,
-          ship_from: supplier.country ?? null,
+          ship_from: detail?.ship_from ?? supplier.country ?? null,
+          brand: detail?.brand ?? null,
+          specs: detail?.specs && Object.keys(detail.specs).length ? detail.specs : null,
           active: finalPrice > 0,
           source: "aliexpress",
-          source_url: it.url ?? null,
+          source_url: it.url ?? detail?.url ?? null,
           source_id: it.id ?? null,
         });
         if (insErr) throw insErr;
@@ -787,6 +820,7 @@ function AliExpressImport({ qc }: { qc: ReturnType<typeof useQueryClient> }) {
       }
       setProgress({ done: i + 1, total: chosen.length, errors });
     }
+
     setImporting(false);
     qc.invalidateQueries({ queryKey: ["my-products"] });
     toast.success(`Imported ${chosen.length - errors}/${chosen.length} products${errors ? ` (${errors} failed)` : ""}`);
