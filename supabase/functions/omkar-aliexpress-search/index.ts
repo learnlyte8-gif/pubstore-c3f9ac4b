@@ -217,11 +217,10 @@ async function omkarDetail(id: string, url: string): Promise<any | null> {
   if (!apiKey || (!id && !url)) return null;
   const base = "https://aliexpress-scraper-api.omkar.cloud/aliexpress";
   const candidates = [
-    `${base}/product?id=${encodeURIComponent(id)}`,
-    `${base}/product-detail?id=${encodeURIComponent(id)}`,
-    `${base}/product?url=${encodeURIComponent(url)}`,
-    `${base}/detail?id=${encodeURIComponent(id)}`,
+    `${base}/product?product_id=${encodeURIComponent(id)}`,
+    `${base}/product?product_id=${encodeURIComponent(id)}&country=US&currency=USD`,
   ];
+
   for (const c of candidates) {
     try {
       const r = await fetch(c, { headers: { "API-Key": apiKey, Accept: "application/json" } });
@@ -275,24 +274,35 @@ async function scrapeAliExpressDetail(rawId: string, rawUrl: string): Promise<Al
   const url = rawUrl || (id ? `https://www.aliexpress.com/item/${id}.html` : "");
   if (!url) throw new Error("id or url is required");
 
-  let html = "";
-  try {
-    const r = await fetch(url, {
-      headers: {
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        Cookie: "aep_usuc_f=site=glo&c_tp=USD&region=US&b_locale=en_US",
-        "User-Agent": UA,
-      },
-    });
-    html = await r.text();
-  } catch { /* fall through */ }
+  // Omkar's product API is the reliable source — AliExpress blocks direct fetches
+  // with a captcha wall, which is why only the search thumbnail used to survive.
+  const omkarEarly = await omkarDetail(id, url);
 
-  if (looksBlocked(html)) {
-    console.log("direct aliexpress fetch blocked, using firecrawl", id);
-    const fc = await firecrawlHtml(url);
-    if (fc) html = fc;
+  let html = "";
+  if (!omkarEarly) {
+    try {
+      const r = await fetch(url, {
+        headers: {
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+          Cookie: "aep_usuc_f=site=glo&c_tp=USD&region=US&b_locale=en_US",
+          "User-Agent": UA,
+        },
+      });
+      html = await r.text();
+    } catch { /* fall through */ }
+
+    if (looksBlocked(html)) {
+      console.log("direct aliexpress fetch blocked, using firecrawl", id);
+      const fc = await firecrawlHtml(url);
+      if (fc) html = fc;
+    }
   }
+
+  const omkarSpecs: Record<string, string> = {};
+
+
+
 
 
   const imageSet: string[] = [];
@@ -327,7 +337,7 @@ async function scrapeAliExpressDetail(rawId: string, rawUrl: string): Promise<Al
 
   // Fallback: harvest every alicdn image on the page
   if (imageSet.length < 3) {
-    const matches = html.match(/https?:\/\/[a-z0-9.\-]*alicdn\.com\/[^"'\\\s)]+\.(?:jpg|jpeg|png|webp)/gi) ?? [];
+    const matches = html.match(/https?:\/\/[a-z0-9.\-]*(?:alicdn\.com|aliexpress-media\.com)\/[^"'\\\s)]+\.(?:jpg|jpeg|png|webp)/gi) ?? [];
     for (const m of matches) {
       if (/(logo|icon|avatar|placeholder|sprite)/i.test(m)) continue;
       pushImg(m);
@@ -335,16 +345,28 @@ async function scrapeAliExpressDetail(rawId: string, rawUrl: string): Promise<Al
     }
   }
 
-  // Last resort: ask the Omkar product API and harvest every image it returns.
-  let omkar: any = null;
-  if (imageSet.length < 2) {
-    omkar = await omkarDetail(id, url);
-    if (omkar) {
-      const found: string[] = [];
-      harvestImages(omkar, found);
-      found.forEach(pushImg);
+  // Harvest every image the Omkar product payload contains.
+  let omkar: any = omkarEarly;
+  if (imageSet.length < 2 && !omkar) omkar = await omkarDetail(id, url);
+  if (omkar) {
+    const found: string[] = [];
+    harvestImages(omkar, found);
+    found.forEach(pushImg);
+    // Specs from the API payload
+    const apiSpecs = omkar.specs ?? omkar.specifications ?? omkar.attributes;
+    if (Array.isArray(apiSpecs)) {
+      for (const p of apiSpecs) {
+        const k = String(p?.name ?? p?.attrName ?? p?.key ?? "").trim();
+        const v = String(p?.value ?? p?.attrValue ?? "").trim();
+        if (k && v) omkarSpecs[k.slice(0, 60)] = v.slice(0, 200);
+      }
+    } else if (apiSpecs && typeof apiSpecs === "object") {
+      for (const [k, v] of Object.entries(apiSpecs)) {
+        if (k && v != null) omkarSpecs[k.slice(0, 60)] = String(v).slice(0, 200);
+      }
     }
   }
+
 
 
   // Video
@@ -359,7 +381,7 @@ async function scrapeAliExpressDetail(rawId: string, rawUrl: string): Promise<Al
   }
 
   // Specs
-  const specs: Record<string, string> = {};
+  const specs: Record<string, string> = { ...omkarSpecs };
   const specsModule = findJsonValue(html, "specsModule") as any;
   const specProps = specsModule?.props ?? findJsonValue(html, "specs");
   if (Array.isArray(specProps)) {
@@ -369,6 +391,7 @@ async function scrapeAliExpressDetail(rawId: string, rawUrl: string): Promise<Al
       if (k && v) specs[k.slice(0, 60)] = v.slice(0, 200);
     }
   }
+
 
   // Title / price / rating
   const titleModule = findJsonValue(html, "titleModule") as any;
