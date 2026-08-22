@@ -9,6 +9,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { pesepayRequest } from "../_shared/pesepay-http.ts";
+import { interpretPesepay } from "../_shared/pesepay-status.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -106,7 +107,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    if (paid && reference.startsWith("wallet_topup_")) {
+    if (paid && merchantRef.startsWith("wallet_topup_")) {
       const internalRef = `pesepay:${pesepayReference}`;
       const { data: existing } = await admin
         .from("wallet_transactions")
@@ -124,22 +125,22 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (paid && reference.startsWith("order_")) {
+    if (paid && merchantRef.startsWith("order_")) {
       await admin
         .from("orders")
         .update({
           payment_status: "paid",
-          payment_reference: pesepayReference || reference,
+          payment_reference: pesepayReference || merchantRef,
           status: "placed",
         })
-        .eq("payment_reference", reference);
+        .eq("payment_reference", merchantRef);
     }
 
-    if (!paid && reference.startsWith("order_") && (status === "CANCELLED" || status === "FAILED")) {
+    if (!paid && merchantRef.startsWith("order_") && (outcome.cancelled || outcome.failed)) {
       await admin
         .from("orders")
-        .update({ payment_status: status === "CANCELLED" ? "cancelled" : "failed" })
-        .eq("payment_reference", reference);
+        .update({ payment_status: outcome.cancelled ? "cancelled" : "failed" })
+        .eq("payment_reference", merchantRef);
     }
 
     return json({ ok: true, paid, status, amount });
