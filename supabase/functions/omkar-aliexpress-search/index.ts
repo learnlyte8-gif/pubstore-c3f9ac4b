@@ -375,15 +375,20 @@ async function scrapeAliExpressDetail(rawId: string, rawUrl: string): Promise<Al
   const priceModule = findJsonValue(html, "priceModule") as any;
   const ogTitle = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)?.[1]
     ?? html.match(/<title>([^<]+)<\/title>/i)?.[1];
-  const title = String(titleModule?.subject ?? findJsonValue(html, "subject") ?? ogTitle ?? "").trim() || null;
+  const title = String(titleModule?.subject ?? findJsonValue(html, "subject") ?? ogTitle ?? omkar?.title ?? "").trim() || null;
 
   const salePrice = priceModule?.formatedActivityPrice ?? priceModule?.formatedPrice
-    ?? (priceModule?.minActivityAmount ?? priceModule?.minAmount)?.value;
-  const origPrice = (priceModule?.maxAmount ?? priceModule?.minAmount)?.value ?? priceModule?.formatedPrice;
+    ?? (priceModule?.minActivityAmount ?? priceModule?.minAmount)?.value
+    ?? omkar?.price ?? omkar?.sale_price;
+  const origPrice = (priceModule?.maxAmount ?? priceModule?.minAmount)?.value ?? priceModule?.formatedPrice
+    ?? omkar?.original_price;
+
+  if (!video_url && typeof omkar?.video_url === "string") video_url = omkar.video_url;
 
   const description = [
     title,
     Object.entries(specs).slice(0, 20).map(([k, v]) => `• ${k}: ${v}`).join("\n"),
+    typeof omkar?.description === "string" ? omkar.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "",
     url ? `Source: ${url}` : "",
   ].filter(Boolean).join("\n\n").slice(0, 4000) || null;
 
@@ -396,15 +401,16 @@ async function scrapeAliExpressDetail(rawId: string, rawUrl: string): Promise<Al
     specs,
     price: toNum(salePrice),
     original_price: toNum(origPrice),
-    currency: String(priceModule?.currencyCode ?? "USD"),
-    rating: toNum((findJsonValue(html, "titleModule") as any)?.feedbackRating?.averageStar),
-    orders_count: parseOrders(titleModule?.tradeCount ?? titleModule?.formatTradeCount),
+    currency: String(priceModule?.currencyCode ?? omkar?.currency ?? "USD"),
+    rating: toNum((findJsonValue(html, "titleModule") as any)?.feedbackRating?.averageStar ?? omkar?.rating),
+    orders_count: parseOrders(titleModule?.tradeCount ?? titleModule?.formatTradeCount ?? omkar?.orders_count),
     brand: specs["Brand Name"] ?? specs["Brand"] ?? null,
     ship_from: specs["Ships From"] ?? specs["Origin"] ?? null,
     variants: variants.slice(0, 40),
     url,
   };
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: { ...corsHeaders, "Access-Control-Allow-Methods": "POST, OPTIONS" } });
