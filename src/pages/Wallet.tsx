@@ -360,9 +360,9 @@ export default function WalletPage() {
                 <input
                   type="number"
                   inputMode="decimal"
-                  min={10}
+                  min={1}
                   step="0.01"
-                  placeholder="Min $10.00"
+                  placeholder="Min $1.00"
                   value={customAmount}
                   onChange={(e) => setCustomAmount(e.target.value)}
                   disabled={redirecting || capturing}
@@ -374,8 +374,8 @@ export default function WalletPage() {
                 disabled={redirecting || capturing}
                 onClick={() => {
                   const amt = Number(customAmount);
-                  if (!Number.isFinite(amt) || amt < 10) {
-                    toast.error("Minimum top-up is $10.00");
+                  if (!Number.isFinite(amt) || amt < 1) {
+                    toast.error("Minimum top-up is $1.00");
                     return;
                   }
                   const rounded = Math.round(amt * 100) / 100;

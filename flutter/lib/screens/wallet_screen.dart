@@ -549,7 +549,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
               decoration: const InputDecoration(
                 prefixText: '\$ ',
-                hintText: 'Min \$10.00',
+                hintText: 'Min \$1.00',
                 border: OutlineInputBorder(),
                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               ),
@@ -561,8 +561,8 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                 ? null
                 : () {
                     final amt = double.tryParse(_customCtrl.text) ?? 0;
-                    if (amt < 10) {
-                      _toast('Minimum top-up is \$10.00');
+                    if (amt < 1) {
+                      _toast('Minimum top-up is \$1.00');
                       return;
                     }
                     _startCheckout(amt);
