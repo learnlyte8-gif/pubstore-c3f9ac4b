@@ -209,14 +209,16 @@ export default function Auth() {
     if (resendIn > 0 || loading) return;
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resend({ type: "signup", email: email.trim() });
-      if (error) return toast.error(error.message);
-      toast.success("New code sent");
-      setResendIn(45);
+      const phoneDigits = phone.replace(/\D/g, "");
+      await sendCode(
+        email.trim(),
+        phoneDigits ? toE164(country.dial, phoneDigits) : undefined,
+      );
     } finally {
       setLoading(false);
     }
   };
+
 
   const forgotPassword = async () => {
     const parsedEmail = emailSchema.safeParse(email);
