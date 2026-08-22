@@ -206,21 +206,94 @@ function normalizeImage(url: unknown): string {
   return v;
 }
 
+function looksBlocked(html: string): boolean {
+  if (!html || html.length < 20000) return true;
+  return /_____tmd_____|punish\?x5secdata|rgv587_flag|captcha/i.test(html.slice(0, 4000));
+}
+
+// Omkar has a dedicated product endpoint; path naming has varied, so try a few.
+async function omkarDetail(id: string, url: string): Promise<any | null> {
+  const apiKey = Deno.env.get("OMKAR_API_KEY");
+  if (!apiKey || (!id && !url)) return null;
+  const base = "https://aliexpress-scraper-api.omkar.cloud/aliexpress";
+  const candidates = [
+    `${base}/product?id=${encodeURIComponent(id)}`,
+    `${base}/product-detail?id=${encodeURIComponent(id)}`,
+    `${base}/product?url=${encodeURIComponent(url)}`,
+    `${base}/detail?id=${encodeURIComponent(id)}`,
+  ];
+  for (const c of candidates) {
+    try {
+      const r = await fetch(c, { headers: { "API-Key": apiKey, Accept: "application/json" } });
+      const text = await r.text();
+      if (!r.ok) { console.log("omkar detail miss", c.split("?")[0], r.status, text.slice(0, 160)); continue; }
+      const j = JSON.parse(text);
+      const node = j?.data ?? j?.product ?? j;
+      if (node && typeof node === "object") return node;
+    } catch (e) {
+      console.log("omkar detail error", c.split("?")[0], (e as Error).message);
+    }
+  }
+  return null;
+}
+
+// Firecrawl can render past AliExpress' anti-bot wall and give us the real HTML.
+async function firecrawlHtml(url: string): Promise<string> {
+  const key = Deno.env.get("FIRECRAWL_API_KEY");
+  if (!key) return "";
+  try {
+    const r = await fetch("https://api.firecrawl.dev/v2/scrape", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 3000 }),
+    });
+    const j = await r.json();
+    if (!r.ok) { console.error("firecrawl detail error", r.status, JSON.stringify(j).slice(0, 300)); return ""; }
+    const root = j?.data ?? j;
+    return String(root?.rawHtml || root?.html || "");
+  } catch (e) {
+    console.error("firecrawl detail fetch error", (e as Error).message);
+    return "";
+  }
+}
+
+// Collect image urls out of any nested Omkar detail payload.
+function harvestImages(node: unknown, out: string[], depth = 0) {
+  if (depth > 6 || out.length > 40) return;
+  if (typeof node === "string") {
+    if (/^(https?:)?\/\/.*(alicdn|aliexpress)\..*\.(jpg|jpeg|png|webp|avif)/i.test(node)) out.push(node);
+    return;
+  }
+  if (Array.isArray(node)) { node.forEach((n) => harvestImages(n, out, depth + 1)); return; }
+  if (node && typeof node === "object") {
+    for (const v of Object.values(node as Record<string, unknown>)) harvestImages(v, out, depth + 1);
+  }
+}
+
 async function scrapeAliExpressDetail(rawId: string, rawUrl: string): Promise<AliDetail> {
   const id = String(rawId || "").replace(/[^0-9]/g, "");
   const url = rawUrl || (id ? `https://www.aliexpress.com/item/${id}.html` : "");
   if (!url) throw new Error("id or url is required");
 
-  const r = await fetch(url, {
-    headers: {
-      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      "Accept-Language": "en-US,en;q=0.9",
-      Cookie: "aep_usuc_f=site=glo&c_tp=USD&region=US&b_locale=en_US",
-      "User-Agent": UA,
-    },
-  });
-  const html = await r.text();
-  if (!r.ok) throw new Error(`AliExpress detail failed (${r.status})`);
+  let html = "";
+  try {
+    const r = await fetch(url, {
+      headers: {
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        Cookie: "aep_usuc_f=site=glo&c_tp=USD&region=US&b_locale=en_US",
+        "User-Agent": UA,
+      },
+    });
+    html = await r.text();
+  } catch { /* fall through */ }
+
+  if (looksBlocked(html)) {
+    console.log("direct aliexpress fetch blocked, using firecrawl", id);
+    const fc = await firecrawlHtml(url);
+    if (fc) html = fc;
+  }
+
 
   const imageSet: string[] = [];
   const pushImg = (u: unknown) => {
@@ -262,6 +335,18 @@ async function scrapeAliExpressDetail(rawId: string, rawUrl: string): Promise<Al
     }
   }
 
+  // Last resort: ask the Omkar product API and harvest every image it returns.
+  let omkar: any = null;
+  if (imageSet.length < 2) {
+    omkar = await omkarDetail(id, url);
+    if (omkar) {
+      const found: string[] = [];
+      harvestImages(omkar, found);
+      found.forEach(pushImg);
+    }
+  }
+
+
   // Video
   let video_url: string | null = null;
   const videoId = findJsonValue(html, "videoModule") as any;
@@ -290,15 +375,20 @@ async function scrapeAliExpressDetail(rawId: string, rawUrl: string): Promise<Al
   const priceModule = findJsonValue(html, "priceModule") as any;
   const ogTitle = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)?.[1]
     ?? html.match(/<title>([^<]+)<\/title>/i)?.[1];
-  const title = String(titleModule?.subject ?? findJsonValue(html, "subject") ?? ogTitle ?? "").trim() || null;
+  const title = String(titleModule?.subject ?? findJsonValue(html, "subject") ?? ogTitle ?? omkar?.title ?? "").trim() || null;
 
   const salePrice = priceModule?.formatedActivityPrice ?? priceModule?.formatedPrice
-    ?? (priceModule?.minActivityAmount ?? priceModule?.minAmount)?.value;
-  const origPrice = (priceModule?.maxAmount ?? priceModule?.minAmount)?.value ?? priceModule?.formatedPrice;
+    ?? (priceModule?.minActivityAmount ?? priceModule?.minAmount)?.value
+    ?? omkar?.price ?? omkar?.sale_price;
+  const origPrice = (priceModule?.maxAmount ?? priceModule?.minAmount)?.value ?? priceModule?.formatedPrice
+    ?? omkar?.original_price;
+
+  if (!video_url && typeof omkar?.video_url === "string") video_url = omkar.video_url;
 
   const description = [
     title,
     Object.entries(specs).slice(0, 20).map(([k, v]) => `• ${k}: ${v}`).join("\n"),
+    typeof omkar?.description === "string" ? omkar.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "",
     url ? `Source: ${url}` : "",
   ].filter(Boolean).join("\n\n").slice(0, 4000) || null;
 
@@ -311,15 +401,16 @@ async function scrapeAliExpressDetail(rawId: string, rawUrl: string): Promise<Al
     specs,
     price: toNum(salePrice),
     original_price: toNum(origPrice),
-    currency: String(priceModule?.currencyCode ?? "USD"),
-    rating: toNum((findJsonValue(html, "titleModule") as any)?.feedbackRating?.averageStar),
-    orders_count: parseOrders(titleModule?.tradeCount ?? titleModule?.formatTradeCount),
+    currency: String(priceModule?.currencyCode ?? omkar?.currency ?? "USD"),
+    rating: toNum((findJsonValue(html, "titleModule") as any)?.feedbackRating?.averageStar ?? omkar?.rating),
+    orders_count: parseOrders(titleModule?.tradeCount ?? titleModule?.formatTradeCount ?? omkar?.orders_count),
     brand: specs["Brand Name"] ?? specs["Brand"] ?? null,
     ship_from: specs["Ships From"] ?? specs["Origin"] ?? null,
     variants: variants.slice(0, 40),
     url,
   };
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: { ...corsHeaders, "Access-Control-Allow-Methods": "POST, OPTIONS" } });
