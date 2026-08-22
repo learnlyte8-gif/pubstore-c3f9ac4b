@@ -335,6 +335,18 @@ async function scrapeAliExpressDetail(rawId: string, rawUrl: string): Promise<Al
     }
   }
 
+  // Last resort: ask the Omkar product API and harvest every image it returns.
+  let omkar: any = null;
+  if (imageSet.length < 2) {
+    omkar = await omkarDetail(id, url);
+    if (omkar) {
+      const found: string[] = [];
+      harvestImages(omkar, found);
+      found.forEach(pushImg);
+    }
+  }
+
+
   // Video
   let video_url: string | null = null;
   const videoId = findJsonValue(html, "videoModule") as any;
