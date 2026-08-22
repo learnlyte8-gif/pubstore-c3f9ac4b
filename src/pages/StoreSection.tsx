@@ -4876,6 +4876,7 @@ function StaysImport({ qc, navigate }: { qc: ReturnType<typeof useQueryClient>; 
     setImporting(true);
     setProgress({ done: 0, total: chosen.length, errors: 0 });
     let errors = 0;
+    let lastError = "";
 
     for (let i = 0; i < chosen.length; i++) {
       const it = chosen[i];
@@ -4885,33 +4886,38 @@ function StaysImport({ qc, navigate }: { qc: ReturnType<typeof useQueryClient>; 
           : [];
         const base = it.price ?? 0;
         const finalPrice = base > 0 ? Math.round(base * (1 + bumpPct) * 100) / 100 : 0;
+        const gallery = stored.length ? stored : (it.image ? [it.image] : []);
 
-        const { error: insErr } = await supabase.from("stays").insert({
+        // NOT NULL columns must never receive null — fall back to sane defaults.
+        const row: Record<string, unknown> = {
           supplier_id: supplier.id,
-          title: it.title.slice(0, 200),
+          title: (it.title || "Imported stay").slice(0, 200),
           kind: mapKind(it.property_type),
           description: it.full_address || null,
           cover: stored[0] ?? it.image ?? null,
-          gallery: stored.length ? stored : (it.image ? [it.image] : []),
-          city: it.city,
-          country: it.country,
+          gallery,
+          city: it.city ?? null,
+          country: it.country ?? null,
           price_per_night: finalPrice,
           currency: it.currency || "USD",
-          bedrooms: it.bedrooms,
-          beds: it.beds,
-          baths: it.baths,
-          guests: it.guests,
-          rating: it.rating,
-          review_count: it.review_count ?? 0,
-          superhost: it.superhost,
+          bedrooms: Number(it.bedrooms) > 0 ? Math.round(Number(it.bedrooms)) : 1,
+          beds: Number(it.beds) > 0 ? Math.round(Number(it.beds)) : 1,
+          baths: Number(it.baths) > 0 ? Math.round(Number(it.baths)) : 1,
+          guests: Number(it.guests) > 0 ? Math.round(Number(it.guests)) : 2,
+          rating: Number(it.rating) > 0 ? Number(it.rating) : 0,
+          review_count: Number(it.review_count) > 0 ? Math.round(Number(it.review_count)) : 0,
+          superhost: it.superhost === true,
           active: finalPrice > 0,
           source: "airbnb",
-          source_url: it.url,
-          source_id: it.id,
-        });
+          source_url: it.url ?? null,
+          source_id: it.id ? String(it.id) : null,
+        };
+
+        const { error: insErr } = await supabase.from("stays").insert(row as never);
         if (insErr) throw insErr;
-      } catch (err) {
+      } catch (err: any) {
         console.error("airbnb import err", err);
+        lastError = err?.message || err?.details || "Insert failed";
         errors++;
       }
       setProgress({ done: i + 1, total: chosen.length, errors });
@@ -4920,7 +4926,13 @@ function StaysImport({ qc, navigate }: { qc: ReturnType<typeof useQueryClient>; 
     setImporting(false);
     qc.invalidateQueries({ queryKey: ["my-stays"] });
     qc.invalidateQueries({ queryKey: ["stays"] });
-    toast.success(`Imported ${chosen.length - errors}/${chosen.length} stays${errors ? ` (${errors} failed)` : ""}`);
+    qc.invalidateQueries({ queryKey: ["home-stays"] });
+    if (errors === chosen.length) {
+      toast.error(`Import failed: ${lastError}`);
+    } else {
+      toast.success(`Imported ${chosen.length - errors}/${chosen.length} stays${errors ? ` (${errors} failed: ${lastError})` : ""}`);
+    }
+
   };
 
   return (
