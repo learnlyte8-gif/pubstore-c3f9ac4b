@@ -274,24 +274,32 @@ async function scrapeAliExpressDetail(rawId: string, rawUrl: string): Promise<Al
   const url = rawUrl || (id ? `https://www.aliexpress.com/item/${id}.html` : "");
   if (!url) throw new Error("id or url is required");
 
-  let html = "";
-  try {
-    const r = await fetch(url, {
-      headers: {
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        Cookie: "aep_usuc_f=site=glo&c_tp=USD&region=US&b_locale=en_US",
-        "User-Agent": UA,
-      },
-    });
-    html = await r.text();
-  } catch { /* fall through */ }
+  // Omkar's product API is the reliable source — AliExpress blocks direct fetches
+  // with a captcha wall, which is why only the search thumbnail used to survive.
+  const omkarEarly = await omkarDetail(id, url);
 
-  if (looksBlocked(html)) {
-    console.log("direct aliexpress fetch blocked, using firecrawl", id);
-    const fc = await firecrawlHtml(url);
-    if (fc) html = fc;
+  let html = "";
+  if (!omkarEarly) {
+    try {
+      const r = await fetch(url, {
+        headers: {
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+          Cookie: "aep_usuc_f=site=glo&c_tp=USD&region=US&b_locale=en_US",
+          "User-Agent": UA,
+        },
+      });
+      html = await r.text();
+    } catch { /* fall through */ }
+
+    if (looksBlocked(html)) {
+      console.log("direct aliexpress fetch blocked, using firecrawl", id);
+      const fc = await firecrawlHtml(url);
+      if (fc) html = fc;
+    }
   }
+
+
 
 
   const imageSet: string[] = [];
