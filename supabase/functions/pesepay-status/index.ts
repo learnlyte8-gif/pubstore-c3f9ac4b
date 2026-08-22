@@ -107,6 +107,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    let credited = false;
     if (paid && merchantRef.startsWith("wallet_topup_")) {
       const internalRef = `pesepay:${pesepayReference}`;
       const { data: existing } = await admin
@@ -114,14 +115,20 @@ Deno.serve(async (req) => {
         .select("id")
         .eq("reference", internalRef)
         .maybeSingle();
-      if (!existing && amount > 0) {
-        await admin.rpc("apply_wallet_transaction", {
+      if (existing) {
+        credited = true; // webhook already applied it
+      } else if (amount > 0) {
+        const { error: rpcErr } = await admin.rpc("apply_wallet_transaction", {
           _user_id: userId,
           _kind: "topup",
           _amount: amount,
           _description: `Pesepay top-up $${amount.toFixed(2)}`,
           _reference: internalRef,
         });
+        if (rpcErr) console.error("wallet credit failed", rpcErr);
+        else credited = true;
+      } else {
+        console.error("pesepay-status: paid but no amount in payload", inner);
       }
     }
 
@@ -143,7 +150,8 @@ Deno.serve(async (req) => {
         .eq("payment_reference", merchantRef);
     }
 
-    return json({ ok: true, paid, status, amount });
+    return json({ ok: true, paid, status, amount, credited, pending: outcome.pending });
+
   } catch (e) {
     console.error("pesepay-status error", e);
     return json({ error: e instanceof Error ? e.message : "Unexpected error" }, 500);
