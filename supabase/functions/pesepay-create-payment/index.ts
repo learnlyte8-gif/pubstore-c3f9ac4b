@@ -37,9 +37,9 @@ function cleanHeader(v: string): string {
 }
 
 /**
- * Allowed returnUrl schemes: web (http/https) plus our mobile deep-link schemes
- * so Pesepay can hand the user back into the native app (e.g.
- * tapson-mobile://payment-callback).
+ * Allowed returnUrl schemes: web (http/https), our mobile deep-link schemes,
+ * and Expo Go development schemes so Pesepay can hand the user back into
+ * the correct app environment.
  */
 const ALLOWED_RETURN_SCHEMES = [
   "http:",
@@ -48,12 +48,19 @@ const ALLOWED_RETURN_SCHEMES = [
   "tapson:",
   "pubstore:",
   "com.pubstore.app:",
+  "com.kuki.kkallinonestore:",
+  "exp:",
+  "exps:",
 ];
 
 function isAllowedReturnUrl(url: string): boolean {
   try {
     const parsed = new URL(url.trim());
-    return ALLOWED_RETURN_SCHEMES.includes(parsed.protocol.toLowerCase());
+    const protocol = parsed.protocol.toLowerCase();
+    if (ALLOWED_RETURN_SCHEMES.includes(protocol)) return true;
+    // Allow any Expo Go named scheme such as exp+pubstore://...
+    if (protocol.startsWith("exp+") && protocol.endsWith(":")) return true;
+    return false;
   } catch {
     return false;
   }
