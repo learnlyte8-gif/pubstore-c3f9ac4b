@@ -225,9 +225,19 @@ export default function Cart() {
 
   // After Pesepay web redirect, finalise via pesepay-status
   useEffect(() => {
-    const ref = searchParams.get("pesepay_ref");
-    const pref = searchParams.get("pesepay_pref");
-    if (!ref || !pref) return;
+    let ref = searchParams.get("pesepay_ref") ?? "";
+    let pref = searchParams.get("pesepay_pref") ?? "";
+    if (ref === "PENDING") ref = "";
+    let stashed: { reference?: string; pesepayReference?: string } | null = null;
+    try {
+      const raw = sessionStorage.getItem(PESEPAY_PENDING_KEY);
+      if (raw) stashed = JSON.parse(raw);
+    } catch { /* ignore */ }
+    if (!ref) ref = stashed?.reference ?? "";
+    if (!pref) pref = stashed?.pesepayReference ?? "";
+    if (!pref) return;
+    sessionStorage.removeItem(PESEPAY_PENDING_KEY);
+
     (async () => {
       try {
         const { data, error } = await sb.functions.invoke("pesepay-status", {
