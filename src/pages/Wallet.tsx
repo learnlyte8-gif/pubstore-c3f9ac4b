@@ -69,11 +69,24 @@ export default function WalletPage() {
   // After Pesepay redirects back, confirm via pesepay-status.
   useEffect(() => {
     if (pesepayRanRef.current) return;
-    const ref = searchParams.get("pesepay_ref");
-    const pref = searchParams.get("pesepay_pref");
-    if (!ref || !pref) return;
+    // Pesepay's saved returnUrl is created before we know the reference, so it can
+    // come back bare (or with the literal "PENDING"). Fall back to the stash we
+    // wrote just before redirecting.
+    let ref = searchParams.get("pesepay_ref") ?? "";
+    let pref = searchParams.get("pesepay_pref") ?? "";
+    if (ref === "PENDING") ref = "";
+    let stashed: { reference?: string; pesepayReference?: string } | null = null;
+    try {
+      const raw = sessionStorage.getItem(PESEPAY_PENDING_KEY);
+      if (raw) stashed = JSON.parse(raw);
+    } catch { /* ignore */ }
+    if (!ref) ref = stashed?.reference ?? "";
+    if (!pref) pref = stashed?.pesepayReference ?? "";
+    if (!pref) return;
     pesepayRanRef.current = true;
+    sessionStorage.removeItem(PESEPAY_PENDING_KEY);
     setCapturing(true);
+
     (async () => {
       try {
         let data: any = null;
