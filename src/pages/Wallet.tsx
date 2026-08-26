@@ -209,17 +209,19 @@ export default function WalletPage() {
 
       if (PESEPAY_PROVIDERS.includes(provider)) {
         const { data, error } = await sb.functions.invoke("pesepay-create-payment", {
-          body: { purpose: "wallet_topup", amount, returnUrl: `${origin}/wallet?pesepay_ref=PENDING` },
+          body: { purpose: "wallet_topup", amount, returnUrl: `${origin}/wallet` },
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
-        // Stash the reference + pesepay reference so we can confirm on return.
-        const back = new URL(`${origin}/wallet`);
-        back.searchParams.set("pesepay_ref", data.reference);
-        back.searchParams.set("pesepay_pref", data.pesepayReference || "");
-        sessionStorage.setItem("pubstore.pesepay.return", back.toString());
+        // Stash the reference + pesepay reference so we can confirm on return,
+        // even when Pesepay sends us back to the bare returnUrl.
+        sessionStorage.setItem(
+          PESEPAY_PENDING_KEY,
+          JSON.stringify({ reference: data.reference, pesepayReference: data.pesepayReference || "", amount }),
+        );
         window.location.href = data.redirectUrl;
         return;
+
       }
     } catch (e: any) {
       setRedirecting(false);
