@@ -15,6 +15,8 @@ import { getEdgeFunctionErrorMessage } from "@/lib/edgeFunctionError";
 const fmt = (n: number) => `$${Number(n).toFixed(2)}`;
 const TOPUP_AMOUNTS = [10, 25, 50, 100, 250, 500];
 const PENDING_KEY = "pubstore.paypal.pending";
+const PESEPAY_PENDING_KEY = "pubstore.pesepay.pending";
+
 const sb = supabase as any;
 
 type Pending = { orderID: string; amount: number };
@@ -69,11 +71,24 @@ export default function WalletPage() {
   // After Pesepay redirects back, confirm via pesepay-status.
   useEffect(() => {
     if (pesepayRanRef.current) return;
-    const ref = searchParams.get("pesepay_ref");
-    const pref = searchParams.get("pesepay_pref");
-    if (!ref || !pref) return;
+    // Pesepay's saved returnUrl is created before we know the reference, so it can
+    // come back bare (or with the literal "PENDING"). Fall back to the stash we
+    // wrote just before redirecting.
+    let ref = searchParams.get("pesepay_ref") ?? "";
+    let pref = searchParams.get("pesepay_pref") ?? "";
+    if (ref === "PENDING") ref = "";
+    let stashed: { reference?: string; pesepayReference?: string } | null = null;
+    try {
+      const raw = sessionStorage.getItem(PESEPAY_PENDING_KEY);
+      if (raw) stashed = JSON.parse(raw);
+    } catch { /* ignore */ }
+    if (!ref) ref = stashed?.reference ?? "";
+    if (!pref) pref = stashed?.pesepayReference ?? "";
+    if (!pref) return;
     pesepayRanRef.current = true;
+    sessionStorage.removeItem(PESEPAY_PENDING_KEY);
     setCapturing(true);
+
     (async () => {
       try {
         let data: any = null;
@@ -194,17 +209,19 @@ export default function WalletPage() {
 
       if (PESEPAY_PROVIDERS.includes(provider)) {
         const { data, error } = await sb.functions.invoke("pesepay-create-payment", {
-          body: { purpose: "wallet_topup", amount, returnUrl: `${origin}/wallet?pesepay_ref=PENDING` },
+          body: { purpose: "wallet_topup", amount, returnUrl: `${origin}/wallet` },
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
-        // Stash the reference + pesepay reference so we can confirm on return.
-        const back = new URL(`${origin}/wallet`);
-        back.searchParams.set("pesepay_ref", data.reference);
-        back.searchParams.set("pesepay_pref", data.pesepayReference || "");
-        sessionStorage.setItem("pubstore.pesepay.return", back.toString());
+        // Stash the reference + pesepay reference so we can confirm on return,
+        // even when Pesepay sends us back to the bare returnUrl.
+        sessionStorage.setItem(
+          PESEPAY_PENDING_KEY,
+          JSON.stringify({ reference: data.reference, pesepayReference: data.pesepayReference || "", amount }),
+        );
         window.location.href = data.redirectUrl;
         return;
+
       }
     } catch (e: any) {
       setRedirecting(false);

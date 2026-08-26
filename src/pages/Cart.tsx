@@ -14,6 +14,8 @@ import { courierToRate, quoteCourierRate, summarizeRate } from "@/lib/courierRat
 import BackButton from "@/components/BackButton";
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
+const PESEPAY_PENDING_KEY = "pubstore.pesepay.pending";
+
 
 type AddrRow = {
   id: string;
@@ -225,9 +227,19 @@ export default function Cart() {
 
   // After Pesepay web redirect, finalise via pesepay-status
   useEffect(() => {
-    const ref = searchParams.get("pesepay_ref");
-    const pref = searchParams.get("pesepay_pref");
-    if (!ref || !pref) return;
+    let ref = searchParams.get("pesepay_ref") ?? "";
+    let pref = searchParams.get("pesepay_pref") ?? "";
+    if (ref === "PENDING") ref = "";
+    let stashed: { reference?: string; pesepayReference?: string } | null = null;
+    try {
+      const raw = sessionStorage.getItem(PESEPAY_PENDING_KEY);
+      if (raw) stashed = JSON.parse(raw);
+    } catch { /* ignore */ }
+    if (!ref) ref = stashed?.reference ?? "";
+    if (!pref) pref = stashed?.pesepayReference ?? "";
+    if (!pref) return;
+    sessionStorage.removeItem(PESEPAY_PENDING_KEY);
+
     (async () => {
       try {
         const { data, error } = await sb.functions.invoke("pesepay-status", {
@@ -449,13 +461,15 @@ export default function Cart() {
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
         await clearCart();
-        // Tack our refs onto the return URL so we can confirm. Pesepay preserves the URL.
-        back.searchParams.set("pesepay_ref", data.reference);
-        back.searchParams.set("pesepay_pref", data.pesepayReference || "");
-        // We can't change Pesepay's saved returnUrl after init, but most flows redirect
-        // straight to redirectUrl which itself bounces back to our `back` value.
+        // Pesepay's returnUrl is fixed at init, so stash the refs locally and read
+        // them back when the user lands on /cart again.
+        sessionStorage.setItem(
+          PESEPAY_PENDING_KEY,
+          JSON.stringify({ reference: data.reference, pesepayReference: data.pesepayReference || "" }),
+        );
         window.location.href = data.redirectUrl;
         return;
+
       }
     } catch (e) {
       console.error(e);
