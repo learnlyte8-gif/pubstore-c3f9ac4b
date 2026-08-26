@@ -459,13 +459,15 @@ export default function Cart() {
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
         await clearCart();
-        // Tack our refs onto the return URL so we can confirm. Pesepay preserves the URL.
-        back.searchParams.set("pesepay_ref", data.reference);
-        back.searchParams.set("pesepay_pref", data.pesepayReference || "");
-        // We can't change Pesepay's saved returnUrl after init, but most flows redirect
-        // straight to redirectUrl which itself bounces back to our `back` value.
+        // Pesepay's returnUrl is fixed at init, so stash the refs locally and read
+        // them back when the user lands on /cart again.
+        sessionStorage.setItem(
+          PESEPAY_PENDING_KEY,
+          JSON.stringify({ reference: data.reference, pesepayReference: data.pesepayReference || "" }),
+        );
         window.location.href = data.redirectUrl;
         return;
+
       }
     } catch (e) {
       console.error(e);
