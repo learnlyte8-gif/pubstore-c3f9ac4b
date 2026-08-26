@@ -14,6 +14,8 @@ import { courierToRate, quoteCourierRate, summarizeRate } from "@/lib/courierRat
 import BackButton from "@/components/BackButton";
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
+const PESEPAY_PENDING_KEY = "pubstore.pesepay.pending";
+
 
 type AddrRow = {
   id: string;
