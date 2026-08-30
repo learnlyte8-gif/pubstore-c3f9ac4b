@@ -85,6 +85,8 @@ export default function WalletPage() {
     if (!ref) ref = stashed?.reference ?? "";
     if (!pref) pref = stashed?.pesepayReference ?? "";
     if (!pref) return;
+    // Only confirm wallet top-ups here; order payments belong to the cart flow.
+    if (ref && !ref.startsWith("wallet_topup_")) return;
     pesepayRanRef.current = true;
     sessionStorage.removeItem(PESEPAY_PENDING_KEY);
     setCapturing(true);
