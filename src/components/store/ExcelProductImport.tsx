@@ -345,8 +345,34 @@ export default function ExcelProductImport({ onDone }: { onDone?: () => void }) 
                       placeholder="Paste image URL(s) — comma or newline separated"
                       className="w-full h-8 px-2.5 rounded-lg border bg-background text-[11px]"
                     />
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground shrink-0">Price</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={r.price ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setRows((p) => p.map((x, idx) => (idx === i ? { ...x, price: v === "" ? null : Number(v) } : x)));
+                        }}
+                        placeholder="0.00"
+                        className="w-24 h-8 px-2.5 rounded-lg border bg-background text-[11px] tabular-nums"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-[11px] ml-auto"
+                        disabled={busy || r.status === "saving"}
+                        onClick={() => importOne(i)}
+                      >
+                        {r.status === "saving" ? <><CircleSpinner size={12} className="mr-1.5" /> Importing…</> : "Import"}
+                      </Button>
+                    </div>
                   </div>
                 )}
+
               </div>
             ))}
           </div>
