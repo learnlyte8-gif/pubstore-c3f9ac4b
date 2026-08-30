@@ -260,12 +260,28 @@ function ImportView() {
   );
 }
 
-// ---------------- Single URL import ----------------
+// ---------------- Single / multi URL import ----------------
+type UrlPreview = ImportedProduct & {
+  _key: string;
+  _status: "ready" | "saving" | "done" | "error";
+  _error?: string;
+  _productId?: string;
+};
+
+function parseUrlList(raw: string): string[] {
+  const urls = raw
+    .split(/[\s,]+/)
+    .map((s) => s.trim())
+    .filter((s) => /^https?:\/\//i.test(s));
+  return Array.from(new Set(urls)).slice(0, 30);
+}
+
 function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: MarkupMode; markupValue: number; qc: ReturnType<typeof useQueryClient>; navigate: ReturnType<typeof useNavigate> }) {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [preview, setPreview] = useState<ImportedProduct | null>(null);
+  const [fetchProgress, setFetchProgress] = useState<{ done: number; total: number } | null>(null);
+  const [savingAll, setSavingAll] = useState(false);
+  const [previews, setPreviews] = useState<UrlPreview[]>([]);
   const { data: categories = [] } = useQuery({
     queryKey: ["import-categories"],
     queryFn: async () => {
@@ -275,29 +291,48 @@ function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: M
   });
 
   const fetchProduct = async () => {
-    if (!url.trim()) { toast.error("Paste a product URL"); return; }
-    setLoading(true); setPreview(null);
-    try {
-      const p = await importProductFromUrl(url.trim());
-      // Pre-apply markup to the price shown in the preview.
-      setPreview({ ...p, price: applyMarkup(p.price, markupMode, markupValue), original_price: p.price });
-    } catch (err: any) {
-      toast.error(err?.message ?? "Could not import that URL");
-    } finally { setLoading(false); }
+    const urls = parseUrlList(url);
+    if (urls.length === 0) { toast.error("Paste one or more product URLs"); return; }
+    setLoading(true); setPreviews([]);
+    setFetchProgress({ done: 0, total: urls.length });
+    let failed = 0;
+    for (let i = 0; i < urls.length; i++) {
+      try {
+        const p = await importProductFromUrl(urls[i]);
+        setPreviews((prev) => [...prev, {
+          ...p,
+          price: applyMarkup(p.price, markupMode, markupValue),
+          original_price: p.price,
+          _key: `${urls[i]}-${i}`,
+          _status: "ready" as const,
+        }]);
+      } catch (err: any) {
+        failed++;
+        if (urls.length === 1) toast.error(err?.message ?? "Could not import that URL");
+      }
+      setFetchProgress({ done: i + 1, total: urls.length });
+    }
+    setLoading(false);
+    setFetchProgress(null);
+    if (urls.length > 1) {
+      toast[failed === urls.length ? "error" : "success"](`Fetched ${urls.length - failed}/${urls.length} product(s)`);
+    }
   };
 
-  const updatePreview = (patch: Partial<ImportedProduct>) => setPreview((p) => (p ? { ...p, ...patch } : p));
+  const updatePreview = (key: string, patch: Partial<UrlPreview>) =>
+    setPreviews((list) => list.map((p) => (p._key === key ? { ...p, ...patch } : p)));
 
-  const save = async () => {
-    if (!preview) return;
-    if (!preview.title.trim()) { toast.error("Title required"); return; }
-    if (preview.price == null || isNaN(preview.price)) { toast.error("Price required"); return; }
-    setSaving(true);
+  const saveOne = async (key: string, opts?: { silent?: boolean }) => {
+    const preview = previews.find((p) => p._key === key);
+    if (!preview || preview._status === "saving" || preview._status === "done") return null;
+    if (!preview.title.trim()) { toast.error("Title required"); return null; }
+    if (preview.price == null || isNaN(preview.price)) { toast.error("Price required"); return null; }
+    updatePreview(key, { _status: "saving", _error: undefined });
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { navigate("/auth"); return; }
+      if (!user) { navigate("/auth"); return null; }
       const supplier = await fetchMySupplier();
-      if (!supplier) { toast.error("Create your store first"); navigate("/become-supplier"); return; }
+      if (!supplier) { toast.error("Create your store first"); navigate("/become-supplier"); return null; }
 
       const stored = await mirrorImages(user.id, preview.images, "single");
       const { data: product, error } = await supabase.from("products").insert({
@@ -319,14 +354,32 @@ function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: M
       }).select().single();
       if (error) throw error;
 
-      toast.success("Product imported 🎉");
+      updatePreview(key, { _status: "done", _productId: product.id });
       qc.invalidateQueries({ queryKey: ["my-products"] });
       qc.invalidateQueries({ queryKey: ["products"] });
-      navigate(`/product/${product.id}`);
+      if (!opts?.silent) toast.success("Product imported 🎉");
+      return product.id as string;
     } catch (err: any) {
-      toast.error(err?.message ?? "Failed to import");
-    } finally { setSaving(false); }
+      updatePreview(key, { _status: "error", _error: err?.message ?? "Failed to import" });
+      if (!opts?.silent) toast.error(err?.message ?? "Failed to import");
+      return null;
+    }
   };
+
+  const saveAll = async () => {
+    const keys = previews.filter((p) => p._status === "ready" || p._status === "error").map((p) => p._key);
+    if (keys.length === 0) return;
+    setSavingAll(true);
+    let ok = 0;
+    for (const key of keys) {
+      const id = await saveOne(key, { silent: true });
+      if (id) ok++;
+    }
+    setSavingAll(false);
+    toast.success(`Imported ${ok}/${keys.length} product(s)`);
+  };
+
+  const remaining = previews.filter((p) => p._status === "ready" || p._status === "error").length;
 
   return (
     <>
@@ -336,37 +389,56 @@ function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: M
             <Sparkles className="w-4 h-4" />
           </span>
           <div>
-            <p className="font-bold text-sm leading-tight">Paste a product link</p>
-            <p className="text-[11px] text-muted-foreground">Alibaba · AliExpress · Amazon · any Shopify store</p>
+            <p className="font-bold text-sm leading-tight">Paste product link(s)</p>
+            <p className="text-[11px] text-muted-foreground">One or many URLs — Alibaba · AliExpress · Amazon · any Shopify store</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <div className="flex-1 relative">
-            <Link2 className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
+        <div className="flex flex-col gap-2">
+          <div className="relative">
+            <Link2 className="w-4 h-4 text-muted-foreground absolute left-3 top-3.5" />
+            <textarea
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://www.alibaba.com/product-detail/…"
-              className="w-full h-12 rounded-xl border bg-background pl-9 pr-3 text-sm"
-              onKeyDown={(e) => e.key === "Enter" && fetchProduct()}
+              rows={3}
+              placeholder={"https://www.alibaba.com/product-detail/…\nhttps://www.aliexpress.com/item/…"}
+              className="w-full rounded-xl border bg-background pl-9 pr-3 py-3 text-sm resize-y"
+              onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) fetchProduct(); }}
             />
           </div>
-          <Button onClick={fetchProduct} disabled={loading} className="h-12 px-4">
-            {loading ? <CircleSpinner size={16} /> : <Download className="w-4 h-4" />}
-            <span className="ml-1.5 hidden sm:inline">Fetch</span>
-          </Button>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[11px] text-muted-foreground">
+              {parseUrlList(url).length > 0 ? `${parseUrlList(url).length} link(s) detected · max 30` : "Separate links with new lines, spaces or commas"}
+            </p>
+            <Button onClick={fetchProduct} disabled={loading} className="h-11 px-4">
+              {loading ? <CircleSpinner size={16} /> : <Download className="w-4 h-4" />}
+              <span className="ml-1.5">Fetch</span>
+            </Button>
+          </div>
         </div>
       </div>
 
-      {loading && !preview && (
-        <div className="rounded-2xl border bg-card p-8 flex flex-col items-center gap-2 text-muted-foreground">
+      {loading && (
+        <div className="rounded-2xl border bg-card p-6 flex flex-col items-center gap-2 text-muted-foreground">
           <CircleSpinner size={24} />
-          <p className="text-xs">Reading that page…</p>
+          <p className="text-xs">
+            {fetchProgress && fetchProgress.total > 1
+              ? `Reading link ${Math.min(fetchProgress.done + 1, fetchProgress.total)} of ${fetchProgress.total}…`
+              : "Reading that page…"}
+          </p>
         </div>
       )}
 
-      {preview && (
-        <div className="rounded-2xl border bg-card shadow-card overflow-hidden">
+      {previews.length > 1 && (
+        <div className="flex items-center justify-between gap-2 rounded-2xl border bg-card p-3 shadow-card sticky top-2 z-10">
+          <p className="text-xs font-bold">{previews.length} fetched · {remaining} to import</p>
+          <Button onClick={saveAll} disabled={savingAll || remaining === 0} className="h-10">
+            {savingAll ? <><CircleSpinner size={14} className="mr-2" /> Importing…</> : `Import all (${remaining})`}
+          </Button>
+        </div>
+      )}
+
+      {previews.map((preview) => (
+        <div key={preview._key} className="rounded-2xl border bg-card shadow-card overflow-hidden">
           {preview.images.length > 0 && (
             <div className="flex gap-1 overflow-x-auto p-2 bg-muted/30">
               {preview.images.slice(0, 6).map((src, i) => (
@@ -375,14 +447,14 @@ function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: M
             </div>
           )}
           <div className="p-4 space-y-3">
-            <LabeledInput label="Title" value={preview.title} onChange={(v) => updatePreview({ title: v })} />
+            <LabeledInput label="Title" value={preview.title} onChange={(v) => updatePreview(preview._key, { title: v })} />
             <div className="grid grid-cols-2 gap-2">
-              <LabeledInput label={`Price${preview.currency ? ` (${preview.currency})` : ""}`} type="number" value={preview.price ?? ""} onChange={(v) => updatePreview({ price: v === "" ? null : Number(v) })} />
-              <LabeledInput label="Original" type="number" value={preview.original_price ?? ""} onChange={(v) => updatePreview({ original_price: v === "" ? null : Number(v) })} />
+              <LabeledInput label={`Price${preview.currency ? ` (${preview.currency})` : ""}`} type="number" value={preview.price ?? ""} onChange={(v) => updatePreview(preview._key, { price: v === "" ? null : Number(v) })} />
+              <LabeledInput label="Original" type="number" value={preview.original_price ?? ""} onChange={(v) => updatePreview(preview._key, { original_price: v === "" ? null : Number(v) })} />
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <LabeledInput label="MOQ" type="number" value={preview.moq ?? 1} onChange={(v) => updatePreview({ moq: Number(v) || 1 })} />
-              <LabeledInput label="Unit" value={preview.unit ?? "piece"} onChange={(v) => updatePreview({ unit: v })} />
+              <LabeledInput label="MOQ" type="number" value={preview.moq ?? 1} onChange={(v) => updatePreview(preview._key, { moq: Number(v) || 1 })} />
+              <LabeledInput label="Unit" value={preview.unit ?? "piece"} onChange={(v) => updatePreview(preview._key, { unit: v })} />
             </div>
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
@@ -393,7 +465,7 @@ function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: M
               </label>
               <select
                 value={preview.category_slug ?? ""}
-                onChange={(e) => updatePreview({ category_slug: e.target.value || null })}
+                onChange={(e) => updatePreview(preview._key, { category_slug: e.target.value || null })}
                 className="w-full h-11 rounded-xl border bg-background px-3 text-sm mt-1"
               >
                 <option value="">Uncategorized</option>
@@ -406,7 +478,7 @@ function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: M
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Description</label>
               <textarea
                 value={preview.description}
-                onChange={(e) => updatePreview({ description: e.target.value })}
+                onChange={(e) => updatePreview(preview._key, { description: e.target.value })}
                 rows={5}
                 className="w-full rounded-xl border bg-background p-3 text-sm mt-1"
               />
@@ -414,15 +486,23 @@ function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: M
             <p className="text-[10px] text-muted-foreground break-all">
               Source: <span className="font-semibold capitalize">{preview.source}</span> · {preview.source_url}
             </p>
-            <Button onClick={save} disabled={saving} className="w-full h-12">
-              {saving ? <><CircleSpinner size={16} className="mr-2" /> Importing…</> : <><Plus className="w-4 h-4 mr-2" /> Import to my store</>}
-            </Button>
+            {preview._error && <p className="text-[11px] text-destructive">{preview._error}</p>}
+            {preview._status === "done" ? (
+              <Button variant="outline" className="w-full h-12" onClick={() => navigate(`/product/${preview._productId}`)}>
+                <Check className="w-4 h-4 mr-2" /> Imported — view product
+              </Button>
+            ) : (
+              <Button onClick={() => saveOne(preview._key)} disabled={preview._status === "saving" || savingAll} className="w-full h-12">
+                {preview._status === "saving" ? <><CircleSpinner size={16} className="mr-2" /> Importing…</> : <><Plus className="w-4 h-4 mr-2" /> Import to my store</>}
+              </Button>
+            )}
           </div>
         </div>
-      )}
+      ))}
     </>
   );
 }
+
 
 // ---------------- Bulk import ----------------
 function BulkImport({ markupMode, markupValue, qc }: { markupMode: MarkupMode; markupValue: number; qc: ReturnType<typeof useQueryClient> }) {
