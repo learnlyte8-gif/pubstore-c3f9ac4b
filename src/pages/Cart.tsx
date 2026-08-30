@@ -14,7 +14,7 @@ import { courierToRate, quoteCourierRate, summarizeRate } from "@/lib/courierRat
 import BackButton from "@/components/BackButton";
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
-const PESEPAY_PENDING_KEY = "pubstore.pesepay.pending";
+const PESEPAY_PENDING_KEY = "pubstore.pesepay.pending.order";
 
 
 type AddrRow = {
@@ -238,6 +238,8 @@ export default function Cart() {
     if (!ref) ref = stashed?.reference ?? "";
     if (!pref) pref = stashed?.pesepayReference ?? "";
     if (!pref) return;
+    // Never consume a wallet top-up payment from the cart page.
+    if (ref.startsWith("wallet_topup_")) return;
     sessionStorage.removeItem(PESEPAY_PENDING_KEY);
 
     (async () => {
