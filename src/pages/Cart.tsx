@@ -238,6 +238,8 @@ export default function Cart() {
     if (!ref) ref = stashed?.reference ?? "";
     if (!pref) pref = stashed?.pesepayReference ?? "";
     if (!pref) return;
+    // Never consume a wallet top-up payment from the cart page.
+    if (ref.startsWith("wallet_topup_")) return;
     sessionStorage.removeItem(PESEPAY_PENDING_KEY);
 
     (async () => {
