@@ -15,7 +15,7 @@ import { getEdgeFunctionErrorMessage } from "@/lib/edgeFunctionError";
 const fmt = (n: number) => `$${Number(n).toFixed(2)}`;
 const TOPUP_AMOUNTS = [10, 25, 50, 100, 250, 500];
 const PENDING_KEY = "pubstore.paypal.pending";
-const PESEPAY_PENDING_KEY = "pubstore.pesepay.pending";
+const PESEPAY_PENDING_KEY = "pubstore.pesepay.pending.topup";
 
 const sb = supabase as any;
 
