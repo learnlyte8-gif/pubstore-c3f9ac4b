@@ -180,6 +180,46 @@ export default function ExcelProductImport({ onDone }: { onDone?: () => void }) 
     }
   };
 
+  const insertRow = async (r: ParsedRow, supplier: Awaited<ReturnType<typeof fetchMySupplier>>) =>
+    supabase.from("products").insert({
+      supplier_id: supplier!.id,
+      title: r.title,
+      description: r.description,
+      image: r.images[0] ?? null,
+      gallery: r.images,
+      video_url: r.video_url,
+      price: r.price ?? 0,
+      original_price: r.original_price,
+      moq: r.moq,
+      unit: r.unit,
+      lead_time: r.lead_time,
+      ship_from: r.ship_from ?? supplier!.country ?? null,
+      category_slug: r.category_slug,
+      free_shipping: r.free_shipping,
+      active: r.price != null && r.price > 0,
+    });
+
+  const importOne = async (index: number) => {
+    const r = rows[index];
+    if (!r || r.status === "saving" || r.status === "done") return;
+    setRows((p) => p.map((x, idx) => (idx === index ? { ...x, status: "saving", error: undefined } : x)));
+    const supplier = await fetchMySupplier();
+    if (!supplier) {
+      toast.error("Create your store first");
+      setRows((p) => p.map((x, idx) => (idx === index ? { ...x, status: "pending" } : x)));
+      return;
+    }
+    const { error } = await insertRow(r, supplier);
+    if (error) {
+      setRows((p) => p.map((x, idx) => (idx === index ? { ...x, status: "error", error: error.message } : x)));
+      toast.error(error.message);
+    } else {
+      setRows((p) => p.map((x, idx) => (idx === index ? { ...x, status: "done" } : x)));
+      toast.success(`${r.title} imported`);
+      onDone?.();
+    }
+  };
+
   const importAll = async () => {
     const queue = rows.map((r, i) => ({ r, i })).filter(({ r }) => r.status === "pending" || r.status === "error");
     if (!queue.length) return;
@@ -191,23 +231,7 @@ export default function ExcelProductImport({ onDone }: { onDone?: () => void }) 
       let ok = 0;
       for (const { r, i } of queue) {
         setRows((p) => p.map((x, idx) => (idx === i ? { ...x, status: "saving", error: undefined } : x)));
-        const { error } = await supabase.from("products").insert({
-          supplier_id: supplier.id,
-          title: r.title,
-          description: r.description,
-          image: r.images[0] ?? null,
-          gallery: r.images,
-          video_url: r.video_url,
-          price: r.price ?? 0,
-          original_price: r.original_price,
-          moq: r.moq,
-          unit: r.unit,
-          lead_time: r.lead_time,
-          ship_from: r.ship_from ?? supplier.country ?? null,
-          category_slug: r.category_slug,
-          free_shipping: r.free_shipping,
-          active: r.price != null && r.price > 0,
-        });
+        const { error } = await insertRow(r, supplier);
         if (error) {
           setRows((p) => p.map((x, idx) => (idx === i ? { ...x, status: "error", error: error.message } : x)));
         } else {
@@ -223,6 +247,7 @@ export default function ExcelProductImport({ onDone }: { onDone?: () => void }) 
   };
 
   const pending = rows.filter((r) => r.status === "pending").length;
+
 
   return (
     <div className="rounded-2xl border bg-card p-4 space-y-3">
@@ -320,8 +345,34 @@ export default function ExcelProductImport({ onDone }: { onDone?: () => void }) 
                       placeholder="Paste image URL(s) — comma or newline separated"
                       className="w-full h-8 px-2.5 rounded-lg border bg-background text-[11px]"
                     />
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground shrink-0">Price</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={r.price ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setRows((p) => p.map((x, idx) => (idx === i ? { ...x, price: v === "" ? null : Number(v) } : x)));
+                        }}
+                        placeholder="0.00"
+                        className="w-24 h-8 px-2.5 rounded-lg border bg-background text-[11px] tabular-nums"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-[11px] ml-auto"
+                        disabled={busy || r.status === "saving"}
+                        onClick={() => importOne(i)}
+                      >
+                        {r.status === "saving" ? <><CircleSpinner size={12} className="mr-1.5" /> Importing…</> : "Import"}
+                      </Button>
+                    </div>
                   </div>
                 )}
+
               </div>
             ))}
           </div>
