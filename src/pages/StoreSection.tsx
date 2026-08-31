@@ -269,8 +269,13 @@ type UrlPreview = ImportedProduct & {
 };
 
 function parseUrlList(raw: string): string[] {
+  // A comma only separates URLs when it is surrounded by whitespace
+  // (e.g. "url1, url2" or "url1 ,url2"). Commas inside a single URL
+  // without surrounding spaces are kept as part of that URL.
   const urls = raw
-    .split(/[\s,]+/)
+    .replace(/\s+,/g, "\n")
+    .replace(/,\s+/g, "\n")
+    .split(/\s+/)
     .map((s) => s.trim())
     .filter((s) => /^https?:\/\//i.test(s));
   return Array.from(new Set(urls)).slice(0, 30);
