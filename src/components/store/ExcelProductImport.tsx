@@ -68,8 +68,15 @@ function toBool(v: unknown): boolean {
 
 function splitUrls(v: unknown): string[] {
   if (v == null) return [];
-  return String(v)
-    .split(/[\n,;|]+/)
+  const raw = String(v);
+  // Split on newlines, semicolons and pipes always.
+  // Split on commas ONLY when surrounded by whitespace so commas inside
+  // URL query parameters are not treated as separators.
+  const segments = raw
+    .replace(/,\s+/g, "\n")
+    .replace(/\s+,/g, "\n")
+    .split(/[\n;|]+/);
+  return segments
     .map((s) => s.trim())
     .filter((s) => /^https?:\/\//i.test(s))
     .slice(0, 8);
