@@ -269,17 +269,15 @@ type UrlPreview = ImportedProduct & {
 };
 
 function parseUrlList(raw: string): string[] {
-  // A comma only separates URLs when it is surrounded by whitespace
-  // (e.g. "url1, url2" or "url1 ,url2"). Commas inside a single URL
-  // without surrounding spaces are kept as part of that URL.
+  // Separators only count when the next token starts a new http(s) URL,
+  // so commas/spaces inside a single URL are preserved.
   const urls = raw
-    .replace(/\s+,/g, "\n")
-    .replace(/,\s+/g, "\n")
-    .split(/\s+/)
-    .map((s) => s.trim())
+    .split(/(?:[\r\n;|]+|\s*,\s*(?=https?:\/\/)|\s+(?=https?:\/\/))/i)
+    .map((s) => s.trim().replace(/^,+|,+$/g, "").trim())
     .filter((s) => /^https?:\/\//i.test(s));
   return Array.from(new Set(urls)).slice(0, 30);
 }
+
 
 function SingleImport({ markupMode, markupValue, qc, navigate }: { markupMode: MarkupMode; markupValue: number; qc: ReturnType<typeof useQueryClient>; navigate: ReturnType<typeof useNavigate> }) {
   const [url, setUrl] = useState("");
