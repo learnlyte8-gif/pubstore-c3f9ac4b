@@ -69,18 +69,18 @@ function toBool(v: unknown): boolean {
 function splitUrls(v: unknown): string[] {
   if (v == null) return [];
   const raw = String(v);
-  // Split on newlines, semicolons and pipes always.
-  // Split on commas ONLY when surrounded by whitespace so commas inside
-  // URL query parameters are not treated as separators.
-  const segments = raw
-    .replace(/,\s+/g, "\n")
-    .replace(/\s+,/g, "\n")
-    .split(/[\n;|]+/);
+  // Split on newlines, semicolons and pipes always. Split on commas (or bare
+  // whitespace) ONLY when the next token starts a new http(s) URL, so commas
+  // inside image URLs / query params are preserved.
+  const segments = raw.split(
+    /(?:[\r\n;|]+|\s*,\s*(?=https?:\/\/)|\s+(?=https?:\/\/))/i
+  );
   return segments
-    .map((s) => s.trim())
+    .map((s) => s.trim().replace(/^,+|,+$/g, "").trim())
     .filter((s) => /^https?:\/\//i.test(s))
     .slice(0, 8);
 }
+
 
 export const SCRAPER_LEAD_TIME = "0-2 days";
 export const SCRAPER_MARGIN = 0.1;
