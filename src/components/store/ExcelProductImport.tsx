@@ -26,19 +26,26 @@ export type ParsedRow = {
 
 // Accept many spellings for each column so people can use their own sheets.
 const ALIASES: Record<string, string[]> = {
-  title: ["title", "name", "product", "product name", "product_title"],
-  description: ["description", "desc", "details", "body", "about"],
-  price: ["price", "sale price", "our price", "selling price", "amount"],
-  original_price: ["original price", "original_price", "compare price", "compare_at_price", "was price", "rrp", "msrp"],
+  title: ["title", "name", "product", "product name", "product_title", "product title", "producttitle", "item", "item name", "product-name", "product-title"],
+  description: ["description", "desc", "details", "body", "about", "product description", "product-description", "summary", "features"],
+  price: ["price", "sale price", "our price", "selling price", "amount", "product price", "product-price", "current price", "price value", "cost"],
+  original_price: ["original price", "original_price", "compare price", "compare_at_price", "was price", "rrp", "msrp", "list price", "old price", "regular price"],
   moq: ["moq", "min order", "minimum order", "min_qty"],
   unit: ["unit", "units", "uom"],
-  lead_time: ["lead time", "lead_time", "shipping time", "delivery time"],
-  ship_from: ["ship from", "ship_from", "origin", "location", "country"],
-  category_slug: ["category", "category slug", "category_slug", "cat"],
+  lead_time: ["lead time", "lead_time", "shipping time", "delivery time", "delivery"],
+  ship_from: ["ship from", "ship_from", "origin", "location", "country", "seller location"],
+  category_slug: ["category", "category slug", "category_slug", "cat", "product category"],
   free_shipping: ["free shipping", "free_shipping", "freeshipping"],
   video_url: ["video", "video url", "video_url", "videos", "video link"],
-  images: ["image", "images", "image url", "imageurl", "imageurls", "image urls", "image_urls", "photos", "gallery", "picture", "pictures"],
+  images: [
+    "image", "images", "image url", "imageurl", "imageurls", "image urls", "image_urls",
+    "photos", "gallery", "picture", "pictures",
+    // Common Chrome scraper-extension headers (Web Scraper, Instant Data Scraper, Data Miner)
+    "image-src", "image src", "img", "img src", "img-src", "image href", "thumbnail", "thumb",
+    "product image", "product-image", "product images", "main image",
+  ],
 };
+
 
 function normalizeKey(raw: string) {
   const k = String(raw || "").trim().toLowerCase().replace(/[_\s]+/g, " ");
