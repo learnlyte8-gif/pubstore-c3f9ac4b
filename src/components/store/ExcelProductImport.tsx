@@ -221,12 +221,17 @@ export default function ExcelProductImport({
       const wb = XLSX.read(buf, { type: "array" });
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const records = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
-      const parsed = rowsFromSheet(records);
+      const parsed = rowsFromSheet(records, { scraper });
       if (!parsed.length) {
-        toast.error("No usable rows found — make sure there is a 'title' column");
+        toast.error("No usable rows found — make sure there is a product name/title column");
       } else {
-        toast.success(`${parsed.length} product(s) ready to import`);
+        toast.success(
+          scraper
+            ? `${parsed.length} scraped product(s) organized · 0-2 days lead time · +10% margin`
+            : `${parsed.length} product(s) ready to import`
+        );
       }
+
       setRows(parsed);
       setFileName(file.name);
     } catch (e: any) {
