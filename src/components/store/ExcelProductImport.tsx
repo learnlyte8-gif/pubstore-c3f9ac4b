@@ -315,15 +315,29 @@ export default function ExcelProductImport({
     <div className="rounded-2xl border bg-card p-4 space-y-3">
       <div className="flex items-start gap-3">
         <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-          <FileSpreadsheet className="w-4 h-4" />
+          {scraper ? <Chrome className="w-4 h-4" /> : <FileSpreadsheet className="w-4 h-4" />}
         </span>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold">Import from Excel / CSV</p>
+          <p className="text-sm font-bold">
+            {scraper ? "Import from Chrome scraper extension" : "Import from Excel / CSV"}
+          </p>
           <p className="text-[11px] text-muted-foreground">
-            Bulk-add products with image URLs, video links, prices and categories.
+            {scraper
+              ? "Drop the export from Web Scraper, Instant Data Scraper or Data Miner — we map the columns, set 0-2 days lead time, write a description when missing and add a 10% margin."
+              : "Bulk-add products with image URLs, video links, prices and categories."}
           </p>
         </div>
       </div>
+
+      {scraper && (
+        <div className="flex flex-wrap gap-1.5">
+          {["Lead time 0-2 days", "+10% margin on price", "Auto description"].map((t) => (
+            <span key={t} className="text-[10px] font-bold px-2 py-1 rounded-full bg-muted text-muted-foreground">
+              {t}
+            </span>
+          ))}
+        </div>
+      )}
 
       <input
         ref={fileRef}
@@ -335,12 +349,15 @@ export default function ExcelProductImport({
 
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="outline" className="h-10" disabled={parsing} onClick={() => fileRef.current?.click()}>
-          {parsing ? <><CircleSpinner size={14} className="mr-2" /> Reading…</> : <><FileSpreadsheet className="w-4 h-4 mr-1.5" /> Choose file</>}
+          {parsing ? <><CircleSpinner size={14} className="mr-2" /> Reading…</> : <><FileSpreadsheet className="w-4 h-4 mr-1.5" /> {scraper ? "Choose scraper export" : "Choose file"}</>}
         </Button>
-        <Button type="button" variant="ghost" className="h-10" onClick={downloadTemplate}>
-          <Download className="w-4 h-4 mr-1.5" /> Template
-        </Button>
+        {!scraper && (
+          <Button type="button" variant="ghost" className="h-10" onClick={downloadTemplate}>
+            <Download className="w-4 h-4 mr-1.5" /> Template
+          </Button>
+        )}
       </div>
+
 
       {rows.length > 0 && (
         <>
