@@ -1577,6 +1577,14 @@ function NewProductView() {
           qc.invalidateQueries({ queryKey: ["products"] });
         }}
       />
+      <ExcelProductImport
+        mode="scraper"
+        onDone={() => {
+          qc.invalidateQueries({ queryKey: ["my-products"] });
+          qc.invalidateQueries({ queryKey: ["products"] });
+        }}
+      />
+
       <div className="flex items-center gap-3">
         <span className="h-px flex-1 bg-border" />
         <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">or add one manually</span>

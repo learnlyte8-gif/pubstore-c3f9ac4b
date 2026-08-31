@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
-import { FileSpreadsheet, Download, X, Check, AlertCircle } from "lucide-react";
+import { FileSpreadsheet, Download, X, Check, AlertCircle, Chrome } from "lucide-react";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,19 +26,26 @@ export type ParsedRow = {
 
 // Accept many spellings for each column so people can use their own sheets.
 const ALIASES: Record<string, string[]> = {
-  title: ["title", "name", "product", "product name", "product_title"],
-  description: ["description", "desc", "details", "body", "about"],
-  price: ["price", "sale price", "our price", "selling price", "amount"],
-  original_price: ["original price", "original_price", "compare price", "compare_at_price", "was price", "rrp", "msrp"],
+  title: ["title", "name", "product", "product name", "product_title", "product title", "producttitle", "item", "item name", "product-name", "product-title"],
+  description: ["description", "desc", "details", "body", "about", "product description", "product-description", "summary", "features"],
+  price: ["price", "sale price", "our price", "selling price", "amount", "product price", "product-price", "current price", "price value", "cost"],
+  original_price: ["original price", "original_price", "compare price", "compare_at_price", "was price", "rrp", "msrp", "list price", "old price", "regular price"],
   moq: ["moq", "min order", "minimum order", "min_qty"],
   unit: ["unit", "units", "uom"],
-  lead_time: ["lead time", "lead_time", "shipping time", "delivery time"],
-  ship_from: ["ship from", "ship_from", "origin", "location", "country"],
-  category_slug: ["category", "category slug", "category_slug", "cat"],
+  lead_time: ["lead time", "lead_time", "shipping time", "delivery time", "delivery"],
+  ship_from: ["ship from", "ship_from", "origin", "location", "country", "seller location"],
+  category_slug: ["category", "category slug", "category_slug", "cat", "product category"],
   free_shipping: ["free shipping", "free_shipping", "freeshipping"],
   video_url: ["video", "video url", "video_url", "videos", "video link"],
-  images: ["image", "images", "image url", "imageurl", "imageurls", "image urls", "image_urls", "photos", "gallery", "picture", "pictures"],
+  images: [
+    "image", "images", "image url", "imageurl", "imageurls", "image urls", "image_urls",
+    "photos", "gallery", "picture", "pictures",
+    // Common Chrome scraper-extension headers (Web Scraper, Instant Data Scraper, Data Miner)
+    "image-src", "image src", "img", "img src", "img-src", "image href", "thumbnail", "thumb",
+    "product image", "product-image", "product images", "main image",
+  ],
 };
+
 
 function normalizeKey(raw: string) {
   const k = String(raw || "").trim().toLowerCase().replace(/[_\s]+/g, " ");
@@ -68,7 +75,22 @@ function splitUrls(v: unknown): string[] {
     .slice(0, 8);
 }
 
-export function rowsFromSheet(records: Record<string, unknown>[]): ParsedRow[] {
+export const SCRAPER_LEAD_TIME = "0-2 days";
+export const SCRAPER_MARGIN = 0.1;
+
+function autoDescription(title: string, extras: string[]): string {
+  const bullets = extras.filter(Boolean).map((s) => `• ${s}`).join("\n");
+  return [
+    `${title} — available now on Pubstore.`,
+    "Quality-checked stock, dispatched in 0-2 days.",
+    bullets,
+  ].filter(Boolean).join("\n\n").slice(0, 4000);
+}
+
+export function rowsFromSheet(
+  records: Record<string, unknown>[],
+  opts: { scraper?: boolean } = {}
+): ParsedRow[] {
   const out: ParsedRow[] = [];
   for (const rec of records) {
     const mapped: Record<string, unknown> = {};
@@ -79,22 +101,48 @@ export function rowsFromSheet(records: Record<string, unknown>[]): ParsedRow[] {
         extraImages.push(...splitUrls(value));
       } else if (field) {
         if (mapped[field] == null || mapped[field] === "") mapped[field] = value;
-      } else if (/^image\s*\d+$/i.test(rawKey.trim())) {
+      } else if (/^image[\s\-_]*\d+$/i.test(rawKey.trim())) {
         extraImages.push(...splitUrls(value));
       }
     }
     const title = String(mapped.title ?? "").trim();
     if (!title) continue;
+
+    let price = toNumber(mapped.price);
+    const rawOriginal = toNumber(mapped.original_price);
+    let original_price = rawOriginal;
+    const category_slug = mapped.category_slug ? String(mapped.category_slug).trim().toLowerCase() : null;
+    let description = mapped.description ? String(mapped.description).slice(0, 4000) : null;
+    let lead_time = mapped.lead_time ? String(mapped.lead_time) : null;
+
+    if (opts.scraper) {
+      // Chrome scraper exports rarely carry lead time, margin or copy.
+      lead_time = SCRAPER_LEAD_TIME;
+      if (price != null) {
+        const base = price;
+        price = Math.round(base * (1 + SCRAPER_MARGIN) * 100) / 100;
+        if (original_price == null || original_price <= price) {
+          original_price = Math.max(price + 1, Math.round(price * 1.15 * 100) / 100 - 0.01);
+        }
+      }
+      if (!description?.trim()) {
+        description = autoDescription(title, [
+          category_slug ? `Category: ${category_slug}` : "",
+          mapped.ship_from ? `Ships from ${String(mapped.ship_from)}` : "",
+        ]);
+      }
+    }
+
     out.push({
       title: title.slice(0, 200),
-      description: mapped.description ? String(mapped.description).slice(0, 4000) : null,
-      price: toNumber(mapped.price),
-      original_price: toNumber(mapped.original_price),
+      description,
+      price,
+      original_price,
       moq: toNumber(mapped.moq) ?? 1,
       unit: mapped.unit ? String(mapped.unit) : "piece",
-      lead_time: mapped.lead_time ? String(mapped.lead_time) : null,
+      lead_time,
       ship_from: mapped.ship_from ? String(mapped.ship_from) : null,
-      category_slug: mapped.category_slug ? String(mapped.category_slug).trim().toLowerCase() : null,
+      category_slug,
       free_shipping: toBool(mapped.free_shipping),
       video_url: mapped.video_url && /^https?:\/\//i.test(String(mapped.video_url).trim())
         ? String(mapped.video_url).trim()
@@ -105,6 +153,7 @@ export function rowsFromSheet(records: Record<string, unknown>[]): ParsedRow[] {
   }
   return out;
 }
+
 
 const TEMPLATE_HEADERS = [
   "title", "description", "price", "original_price", "moq", "unit",
@@ -125,7 +174,15 @@ function downloadTemplate() {
   XLSX.writeFile(wb, "pubstore-product-import-template.xlsx");
 }
 
-export default function ExcelProductImport({ onDone }: { onDone?: () => void }) {
+export default function ExcelProductImport({
+  onDone,
+  mode = "standard",
+}: {
+  onDone?: () => void;
+  mode?: "standard" | "scraper";
+}) {
+  const scraper = mode === "scraper";
+
   const fileRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [fileName, setFileName] = useState("");
@@ -164,12 +221,17 @@ export default function ExcelProductImport({ onDone }: { onDone?: () => void }) 
       const wb = XLSX.read(buf, { type: "array" });
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const records = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
-      const parsed = rowsFromSheet(records);
+      const parsed = rowsFromSheet(records, { scraper });
       if (!parsed.length) {
-        toast.error("No usable rows found — make sure there is a 'title' column");
+        toast.error("No usable rows found — make sure there is a product name/title column");
       } else {
-        toast.success(`${parsed.length} product(s) ready to import`);
+        toast.success(
+          scraper
+            ? `${parsed.length} scraped product(s) organized · 0-2 days lead time · +10% margin`
+            : `${parsed.length} product(s) ready to import`
+        );
       }
+
       setRows(parsed);
       setFileName(file.name);
     } catch (e: any) {
@@ -253,15 +315,29 @@ export default function ExcelProductImport({ onDone }: { onDone?: () => void }) 
     <div className="rounded-2xl border bg-card p-4 space-y-3">
       <div className="flex items-start gap-3">
         <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-          <FileSpreadsheet className="w-4 h-4" />
+          {scraper ? <Chrome className="w-4 h-4" /> : <FileSpreadsheet className="w-4 h-4" />}
         </span>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold">Import from Excel / CSV</p>
+          <p className="text-sm font-bold">
+            {scraper ? "Import from Chrome scraper extension" : "Import from Excel / CSV"}
+          </p>
           <p className="text-[11px] text-muted-foreground">
-            Bulk-add products with image URLs, video links, prices and categories.
+            {scraper
+              ? "Drop the export from Web Scraper, Instant Data Scraper or Data Miner — we map the columns, set 0-2 days lead time, write a description when missing and add a 10% margin."
+              : "Bulk-add products with image URLs, video links, prices and categories."}
           </p>
         </div>
       </div>
+
+      {scraper && (
+        <div className="flex flex-wrap gap-1.5">
+          {["Lead time 0-2 days", "+10% margin on price", "Auto description"].map((t) => (
+            <span key={t} className="text-[10px] font-bold px-2 py-1 rounded-full bg-muted text-muted-foreground">
+              {t}
+            </span>
+          ))}
+        </div>
+      )}
 
       <input
         ref={fileRef}
@@ -273,12 +349,15 @@ export default function ExcelProductImport({ onDone }: { onDone?: () => void }) 
 
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="outline" className="h-10" disabled={parsing} onClick={() => fileRef.current?.click()}>
-          {parsing ? <><CircleSpinner size={14} className="mr-2" /> Reading…</> : <><FileSpreadsheet className="w-4 h-4 mr-1.5" /> Choose file</>}
+          {parsing ? <><CircleSpinner size={14} className="mr-2" /> Reading…</> : <><FileSpreadsheet className="w-4 h-4 mr-1.5" /> {scraper ? "Choose scraper export" : "Choose file"}</>}
         </Button>
-        <Button type="button" variant="ghost" className="h-10" onClick={downloadTemplate}>
-          <Download className="w-4 h-4 mr-1.5" /> Template
-        </Button>
+        {!scraper && (
+          <Button type="button" variant="ghost" className="h-10" onClick={downloadTemplate}>
+            <Download className="w-4 h-4 mr-1.5" /> Template
+          </Button>
+        )}
       </div>
+
 
       {rows.length > 0 && (
         <>
