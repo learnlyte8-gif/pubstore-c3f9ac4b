@@ -174,7 +174,15 @@ function downloadTemplate() {
   XLSX.writeFile(wb, "pubstore-product-import-template.xlsx");
 }
 
-export default function ExcelProductImport({ onDone }: { onDone?: () => void }) {
+export default function ExcelProductImport({
+  onDone,
+  mode = "standard",
+}: {
+  onDone?: () => void;
+  mode?: "standard" | "scraper";
+}) {
+  const scraper = mode === "scraper";
+
   const fileRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [fileName, setFileName] = useState("");
