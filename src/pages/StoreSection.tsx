@@ -1581,6 +1581,14 @@ function NewProductView() {
         }}
       />
       <ExcelProductImport
+        mode="images"
+        onDone={() => {
+          qc.invalidateQueries({ queryKey: ["my-products"] });
+          qc.invalidateQueries({ queryKey: ["products"] });
+        }}
+      />
+
+      <ExcelProductImport
         mode="scraper"
         onDone={() => {
           qc.invalidateQueries({ queryKey: ["my-products"] });

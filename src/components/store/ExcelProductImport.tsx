@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
-import { FileSpreadsheet, Download, X, Check, AlertCircle, Chrome } from "lucide-react";
+import { FileSpreadsheet, Download, X, Check, AlertCircle, Chrome, Search } from "lucide-react";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -186,16 +186,51 @@ export default function ExcelProductImport({
   mode = "standard",
 }: {
   onDone?: () => void;
-  mode?: "standard" | "scraper";
+  mode?: "standard" | "scraper" | "images";
 }) {
   const scraper = mode === "scraper";
+  const imageSearch = mode === "images";
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [fileName, setFileName] = useState("");
   const [busy, setBusy] = useState(false);
   const [parsing, setParsing] = useState(false);
+  const [finding, setFinding] = useState(false);
   const [drafts, setDrafts] = useState<Record<number, string>>({});
+
+  const findImages = async (indexes?: number[]) => {
+    const targets = (indexes ?? rows.map((_, i) => i)).filter(
+      (i) => rows[i] && rows[i].status !== "done"
+    );
+    if (!targets.length) return;
+    setFinding(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("product-image-search", {
+        body: { queries: targets.map((i) => rows[i].title), limit: 3 },
+      });
+      if (error) throw error;
+      const results: { query: string; images: string[] }[] = data?.results ?? [];
+      let filled = 0;
+      setRows((p) =>
+        p.map((row, i) => {
+          const pos = targets.indexOf(i);
+          if (pos === -1) return row;
+          const found = results[pos]?.images ?? [];
+          if (!found.length) return row;
+          filled++;
+          return { ...row, images: Array.from(new Set([...row.images, ...found])).slice(0, 8) };
+        })
+      );
+      if (filled) toast.success(`Found images for ${filled} product(s)`);
+      else toast.error("No images found for these products");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Image search failed");
+    } finally {
+      setFinding(false);
+    }
+  };
+
 
   const addImages = (index: number) => {
     const raw = drafts[index];
@@ -322,16 +357,22 @@ export default function ExcelProductImport({
     <div className="rounded-2xl border bg-card p-4 space-y-3">
       <div className="flex items-start gap-3">
         <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-          {scraper ? <Chrome className="w-4 h-4" /> : <FileSpreadsheet className="w-4 h-4" />}
+          {scraper ? <Chrome className="w-4 h-4" /> : imageSearch ? <Search className="w-4 h-4" /> : <FileSpreadsheet className="w-4 h-4" />}
         </span>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold">
-            {scraper ? "Import from Chrome scraper extension" : "Import from Excel / CSV"}
+            {scraper
+              ? "Import from Chrome scraper extension"
+              : imageSearch
+                ? "Import from Excel + auto-find images"
+                : "Import from Excel / CSV"}
           </p>
           <p className="text-[11px] text-muted-foreground">
             {scraper
               ? "Drop the export from Web Scraper, Instant Data Scraper or Data Miner — we map the columns, set 0-2 days lead time, write a description when missing and add a 10% margin."
-              : "Bulk-add products with image URLs, video links, prices and categories."}
+              : imageSearch
+                ? "Upload a sheet without photos — we search 3 image URLs per product name, you preview them and import."
+                : "Bulk-add products with image URLs, video links, prices and categories."}
           </p>
         </div>
       </div>
@@ -358,12 +399,18 @@ export default function ExcelProductImport({
         <Button type="button" variant="outline" className="h-10" disabled={parsing} onClick={() => fileRef.current?.click()}>
           {parsing ? <><CircleSpinner size={14} className="mr-2" /> Reading…</> : <><FileSpreadsheet className="w-4 h-4 mr-1.5" /> {scraper ? "Choose scraper export" : "Choose file"}</>}
         </Button>
-        {!scraper && (
+        {imageSearch && rows.length > 0 && (
+          <Button type="button" variant="secondary" className="h-10" disabled={finding} onClick={() => findImages()}>
+            {finding ? <><CircleSpinner size={14} className="mr-2" /> Searching…</> : <><Search className="w-4 h-4 mr-1.5" /> Find 3 images each</>}
+          </Button>
+        )}
+        {!scraper && !imageSearch && (
           <Button type="button" variant="ghost" className="h-10" onClick={downloadTemplate}>
             <Download className="w-4 h-4 mr-1.5" /> Template
           </Button>
         )}
       </div>
+
 
 
       {rows.length > 0 && (
