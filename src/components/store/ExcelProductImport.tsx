@@ -186,16 +186,51 @@ export default function ExcelProductImport({
   mode = "standard",
 }: {
   onDone?: () => void;
-  mode?: "standard" | "scraper";
+  mode?: "standard" | "scraper" | "images";
 }) {
   const scraper = mode === "scraper";
+  const imageSearch = mode === "images";
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [fileName, setFileName] = useState("");
   const [busy, setBusy] = useState(false);
   const [parsing, setParsing] = useState(false);
+  const [finding, setFinding] = useState(false);
   const [drafts, setDrafts] = useState<Record<number, string>>({});
+
+  const findImages = async (indexes?: number[]) => {
+    const targets = (indexes ?? rows.map((_, i) => i)).filter(
+      (i) => rows[i] && rows[i].status !== "done"
+    );
+    if (!targets.length) return;
+    setFinding(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("product-image-search", {
+        body: { queries: targets.map((i) => rows[i].title), limit: 3 },
+      });
+      if (error) throw error;
+      const results: { query: string; images: string[] }[] = data?.results ?? [];
+      let filled = 0;
+      setRows((p) =>
+        p.map((row, i) => {
+          const pos = targets.indexOf(i);
+          if (pos === -1) return row;
+          const found = results[pos]?.images ?? [];
+          if (!found.length) return row;
+          filled++;
+          return { ...row, images: Array.from(new Set([...row.images, ...found])).slice(0, 8) };
+        })
+      );
+      if (filled) toast.success(`Found images for ${filled} product(s)`);
+      else toast.error("No images found for these products");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Image search failed");
+    } finally {
+      setFinding(false);
+    }
+  };
+
 
   const addImages = (index: number) => {
     const raw = drafts[index];
