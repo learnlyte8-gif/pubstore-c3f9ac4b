@@ -41,7 +41,6 @@ const PRODUCT_CDN = [
   "static.nike.com",
   "cloudfront.net",
   "img.joomcdn.net",
-  "静", // placeholder never matches; keeps list stable
 ];
 
 const BAD_HINTS = [
