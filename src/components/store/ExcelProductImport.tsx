@@ -357,16 +357,22 @@ export default function ExcelProductImport({
     <div className="rounded-2xl border bg-card p-4 space-y-3">
       <div className="flex items-start gap-3">
         <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-          {scraper ? <Chrome className="w-4 h-4" /> : <FileSpreadsheet className="w-4 h-4" />}
+          {scraper ? <Chrome className="w-4 h-4" /> : imageSearch ? <ImageSearch className="w-4 h-4" /> : <FileSpreadsheet className="w-4 h-4" />}
         </span>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold">
-            {scraper ? "Import from Chrome scraper extension" : "Import from Excel / CSV"}
+            {scraper
+              ? "Import from Chrome scraper extension"
+              : imageSearch
+                ? "Import from Excel + auto-find images"
+                : "Import from Excel / CSV"}
           </p>
           <p className="text-[11px] text-muted-foreground">
             {scraper
               ? "Drop the export from Web Scraper, Instant Data Scraper or Data Miner — we map the columns, set 0-2 days lead time, write a description when missing and add a 10% margin."
-              : "Bulk-add products with image URLs, video links, prices and categories."}
+              : imageSearch
+                ? "Upload a sheet without photos — we search 3 image URLs per product name, you preview them and import."
+                : "Bulk-add products with image URLs, video links, prices and categories."}
           </p>
         </div>
       </div>
@@ -393,12 +399,18 @@ export default function ExcelProductImport({
         <Button type="button" variant="outline" className="h-10" disabled={parsing} onClick={() => fileRef.current?.click()}>
           {parsing ? <><CircleSpinner size={14} className="mr-2" /> Reading…</> : <><FileSpreadsheet className="w-4 h-4 mr-1.5" /> {scraper ? "Choose scraper export" : "Choose file"}</>}
         </Button>
-        {!scraper && (
+        {imageSearch && rows.length > 0 && (
+          <Button type="button" variant="secondary" className="h-10" disabled={finding} onClick={() => findImages()}>
+            {finding ? <><CircleSpinner size={14} className="mr-2" /> Searching…</> : <><ImageSearch className="w-4 h-4 mr-1.5" /> Find 3 images each</>}
+          </Button>
+        )}
+        {!scraper && !imageSearch && (
           <Button type="button" variant="ghost" className="h-10" onClick={downloadTemplate}>
             <Download className="w-4 h-4 mr-1.5" /> Template
           </Button>
         )}
       </div>
+
 
 
       {rows.length > 0 && (
