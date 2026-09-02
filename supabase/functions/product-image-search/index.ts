@@ -24,11 +24,21 @@ function cleanQuery(title: string): string {
     .trim();
 }
 
+async function fetchJson(url: string, headers: Record<string, string>): Promise<any> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    const r = await fetch(url, { headers, signal: controller.signal });
+    if (!r.ok) return null;
+    return await r.json().catch(() => null);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function openverse(q: string, limit: number): Promise<string[]> {
   const url = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(q)}&page_size=${limit * 2}&mature=false`;
-  const r = await fetch(url, { headers: { "User-Agent": "pubstore-image-search/1.0" } });
-  if (!r.ok) return [];
-  const j = await r.json().catch(() => null);
+  const j = await fetchJson(url, { "User-Agent": "pubstore-image-search/1.0" });
   const items: any[] = Array.isArray(j?.results) ? j.results : [];
   return items
     .map((it) => it?.url || it?.thumbnail)
@@ -40,9 +50,7 @@ async function wikimedia(q: string, limit: number): Promise<string[]> {
     `https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*` +
     `&generator=search&gsrsearch=${encodeURIComponent("filetype:bitmap " + q)}` +
     `&gsrlimit=${limit * 2}&gsrnamespace=6&prop=imageinfo&iiprop=url&iiurlwidth=800`;
-  const r = await fetch(url, { headers: { "User-Agent": "pubstore-image-search/1.0" } });
-  if (!r.ok) return [];
-  const j = await r.json().catch(() => null);
+  const j = await fetchJson(url, { "User-Agent": "pubstore-image-search/1.0" });
   const pages = j?.query?.pages ? Object.values<any>(j.query.pages) : [];
   return pages
     .map((p) => p?.imageinfo?.[0]?.thumburl || p?.imageinfo?.[0]?.url)
