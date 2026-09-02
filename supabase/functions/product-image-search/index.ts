@@ -1,4 +1,4 @@
-// Product image search: takes product titles and returns up to N royalty-free
+// Product image search: takes product titles and returns up to N image URLs per title.
 // image URLs per title. Uses Openverse (no key required) with a Wikimedia
 // Commons fallback. Used by the Excel import screen to auto-fill product images.
 

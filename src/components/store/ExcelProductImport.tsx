@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
-import { FileSpreadsheet, Download, X, Check, AlertCircle, Chrome, ImageSearch } from "lucide-react";
+import { FileSpreadsheet, Download, X, Check, AlertCircle, Chrome, Search } from "lucide-react";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
