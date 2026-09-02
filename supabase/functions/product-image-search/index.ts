@@ -103,6 +103,33 @@ function cleanQuery(title: string): string {
     .trim();
 }
 
+function decodeUrl(raw: string): string {
+  return raw
+    .replace(/\\u002f/gi, "/")
+    .replace(/\\\//g, "/")
+    .replace(/&amp;/gi, "&")
+    .replace(/\\u003d/gi, "=")
+    .replace(/\\u0026/gi, "&")
+    .trim();
+}
+
+function extractImageUrls(text: string, limit: number): string[] {
+  const out: string[] = [];
+  const add = (value: string) => {
+    const decoded = decodeUrl(value);
+    if (isProductImage(decoded) && !out.includes(decoded)) out.push(upgrade(decoded));
+  };
+  const meta = /<meta[^>]+(?:property|name)=["']og:image["'][^>]+content=["']([^"']+)["']/gi;
+  let m: RegExpExecArray | null;
+  while ((m = meta.exec(text)) && out.length < limit) add(m[1]);
+  const urls = /(?:https?:)?\\?\/\/[^"'\\\s<>]+/gi;
+  while ((m = urls.exec(text)) && out.length < limit * 4) {
+    const raw = m[0].startsWith("//") ? `https:${m[0]}` : m[0];
+    add(raw.replace(/[),;]+$/, ""));
+  }
+  return out.slice(0, limit);
+}
+
 async function getText(url: string, headers: Record<string, string> = {}, ms = 9000): Promise<string | null> {
   const c = new AbortController();
   const t = setTimeout(() => c.abort(), ms);
@@ -117,6 +144,31 @@ async function getText(url: string, headers: Record<string, string> = {}, ms = 9
     return null;
   } finally {
     clearTimeout(t);
+  }
+}
+
+async function exactListingImages(sourceUrl: string, limit: number): Promise<string[]> {
+  if (!/^https?:\/\//i.test(sourceUrl)) return [];
+  const direct = await getText(sourceUrl, {}, 12000);
+  if (direct) {
+    const found = extractImageUrls(direct, limit);
+    if (found.length >= Math.min(2, limit)) return found;
+  }
+
+  const key = Deno.env.get("FIRECRAWL_API_KEY");
+  if (!key) return direct ? extractImageUrls(direct, limit) : [];
+  try {
+    const r = await fetch("https://api.firecrawl.dev/v2/scrape", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ url: sourceUrl, formats: ["rawHtml"], onlyMainContent: false, waitFor: 2500 }),
+    });
+    if (!r.ok) return direct ? extractImageUrls(direct, limit) : [];
+    const j = await r.json();
+    const root = j?.data ?? j;
+    return extractImageUrls(String(root?.rawHtml || root?.html || ""), limit);
+  } catch {
+    return direct ? extractImageUrls(direct, limit) : [];
   }
 }
 
@@ -227,7 +279,10 @@ async function firecrawl(q: string, limit: number): Promise<string[]> {
   }
 }
 
-async function findImages(title: string, limit: number): Promise<string[]> {
+type ImageQuery = { query: string; sourceUrl?: string | null; source?: string | null };
+
+async function findImages(input: ImageQuery, limit: number): Promise<string[]> {
+  const title = input.query;
   const base = cleanQuery(title) || String(title || "").slice(0, 80);
   const out: string[] = [];
   const push = (arr: string[]) => {
@@ -237,12 +292,16 @@ async function findImages(title: string, limit: number): Promise<string[]> {
     }
   };
 
-  // Marketplace-biased queries first, then the plain product query.
-  const queries = [
-    `${base} aliexpress`,
-    `${base} amazon product`,
-    base,
-  ];
+  // An exact source listing always wins: it is the only reliable way to
+  // guarantee that the image belongs to this exact product, not a lookalike.
+  if (input.sourceUrl) {
+    push(await exactListingImages(input.sourceUrl, limit));
+  }
+
+  // Marketplace-biased queries are only a fallback when no exact listing was supplied.
+  const source = String(input.source || "").toLowerCase();
+  const preferred = source === "amazon" ? "amazon product" : source === "alibaba" ? "alibaba product" : source === "aliexpress" ? "aliexpress product" : "product";
+  const queries = [`${base} ${preferred}`, `${base} wholesale product`, base];
 
   for (const q of queries) {
     if (out.length >= limit) break;
@@ -266,9 +325,13 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const raw = Array.isArray(body?.queries) ? body.queries : [body?.query];
-    const queries = raw
-      .map((q: unknown) => String(q ?? "").trim())
-      .filter(Boolean)
+    const queries: ImageQuery[] = raw
+      .map((q: unknown) => typeof q === "string" ? { query: q.trim() } : {
+        query: String((q as Record<string, unknown>)?.query ?? (q as Record<string, unknown>)?.title ?? "").trim(),
+        sourceUrl: typeof (q as Record<string, unknown>)?.sourceUrl === "string" ? (q as Record<string, unknown>).sourceUrl as string : null,
+        source: typeof (q as Record<string, unknown>)?.source === "string" ? (q as Record<string, unknown>).source as string : null,
+      })
+      .filter((q) => Boolean(q.query))
       .slice(0, 40);
     if (!queries.length) return json({ error: "Provide queries: string[]" }, 400);
 
@@ -279,7 +342,7 @@ Deno.serve(async (req) => {
     for (let i = 0; i < queries.length; i += 4) {
       const chunk = queries.slice(i, i + 4);
       const settled = await Promise.all(
-        chunk.map(async (query: string) => ({ query, images: await findImages(query, limit) }))
+        chunk.map(async (query: ImageQuery) => ({ query: query.query, images: await findImages(query, limit) }))
       );
       results.push(...settled);
     }

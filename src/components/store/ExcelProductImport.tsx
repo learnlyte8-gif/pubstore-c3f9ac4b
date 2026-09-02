@@ -19,6 +19,9 @@ export type ParsedRow = {
   category_slug: string | null;
   free_shipping: boolean;
   video_url: string | null;
+  source: string | null;
+  source_url: string | null;
+  source_id: string | null;
   images: string[];
   status: "pending" | "saving" | "done" | "error";
   error?: string;
@@ -37,6 +40,9 @@ const ALIASES: Record<string, string[]> = {
   category_slug: ["category", "category slug", "category_slug", "cat", "product category"],
   free_shipping: ["free shipping", "free_shipping", "freeshipping"],
   video_url: ["video", "video url", "video_url", "videos", "video link"],
+  source_url: ["source url", "source_url", "source url", "product url", "product_url", "listing url", "listing_url", "original url", "original_url", "link", "url"],
+  source: ["source", "marketplace", "platform", "site"],
+  source_id: ["source id", "source_id", "product id", "product_id", "listing id", "listing_id", "item id", "item_id"],
   images: [
     "image", "images", "image url", "imageurl", "imageurls", "image urls", "image_urls",
     "photos", "gallery", "picture", "pictures",
@@ -59,6 +65,28 @@ function toNumber(v: unknown): number | null {
   if (v == null || v === "") return null;
   const n = Number(String(v).replace(/[^0-9.\-]/g, ""));
   return Number.isFinite(n) ? n : null;
+}
+
+function sourceFromUrl(url: string): string | null {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    if (host.includes("amazon.")) return "amazon";
+    if (host.includes("alibaba.")) return "alibaba";
+    if (host.includes("aliexpress.")) return "aliexpress";
+    if (host.includes("shopify") || host.includes("myshopify")) return "shopify";
+    if (host.includes("ebay.")) return "ebay";
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function sourceIdFromUrl(url: string, source: string | null): string | null {
+  if (!url) return null;
+  if (source === "amazon") return url.match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})/i)?.[1] ?? null;
+  if (source === "aliexpress") return url.match(/\/item\/(\d+)/i)?.[1] ?? null;
+  if (source === "alibaba") return url.match(/[_/](\d{6,})\.html/i)?.[1] ?? null;
+  return null;
 }
 
 function toBool(v: unknown): boolean {
@@ -121,6 +149,9 @@ export function rowsFromSheet(
     const category_slug = mapped.category_slug ? String(mapped.category_slug).trim().toLowerCase() : null;
     let description = mapped.description ? String(mapped.description).slice(0, 4000) : null;
     let lead_time = mapped.lead_time ? String(mapped.lead_time) : null;
+    const source_url = mapped.source_url ? String(mapped.source_url).trim() : null;
+    const source = (mapped.source ? String(mapped.source).trim().toLowerCase() : null) ?? (source_url ? sourceFromUrl(source_url) : null);
+    const source_id = mapped.source_id ? String(mapped.source_id).trim() : (source_url ? sourceIdFromUrl(source_url, source) : null);
 
     if (opts.scraper) {
       // Chrome scraper exports rarely carry lead time, margin or copy.
@@ -154,6 +185,9 @@ export function rowsFromSheet(
       video_url: mapped.video_url && /^https?:\/\//i.test(String(mapped.video_url).trim())
         ? String(mapped.video_url).trim()
         : null,
+      source,
+      source_url: source_url && /^https?:\/\//i.test(source_url) ? source_url : null,
+      source_id,
       images: Array.from(new Set(extraImages)),
       status: "pending",
     });
@@ -207,7 +241,14 @@ export default function ExcelProductImport({
     setFinding(true);
     try {
       const { data, error } = await supabase.functions.invoke("product-image-search", {
-        body: { queries: targets.map((i) => rows[i].title), limit: 3 },
+        body: {
+          queries: targets.map((i) => ({
+            query: rows[i].title,
+            sourceUrl: rows[i].source_url,
+            source: rows[i].source,
+          })),
+          limit: 8,
+        },
       });
       if (error) throw error;
       const results: { query: string; images: string[] }[] = data?.results ?? [];
@@ -292,6 +333,9 @@ export default function ExcelProductImport({
       image: r.images[0] ?? null,
       gallery: r.images,
       video_url: r.video_url,
+      source: r.source,
+      source_url: r.source_url,
+      source_id: r.source_id,
       price: r.price ?? 0,
       original_price: r.original_price,
       moq: r.moq,
@@ -436,7 +480,7 @@ export default function ExcelProductImport({
                     <p className="text-[10px] text-muted-foreground truncate">
                       {r.price != null ? `$${r.price.toFixed(2)}` : "no price → draft"}
                       {r.category_slug ? ` · ${r.category_slug}` : ""}
-                      {r.images.length ? ` · ${r.images.length} image(s)` : " · no images"}
+                      {r.images.length ? ` · ${r.images.length} image(s)` : " · no images"}{r.source ? ` · ${r.source}` : ""}
                       {r.video_url ? " · video" : ""}
                     </p>
                     {r.error && <p className="text-[10px] text-destructive truncate">{r.error}</p>}
