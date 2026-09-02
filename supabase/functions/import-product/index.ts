@@ -98,6 +98,25 @@ async function tryShopifyJson(url: string): Promise<Extracted | null> {
   }
 }
 
+function extractMarketplaceImages(html: string): string[] {
+  const hosts = ["alicdn.com", "aliexpress-media.com", "media-amazon.com", "ssl-images-amazon.com", "images-amazon.com", "sc04.alicdn.com", "ebayimg.com", "walmartimages.com", "cdn.shopify.com", "shopifycdn.com", "made-in-china.com", "dhresource.com"];
+  const bad = /(logo|icon|sprite|placeholder|no-image|avatar|banner|captcha|loading)/i;
+  const out: string[] = [];
+  const add = (raw: string) => {
+    const value = raw.replace(/\\u002f/gi, "/").replace(/\\\//g, "/").replace(/&amp;/gi, "&");
+    try {
+      const host = new URL(value).hostname.toLowerCase();
+      if (!hosts.some((d) => host === d || host.endsWith(`.${d}`)) || bad.test(value)) return;
+      if (!/\.(jpe?g|png|webp|avif)(\?|$|_)/i.test(value)) return;
+      if (!out.includes(value)) out.push(value);
+    } catch { /* ignore malformed page values */ }
+  };
+  const re = /https?:\/\/[^"'\\\s<>]+/gi;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(html)) && out.length < 20) add(match[0].replace(/[),;]+$/, ""));
+  return out;
+}
+
 async function scrapeWithFirecrawl(url: string): Promise<{ markdown: string; html: string; metadata: any; screenshot?: string } | null> {
   const apiKey = Deno.env.get("FIRECRAWL_API_KEY");
   if (!apiKey) throw new Error("FIRECRAWL_API_KEY is not configured");
@@ -279,7 +298,10 @@ Deno.serve(async (req) => {
       original_price: typeof extracted.original_price === "number" ? extracted.original_price : null,
       currency: extracted.currency ?? null,
       description: String(extracted.description || "").slice(0, 4000),
-      images: Array.isArray(extracted.images) ? extracted.images.filter(Boolean).slice(0, 8) : [],
+      images: Array.from(new Set([
+        ...(Array.isArray(extracted.images) ? extracted.images.filter(Boolean) : []),
+        ...extractMarketplaceImages(scraped.html),
+      ])).slice(0, 20),
       source,
       source_url: url,
       moq: extracted.moq ?? null,
