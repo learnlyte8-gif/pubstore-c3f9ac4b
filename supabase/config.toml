@@ -37,3 +37,5 @@ project_id = "ccprnnqxpnrkdrfsudjc"
     verify_jwt = true
   [functions.verify-whatsapp-code]
     verify_jwt = true
+  [functions.product-image-search]
+    verify_jwt = false
