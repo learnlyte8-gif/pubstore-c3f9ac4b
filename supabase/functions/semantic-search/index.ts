@@ -52,9 +52,22 @@ Deno.serve(async (req) => {
     const action = body.action ?? 'search';
     const token = req.headers.get('Authorization')?.replace('Bearer ', '') ?? '';
 
-    // ---- backfill: service-role only ----
+    // ---- backfill: service role, shared secret, or platform admin ----
     if (action === 'backfill') {
-      if (token !== serviceKey) return json({ error: 'Unauthorized' }, 401);
+      let allowed = token === serviceKey;
+      if (!allowed) {
+        const secret = Deno.env.get('EMBEDDING_BACKFILL_SECRET');
+        allowed = !!secret && req.headers.get('x-backfill-secret') === secret;
+      }
+      if (!allowed && token) {
+        const { data: userData } = await admin.auth.getUser(token);
+        if (userData?.user) {
+          const { data: isAdmin } = await admin.rpc('has_role', { _user_id: userData.user.id, _role: 'admin' });
+          allowed = isAdmin === true;
+        }
+      }
+      if (!allowed) return json({ error: 'Unauthorized' }, 401);
+
       const limit = Math.max(1, Math.min(Number(body.limit) || 50, 100));
       const { data: products, error } = await admin
         .from('products')
