@@ -1,73 +1,158 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js@2';
+import { chargeAiCredits } from '../_shared/ai-credits.ts';
 
-const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' };
-const MODEL = 'text-embedding-3-small';
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+const EMBED_MODEL = 'openai/text-embedding-3-small';
+const DIMS = 1536; // must match products.search_embedding
 
 function productText(product: any) {
-  return [product.title, product.category_slug, ...(product.use_cases ?? []), ...(product.features ?? []), ...(product.target_audience ?? []), product.description].filter(Boolean).join('\n');
+  return [
+    product.title,
+    product.category_slug,
+    ...(product.use_cases ?? []),
+    ...(product.features ?? []),
+    ...(product.target_audience ?? []),
+    product.description,
+  ]
+    .filter(Boolean)
+    .join('\n')
+    .slice(0, 6000);
 }
 
-async function embed(input: string | string[]) {
-  const key = Deno.env.get('OPENAI_API_KEY');
-  if (!key) throw new Error('OPENAI_API_KEY is not configured');
-  const response = await fetch('https://api.openai.com/v1/embeddings', { method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: MODEL, input }) });
-  if (!response.ok) throw new Error(`Embedding request failed: ${response.status}`);
-  const body = await response.json();
-  return body.data.map((item: { embedding: number[] }) => item.embedding) as number[][];
+/** Embeddings via the Lovable AI Gateway (no user-supplied API key needed). */
+async function embed(input: string | string[]): Promise<number[][]> {
+  const key = Deno.env.get('LOVABLE_API_KEY');
+  if (!key) throw new Error('LOVABLE_API_KEY is not configured');
+  const res = await fetch('https://ai.gateway.lovable.dev/v1/embeddings', {
+    method: 'POST',
+    headers: { 'Lovable-API-Key': key, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: EMBED_MODEL, input, dimensions: DIMS }),
+  });
+  if (!res.ok) throw new Error(`Embedding request failed: ${res.status} ${await res.text()}`);
+  const body = await res.json();
+  const rows = (body.data ?? []).sort((a: any, b: any) => (a.index ?? 0) - (b.index ?? 0));
+  return rows.map((item: { embedding: number[] }) => item.embedding);
 }
-
-import { chargeAiCredits } from '../_shared/ai-credits.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
   try {
-    const token = req.headers.get('Authorization')?.replace('Bearer ', '');
-    if (!token) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
     const url = Deno.env.get('SUPABASE_URL')!;
-    const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const admin = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
-    const body = await req.json();
-    const isBackfill = body.action === 'backfill';
-    let user: { id: string } | null = null;
-    if (isBackfill) {
-      if (token !== key) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
-    } else {
-      const { data, error: authError } = await admin.auth.getUser(token);
-      if (authError || !data.user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
-      user = data.user;
-    }
-    if (isBackfill) {
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
+
+    const body = await req.json().catch(() => ({}));
+    const action = body.action ?? 'search';
+    const token = req.headers.get('Authorization')?.replace('Bearer ', '') ?? '';
+
+    // ---- backfill: service role, shared secret, or platform admin ----
+    if (action === 'backfill') {
+      let allowed = token === serviceKey;
+      if (!allowed) {
+        const secret = Deno.env.get('EMBEDDING_BACKFILL_SECRET');
+        allowed = !!secret && req.headers.get('x-backfill-secret') === secret;
+      }
+      if (!allowed && token) {
+        const { data: userData } = await admin.auth.getUser(token);
+        if (userData?.user) {
+          const { data: isAdmin } = await admin.rpc('has_role', { _user_id: userData.user.id, _role: 'admin' });
+          allowed = isAdmin === true;
+        }
+      }
+      if (!allowed) return json({ error: 'Unauthorized' }, 401);
+
       const limit = Math.max(1, Math.min(Number(body.limit) || 50, 100));
-      const { data: products, error } = await admin.from('products').select('id,title,category_slug,description,use_cases,features,target_audience').is('search_embedding', null).order('created_at', { ascending: false }).limit(limit);
+      const { data: products, error } = await admin
+        .from('products')
+        .select('id,title,category_slug,description,use_cases,features,target_audience')
+        .is('search_embedding', null)
+        .order('created_at', { ascending: false })
+        .limit(limit);
       if (error) throw error;
-      if (!products?.length) return new Response(JSON.stringify({ embedded: 0, remaining: 0 }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (!products?.length) return json({ embedded: 0, remaining: 0 });
+
       const vectors = await embed(products.map(productText));
-      const updates = products.map((product, index) => admin.from('products').update({ search_embedding: JSON.stringify(vectors[index]), embedding_updated_at: new Date().toISOString() }).eq('id', product.id));
-      const results = await Promise.all(updates);
-      const failed = results.filter((result) => result.error).length;
-      const { count } = await admin.from('products').select('*', { count: 'exact', head: true }).is('search_embedding', null);
-      return new Response(JSON.stringify({ embedded: products.length - failed, failed, remaining: count ?? 0 }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-    if (body.action === 'embed-product') {
-      const { data: product, error } = await admin.from('products').select('id,supplier_id,title,category_slug,description,use_cases,features,target_audience,suppliers!inner(owner_id)').eq('id', body.productId).single();
-      if (error || !product || (product as any).suppliers.owner_id !== user!.id) return new Response(JSON.stringify({ error: 'Product not found' }), { status: 404, headers: corsHeaders });
-      const [vector] = await embed(productText(product));
-      const { error: updateError } = await admin.from('products').update({ search_embedding: JSON.stringify(vector), embedding_updated_at: new Date().toISOString() }).eq('id', product.id);
-      if (updateError) throw updateError;
-      return new Response(JSON.stringify({ embedded: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-    const charge = await chargeAiCredits(req, 'semantic_search');
-    if (!charge.ok) {
-      return new Response(JSON.stringify(charge.body), { status: charge.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      const results = await Promise.all(
+        products.map((product, index) =>
+          admin
+            .from('products')
+            .update({
+              search_embedding: JSON.stringify(vectors[index]),
+              embedding_updated_at: new Date().toISOString(),
+            })
+            .eq('id', product.id),
+        ),
+      );
+      const failed = results.filter((r) => r.error).length;
+      const { count } = await admin
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .is('search_embedding', null);
+      return json({ embedded: products.length - failed, failed, remaining: count ?? 0 });
     }
 
+    // ---- embed a single owned product ----
+    if (action === 'embed-product') {
+      const { data: userData, error: authError } = await admin.auth.getUser(token);
+      if (authError || !userData.user) return json({ error: 'Unauthorized' }, 401);
+      const { data: product, error } = await admin
+        .from('products')
+        .select('id,supplier_id,title,category_slug,description,use_cases,features,target_audience,suppliers!inner(owner_id)')
+        .eq('id', body.productId)
+        .single();
+      if (error || !product || (product as any).suppliers.owner_id !== userData.user.id) {
+        return json({ error: 'Product not found' }, 404);
+      }
+      const [vector] = await embed(productText(product));
+      const { error: updateError } = await admin
+        .from('products')
+        .update({ search_embedding: JSON.stringify(vector), embedding_updated_at: new Date().toISOString() })
+        .eq('id', product.id);
+      if (updateError) throw updateError;
+      return json({ embedded: true });
+    }
+
+    // ---- search: open to shoppers (guests included) ----
     const query = String(body.query ?? '').trim();
-    if (query.length < 2) return new Response(JSON.stringify({ results: [] }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    const [vector] = await embed(query);
-    const { data, error } = await admin.rpc('search_products_semantic', { search_query: query, query_embedding: JSON.stringify(vector), result_limit: Math.min(Number(body.limit) || 80, 100) });
-    if (error) throw error;
-    return new Response(JSON.stringify({ results: data ?? [] }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    if (query.length < 2) return json({ results: [], source: 'empty' });
+    const limit = Math.min(Number(body.limit) || 60, 100);
+
+    // Only meter credits for signed-in shoppers; guests fall back to keyword search.
+    if (token && token !== serviceKey && token !== Deno.env.get('SUPABASE_ANON_KEY')) {
+      const charge = await chargeAiCredits(req, 'semantic_search');
+      if (!charge.ok) return json(charge.body, charge.status);
+    }
+
+    try {
+      const [vector] = await embed(query);
+      const { data, error } = await admin.rpc('search_products_semantic', {
+        search_query: query,
+        query_embedding: JSON.stringify(vector),
+        result_limit: limit,
+      });
+      if (error) throw error;
+      return json({ results: data ?? [], source: 'semantic' });
+    } catch (semanticError) {
+      // Never fail the shopper's search: fall back to trigram/keyword search.
+      const { data, error } = await admin.rpc('search_products', {
+        search_query: query,
+        result_limit: limit,
+      });
+      if (error) throw error;
+      return json({
+        results: data ?? [],
+        source: 'keyword',
+        note: String((semanticError as Error)?.message ?? semanticError),
+      });
+    }
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message ?? 'Semantic search failed' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return json({ error: error.message ?? 'Semantic search failed' }, 500);
   }
 });
