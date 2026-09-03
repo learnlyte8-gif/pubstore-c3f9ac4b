@@ -77,10 +77,17 @@ export default function SearchPage() {
     return suggestCompletions(suggestPool, query);
   }, [query, suggestPool]);
 
+  // Full-catalog product matches from the server (AI/semantic, keyword fallback).
+  // The client pool only holds a slice of the catalog, so this fills the gaps.
+  const { data: semantic, isLoading: semanticLoading } = useSemanticProducts(submitted);
+
   // Ranked + filtered results across the whole catalog (all verticals).
   const ranked = useMemo(() => {
     if (!submitted) return [];
-    let list = pool;
+    const seen = new Set(pool.map((p) => p.id));
+    const extra = (semantic?.hits ?? []).filter((h) => !seen.has(h.id));
+    let list = extra.length ? [...pool, ...extra] : pool;
+
 
     // Apply objective filters first.
     list = list.filter((p) => {
