@@ -12,6 +12,7 @@ import { useUniversalPool, searchUniversal, type UniversalHit } from "@/hooks/us
 import { toast } from "sonner";
 import BackButton from "@/components/BackButton";
 import { aiFunctionHeaders } from "@/lib/aiAuth";
+import { useSemanticProducts } from "@/hooks/useSemanticProducts";
 
 const SORTS = [
   { id: "relevance", label: "Relevance" },
@@ -77,10 +78,17 @@ export default function SearchPage() {
     return suggestCompletions(suggestPool, query);
   }, [query, suggestPool]);
 
+  // Full-catalog product matches from the server (AI/semantic, keyword fallback).
+  // The client pool only holds a slice of the catalog, so this fills the gaps.
+  const { data: semantic, isLoading: semanticLoading } = useSemanticProducts(submitted);
+
   // Ranked + filtered results across the whole catalog (all verticals).
   const ranked = useMemo(() => {
     if (!submitted) return [];
-    let list = pool;
+    const seen = new Set(pool.map((p) => p.id));
+    const extra = (semantic?.hits ?? []).filter((h) => !seen.has(h.id));
+    let list = extra.length ? [...pool, ...extra] : pool;
+
 
     // Apply objective filters first.
     list = list.filter((p) => {
@@ -107,7 +115,7 @@ export default function SearchPage() {
       if (sort === "sold") scored = [...scored].sort((a, b) => b.item.sold - a.item.sold);
     }
     return scored;
-  }, [pool, submitted, sort, minRating, maxPrice, freeShipOnly, maxMoq, country, readyToShipOnly, verifiedOnly, kindFilter]);
+  }, [pool, semantic, submitted, sort, minRating, maxPrice, freeShipOnly, maxMoq, country, readyToShipOnly, verifiedOnly, kindFilter]);
 
   const askTapson = async (q: string) => {
     if (!q.trim()) return;
@@ -401,7 +409,7 @@ export default function SearchPage() {
               <p className="text-xs leading-relaxed text-foreground/90 whitespace-pre-wrap">{aiInsight || "Reading the market…"}</p>
             </div>
           )}
-          {isLoading ? (
+          {isLoading || semanticLoading ? (
             <p className="text-center py-8 text-sm text-muted-foreground">Searching…</p>
           ) : ranked.length === 0 ? (
             <EmptyState
