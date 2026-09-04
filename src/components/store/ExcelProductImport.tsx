@@ -5,6 +5,7 @@ import CircleSpinner from "@/components/CircleSpinner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchMySupplier } from "@/data/products";
+import ImageSearchPicker from "@/components/store/ImageSearchPicker";
 import { toast } from "sonner";
 
 export type ParsedRow = {
@@ -289,6 +290,19 @@ export default function ExcelProductImport({
     );
   };
 
+  const toggleImage = (index: number, url: string) => {
+    setRows((p) =>
+      p.map((x, i) => {
+        if (i !== index) return x;
+        const has = x.images.includes(url);
+        return {
+          ...x,
+          images: has ? x.images.filter((u) => u !== url) : [...x.images, url].slice(0, 8),
+        };
+      })
+    );
+  };
+
   const removeImage = (index: number, imgIdx: number) => {
     setRows((p) =>
       p.map((x, i) => (i === index ? { ...x, images: x.images.filter((_, k) => k !== imgIdx) } : x))
@@ -512,6 +526,11 @@ export default function ExcelProductImport({
                         ))}
                       </div>
                     )}
+                    <ImageSearchPicker
+                      defaultQuery={r.title}
+                      selected={r.images}
+                      onToggle={(url) => toggleImage(i, url)}
+                    />
                     <input
                       value={drafts[i] ?? ""}
                       onChange={(e) => setDrafts((p) => ({ ...p, [i]: e.target.value }))}
