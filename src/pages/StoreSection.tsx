@@ -20,6 +20,7 @@ import { VERTICALS } from "@/data/verticalsCatalog";
 import { importProductFromUrl } from "@/lib/importProduct";
 import ExcelProductImport from "@/components/store/ExcelProductImport";
 import ProductsTable from "@/components/store/ProductsTable";
+import ImageSearchPicker from "@/components/store/ImageSearchPicker";
 
 
 
@@ -1449,7 +1450,15 @@ function EditProductView({ productId }: { productId: string }) {
             <Link2 className="w-4 h-4 mr-1" /> Add URL
           </Button>
         </div>
+        <div className="mt-2">
+          <ImageSearchPicker
+            defaultQuery={form.title}
+            selected={gallery}
+            onToggle={(u) => setGallery((g) => (g.includes(u) ? g.filter((x) => x !== u) : [...g, u]))}
+          />
+        </div>
       </div>
+
 
       <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Product title *" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
       <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description" rows={4} className="w-full rounded-xl border bg-background p-4 text-sm" />
@@ -1659,6 +1668,13 @@ function NewProductView() {
           <Link2 className="w-4 h-4 mr-1" /> Add URL
         </Button>
       </div>
+
+      <ImageSearchPicker
+        defaultQuery={form.title}
+        selected={urlImages}
+        onToggle={(u) => setUrlImages((p) => (p.includes(u) ? p.filter((x) => x !== u) : [...p, u]))}
+      />
+
 
       <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Product title *" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
       <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description" rows={4} className="w-full rounded-xl border bg-background p-4 text-sm" />
