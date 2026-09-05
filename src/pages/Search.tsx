@@ -98,7 +98,7 @@ export default function SearchPage() {
     list = list.filter((p) => {
       const partial = semanticIds.has(p.id);
       if (p.rating < minRating) return false;
-      if (p.price != null && p.price > maxPrice) return false;
+      if (maxPrice < 1000 && p.price != null && p.price > maxPrice) return false;
       if (freeShipOnly && !p.freeShipping) return false;
       if (maxMoq > 0 && p.moq != null && p.moq > maxMoq) return false;
       if (readyToShipOnly && !p.readyToShip && p.kind === "product") return false;
@@ -353,7 +353,7 @@ export default function SearchPage() {
           </div>
           <p className="text-xs font-medium mb-2">Min rating: {minRating.toFixed(1)}</p>
           <input type="range" min={0} max={5} step={0.5} value={minRating} onChange={(e) => setMinRating(+e.target.value)} className="w-full mb-4" />
-          <p className="text-xs font-medium mb-2">Max price: ${maxPrice}</p>
+          <p className="text-xs font-medium mb-2">Max price: {maxPrice >= 1000 ? "Any" : `$${maxPrice}`}</p>
           <input type="range" min={5} max={1000} step={5} value={maxPrice} onChange={(e) => setMaxPrice(+e.target.value)} className="w-full mb-4" />
           <p className="text-xs font-medium mb-2">
             Max MOQ: {maxMoq === 0 ? "Any" : `≤ ${maxMoq} units`}
