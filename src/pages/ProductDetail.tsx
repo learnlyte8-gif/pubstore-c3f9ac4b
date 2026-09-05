@@ -277,8 +277,11 @@ export default function ProductDetail() {
       )}
 
       {supplier && <SupplierCard supplier={supplier} />}
+      </div>
+      </div>
 
-      <section className="mt-5">
+      <section className="mt-5 lg:mt-10">
+
         <div className="border-b px-4 flex gap-5 text-sm">
           {([
             ["specs", "Specs"], ["description", "Description"], ["reviews", `Reviews (${reviewList.length})`],
