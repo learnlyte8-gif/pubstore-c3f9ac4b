@@ -86,11 +86,13 @@ export default function SearchPage() {
   const ranked = useMemo(() => {
     if (!submitted) return [];
     const seen = new Set(pool.map((p) => p.id));
-    const extra = (semantic?.hits ?? []).filter((h) => !seen.has(h.id));
+    const hits = semantic?.hits ?? [];
+    const extra = hits.filter((h) => !seen.has(h.id));
     // Server-side (meaning-based) hits carry no supplier verification/country data,
     // so filters that depend on those fields must not silently drop them.
-    const semanticIds = new Set(extra.map((h) => h.id));
+    const semanticIds = new Set(hits.map((h) => h.id));
     let list = extra.length ? [...pool, ...extra] : pool;
+
 
     // Apply objective filters first.
     list = list.filter((p) => {
