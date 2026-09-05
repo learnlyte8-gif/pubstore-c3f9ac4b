@@ -216,7 +216,7 @@ export default function ProductDetail() {
       </section>
 
       {tierPrices.length > 0 && (
-        <section className="px-4 mt-4">
+        <section className="px-4 mt-4 lg:px-0">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Bulk pricing</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {tierPrices.map((t, i) => {
