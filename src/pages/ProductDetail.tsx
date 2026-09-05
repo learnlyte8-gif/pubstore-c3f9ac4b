@@ -104,7 +104,8 @@ export default function ProductDetail() {
   };
 
   return (
-    <div className=" -mt-px">
+    <div className=" -mt-px lg:max-w-[1240px] lg:mx-auto lg:px-6 lg:py-6">
+
       <Helmet>
         <title>{`${product.title} — PUBSTORE`}</title>
         <meta name="description" content={(product.description ?? product.title).slice(0, 155)} />
