@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { chargeAiCredits } from '../_shared/ai-credits.ts';
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
