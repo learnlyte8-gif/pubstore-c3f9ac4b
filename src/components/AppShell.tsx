@@ -21,6 +21,8 @@ import { useStatusBarSync } from "@/hooks/useStatusBarSync";
 import { useMyTier, type Tier } from "@/hooks/useUserTier";
 import TierBadge from "@/components/TierBadge";
 import { useWallet } from "@/hooks/useWallet";
+import AiCreditsChip from "@/components/AiCreditsChip";
+
 
 const TIER_HSL: Record<Tier, string> = {
   bronze: "30 65% 45%",
@@ -175,6 +177,8 @@ export default function AppShell() {
 
 
 
+            <AiCreditsChip />
+
             {walletUserId && (
               <Link
                 to="/wallet"
@@ -187,6 +191,7 @@ export default function AppShell() {
                 </span>
               </Link>
             )}
+
 
             {/* Desktop: primary navigation lives in the app bar */}
             <nav className="hidden lg:flex items-center gap-1 shrink-0 mr-2" aria-label="Primary">
