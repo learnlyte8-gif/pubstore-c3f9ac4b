@@ -124,11 +124,10 @@ Deno.serve(async (req) => {
     if (query.length < 2) return json({ results: [], source: 'empty' });
     const limit = Math.min(Number(body.limit) || 60, 100);
 
-    // Only meter credits for signed-in shoppers; guests fall back to keyword search.
-    if (token && token !== serviceKey && token !== Deno.env.get('SUPABASE_ANON_KEY')) {
-      const charge = await chargeAiCredits(req, 'semantic_search');
-      if (!charge.ok) return json(charge.body, charge.status);
-    }
+    // Ordinary catalog search is free for everyone — it is the primary way shoppers
+    // browse, so it must never consume a signed-in user's AI credits.
+
+
 
     try {
       const [vector] = await embed(query);
