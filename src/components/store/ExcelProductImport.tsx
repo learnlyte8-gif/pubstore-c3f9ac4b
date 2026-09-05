@@ -241,30 +241,38 @@ export default function ExcelProductImport({
     if (!targets.length) return;
     setFinding(true);
     try {
-      const { data, error } = await supabase.functions.invoke("product-image-search", {
-        body: {
-          queries: targets.map((i) => ({
-            query: rows[i].title,
-            sourceUrl: rows[i].source_url,
-            source: rows[i].source,
-          })),
-          limit: 8,
-        },
-      });
-      if (error) throw error;
-      const results: { query: string; images: string[] }[] = data?.results ?? [];
+      // The image-search function handles at most 40 queries per call, so send batches.
+      const BATCH = 20;
+      const byRow = new Map<number, string[]>();
+      for (let start = 0; start < targets.length; start += BATCH) {
+        const batch = targets.slice(start, start + BATCH);
+        const { data, error } = await supabase.functions.invoke("product-image-search", {
+          body: {
+            queries: batch.map((i) => ({
+              query: rows[i].title,
+              sourceUrl: rows[i].source_url,
+              source: rows[i].source,
+            })),
+            limit: 3,
+          },
+        });
+        if (error) throw error;
+        const results: { query: string; images: string[] }[] = data?.results ?? [];
+        batch.forEach((rowIndex, pos) => {
+          const found = results[pos]?.images ?? [];
+          if (found.length) byRow.set(rowIndex, found);
+        });
+      }
       let filled = 0;
       setRows((p) =>
         p.map((row, i) => {
-          const pos = targets.indexOf(i);
-          if (pos === -1) return row;
-          const found = results[pos]?.images ?? [];
-          if (!found.length) return row;
+          const found = byRow.get(i);
+          if (!found?.length) return row;
           filled++;
           return { ...row, images: Array.from(new Set([...row.images, ...found])).slice(0, 8) };
         })
       );
-      if (filled) toast.success(`Found images for ${filled} product(s)`);
+      if (filled) toast.success(`Found images for ${filled} of ${targets.length} product(s)`);
       else toast.error("No images found for these products");
     } catch (e: any) {
       toast.error(e?.message ?? "Image search failed");

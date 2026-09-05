@@ -444,6 +444,13 @@ Level: ${resourceLevel || "Unknown"}
     // ── Default: streaming chat ──
     const sys = `${SYSTEM_PROMPT}\n\nRESOURCE CONTEXT:\n${context}`;
 
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Provide a non-empty `messages` array for chat requests." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     let chatMessages: any[];
     if (fileImages.length > 0 && messages.length > 0) {
       const lastMsg = messages[messages.length - 1];
