@@ -20,3 +20,9 @@ export async function aiFunctionHeaders(
     ...extra,
   };
 }
+
+/** True when a signed-in session exists — AI edge functions 401 without one. */
+export async function hasAiSession(): Promise<boolean> {
+  const { data } = await supabase.auth.getSession();
+  return !!data.session?.access_token;
+}
