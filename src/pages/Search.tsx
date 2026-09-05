@@ -11,7 +11,7 @@ import { suggestCompletions, tokenize } from "@/lib/search";
 import { useUniversalPool, searchUniversal, type UniversalHit } from "@/hooks/useUniversalSearch";
 import { toast } from "sonner";
 import BackButton from "@/components/BackButton";
-import { aiFunctionHeaders } from "@/lib/aiAuth";
+import { aiFunctionHeaders, hasAiSession } from "@/lib/aiAuth";
 import { useSemanticProducts } from "@/hooks/useSemanticProducts";
 
 const SORTS = [
@@ -152,6 +152,7 @@ export default function SearchPage() {
     aiCtrl.current = ctrl;
     setAiInsight(""); setAiLoading(true);
     try {
+      if (!(await hasAiSession())) { setAiLoading(false); return; }
       const resp = await fetch(TAPSON_URL, {
         method: "POST",
         headers: await aiFunctionHeaders(),
