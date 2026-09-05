@@ -122,8 +122,11 @@ export default function SearchPage() {
         .filter((p) => semanticIds.has(p.id) && (!kindFilter || p.kind === kindFilter))
         .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
         .map((item, i) => ({ item, score: 1000 - i } as (typeof lexical)[number]));
-      // Weak keyword hits (a stray word inside a long description) only add noise.
-      const rest = lexical.filter((s) => !semanticIds.has(s.item.id) && s.score >= 3);
+      // When the server completed an AI ranking pass, show exactly what AI chose.
+      // Semantic fallback may still be supplemented by strong literal matches.
+      const rest = semantic?.source === "ai-ranked"
+        ? []
+        : lexical.filter((s) => !semanticIds.has(s.item.id) && s.score >= 3);
       scored = [...semanticHits, ...rest];
     } else {
       scored = lexical;
@@ -463,7 +466,14 @@ export default function SearchPage() {
                   <Truck className="w-3 h-3" /> Free shipping
                 </button>
               </div>
-              <p className="text-sm text-muted-foreground mb-3">{ranked.length} result{ranked.length === 1 ? "" : "s"} for "{submitted}"</p>
+              <div className="flex items-center gap-2 mb-3">
+                <p className="text-sm text-muted-foreground">{ranked.length} result{ranked.length === 1 ? "" : "s"} for "{submitted}"</p>
+                {semantic?.source === "ai-ranked" && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
+                    <Sparkles className="h-3 w-3" /> AI matched
+                  </span>
+                )}
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                 {ranked.slice(0, 80).map(({ item }) => (<UniversalResultCard key={item.id} hit={item} />))}
               </div>

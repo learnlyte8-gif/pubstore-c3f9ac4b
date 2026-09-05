@@ -8,6 +8,7 @@ const corsHeaders = {
 
 const EMBED_MODEL = 'openai/text-embedding-3-small';
 const DIMS = 1536; // must match products.search_embedding
+const RANK_MODEL = 'google/gemini-3.6-flash';
 
 function productText(product: any) {
   return [
@@ -36,6 +37,52 @@ async function embed(input: string | string[]): Promise<number[][]> {
   const body = await res.json();
   const rows = (body.data ?? []).sort((a: any, b: any) => (a.index ?? 0) - (b.index ?? 0));
   return rows.map((item: { embedding: number[] }) => item.embedding);
+}
+
+async function rankWithAi(query: string, candidates: any[]): Promise<any[]> {
+  const key = Deno.env.get('LOVABLE_API_KEY');
+  if (!key) throw new Error('LOVABLE_API_KEY is not configured');
+
+  const compact = candidates.slice(0, 35).map((product) => ({
+    id: product.id,
+    title: product.title,
+    category: product.category_slug,
+    description: String(product.description ?? '').replace(/\s+/g, ' ').slice(0, 320),
+  }));
+  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: RANK_MODEL,
+      temperature: 0,
+      messages: [
+        {
+          role: 'system',
+          content: 'You rank marketplace products for a shopper. Return only a JSON array of product IDs, best match first. Include only products that genuinely satisfy the shopper intent. Do not include weak, incidental, accessory, or unrelated matches. Return at most 24 IDs and [] when none qualify.',
+        },
+        {
+          role: 'user',
+          content: `Shopper request: ${JSON.stringify(query)}\nCandidates: ${JSON.stringify(compact)}`,
+        },
+      ],
+    }),
+  });
+  if (!response.ok) throw new Error(`AI ranking failed: ${response.status} ${await response.text()}`);
+  const payload = await response.json();
+  const text = String(payload?.choices?.[0]?.message?.content ?? '').trim();
+  const match = text.match(/\[[\s\S]*\]/);
+  if (!match) throw new Error('AI ranking returned no product list');
+  const ids = JSON.parse(match[0]);
+  if (!Array.isArray(ids)) throw new Error('AI ranking returned an invalid product list');
+
+  const byId = new Map(candidates.map((product) => [product.id, product]));
+  return ids
+    .filter((id): id is string => typeof id === 'string' && byId.has(id))
+    .map((id) => byId.get(id))
+    .filter(Boolean);
 }
 
 Deno.serve(async (req) => {
@@ -137,7 +184,15 @@ Deno.serve(async (req) => {
         result_limit: limit,
       });
       if (error) throw error;
-      return json({ results: data ?? [], source: 'semantic' });
+      const candidates = data ?? [];
+      if (!candidates.length) return json({ results: [], source: 'ai-ranked' });
+      try {
+        const ranked = await rankWithAi(query, candidates);
+        return json({ results: ranked, source: 'ai-ranked' });
+      } catch (rankError) {
+        console.error('AI ranking error:', rankError);
+        return json({ results: candidates, source: 'semantic' });
+      }
     } catch (semanticError) {
       // Never fail the shopper's search: fall back to trigram/keyword search.
       const { data, error } = await admin.rpc('search_products', {
