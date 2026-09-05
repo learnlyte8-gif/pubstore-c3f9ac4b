@@ -175,6 +175,8 @@ export default function AppShell() {
 
 
 
+            <AiCreditsChip />
+
             {walletUserId && (
               <Link
                 to="/wallet"
@@ -187,6 +189,7 @@ export default function AppShell() {
                 </span>
               </Link>
             )}
+
 
             {/* Desktop: primary navigation lives in the app bar */}
             <nav className="hidden lg:flex items-center gap-1 shrink-0 mr-2" aria-label="Primary">
