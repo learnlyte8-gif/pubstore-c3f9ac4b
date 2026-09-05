@@ -174,7 +174,7 @@ export default function ProductDetail() {
 
 
       <section className="px-4 pt-3 lg:px-0 lg:pt-0 lg:flex lg:flex-col">
-        <h1 className="hidden lg:block text-2xl font-semibold leading-snug mb-3">{product.title}</h1>
+        <p className="hidden lg:block text-2xl font-semibold leading-snug mb-3">{product.title}</p>
         <div className="lg:rounded-xl lg:bg-muted/50 lg:p-4">
         <div className="flex items-baseline gap-2">
           <span className="text-3xl lg:text-4xl font-bold text-destructive">{fmt(unitPrice)}</span>
