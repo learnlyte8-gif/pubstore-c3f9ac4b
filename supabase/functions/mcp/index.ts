@@ -119,8 +119,8 @@ var search_jobs_default = defineTool4({
       process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY,
       { auth: { persistSession: false, autoRefreshToken: false } }
     );
-    let q = sb.from("job_postings").select("id,title,location,employment_type,salary_min,salary_max,company_id,created_at").ilike("title", `%${query}%`).limit(limit).order("created_at", { ascending: false });
-    if (location) q = q.ilike("location", `%${location}%`);
+    let q = sb.from("job_postings").select("id,title,city,country,employment_type,salary_min,salary_max,salary_currency,company_id,created_at").ilike("title", `%${query}%`).limit(limit).order("created_at", { ascending: false });
+    if (location) q = q.or(`city.ilike.%${location}%,country.ilike.%${location}%`);
     const { data, error } = await q;
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
     return {

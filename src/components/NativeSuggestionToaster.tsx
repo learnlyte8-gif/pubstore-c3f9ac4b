@@ -136,11 +136,12 @@ async function pickSuggestion(): Promise<Suggestion | null> {
     }
     if (kind === "job") {
       const { data } = await supabase
-        .from("job_postings").select("id,title,location,salary_min,salary_max,currency").limit(40);
+        .from("job_postings").select("id,title,city,country,salary_min,salary_max,salary_currency").limit(40);
       if (!data?.length) return null;
       const j: any = data[Math.floor(Math.random() * data.length)];
-      const sal = j.salary_min ? `${j.currency || "$"}${j.salary_min}+` : "Apply now";
-      return { kind, title: j.title, subtitle: `${j.location || ""} · ${sal}`, image: null, link: `/jobs/${j.id}`, badge: "Hiring" };
+      const sal = j.salary_min ? `${j.salary_currency || "$"}${j.salary_min}+` : "Apply now";
+      const loc = [j.city, j.country].filter(Boolean).join(", ");
+      return { kind, title: j.title, subtitle: `${loc}${loc ? " · " : ""}${sal}`, image: null, link: `/jobs/${j.id}`, badge: "Hiring" };
     }
   } catch {
     return null;
