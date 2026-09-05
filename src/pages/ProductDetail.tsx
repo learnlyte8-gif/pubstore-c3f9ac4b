@@ -104,7 +104,8 @@ export default function ProductDetail() {
   };
 
   return (
-    <div className=" -mt-px">
+    <div className=" -mt-px lg:max-w-[1240px] lg:mx-auto lg:px-6 lg:py-6">
+
       <Helmet>
         <title>{`${product.title} — PUBSTORE`}</title>
         <meta name="description" content={(product.description ?? product.title).slice(0, 155)} />
@@ -125,7 +126,7 @@ export default function ProductDetail() {
           offers: { "@type": "Offer", price: unitPrice, priceCurrency: "USD", availability: "https://schema.org/InStock", url: `https://pubstore.app/product/${product.id}` },
         })}</script>
       </Helmet>
-      <div className="sticky top-12 z-30 bg-background/90 backdrop-blur border-b px-2 py-2 flex items-center justify-between">
+      <div className="sticky top-12 z-30 bg-background/90 backdrop-blur border-b px-2 py-2 flex items-center justify-between lg:hidden">
         <button onClick={() => navigate(-1)} aria-label="Back" className="w-9 h-9 rounded-full hover:bg-muted flex items-center justify-center"><ArrowLeft className="w-5 h-5" /></button>
         <div className="flex items-center gap-1">
           <button onClick={() => toggleWishlist(product.id)} aria-label="Wishlist" className="w-9 h-9 rounded-full hover:bg-muted flex items-center justify-center">
@@ -159,8 +160,12 @@ export default function ProductDetail() {
         />
       )}
 
+      <div className="lg:grid lg:grid-cols-[minmax(0,460px)_minmax(0,1fr)] lg:gap-8 lg:items-start">
+      <div className="lg:sticky lg:top-16 lg:rounded-2xl lg:border lg:bg-card lg:overflow-hidden">
       <ProductGallery images={product.gallery ?? [product.image]} alt={product.title} videoUrl={product.videoUrl} />
+      </div>
 
+      <div className="lg:min-w-0">
       {product.adHasReel && (
         <div className="px-4 pt-3">
           <AdReel product={product} />
@@ -168,9 +173,11 @@ export default function ProductDetail() {
       )}
 
 
-      <section className="px-4 pt-3">
+      <section className="px-4 pt-3 lg:px-0 lg:pt-0 lg:flex lg:flex-col">
+        <p className="hidden lg:block text-2xl font-semibold leading-snug mb-3">{product.title}</p>
+        <div className="lg:rounded-xl lg:bg-muted/50 lg:p-4">
         <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-bold text-destructive">{fmt(unitPrice)}</span>
+          <span className="text-3xl lg:text-4xl font-bold text-destructive">{fmt(unitPrice)}</span>
           {product.originalPrice && unitPrice < product.originalPrice && (
             <>
               <span className="text-sm text-muted-foreground line-through">{fmt(product.originalPrice)}</span>
@@ -179,7 +186,9 @@ export default function ProductDetail() {
           )}
         </div>
         <p className="text-[11px] text-muted-foreground mt-0.5">per {product.unit} · MOQ {product.moq} {product.unit}</p>
-        <h1 className="mt-2 text-base font-medium leading-snug">{product.title}</h1>
+        </div>
+        <h1 className="mt-2 text-base font-medium leading-snug lg:hidden">{product.title}</h1>
+
         <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
@@ -207,7 +216,7 @@ export default function ProductDetail() {
       </section>
 
       {tierPrices.length > 0 && (
-        <section className="px-4 mt-4">
+        <section className="px-4 mt-4 lg:px-0">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Bulk pricing</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {tierPrices.map((t, i) => {
@@ -225,7 +234,8 @@ export default function ProductDetail() {
         </section>
       )}
 
-      <section className="px-4 mt-4">
+      <section className="px-4 mt-4 lg:px-0">
+
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Quantity</p>
@@ -245,14 +255,36 @@ export default function ProductDetail() {
         </div>
       </section>
 
-      <section className="px-4 mt-4 grid grid-cols-3 gap-2">
+      <div className="hidden lg:flex gap-3 mt-4">
+        {gated ? (
+          <Button onClick={() => setInquiryOpen(true)} className="flex-1 h-12 rounded-full font-semibold gap-1.5">
+            <ShieldCheck className="w-4 h-4" /> Inquire to unlock checkout
+          </Button>
+        ) : (
+          <>
+            <Button onClick={handleBuy} className="flex-1 h-12 rounded-full font-semibold">Buy now</Button>
+            <Button onClick={handleAdd} variant="outline" className="flex-1 h-12 rounded-full font-semibold gap-1.5">
+              <ShoppingCart className="w-4 h-4" /> Add to cart
+            </Button>
+            <button onClick={() => toggleWishlist(product.id)} aria-label="Wishlist" className="w-12 h-12 rounded-full border flex items-center justify-center">
+              <Heart className={`w-5 h-5 ${liked ? "fill-destructive text-destructive" : ""}`} />
+            </button>
+            <button onClick={() => setShareOpen(true)} aria-label="Share" className="w-12 h-12 rounded-full border flex items-center justify-center">
+              <Share2 className="w-5 h-5" />
+            </button>
+          </>
+        )}
+      </div>
+
+      <section className="px-4 mt-4 grid grid-cols-3 gap-2 lg:px-0">
+
         <Trust icon={ShieldCheck} title="Trade Assurance" desc="Refund if not delivered" />
         <Trust icon={Truck} title="Lead time" desc={product.leadTime} />
         <Trust icon={Globe} title="Ships from" desc={product.shipFrom} />
       </section>
 
       {supplier && (
-        <section className="px-4 mt-3">
+        <section className="px-4 mt-3 lg:px-0">
           <Link
             to={`/messages?supplier=${supplier.id}&prefill=${encodeURIComponent(
               `Hi, I'd like to order a sample of "${product.title}" before placing a bulk order. What is the sample price and lead time? Thanks.`
@@ -268,9 +300,12 @@ export default function ProductDetail() {
       )}
 
       {supplier && <SupplierCard supplier={supplier} />}
+      </div>
+      </div>
 
-      <section className="mt-5">
-        <div className="border-b px-4 flex gap-5 text-sm">
+      <section className="mt-5 lg:mt-10">
+
+        <div className="border-b px-4 flex gap-5 text-sm lg:px-0 lg:gap-8 lg:text-base">
           {([
             ["specs", "Specs"], ["description", "Description"], ["reviews", `Reviews (${reviewList.length})`],
           ] as const).map(([k, label]) => (
@@ -280,7 +315,7 @@ export default function ProductDetail() {
             </button>
           ))}
         </div>
-        <div className="px-4 py-4">
+        <div className="px-4 py-4 lg:px-0 lg:py-6 lg:max-w-3xl">
           {tab === "specs" && (
             <dl className="divide-y">
               {(product.specs && product.specs.length ? product.specs : [
@@ -327,16 +362,16 @@ export default function ProductDetail() {
       </section>
 
       {related.length > 0 && (
-        <section className="px-4 mt-6">
-          <p className="text-base font-bold mb-3">You may also like</p>
-          <div className="grid grid-cols-2 gap-1">
+        <section className="px-4 mt-6 lg:px-0 lg:mt-10">
+          <p className="text-base font-bold mb-3 lg:text-xl">You may also like</p>
+          <div className="grid grid-cols-2 gap-1 lg:grid-cols-5 lg:gap-4">
             {related.map((p) => (<ProductCard key={p.id} product={p} />))}
           </div>
         </section>
       )}
 
 
-      <div className="fixed bottom-14 lg:bottom-0 inset-x-0 z-30 pointer-events-none">
+      <div className="fixed bottom-14 inset-x-0 z-30 pointer-events-none lg:hidden">
         <div className="max-w-2xl mx-auto px-3 pb-2 pt-2 flex items-center gap-2 pointer-events-auto bg-background/85 backdrop-blur-xl border-t border-border shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.25)]">
           {supplier && (
             <Link
