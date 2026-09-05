@@ -115,7 +115,7 @@ export default function SearchPage() {
     // ranker discards them. Append the ones it dropped, keeping the server's order.
     const kept = new Set(scored.map((s) => s.item.id));
     const semanticTail = list
-      .filter((p) => semanticIds.has(p.id) && !kept.has(p.id) && (kindFilter === "all" || p.kind === kindFilter))
+      .filter((p) => semanticIds.has(p.id) && !kept.has(p.id) && (!kindFilter || p.kind === kindFilter))
       .map((item) => ({ item, score: 0 } as (typeof scored)[number]));
     if (semanticTail.length) scored = [...scored, ...semanticTail];
 
