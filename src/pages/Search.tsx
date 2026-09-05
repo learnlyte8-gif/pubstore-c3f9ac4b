@@ -87,19 +87,22 @@ export default function SearchPage() {
     if (!submitted) return [];
     const seen = new Set(pool.map((p) => p.id));
     const extra = (semantic?.hits ?? []).filter((h) => !seen.has(h.id));
+    // Server-side (meaning-based) hits carry no supplier verification/country data,
+    // so filters that depend on those fields must not silently drop them.
+    const semanticIds = new Set(extra.map((h) => h.id));
     let list = extra.length ? [...pool, ...extra] : pool;
-
 
     // Apply objective filters first.
     list = list.filter((p) => {
+      const partial = semanticIds.has(p.id);
       if (p.rating < minRating) return false;
       if (p.price != null && p.price > maxPrice) return false;
       if (freeShipOnly && !p.freeShipping) return false;
       if (maxMoq > 0 && p.moq != null && p.moq > maxMoq) return false;
       if (readyToShipOnly && !p.readyToShip && p.kind === "product") return false;
-      if (verifiedOnly && p.kind === "supplier" && !p.verified) return false;
-      if (verifiedOnly && p.kind === "product" && !p.verified) return false;
-      if (country.trim()) {
+      if (!partial && verifiedOnly && p.kind === "supplier" && !p.verified) return false;
+      if (!partial && verifiedOnly && p.kind === "product" && !p.verified) return false;
+      if (!partial && country.trim()) {
         const c = country.trim().toLowerCase();
         if (!(p.country ?? "").toLowerCase().includes(c)) return false;
       }
@@ -107,6 +110,15 @@ export default function SearchPage() {
     });
 
     let scored = searchUniversal(list, submitted, kindFilter);
+
+    // Meaning-based matches often share no keywords with the query, so the lexical
+    // ranker discards them. Append the ones it dropped, keeping the server's order.
+    const kept = new Set(scored.map((s) => s.item.id));
+    const semanticTail = list
+      .filter((p) => semanticIds.has(p.id) && !kept.has(p.id) && (!kindFilter || p.kind === kindFilter))
+      .map((item) => ({ item, score: 0 } as (typeof scored)[number]));
+    if (semanticTail.length) scored = [...scored, ...semanticTail];
+
 
     if (sort !== "relevance") {
       if (sort === "price-asc") scored = [...scored].sort((a, b) => (a.item.price ?? 0) - (b.item.price ?? 0));
