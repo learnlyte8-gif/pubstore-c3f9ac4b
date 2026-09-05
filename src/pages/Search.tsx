@@ -195,6 +195,14 @@ export default function SearchPage() {
   };
 
   const onSubmit = (e: React.FormEvent) => { e.preventDefault(); submit(query); };
+
+  // Support shared/deep links like /search?q=cars+for+sale
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("q")?.trim();
+    if (q && !submitted) submit(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const reset = () => { setCategory(null); setMinRating(0); setMaxPrice(1000); setFreeShipOnly(false); setMaxMoq(0); setCountry(""); setReadyToShipOnly(false); setVerifiedOnly(false); setSort("relevance"); };
 
   const onPickImage = async (file: File) => {
