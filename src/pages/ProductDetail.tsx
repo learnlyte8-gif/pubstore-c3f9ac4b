@@ -305,7 +305,7 @@ export default function ProductDetail() {
 
       <section className="mt-5 lg:mt-10">
 
-        <div className="border-b px-4 flex gap-5 text-sm">
+        <div className="border-b px-4 flex gap-5 text-sm lg:px-0 lg:gap-8 lg:text-base">
           {([
             ["specs", "Specs"], ["description", "Description"], ["reviews", `Reviews (${reviewList.length})`],
           ] as const).map(([k, label]) => (
@@ -315,7 +315,7 @@ export default function ProductDetail() {
             </button>
           ))}
         </div>
-        <div className="px-4 py-4">
+        <div className="px-4 py-4 lg:px-0 lg:py-6 lg:max-w-3xl">
           {tab === "specs" && (
             <dl className="divide-y">
               {(product.specs && product.specs.length ? product.specs : [
@@ -362,16 +362,16 @@ export default function ProductDetail() {
       </section>
 
       {related.length > 0 && (
-        <section className="px-4 mt-6">
-          <p className="text-base font-bold mb-3">You may also like</p>
-          <div className="grid grid-cols-2 gap-1">
+        <section className="px-4 mt-6 lg:px-0 lg:mt-10">
+          <p className="text-base font-bold mb-3 lg:text-xl">You may also like</p>
+          <div className="grid grid-cols-2 gap-1 lg:grid-cols-5 lg:gap-4">
             {related.map((p) => (<ProductCard key={p.id} product={p} />))}
           </div>
         </section>
       )}
 
 
-      <div className="fixed bottom-14 lg:bottom-0 inset-x-0 z-30 pointer-events-none">
+      <div className="fixed bottom-14 inset-x-0 z-30 pointer-events-none lg:hidden">
         <div className="max-w-2xl mx-auto px-3 pb-2 pt-2 flex items-center gap-2 pointer-events-auto bg-background/85 backdrop-blur-xl border-t border-border shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.25)]">
           {supplier && (
             <Link
