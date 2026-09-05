@@ -109,15 +109,24 @@ export default function SearchPage() {
       return true;
     });
 
-    let scored = searchUniversal(list, submitted, kindFilter);
+    const lexical = searchUniversal(list, submitted, kindFilter);
 
-    // Meaning-based matches often share no keywords with the query, so the lexical
-    // ranker discards them. Append the ones it dropped, keeping the server's order.
-    const kept = new Set(scored.map((s) => s.item.id));
-    const semanticTail = list
-      .filter((p) => semanticIds.has(p.id) && !kept.has(p.id) && (!kindFilter || p.kind === kindFilter))
-      .map((item) => ({ item, score: 0 } as (typeof scored)[number]));
-    if (semanticTail.length) scored = [...scored, ...semanticTail];
+    // Meaning-based (AI) matches are the authority when the server answered:
+    // keep the server's order at the top, then the keyword matches it missed.
+    let scored: typeof lexical;
+    if (semanticIds.size) {
+      const order = new Map((semantic?.hits ?? []).map((h, i) => [h.id, i] as const));
+      const semanticHits = list
+        .filter((p) => semanticIds.has(p.id) && (!kindFilter || p.kind === kindFilter))
+        .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
+        .map((item, i) => ({ item, score: 1000 - i } as (typeof lexical)[number]));
+      // Weak keyword hits (a stray word inside a long description) only add noise.
+      const rest = lexical.filter((s) => !semanticIds.has(s.item.id) && s.score >= 3);
+      scored = [...semanticHits, ...rest];
+    } else {
+      scored = lexical;
+    }
+
 
 
     if (sort !== "relevance") {
