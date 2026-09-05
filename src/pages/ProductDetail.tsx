@@ -173,10 +173,11 @@ export default function ProductDetail() {
       )}
 
 
-      <section className="px-4 pt-3 lg:px-0 lg:pt-0">
-
+      <section className="px-4 pt-3 lg:px-0 lg:pt-0 lg:flex lg:flex-col">
+        <h1 className="hidden lg:block text-2xl font-semibold leading-snug mb-3">{product.title}</h1>
+        <div className="lg:rounded-xl lg:bg-muted/50 lg:p-4">
         <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-bold text-destructive">{fmt(unitPrice)}</span>
+          <span className="text-3xl lg:text-4xl font-bold text-destructive">{fmt(unitPrice)}</span>
           {product.originalPrice && unitPrice < product.originalPrice && (
             <>
               <span className="text-sm text-muted-foreground line-through">{fmt(product.originalPrice)}</span>
@@ -185,7 +186,9 @@ export default function ProductDetail() {
           )}
         </div>
         <p className="text-[11px] text-muted-foreground mt-0.5">per {product.unit} · MOQ {product.moq} {product.unit}</p>
-        <h1 className="mt-2 text-base font-medium leading-snug">{product.title}</h1>
+        </div>
+        <h1 className="mt-2 text-base font-medium leading-snug lg:hidden">{product.title}</h1>
+
         <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
