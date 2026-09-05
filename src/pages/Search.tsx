@@ -122,11 +122,13 @@ export default function SearchPage() {
         .filter((p) => semanticIds.has(p.id) && (!kindFilter || p.kind === kindFilter))
         .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
         .map((item, i) => ({ item, score: 1000 - i } as (typeof lexical)[number]));
-      // When the server completed an AI ranking pass, show exactly what AI chose.
-      // Semantic fallback may still be supplemented by strong literal matches.
-      const rest = semantic?.source === "ai-ranked"
-        ? []
-        : lexical.filter((s) => !semanticIds.has(s.item.id) && s.score >= 3);
+      // The AI pass only ranks catalog products, so it must never suppress
+      // matches from the other verticals (vehicles, stays, jobs, services...).
+      const rest = lexical.filter((s) => {
+        if (semanticIds.has(s.item.id)) return false;
+        if (s.score < 3) return false;
+        return semantic?.source === "ai-ranked" ? s.item.kind !== "product" : true;
+      });
       scored = [...semanticHits, ...rest];
     } else {
       scored = lexical;
