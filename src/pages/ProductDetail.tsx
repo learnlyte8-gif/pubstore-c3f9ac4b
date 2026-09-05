@@ -254,7 +254,29 @@ export default function ProductDetail() {
         </div>
       </section>
 
-      <section className="px-4 mt-4 grid grid-cols-3 gap-2">
+      <div className="hidden lg:flex gap-3 mt-4">
+        {gated ? (
+          <Button onClick={() => setInquiryOpen(true)} className="flex-1 h-12 rounded-full font-semibold gap-1.5">
+            <ShieldCheck className="w-4 h-4" /> Inquire to unlock checkout
+          </Button>
+        ) : (
+          <>
+            <Button onClick={handleBuy} className="flex-1 h-12 rounded-full font-semibold">Buy now</Button>
+            <Button onClick={handleAdd} variant="outline" className="flex-1 h-12 rounded-full font-semibold gap-1.5">
+              <ShoppingCart className="w-4 h-4" /> Add to cart
+            </Button>
+            <button onClick={() => toggleWishlist(product.id)} aria-label="Wishlist" className="w-12 h-12 rounded-full border flex items-center justify-center">
+              <Heart className={`w-5 h-5 ${liked ? "fill-destructive text-destructive" : ""}`} />
+            </button>
+            <button onClick={() => setShareOpen(true)} aria-label="Share" className="w-12 h-12 rounded-full border flex items-center justify-center">
+              <Share2 className="w-5 h-5" />
+            </button>
+          </>
+        )}
+      </div>
+
+      <section className="px-4 mt-4 grid grid-cols-3 gap-2 lg:px-0">
+
         <Trust icon={ShieldCheck} title="Trade Assurance" desc="Refund if not delivered" />
         <Trust icon={Truck} title="Lead time" desc={product.leadTime} />
         <Trust icon={Globe} title="Ships from" desc={product.shipFrom} />
