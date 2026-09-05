@@ -261,7 +261,7 @@ export default function ProductDetail() {
       </section>
 
       {supplier && (
-        <section className="px-4 mt-3">
+        <section className="px-4 mt-3 lg:px-0">
           <Link
             to={`/messages?supplier=${supplier.id}&prefill=${encodeURIComponent(
               `Hi, I'd like to order a sample of "${product.title}" before placing a bulk order. What is the sample price and lead time? Thanks.`
