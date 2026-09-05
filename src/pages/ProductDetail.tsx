@@ -126,7 +126,7 @@ export default function ProductDetail() {
           offers: { "@type": "Offer", price: unitPrice, priceCurrency: "USD", availability: "https://schema.org/InStock", url: `https://pubstore.app/product/${product.id}` },
         })}</script>
       </Helmet>
-      <div className="sticky top-12 z-30 bg-background/90 backdrop-blur border-b px-2 py-2 flex items-center justify-between">
+      <div className="sticky top-12 z-30 bg-background/90 backdrop-blur border-b px-2 py-2 flex items-center justify-between lg:hidden">
         <button onClick={() => navigate(-1)} aria-label="Back" className="w-9 h-9 rounded-full hover:bg-muted flex items-center justify-center"><ArrowLeft className="w-5 h-5" /></button>
         <div className="flex items-center gap-1">
           <button onClick={() => toggleWishlist(product.id)} aria-label="Wishlist" className="w-9 h-9 rounded-full hover:bg-muted flex items-center justify-center">
