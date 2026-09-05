@@ -16,7 +16,7 @@ import {
   type Supplier,
 } from "@/data/products";
 import { useShop } from "@/store/shop";
-import { aiFunctionHeaders } from "@/lib/aiAuth";
+import { aiFunctionHeaders, hasAiSession } from "@/lib/aiAuth";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -152,6 +152,11 @@ export default function TapsonAssistant() {
     };
 
     try {
+      if (!(await hasAiSession())) {
+        upsert("Please sign in to chat with me — AI features need an account.");
+        setLoading(false);
+        return;
+      }
       const context = await buildLiveContext().catch(() => "");
       const resp = await fetch(CHAT_URL, {
         method: "POST",
