@@ -98,7 +98,7 @@ export default function SearchPage() {
     list = list.filter((p) => {
       const partial = semanticIds.has(p.id);
       if (p.rating < minRating) return false;
-      if (p.price != null && p.price > maxPrice) return false;
+      if (maxPrice < 1000 && p.price != null && p.price > maxPrice) return false;
       if (freeShipOnly && !p.freeShipping) return false;
       if (maxMoq > 0 && p.moq != null && p.moq > maxMoq) return false;
       if (readyToShipOnly && !p.readyToShip && p.kind === "product") return false;
@@ -122,11 +122,13 @@ export default function SearchPage() {
         .filter((p) => semanticIds.has(p.id) && (!kindFilter || p.kind === kindFilter))
         .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
         .map((item, i) => ({ item, score: 1000 - i } as (typeof lexical)[number]));
-      // When the server completed an AI ranking pass, show exactly what AI chose.
-      // Semantic fallback may still be supplemented by strong literal matches.
-      const rest = semantic?.source === "ai-ranked"
-        ? []
-        : lexical.filter((s) => !semanticIds.has(s.item.id) && s.score >= 3);
+      // The AI pass only ranks catalog products, so it must never suppress
+      // matches from the other verticals (vehicles, stays, jobs, services...).
+      const rest = lexical.filter((s) => {
+        if (semanticIds.has(s.item.id)) return false;
+        if (s.score < 3) return false;
+        return semantic?.source === "ai-ranked" ? s.item.kind !== "product" : true;
+      });
       scored = [...semanticHits, ...rest];
     } else {
       scored = lexical;
@@ -193,6 +195,14 @@ export default function SearchPage() {
   };
 
   const onSubmit = (e: React.FormEvent) => { e.preventDefault(); submit(query); };
+
+  // Support shared/deep links like /search?q=cars+for+sale
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("q")?.trim();
+    if (q && !submitted) submit(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const reset = () => { setCategory(null); setMinRating(0); setMaxPrice(1000); setFreeShipOnly(false); setMaxMoq(0); setCountry(""); setReadyToShipOnly(false); setVerifiedOnly(false); setSort("relevance"); };
 
   const onPickImage = async (file: File) => {
@@ -351,7 +361,7 @@ export default function SearchPage() {
           </div>
           <p className="text-xs font-medium mb-2">Min rating: {minRating.toFixed(1)}</p>
           <input type="range" min={0} max={5} step={0.5} value={minRating} onChange={(e) => setMinRating(+e.target.value)} className="w-full mb-4" />
-          <p className="text-xs font-medium mb-2">Max price: ${maxPrice}</p>
+          <p className="text-xs font-medium mb-2">Max price: {maxPrice >= 1000 ? "Any" : `$${maxPrice}`}</p>
           <input type="range" min={5} max={1000} step={5} value={maxPrice} onChange={(e) => setMaxPrice(+e.target.value)} className="w-full mb-4" />
           <p className="text-xs font-medium mb-2">
             Max MOQ: {maxMoq === 0 ? "Any" : `≤ ${maxMoq} units`}
