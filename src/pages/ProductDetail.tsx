@@ -234,7 +234,8 @@ export default function ProductDetail() {
         </section>
       )}
 
-      <section className="px-4 mt-4">
+      <section className="px-4 mt-4 lg:px-0">
+
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Quantity</p>
