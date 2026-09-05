@@ -21,6 +21,8 @@ import { useStatusBarSync } from "@/hooks/useStatusBarSync";
 import { useMyTier, type Tier } from "@/hooks/useUserTier";
 import TierBadge from "@/components/TierBadge";
 import { useWallet } from "@/hooks/useWallet";
+import AiCreditsChip from "@/components/AiCreditsChip";
+
 
 const TIER_HSL: Record<Tier, string> = {
   bronze: "30 65% 45%",
