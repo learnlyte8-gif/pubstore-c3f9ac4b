@@ -160,8 +160,12 @@ export default function ProductDetail() {
         />
       )}
 
+      <div className="lg:grid lg:grid-cols-[minmax(0,460px)_minmax(0,1fr)] lg:gap-8 lg:items-start">
+      <div className="lg:sticky lg:top-16 lg:rounded-2xl lg:border lg:bg-card lg:overflow-hidden">
       <ProductGallery images={product.gallery ?? [product.image]} alt={product.title} videoUrl={product.videoUrl} />
+      </div>
 
+      <div className="lg:min-w-0">
       {product.adHasReel && (
         <div className="px-4 pt-3">
           <AdReel product={product} />
@@ -169,7 +173,8 @@ export default function ProductDetail() {
       )}
 
 
-      <section className="px-4 pt-3">
+      <section className="px-4 pt-3 lg:px-0 lg:pt-0">
+
         <div className="flex items-baseline gap-2">
           <span className="text-3xl font-bold text-destructive">{fmt(unitPrice)}</span>
           {product.originalPrice && unitPrice < product.originalPrice && (
