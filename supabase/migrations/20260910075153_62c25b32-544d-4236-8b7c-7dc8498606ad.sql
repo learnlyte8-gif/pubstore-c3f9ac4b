@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS public.conversations_buyer_supplier_unique;
