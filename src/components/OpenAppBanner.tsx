@@ -1,33 +1,21 @@
 import { useEffect, useState } from "react";
-import { X, Play } from "lucide-react";
+import { Play } from "lucide-react";
 import logo from "@/assets/pubstore-logo.png";
 
 const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.kuki.kkallinonestore";
-const DISMISS_KEY = "pubstore_open_app_banner_dismissed_v1";
 
 export function OpenAppBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    try {
-      const dismissed = localStorage.getItem(DISMISS_KEY);
-      if (dismissed) return;
-    } catch { /* ignore */ }
-
     // Only show on web browsers, not inside the installed PWA or native apps.
     const isStandalone = window.matchMedia("(display-mode: standalone)").matches
       || (navigator as any).standalone === true;
-    const isAndroid = /Android/i.test(navigator.userAgent);
 
     if (!isStandalone) {
       setVisible(true);
     }
   }, []);
-
-  const dismiss = () => {
-    setVisible(false);
-    try { localStorage.setItem(DISMISS_KEY, "1"); } catch { /* ignore */ }
-  };
 
   if (!visible) return null;
 
@@ -68,15 +56,6 @@ export function OpenAppBanner() {
             <Play className="w-3.5 h-3.5 fill-current" strokeWidth={0} />
             OPEN
           </a>
-
-          <button
-            type="button"
-            onClick={dismiss}
-            aria-label="Dismiss banner"
-            className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-white/90 hover:bg-white/15 active:scale-90 transition"
-          >
-            <X className="w-4 h-4" strokeWidth={2.5} />
-          </button>
         </div>
       </div>
     </div>
