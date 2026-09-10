@@ -23,15 +23,15 @@ interface SignupEmailProps {
 export const SignupEmail = ({ siteName, token }: SignupEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Your {siteName} verification code: {token ?? '------'}</Preview>
-    <Body style={main}>
-      <Container style={container}>
-        <Heading style={h1}>Your verification code</Heading>
-        <Text style={text}>
-          Enter this 6-digit code in {siteName} to finish creating your account.
-          The code expires in 10 minutes.
-        </Text>
-        <div style={codeBox}>{token ?? '------'}</div>
+      <Preview>Your {siteName} verification code: {token ?? '--------'}</Preview>
+      <Body style={main}>
+        <Container style={container}>
+          <Heading style={h1}>Your verification code</Heading>
+          <Text style={text}>
+            Enter this 8-digit code in {siteName} to finish creating your account.
+            The code expires in 10 minutes.
+          </Text>
+          <div style={codeBox}>{token ?? '--------'}</div>
         <Text style={footer}>
           If you didn't create an account, you can safely ignore this email.
         </Text>
@@ -59,9 +59,9 @@ const text = {
 const codeBox = {
   display: 'block' as const,
   textAlign: 'center' as const,
-  fontSize: '34px',
+  fontSize: '32px',
   fontWeight: 700 as const,
-  letterSpacing: '12px',
+  letterSpacing: '10px',
   color: '#000000',
   backgroundColor: '#f4f4f5',
   border: '1px solid #e4e4e7',

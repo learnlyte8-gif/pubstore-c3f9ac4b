@@ -22,17 +22,17 @@ export const MagicLinkEmail = ({
   siteName,
   token,
 }: MagicLinkEmailProps) => (
-  <Html lang="en" dir="ltr">
-    <Head />
-    <Preview>Your {siteName} sign-in code: {token ?? '------'}</Preview>
-    <Body style={main}>
-      <Container style={container}>
-        <Heading style={h1}>Your sign-in code</Heading>
-        <Text style={text}>
-          Enter this 6-digit code in {siteName} to finish signing in. The code
-          expires in 10 minutes.
-        </Text>
-        <div style={codeBox}>{token ?? '------'}</div>
+    <Html lang="en" dir="ltr">
+      <Head />
+      <Preview>Your {siteName} sign-in code: {token ?? '--------'}</Preview>
+      <Body style={main}>
+        <Container style={container}>
+          <Heading style={h1}>Your sign-in code</Heading>
+          <Text style={text}>
+            Enter this 8-digit code in {siteName} to finish signing in. The code
+            expires in 10 minutes.
+          </Text>
+          <div style={codeBox}>{token ?? '--------'}</div>
         <Text style={footer}>
           Didn't request this? You can safely ignore this email — no changes
           were made to your account.
@@ -61,9 +61,9 @@ const text = {
 const codeBox = {
   display: 'block' as const,
   textAlign: 'center' as const,
-  fontSize: '34px',
+  fontSize: '32px',
   fontWeight: 700 as const,
-  letterSpacing: '12px',
+  letterSpacing: '10px',
   color: '#000000',
   backgroundColor: '#f4f4f5',
   border: '1px solid #e4e4e7',
