@@ -162,15 +162,6 @@ export default function AppShell() {
                 {countryCode}
               </span>
               <span className="font-black text-base tracking-tight leading-none">PUBSTORE</span>
-              {session && tierInfo && (
-                <span
-                  className="ml-0.5 text-[9px] font-bold uppercase tracking-wider leading-none align-sub"
-                  style={{ color: `hsl(${tierHsl})` }}
-                  aria-label={`Buyer level: ${tier}`}
-                >
-                  {tier}
-                </span>
-              )}
             </Link>
 
             <div className="mr-auto" />
