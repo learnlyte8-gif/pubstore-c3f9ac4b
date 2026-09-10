@@ -330,7 +330,7 @@ export default function Auth() {
             />
             <Button
               type="submit"
-              disabled={loading || code.length < 6}
+              disabled={loading || code.length < 8}
               className="w-full h-12 mt-3 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-lg disabled:opacity-60"
             >
               {loading ? <CircleSpinner size={20} /> : "Verify & continue"}
