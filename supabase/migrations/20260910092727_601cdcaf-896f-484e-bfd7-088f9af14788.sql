@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public._verify_subscribed_supplier() FROM public, anon, authenticated;
