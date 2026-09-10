@@ -12,7 +12,7 @@ import RotatingHint from "@/components/RotatingHint";
 import LiveActivityToaster from "@/components/LiveActivityToaster";
 import ActiveRideMonitor from "@/components/rides/ActiveRideMonitor";
 import NativeSuggestionToaster from "@/components/NativeSuggestionToaster";
-import BannerAdSlot from "@/components/ads/BannerAdSlot";
+
 import ImportProgressBanner from "@/components/ImportProgressBanner";
 import TapsonAssistant from "@/components/TapsonAssistant";
 import { useUnreadChats } from "@/hooks/useUnreadChats";
@@ -298,7 +298,7 @@ export default function AppShell() {
       <LiveActivityToaster />
       <NativeSuggestionToaster />
       <ActiveRideMonitor />
-      {(location.pathname === "/home" || location.pathname === "/categories") && <BannerAdSlot />}
+      
       <ImportProgressBanner />
     </div>
   );
