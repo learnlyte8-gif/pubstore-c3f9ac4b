@@ -18,7 +18,7 @@ import ShareToChatSheet from "@/components/chat/ShareToChatSheet";
 import GroupBuyStartSheet from "@/components/social/GroupBuyStartSheet";
 import SocialActions from "@/components/social/SocialActions";
 import InquiryGateDialog from "@/components/marketplace/InquiryGateDialog";
-import { isApprovalExpired } from "@/lib/inquiryGate";
+import { isApprovalExpired, isDirectBuySupplier } from "@/lib/inquiryGate";
 import { supabase } from "@/integrations/supabase/client";
 import CircleSpinner from "@/components/CircleSpinner";
 
@@ -92,7 +92,7 @@ export default function ProductDetail() {
   const total = unitPrice * qty;
   const related = relatedAll.filter((r) => r.id !== product.id).slice(0, 6);
 
-  const gated = hasInquired === false;
+  const gated = !isDirectBuySupplier(supplier?.email) && hasInquired === false;
   const handleAdd = () => {
     if (gated) { setInquiryOpen(true); return; }
     addToCart(product.id, qty);
