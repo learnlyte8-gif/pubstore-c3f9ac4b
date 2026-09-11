@@ -305,8 +305,8 @@ function AdCard({ ad, product, template, onChanged }: { ad: Ad; product?: Produc
       subhead: draft.subhead,
       badge: draft.badge,
       cta: draft.cta,
-      price: product?.price ?? null,
-      originalPrice: product?.original_price ?? null,
+      price: draft.price ?? product?.price ?? null,
+      originalPrice: draft.original_price ?? product?.original_price ?? null,
       imageUrl: draft.image_url,
       imageUrls: draft.image_urls?.length
         ? draft.image_urls
