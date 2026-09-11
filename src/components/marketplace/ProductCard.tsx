@@ -10,7 +10,7 @@ import { logProductClick } from "@/hooks/usePersonalizationLog";
 import ShareToChatSheet from "@/components/chat/ShareToChatSheet";
 import type { ChatAttachment } from "@/components/chat/AttachmentCard";
 import InquiryGateDialog from "@/components/marketplace/InquiryGateDialog";
-import { getInquiryStatus } from "@/lib/inquiryGate";
+import { getInquiryStatus, isDirectBuySupplier } from "@/lib/inquiryGate";
 import visaLogo from "@/assets/payments/visa.svg";
 import mastercardLogo from "@/assets/payments/mastercard.svg";
 import paypalLogo from "@/assets/payments/paypal.svg";
@@ -152,6 +152,11 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
   const handleAdd = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (isDirectBuySupplier(product.supplierEmail)) {
+      addToCart(product.id, 1);
+      toast.success("Added to cart", { description: product.title });
+      return;
+    }
     if (!buyerId) {
       setInquiryOpen(true);
       return;
