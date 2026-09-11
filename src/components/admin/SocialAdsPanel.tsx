@@ -271,7 +271,7 @@ function AdsList() {
       {shown.length === 0 ? (
         <Empty label="No ads yet — use the Create tab to generate some from your products." />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 grid-cols-1">
           {shown.map((ad) => (
             <AdCard
               key={ad.id}
