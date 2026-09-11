@@ -471,6 +471,12 @@ function Templates() {
   const [rows, setRows] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ name: "", format: "square", layout: "deal", description: "", caption_prompt: "", bg: "#0f172a", accent: "#22c55e", text: "#ffffff" });
+  const [sampleImages, setSampleImages] = useState<string[]>([]);
+
+  useEffect(() => {
+    sb.from("products").select("image").eq("active", true).not("image", "is", null).limit(6)
+      .then(({ data }: any) => setSampleImages(((data ?? []) as { image: string }[]).map((r) => r.image)));
+  }, []);
 
   const load = async () => {
     setLoading(true);
