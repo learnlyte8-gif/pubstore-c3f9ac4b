@@ -429,6 +429,25 @@ function AdCard({ ad, product, template, onChanged }: { ad: Ad; product?: Produc
         <Button
           size="sm"
           variant="outline"
+          disabled={makingVideo}
+          onClick={async () => {
+            setMakingVideo(true);
+            try {
+              await downloadAdVideo(creative, `pubstore-${draft.format}-${ad.id.slice(0, 8)}`, { seconds: 8 });
+              toast.success("Video downloaded");
+            } catch (e) {
+              toast.error((e as Error).message);
+            } finally {
+              setMakingVideo(false);
+            }
+          }}
+        >
+          {makingVideo ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Film className="w-3.5 h-3.5 mr-1" />}
+          {makingVideo ? "Recording 8s…" : "Make video"}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
           onClick={() => { navigator.clipboard.writeText(captionBlock); toast.success("Caption copied"); }}
         >
           <Copy className="w-3.5 h-3.5 mr-1" /> Copy caption
