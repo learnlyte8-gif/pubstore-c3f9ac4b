@@ -350,12 +350,14 @@ function AdCard({ ad, product, template, onChanged }: { ad: Ad; product?: Produc
 
   return (
     <Card className="p-4 space-y-3">
-      <div className="flex items-start gap-3">
-        <div className={`${draft.format === "vertical" ? "w-28" : "w-32"} shrink-0 rounded-lg overflow-hidden border bg-muted`}>
+      <div className="grid gap-4 md:grid-cols-[minmax(0,320px)_1fr] items-start">
+        <div className="rounded-xl overflow-hidden border bg-muted w-full max-w-[360px] mx-auto md:mx-0">
           {rendering ? (
-            <div className="aspect-square flex items-center justify-center"><Loader2 className="w-4 h-4 animate-spin" /></div>
+            <div className="aspect-square flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin" /></div>
           ) : preview ? (
-            <img src={preview} alt="Ad preview" className="w-full" />
+            <a href={preview} target="_blank" rel="noreferrer" title="Open full size">
+              <img src={preview} alt="Ad preview" className="w-full" />
+            </a>
           ) : (
             <div className="aspect-square flex items-center justify-center text-[11px] text-muted-foreground">No preview</div>
           )}
