@@ -293,6 +293,8 @@ function AdCard({ ad, product, template, onChanged }: { ad: Ad; product?: Produc
   const [saving, setSaving] = useState(false);
   const [rendering, setRendering] = useState(true);
   const [makingVideo, setMakingVideo] = useState(false);
+  const [videoSeconds, setVideoSeconds] = useState(8);
+
   const [accounts, setAccounts] = useState<Account[]>([]);
 
   useEffect(() => {
@@ -459,7 +461,7 @@ function AdCard({ ad, product, template, onChanged }: { ad: Ad; product?: Produc
           onClick={async () => {
             setMakingVideo(true);
             try {
-              await downloadAdVideo(creative, `pubstore-${draft.format}-${ad.id.slice(0, 8)}`, { seconds: 8 });
+              await downloadAdVideo(creative, `pubstore-${draft.format}-${ad.id.slice(0, 8)}`, { seconds: videoSeconds });
               toast.success("Video downloaded");
             } catch (e) {
               toast.error((e as Error).message);
@@ -469,9 +471,21 @@ function AdCard({ ad, product, template, onChanged }: { ad: Ad; product?: Produc
           }}
         >
           {makingVideo ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Film className="w-3.5 h-3.5 mr-1" />}
-          {makingVideo ? "Recording 8s…" : "Make video"}
+          {makingVideo ? `Recording ${videoSeconds}s…` : "Make video"}
         </Button>
+        <select
+          className="h-8 rounded-md border bg-background px-2 text-[12px]"
+          value={videoSeconds}
+          disabled={makingVideo}
+          onChange={(e) => setVideoSeconds(Number(e.target.value))}
+          aria-label="Video length"
+        >
+          {[5, 8, 15, 30, 45, 60, 90, 120].map((sec) => (
+            <option key={sec} value={sec}>{sec < 60 ? `${sec}s` : `${sec / 60}m`}</option>
+          ))}
+        </select>
         <Button
+
           size="sm"
           variant="outline"
           onClick={() => { navigator.clipboard.writeText(captionBlock); toast.success("Caption copied"); }}
