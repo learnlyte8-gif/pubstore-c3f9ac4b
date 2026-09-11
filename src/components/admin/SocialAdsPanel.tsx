@@ -10,6 +10,7 @@ import { ConsolePage, Card, Field, SkeletonList, Empty, StatusBadge, fmt } from 
 import { aiFunctionHeaders } from "@/lib/aiAuth";
 import { ensureUploadIdentity } from "@/lib/uploadAuth";
 import { adCreativeDataUrl, downloadAdCreative, type AdStyle } from "@/lib/adCreative";
+import { downloadAdVideo } from "@/lib/adVideo";
 
 const sb = supabase as any;
 
@@ -290,6 +291,7 @@ function AdCard({ ad, product, template, onChanged }: { ad: Ad; product?: Produc
   const [preview, setPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [rendering, setRendering] = useState(true);
+  const [makingVideo, setMakingVideo] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
 
   useEffect(() => {
