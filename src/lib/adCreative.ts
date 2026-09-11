@@ -408,47 +408,78 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
     textBottom = contentTop + boxH + 28;
   }
 
-  // Badge
+  // Copy area: starts under the artwork, and must end before the price/CTA row
+  const marketplace = s.layout === "marketplace";
+  let copyTop = marketplace ? contentTop : vertical ? Math.max(contentTop + 80, 240) : textBottom;
+  const copyMaxY = marketplace ? contentTop + marketplaceReserve - 20 : rowTop - 24;
+
+  // Badge — above the copy for marketplace (no artwork behind it), over the artwork elsewhere
   if (ad.badge) {
     ctx.font = "800 40px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
     const tw = ctx.measureText(ad.badge.toUpperCase()).width;
-    const bx = pad;
-    const by = contentTop + 20;
+    const by = marketplace ? contentTop : contentTop + 20;
     ctx.fillStyle = s.accent;
-    roundRect(ctx, bx, by, tw + 56, 76, 38);
+    roundRect(ctx, pad, by, tw + 56, 76, 38);
     ctx.fill();
     ctx.fillStyle = "#0b1020";
     ctx.textBaseline = "middle";
-    ctx.fillText(ad.badge.toUpperCase(), bx + 28, by + 39);
+    ctx.fillText(ad.badge.toUpperCase(), pad + 28, by + 39);
+    if (marketplace) copyTop = by + 76 + 18;
   }
 
-  // Text block
-  let y = vertical ? Math.max(contentTop + 80, 240) : textBottom;
-  if (s.layout === "marketplace") y = contentTop;
   ctx.textBaseline = "top";
+  const budget = Math.max(0, copyMaxY - copyTop);
+  const maxHeadlineLines = vertical ? 3 : 2;
 
-  ctx.fillStyle = textColor;
-  ctx.font = "800 78px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
-  const hl = wrap(ctx, (ad.headline ?? "").trim(), W - pad * 2, vertical ? 3 : 2);
-  for (const line of hl) {
-    ctx.fillText(line, pad, y);
-    y += 90;
-  }
-
-  if (ad.subhead) {
-    y += 10;
-    ctx.fillStyle = sub;
-    ctx.font = "500 42px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
-    for (const line of wrap(ctx, ad.subhead, W - pad * 2, 2)) {
-      ctx.fillText(line, pad, y);
-      y += 54;
+  // Pick the largest headline/subhead sizing that fits the remaining space.
+  let hlSize = 0;
+  let hlLines: string[] = [];
+  let subLines: string[] = [];
+  let subSize = 0;
+  const headline = (ad.headline ?? "").trim();
+  for (const size of [78, 66, 56, 46, 38]) {
+    ctx.font = `800 ${size}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+    const lines = headline ? wrap(ctx, headline, W - pad * 2, maxHeadlineLines) : [];
+    const hlHeight = lines.length * size * 1.16;
+    let sSize = 0;
+    let sLines: string[] = [];
+    if (ad.subhead) {
+      for (const cand of [42, 36, 30]) {
+        ctx.font = `500 ${cand}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+        const cl = wrap(ctx, ad.subhead, W - pad * 2, 2);
+        if (hlHeight + 12 + cl.length * cand * 1.3 <= budget) { sSize = cand; sLines = cl; break; }
+      }
+    }
+    if (hlHeight + (sSize ? 12 + sLines.length * sSize * 1.3 : 0) <= budget || size === 38) {
+      hlSize = size;
+      hlLines = lines;
+      subSize = sSize;
+      subLines = sLines;
+      break;
     }
   }
 
-  // Price row + CTA — never overlapping the copy above
-  const rowH = 100;
-  const preferred = vertical ? H - 470 : H - 250;
-  const baseY = Math.min(Math.max(preferred, y + 32), H - pad - 60 - rowH);
+  let y = copyTop;
+  ctx.fillStyle = textColor;
+  ctx.font = `800 ${hlSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+  for (const line of hlLines) {
+    if (y + hlSize * 1.16 > copyMaxY + hlSize * 0.2) break;
+    ctx.fillText(line, pad, y);
+    y += hlSize * 1.16;
+  }
+
+  if (subSize && subLines.length) {
+    y += 12;
+    ctx.fillStyle = sub;
+    ctx.font = `500 ${subSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+    for (const line of subLines) {
+      if (y + subSize * 1.3 > copyMaxY + subSize * 0.3) break;
+      ctx.fillText(line, pad, y);
+      y += subSize * 1.3;
+    }
+  }
+
+  const baseY = rowTop;
 
   if (ad.price != null) {
     ctx.fillStyle = s.accent;
