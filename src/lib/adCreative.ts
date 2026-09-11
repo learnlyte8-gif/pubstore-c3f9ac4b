@@ -19,6 +19,7 @@ export type AdCreative = {
   price?: number | null;
   originalPrice?: number | null;
   imageUrl?: string | null;
+  imageUrls?: string[] | null;
   brand?: string;
   format?: "square" | "vertical";
   style?: AdStyle;
@@ -83,6 +84,22 @@ function drawContain(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: nu
   ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
 }
 
+function drawClippedImage(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  radius = 28,
+) {
+  ctx.save();
+  roundRect(ctx, x, y, w, h, radius);
+  ctx.clip();
+  drawCover(ctx, img, x, y, w, h);
+  ctx.restore();
+}
+
 const money = (n?: number | null) => (n == null ? "" : `$${Number(n).toFixed(2)}`);
 
 /** Draws the creative and returns the canvas. */
@@ -104,14 +121,57 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  const img = ad.imageUrl ? await loadImage(ad.imageUrl) : null;
+  const urls = Array.from(new Set([...(ad.imageUrls ?? []), ad.imageUrl].filter((url): url is string => Boolean(url)))).slice(0, 6);
+  const images = (await Promise.all(urls.map(loadImage))).filter((image): image is HTMLImageElement => image !== null);
+  const img = images[0] ?? null;
 
   const pad = 72;
   const light = s.layout === "clean";
   const textColor = s.text;
   const sub = light ? "rgba(15,23,42,0.68)" : "rgba(255,255,255,0.78)";
 
-  if (vertical) {
+  const galleryLayout = s.layout === "hero-five" || s.layout === "staggered" || s.layout === "marketplace";
+
+  if (s.layout === "hero-five" && images.length) {
+    const heroHeight = vertical ? 920 : 540;
+    drawClippedImage(ctx, images[0], pad, pad, W - pad * 2, heroHeight, 34);
+    const thumbY = pad + heroHeight + 18;
+    const thumbGap = 12;
+    const thumbW = (W - pad * 2 - thumbGap * 4) / 5;
+    const thumbH = vertical ? 230 : 150;
+    for (let i = 0; i < 5; i++) {
+      const thumb = images[i + 1] ?? images[(i + 1) % images.length];
+      if (thumb) drawClippedImage(ctx, thumb, pad + i * (thumbW + thumbGap), thumbY, thumbW, thumbH, 18);
+    }
+  } else if (s.layout === "staggered" && images.length) {
+    const areaH = vertical ? 1260 : 690;
+    const gap = 18;
+    const colW = (W - pad * 2 - gap) / 2;
+    const leftHeights = vertical ? [700, 542] : [380, 292];
+    const rightHeights = vertical ? [490, 752] : [270, 402];
+    let leftY = pad;
+    let rightY = pad + (vertical ? 90 : 56);
+    leftHeights.forEach((height, i) => {
+      const tile = images[(i * 2) % images.length];
+      if (tile) drawClippedImage(ctx, tile, pad, leftY, colW, height, 30);
+      leftY += height + gap;
+    });
+    rightHeights.forEach((height, i) => {
+      const tile = images[(i * 2 + 1) % images.length];
+      if (tile) drawClippedImage(ctx, tile, pad + colW + gap, rightY, colW, Math.min(height, areaH), 30);
+      rightY += height + gap;
+    });
+  } else if (s.layout === "marketplace" && images.length) {
+    const gridTop = vertical ? 440 : 220;
+    const gridHeight = vertical ? 1050 : 600;
+    const gap = 14;
+    const cellW = (W - pad * 2 - gap) / 2;
+    const cellH = (gridHeight - gap) / 2;
+    for (let i = 0; i < 4; i++) {
+      const tile = images[i % images.length];
+      if (tile) drawClippedImage(ctx, tile, pad + (i % 2) * (cellW + gap), gridTop + Math.floor(i / 2) * (cellH + gap), cellW, cellH, 22);
+    }
+  } else if (vertical) {
     // Full-bleed photo with gradient scrims top and bottom
     if (img) drawCover(ctx, img, 0, 0, W, H);
     const top = ctx.createLinearGradient(0, 0, 0, 720);
@@ -159,6 +219,9 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
 
   // Text block
   let y = vertical ? 240 : pad + 700;
+  if (s.layout === "hero-five") y = vertical ? 1270 : 800;
+  if (s.layout === "staggered") y = vertical ? 1430 : 800;
+  if (s.layout === "marketplace") y = vertical ? 100 : 76;
   ctx.textBaseline = "top";
 
   ctx.fillStyle = textColor;
@@ -214,6 +277,15 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
     ctx.textBaseline = "middle";
     ctx.fillText(ad.cta, cx + 44, cy + 50);
     ctx.textBaseline = "top";
+  }
+
+  if (galleryLayout) {
+    ctx.strokeStyle = hexA(s.accent, 0.5);
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(pad, H - pad - 54);
+    ctx.lineTo(W - pad, H - pad - 54);
+    ctx.stroke();
   }
 
   // Brand footer
