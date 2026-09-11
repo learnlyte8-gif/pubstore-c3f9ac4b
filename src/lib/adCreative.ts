@@ -196,7 +196,7 @@ export function drawProductCard(
   ctx.fill();
   ctx.restore();
 
-  const imgH = h * 0.52;
+  const imgH = h * 0.48;
   if (opts.img) {
     ctx.save();
     roundRect(ctx, x, y, w, imgH, 18);
@@ -210,24 +210,25 @@ export function drawProductCard(
   }
 
   const padX = 18;
-  let ty = y + imgH + 20;
+  const rowTop = y + h - 66; // price + BUY row, always the lowest block
+  let ty = y + imgH + 16;
   ctx.textBaseline = "top";
   ctx.fillStyle = "#0f172a";
-  ctx.font = "800 30px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+  ctx.font = "800 28px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
   const titleLines = wrap(ctx, opts.title, w - padX * 2, 1);
   ctx.fillText(titleLines[0] ?? "", x + padX, ty);
-  ty += 36;
+  ty += 34;
 
-  if (opts.sub) {
+  if (opts.sub && ty + 26 <= rowTop - 6) {
     ctx.fillStyle = "rgba(15,23,42,0.6)";
-    ctx.font = "500 24px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+    ctx.font = "500 22px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
     ctx.fillText(wrap(ctx, opts.sub, w - padX * 2, 1)[0] ?? "", x + padX, ty);
   }
 
   if (opts.price != null) {
     ctx.fillStyle = accent;
-    ctx.font = "800 44px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
-    ctx.fillText(money(opts.price), x + padX, y + h - 60);
+    ctx.font = "800 42px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+    ctx.fillText(money(opts.price), x + padX, rowTop + 6);
   }
 
   const label = (opts.cta ?? "BUY").toUpperCase();
