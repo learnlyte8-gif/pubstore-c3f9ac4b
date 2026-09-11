@@ -9,9 +9,41 @@
    ============================================================ */
 @font-face {
   font-family: 'TikTok Sans';
-  src: url('/__l5e/assets-v1/ece78693-9c6d-4894-b4f7-0785ed41f522/TikTokSans.woff2') format('woff2');
+  src: url('/__l5e/assets-v1/45a3a585-129a-445d-a4b2-30737e6bb307/TikTokSans-Regular.woff2') format('woff2');
   font-style: normal;
-  font-weight: 300 900;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'TikTok Sans';
+  src: url('/__l5e/assets-v1/45232fa3-2f69-4c3e-8c26-0b699722e336/TikTokSans-Medium.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'TikTok Sans';
+  src: url('/__l5e/assets-v1/de8597c2-9e02-479e-b377-17df068a6c1f/TikTokSans-SemiBold.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'TikTok Sans';
+  src: url('/__l5e/assets-v1/30a78159-066e-4cbe-a222-6ae04115e55e/TikTokSans-Bold.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'TikTok Sans';
+  src: url('/__l5e/assets-v1/444302bc-ff64-4bf9-979f-5123a1f40f4b/TikTokSans-ExtraBold.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 800 900;
   font-display: swap;
 }
 
