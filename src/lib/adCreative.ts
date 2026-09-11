@@ -413,6 +413,7 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
     ctx.fillStyle = bot;
     ctx.fillRect(0, H - 900, W, 900);
     textBottom = contentTop + 60;
+    overlayCopy = true;
   } else if (img) {
     const boxH = 520;
     if (light) {
