@@ -39,6 +39,7 @@ type Ad = {
   headline: string | null; subhead: string | null; badge: string | null;
   caption: string | null; hashtags: string[]; cta: string | null;
   image_url: string | null; image_urls: string[]; video_url: string | null;
+  price: number | null; original_price: number | null;
   platforms: string[]; scheduled_at: string | null; created_at: string;
 };
 type Product = { id: string; title: string; price: number | null; original_price: number | null; image: string | null; gallery: string[] | null; video_url: string | null };
