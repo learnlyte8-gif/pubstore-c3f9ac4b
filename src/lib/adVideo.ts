@@ -32,7 +32,9 @@ export function canRecordAdVideo() {
 export async function renderAdVideo(ad: AdCreative, opts: AdVideoOptions = {}): Promise<Blob> {
   if (!canRecordAdVideo()) throw new Error("This browser cannot record video — try Chrome.");
 
-  const seconds = opts.seconds ?? 8;
+  // Social platforms cap uploads at 2 minutes — never record longer than that.
+  const seconds = Math.min(120, Math.max(2, opts.seconds ?? 8));
+
   const fps = opts.fps ?? 30;
   const vertical = (ad.format ?? "square") === "vertical";
   const W = 1080;
