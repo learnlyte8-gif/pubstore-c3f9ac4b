@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, ShieldCheck, CreditCard, Banknote, RotateCcw, Star, Settings as SettingsIcon,
   Users, Store, Package, ShoppingBag, Flag, Megaphone, Newspaper, Ticket, Sparkles, Crown, MessageSquare,
-  TrendingUp,
+  TrendingUp, Share2,
 } from "lucide-react";
 
 export type AdminNavItem = { icon: any; label: string; section: string };
@@ -40,6 +40,7 @@ export const adminNavGroups: AdminNavGroup[] = [
       { icon: Store, label: "Stores", section: "suppliers" },
       { icon: Package, label: "Products", section: "products" },
       { icon: Megaphone, label: "Ad campaigns", section: "ads" },
+      { icon: Share2, label: "Social ad studio", section: "social-ads" },
       { icon: Ticket, label: "Coupons", section: "coupons" },
       { icon: Newspaper, label: "News & editorial", section: "news" },
     ],
