@@ -148,7 +148,7 @@ export default function ActiveRideMonitor() {
         <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[hsl(var(--rides-mint))] rides-pulse ring-2 ring-white" />
       </span>
       <div className="flex-1 min-w-0">
-        <div className="text-[12px] font-semibold leading-tight truncate text-[hsl(var(--rides-fg))]" style={{ fontFamily: "'Sora', sans-serif" }}>{meta.title}</div>
+        <div className="text-[12px] font-semibold leading-tight truncate text-[hsl(var(--rides-fg))]">{meta.title}</div>
         <div className="text-[11px] truncate text-[hsl(var(--rides-muted))]">
           {ride.dropoff_address ?? "Tap to view your ride"}
           {fare ? ` · $${Number(fare).toFixed(2)}` : ""}
