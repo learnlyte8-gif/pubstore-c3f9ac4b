@@ -5373,6 +5373,7 @@ export type Database = {
           headline: string | null
           id: string
           image_url: string | null
+          image_urls: string[]
           media_id: string | null
           platforms: string[]
           posted_at: string | null
@@ -5396,6 +5397,7 @@ export type Database = {
           headline?: string | null
           id?: string
           image_url?: string | null
+          image_urls?: string[]
           media_id?: string | null
           platforms?: string[]
           posted_at?: string | null
@@ -5419,6 +5421,7 @@ export type Database = {
           headline?: string | null
           id?: string
           image_url?: string | null
+          image_urls?: string[]
           media_id?: string | null
           platforms?: string[]
           posted_at?: string | null
