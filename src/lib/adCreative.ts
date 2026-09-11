@@ -433,7 +433,7 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
 
   // Copy area: starts under the artwork, and must end before the price/CTA row
   const marketplace = s.layout === "marketplace";
-  let copyTop = marketplace ? contentTop : vertical ? Math.max(contentTop + 80, 240) : textBottom;
+  let copyTop = marketplace ? contentTop : overlayCopy ? Math.max(contentTop + 80, 240) : textBottom;
   const copyMaxY = marketplace ? contentTop + marketplaceReserve - 20 : rowTop - 24;
 
   // Badge — above the copy for marketplace (no artwork behind it), over the artwork elsewhere
