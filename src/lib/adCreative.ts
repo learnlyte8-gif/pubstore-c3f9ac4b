@@ -279,6 +279,11 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
   const galleryLayout = s.layout === "hero-five" || s.layout === "staggered" || s.layout === "marketplace";
   const catalog = s.layout === "catalog";
   let textBottom = contentTop;
+  let overlayCopy = false; // true only for the full-bleed vertical photo layout
+  // Price + CTA row is anchored above the footer; nothing else may enter this band.
+  const rowH = 100;
+  const rowTop = H - pad - 60 - rowH;
+  const marketplaceReserve = vertical ? 380 : 300;
 
   if (catalog) {
     // Dark headline band, then a grid of marketplace product cards
@@ -333,13 +338,23 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
     return canvas;
   }
 
+  // Gallery artwork must stop here so headline, subhead, price and CTA all fit below it.
+  const artworkMaxY = rowTop - (vertical ? 260 : 200);
+
   if (s.layout === "hero-five" && images.length) {
-    const heroHeight = vertical ? 860 : 430;
-    drawClippedImage(ctx, images[0], pad, contentTop, W - pad * 2, heroHeight, 34);
-    const thumbY = contentTop + heroHeight + 18;
     const thumbGap = 12;
     const thumbW = (W - pad * 2 - thumbGap * 4) / 5;
-    const thumbH = vertical ? 210 : 120;
+    let heroHeight = vertical ? 860 : 430;
+    let thumbH = vertical ? 210 : 120;
+    const total = heroHeight + 18 + thumbH;
+    const room = artworkMaxY - contentTop;
+    if (total > room) {
+      const k = room / total;
+      heroHeight = Math.round(heroHeight * k);
+      thumbH = Math.round(thumbH * k);
+    }
+    drawClippedImage(ctx, images[0], pad, contentTop, W - pad * 2, heroHeight, 34);
+    const thumbY = contentTop + heroHeight + 18;
     for (let i = 0; i < 5; i++) {
       const thumb = images[i + 1] ?? images[(i + 1) % images.length];
       if (thumb) drawClippedImage(ctx, thumb, pad + i * (thumbW + thumbGap), thumbY, thumbW, thumbH, 18);
@@ -348,10 +363,21 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
   } else if (s.layout === "staggered" && images.length) {
     const gap = 18;
     const colW = (W - pad * 2 - gap) / 2;
-    const leftHeights = vertical ? [620, 470] : [330, 250];
-    const rightHeights = vertical ? [440, 650] : [240, 340];
+    const offset = vertical ? 80 : 48;
+    let leftHeights = vertical ? [620, 470] : [330, 250];
+    let rightHeights = vertical ? [440, 650] : [240, 340];
+    const tallest = Math.max(
+      leftHeights.reduce((a, b) => a + b, 0) + gap,
+      offset + rightHeights.reduce((a, b) => a + b, 0) + gap,
+    );
+    const room = artworkMaxY - contentTop;
+    if (tallest > room) {
+      const k = room / tallest;
+      leftHeights = leftHeights.map((h) => Math.round(h * k));
+      rightHeights = rightHeights.map((h) => Math.round(h * k));
+    }
     let leftY = contentTop;
-    let rightY = contentTop + (vertical ? 80 : 48);
+    let rightY = contentTop + offset;
     leftHeights.forEach((height, i) => {
       const tile = images[(i * 2) % images.length];
       if (tile) drawClippedImage(ctx, tile, pad, leftY, colW, height, 30);
@@ -364,8 +390,8 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
     });
     textBottom = Math.max(leftY, rightY) + 10;
   } else if (s.layout === "marketplace" && images.length) {
-    const gridTop = contentTop + (vertical ? 300 : 210);
-    const gridHeight = vertical ? 900 : 470;
+    const gridTop = contentTop + marketplaceReserve;
+    const gridHeight = Math.max(240, rowTop - gridTop - 28);
     const gap = 14;
     const cellW = (W - pad * 2 - gap) / 2;
     const cellH = (gridHeight - gap) / 2;
@@ -387,6 +413,7 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
     ctx.fillStyle = bot;
     ctx.fillRect(0, H - 900, W, 900);
     textBottom = contentTop + 60;
+    overlayCopy = true;
   } else if (img) {
     const boxH = 520;
     if (light) {
@@ -404,47 +431,78 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
     textBottom = contentTop + boxH + 28;
   }
 
-  // Badge
+  // Copy area: starts under the artwork, and must end before the price/CTA row
+  const marketplace = s.layout === "marketplace";
+  let copyTop = marketplace ? contentTop : overlayCopy ? Math.max(contentTop + 80, 240) : textBottom;
+  const copyMaxY = marketplace ? contentTop + marketplaceReserve - 20 : rowTop - 24;
+
+  // Badge — above the copy for marketplace (no artwork behind it), over the artwork elsewhere
   if (ad.badge) {
     ctx.font = "800 40px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
     const tw = ctx.measureText(ad.badge.toUpperCase()).width;
-    const bx = pad;
-    const by = contentTop + 20;
+    const by = marketplace ? contentTop : contentTop + 20;
     ctx.fillStyle = s.accent;
-    roundRect(ctx, bx, by, tw + 56, 76, 38);
+    roundRect(ctx, pad, by, tw + 56, 76, 38);
     ctx.fill();
     ctx.fillStyle = "#0b1020";
     ctx.textBaseline = "middle";
-    ctx.fillText(ad.badge.toUpperCase(), bx + 28, by + 39);
+    ctx.fillText(ad.badge.toUpperCase(), pad + 28, by + 39);
+    if (marketplace) copyTop = by + 76 + 18;
   }
 
-  // Text block
-  let y = vertical ? Math.max(contentTop + 80, 240) : textBottom;
-  if (s.layout === "marketplace") y = contentTop;
   ctx.textBaseline = "top";
+  const budget = Math.max(0, copyMaxY - copyTop);
+  const maxHeadlineLines = vertical ? 3 : 2;
 
-  ctx.fillStyle = textColor;
-  ctx.font = "800 78px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
-  const hl = wrap(ctx, (ad.headline ?? "").trim(), W - pad * 2, vertical ? 3 : 2);
-  for (const line of hl) {
-    ctx.fillText(line, pad, y);
-    y += 90;
-  }
-
-  if (ad.subhead) {
-    y += 10;
-    ctx.fillStyle = sub;
-    ctx.font = "500 42px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
-    for (const line of wrap(ctx, ad.subhead, W - pad * 2, 2)) {
-      ctx.fillText(line, pad, y);
-      y += 54;
+  // Pick the largest headline/subhead sizing that fits the remaining space.
+  let hlSize = 0;
+  let hlLines: string[] = [];
+  let subLines: string[] = [];
+  let subSize = 0;
+  const headline = (ad.headline ?? "").trim();
+  for (const size of [78, 66, 56, 46, 38]) {
+    ctx.font = `800 ${size}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+    const lines = headline ? wrap(ctx, headline, W - pad * 2, maxHeadlineLines) : [];
+    const hlHeight = lines.length * size * 1.16;
+    let sSize = 0;
+    let sLines: string[] = [];
+    if (ad.subhead) {
+      for (const cand of [42, 36, 30]) {
+        ctx.font = `500 ${cand}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+        const cl = wrap(ctx, ad.subhead, W - pad * 2, 2);
+        if (hlHeight + 12 + cl.length * cand * 1.3 <= budget) { sSize = cand; sLines = cl; break; }
+      }
+    }
+    if (hlHeight + (sSize ? 12 + sLines.length * sSize * 1.3 : 0) <= budget || size === 38) {
+      hlSize = size;
+      hlLines = lines;
+      subSize = sSize;
+      subLines = sLines;
+      break;
     }
   }
 
-  // Price row + CTA — never overlapping the copy above
-  const rowH = 100;
-  const preferred = vertical ? H - 470 : H - 250;
-  const baseY = Math.min(Math.max(preferred, y + 32), H - pad - 60 - rowH);
+  let y = copyTop;
+  ctx.fillStyle = textColor;
+  ctx.font = `800 ${hlSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+  for (const line of hlLines) {
+    if (y + hlSize * 1.16 > copyMaxY + hlSize * 0.2) break;
+    ctx.fillText(line, pad, y);
+    y += hlSize * 1.16;
+  }
+
+  if (subSize && subLines.length) {
+    y += 12;
+    ctx.fillStyle = sub;
+    ctx.font = `500 ${subSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+    for (const line of subLines) {
+      if (y + subSize * 1.3 > copyMaxY + subSize * 0.3) break;
+      ctx.fillText(line, pad, y);
+      y += subSize * 1.3;
+    }
+  }
+
+  const baseY = rowTop;
 
   if (ad.price != null) {
     ctx.fillStyle = s.accent;
