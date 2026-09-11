@@ -519,6 +519,7 @@ function Templates() {
               <option value="hero-five">One image + five</option>
               <option value="staggered">Staggered gallery</option>
               <option value="marketplace">Marketplace wholesale</option>
+              <option value="catalog">Pubstore catalog grid</option>
             </select>
           </Field>
         </div>
