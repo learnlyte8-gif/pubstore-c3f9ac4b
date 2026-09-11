@@ -39,6 +39,7 @@ type Ad = {
   headline: string | null; subhead: string | null; badge: string | null;
   caption: string | null; hashtags: string[]; cta: string | null;
   image_url: string | null; image_urls: string[]; video_url: string | null;
+  price: number | null; original_price: number | null;
   platforms: string[]; scheduled_at: string | null; created_at: string;
 };
 type Product = { id: string; title: string; price: number | null; original_price: number | null; image: string | null; gallery: string[] | null; video_url: string | null };
@@ -270,7 +271,7 @@ function AdsList() {
       {shown.length === 0 ? (
         <Empty label="No ads yet — use the Create tab to generate some from your products." />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 grid-cols-1">
           {shown.map((ad) => (
             <AdCard
               key={ad.id}
@@ -304,8 +305,8 @@ function AdCard({ ad, product, template, onChanged }: { ad: Ad; product?: Produc
       subhead: draft.subhead,
       badge: draft.badge,
       cta: draft.cta,
-      price: product?.price ?? null,
-      originalPrice: product?.original_price ?? null,
+      price: draft.price ?? product?.price ?? null,
+      originalPrice: draft.original_price ?? product?.original_price ?? null,
       imageUrl: draft.image_url,
       imageUrls: draft.image_urls?.length
         ? draft.image_urls
@@ -333,7 +334,8 @@ function AdCard({ ad, product, template, onChanged }: { ad: Ad; product?: Produc
       caption: next.caption, cta: next.cta, hashtags: next.hashtags,
       status: next.status, platforms: next.platforms, scheduled_at: next.scheduled_at,
       image_url: next.image_url, image_urls: next.image_urls, format: next.format,
-    }).eq("id", ad.id);
+      price: next.price, original_price: next.original_price,
+    } as any).eq("id", ad.id);
     setSaving(false);
     if (error) return toast.error(error.message);
     setDraft(next);
@@ -383,8 +385,30 @@ function AdCard({ ad, product, template, onChanged }: { ad: Ad; product?: Produc
               <option value="vertical">Vertical reel</option>
             </select>
           </div>
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              className={input}
+              type="number"
+              step="0.01"
+              min="0"
+              value={draft.price ?? ""}
+              onChange={(e) => setDraft({ ...draft, price: e.target.value === "" ? null : Number(e.target.value) })}
+              placeholder={`Price on image${product?.price != null ? ` (product ${fmt(Number(product.price))})` : ""}`}
+            />
+            <input
+              className={input}
+              type="number"
+              step="0.01"
+              min="0"
+              value={draft.original_price ?? ""}
+              onChange={(e) => setDraft({ ...draft, original_price: e.target.value === "" ? null : Number(e.target.value) })}
+              placeholder="Was price (crossed out)"
+            />
+          </div>
+          <p className="text-[11px] text-muted-foreground">Leave the prices empty to use the product price.</p>
         </div>
       </div>
+
 
       <textarea className={area} rows={4} value={draft.caption ?? ""} onChange={(e) => setDraft({ ...draft, caption: e.target.value })} placeholder="Caption" />
       <input

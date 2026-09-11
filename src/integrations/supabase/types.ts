@@ -5375,8 +5375,10 @@ export type Database = {
           image_url: string | null
           image_urls: string[]
           media_id: string | null
+          original_price: number | null
           platforms: string[]
           posted_at: string | null
+          price: number | null
           product_id: string | null
           scheduled_at: string | null
           status: string
@@ -5399,8 +5401,10 @@ export type Database = {
           image_url?: string | null
           image_urls?: string[]
           media_id?: string | null
+          original_price?: number | null
           platforms?: string[]
           posted_at?: string | null
+          price?: number | null
           product_id?: string | null
           scheduled_at?: string | null
           status?: string
@@ -5423,8 +5427,10 @@ export type Database = {
           image_url?: string | null
           image_urls?: string[]
           media_id?: string | null
+          original_price?: number | null
           platforms?: string[]
           posted_at?: string | null
+          price?: number | null
           product_id?: string | null
           scheduled_at?: string | null
           status?: string
