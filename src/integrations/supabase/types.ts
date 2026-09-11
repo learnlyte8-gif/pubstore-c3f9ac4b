@@ -180,6 +180,84 @@ export type Database = {
           },
         ]
       }
+      ad_media_library: {
+        Row: {
+          bytes: number | null
+          created_at: string
+          created_by: string | null
+          height: number | null
+          id: string
+          kind: string
+          tags: string[]
+          title: string | null
+          url: string
+          width: number | null
+        }
+        Insert: {
+          bytes?: number | null
+          created_at?: string
+          created_by?: string | null
+          height?: number | null
+          id?: string
+          kind?: string
+          tags?: string[]
+          title?: string | null
+          url: string
+          width?: number | null
+        }
+        Update: {
+          bytes?: number | null
+          created_at?: string
+          created_by?: string | null
+          height?: number | null
+          id?: string
+          kind?: string
+          tags?: string[]
+          title?: string | null
+          url?: string
+          width?: number | null
+        }
+        Relationships: []
+      }
+      ad_templates: {
+        Row: {
+          active: boolean
+          caption_prompt: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          format: string
+          id: string
+          name: string
+          style: Json
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          caption_prompt?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          format?: string
+          id?: string
+          name: string
+          style?: Json
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          caption_prompt?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          format?: string
+          id?: string
+          name?: string
+          style?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       addresses: {
         Row: {
           city: string | null
@@ -5236,6 +5314,142 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_accounts: {
+        Row: {
+          active: boolean
+          avatar_url: string | null
+          created_at: string
+          created_by: string | null
+          display_name: string | null
+          id: string
+          notes: string | null
+          platform: string
+          profile_url: string | null
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          active?: boolean
+          avatar_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_name?: string | null
+          id?: string
+          notes?: string | null
+          platform: string
+          profile_url?: string | null
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          active?: boolean
+          avatar_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_name?: string | null
+          id?: string
+          notes?: string | null
+          platform?: string
+          profile_url?: string | null
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      social_ads: {
+        Row: {
+          account_ids: string[]
+          badge: string | null
+          caption: string | null
+          created_at: string
+          created_by: string | null
+          cta: string | null
+          format: string
+          hashtags: string[]
+          headline: string | null
+          id: string
+          image_url: string | null
+          media_id: string | null
+          platforms: string[]
+          posted_at: string | null
+          product_id: string | null
+          scheduled_at: string | null
+          status: string
+          subhead: string | null
+          template_id: string | null
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          account_ids?: string[]
+          badge?: string | null
+          caption?: string | null
+          created_at?: string
+          created_by?: string | null
+          cta?: string | null
+          format?: string
+          hashtags?: string[]
+          headline?: string | null
+          id?: string
+          image_url?: string | null
+          media_id?: string | null
+          platforms?: string[]
+          posted_at?: string | null
+          product_id?: string | null
+          scheduled_at?: string | null
+          status?: string
+          subhead?: string | null
+          template_id?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          account_ids?: string[]
+          badge?: string | null
+          caption?: string | null
+          created_at?: string
+          created_by?: string | null
+          cta?: string | null
+          format?: string
+          hashtags?: string[]
+          headline?: string | null
+          id?: string
+          image_url?: string | null
+          media_id?: string | null
+          platforms?: string[]
+          posted_at?: string | null
+          product_id?: string | null
+          scheduled_at?: string | null
+          status?: string
+          subhead?: string | null
+          template_id?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_ads_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "ad_media_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_ads_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_ads_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "ad_templates"
             referencedColumns: ["id"]
           },
         ]
