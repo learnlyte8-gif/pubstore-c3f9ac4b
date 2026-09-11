@@ -32,6 +32,8 @@ const FALLBACK_STYLE: Required<AdStyle> = {
   layout: "deal",
 };
 
+const AD_FONT = "'TikTok Sans', Arial, sans-serif";
+
 export const SEARCH_BAR_TEXT = "Pubstore.app";
 
 export function loadImage(url: string): Promise<HTMLImageElement | null> {
@@ -153,7 +155,7 @@ export function drawSearchBar(ctx: CanvasRenderingContext2D, x: number, y: numbe
   ctx.save();
   ctx.textBaseline = "middle";
   ctx.fillStyle = "#ea580c";
-  ctx.font = `800 ${Math.round(h * 0.42)}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+  ctx.font = `800 ${Math.round(h * 0.42)}px ${AD_FONT}`;
   ctx.fillText(SEARCH_BAR_TEXT, bx + 42, by + 2);
   ctx.restore();
 
@@ -214,25 +216,25 @@ export function drawProductCard(
   let ty = y + imgH + 16;
   ctx.textBaseline = "top";
   ctx.fillStyle = "#0f172a";
-  ctx.font = "800 28px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+  ctx.font = `700 28px ${AD_FONT}`;
   const titleLines = wrap(ctx, opts.title, w - padX * 2, 1);
   ctx.fillText(titleLines[0] ?? "", x + padX, ty);
   ty += 34;
 
   if (opts.sub && ty + 26 <= rowTop - 6) {
     ctx.fillStyle = "rgba(15,23,42,0.6)";
-    ctx.font = "500 22px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+    ctx.font = `500 22px ${AD_FONT}`;
     ctx.fillText(wrap(ctx, opts.sub, w - padX * 2, 1)[0] ?? "", x + padX, ty);
   }
 
   if (opts.price != null) {
     ctx.fillStyle = accent;
-    ctx.font = "800 42px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+    ctx.font = `700 42px ${AD_FONT}`;
     ctx.fillText(money(opts.price), x + padX, rowTop + 6);
   }
 
   const label = (opts.cta ?? "BUY").toUpperCase();
-  ctx.font = "800 24px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+  ctx.font = `700 24px ${AD_FONT}`;
   const bw = ctx.measureText(label).width + 40;
   const bh = 48;
   ctx.fillStyle = accent;
@@ -294,14 +296,14 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
     ctx.textBaseline = "top";
     let by = contentTop + 30;
     ctx.fillStyle = "#ffffff";
-    ctx.font = "800 62px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+    ctx.font = `800 62px ${AD_FONT}`;
     for (const line of wrap(ctx, (ad.headline ?? "").trim().toUpperCase(), W - pad * 2 - 60, 2)) {
       ctx.fillText(line, pad + 30, by);
       by += 70;
     }
     if (ad.subhead) {
       ctx.fillStyle = "rgba(255,255,255,0.78)";
-      ctx.font = "500 34px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+      ctx.font = `500 34px ${AD_FONT}`;
       for (const line of wrap(ctx, ad.subhead, W - pad * 2 - 60, 2)) {
         ctx.fillText(line, pad + 30, by);
         by += 42;
@@ -332,7 +334,7 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
 
     drawSearchBar(ctx, pad, barY, W - pad * 2, barH, s.accent);
     ctx.fillStyle = "rgba(255,255,255,0.8)";
-    ctx.font = "800 34px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+    ctx.font = `700 34px ${AD_FONT}`;
     ctx.textBaseline = "top";
     ctx.fillText((ad.brand ?? "PUBSTORE").toUpperCase(), pad, H - pad - 4);
     return canvas;
@@ -438,7 +440,7 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
 
   // Badge — above the copy for marketplace (no artwork behind it), over the artwork elsewhere
   if (ad.badge) {
-    ctx.font = "800 40px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+    ctx.font = `700 40px ${AD_FONT}`;
     const tw = ctx.measureText(ad.badge.toUpperCase()).width;
     const by = marketplace ? contentTop : contentTop + 20;
     ctx.fillStyle = s.accent;
@@ -461,14 +463,14 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
   let subSize = 0;
   const headline = (ad.headline ?? "").trim();
   for (const size of [78, 66, 56, 46, 38]) {
-    ctx.font = `800 ${size}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+    ctx.font = `800 ${size}px ${AD_FONT}`;
     const lines = headline ? wrap(ctx, headline, W - pad * 2, maxHeadlineLines) : [];
     const hlHeight = lines.length * size * 1.16;
     let sSize = 0;
     let sLines: string[] = [];
     if (ad.subhead) {
       for (const cand of [42, 36, 30]) {
-        ctx.font = `500 ${cand}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+        ctx.font = `500 ${cand}px ${AD_FONT}`;
         const cl = wrap(ctx, ad.subhead, W - pad * 2, 2);
         if (hlHeight + 12 + cl.length * cand * 1.3 <= budget) { sSize = cand; sLines = cl; break; }
       }
@@ -484,7 +486,7 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
 
   let y = copyTop;
   ctx.fillStyle = textColor;
-  ctx.font = `800 ${hlSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+  ctx.font = `800 ${hlSize}px ${AD_FONT}`;
   for (const line of hlLines) {
     if (y + hlSize * 1.16 > copyMaxY + hlSize * 0.2) break;
     ctx.fillText(line, pad, y);
@@ -494,7 +496,7 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
   if (subSize && subLines.length) {
     y += 12;
     ctx.fillStyle = sub;
-    ctx.font = `500 ${subSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+    ctx.font = `500 ${subSize}px ${AD_FONT}`;
     for (const line of subLines) {
       if (y + subSize * 1.3 > copyMaxY + subSize * 0.3) break;
       ctx.fillText(line, pad, y);
@@ -506,12 +508,12 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
 
   if (ad.price != null) {
     ctx.fillStyle = s.accent;
-    ctx.font = "800 92px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+    ctx.font = `800 92px ${AD_FONT}`;
     ctx.fillText(money(ad.price), pad, baseY);
     const pw = ctx.measureText(money(ad.price)).width;
     if (ad.originalPrice && Number(ad.originalPrice) > Number(ad.price)) {
       ctx.fillStyle = sub;
-      ctx.font = "600 50px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+      ctx.font = `600 50px ${AD_FONT}`;
       const ow = ctx.measureText(money(ad.originalPrice)).width;
       const ox = pad + pw + 32;
       ctx.fillText(money(ad.originalPrice), ox, baseY + 38);
@@ -525,7 +527,7 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
   }
 
   if (ad.cta) {
-    ctx.font = "800 44px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+    ctx.font = `700 44px ${AD_FONT}`;
     const cw = ctx.measureText(ad.cta).width + 88;
     const cx = W - pad - cw;
     const cy = baseY + 6;
@@ -551,7 +553,7 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
 
   // Brand footer
   ctx.fillStyle = light ? "rgba(15,23,42,0.55)" : "rgba(255,255,255,0.65)";
-  ctx.font = "800 38px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+  ctx.font = `700 38px ${AD_FONT}`;
   ctx.fillText((ad.brand ?? "PUBSTORE").toUpperCase(), pad, H - pad - 34);
 
   return canvas;

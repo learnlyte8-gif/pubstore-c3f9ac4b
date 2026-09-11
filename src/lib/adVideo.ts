@@ -19,6 +19,7 @@ import {
 export type AdVideoOptions = { seconds?: number; fps?: number };
 
 const FALLBACK = { bg: "#0f172a", accent: "#22c55e", text: "#ffffff" };
+const VIDEO_FONT = "'TikTok Sans', Arial, sans-serif";
 
 function pickMime() {
   const candidates = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm", "video/mp4"];
@@ -89,23 +90,23 @@ export async function renderAdVideo(ad: AdCreative, opts: AdVideoOptions = {}): 
     const reveal = Math.min(1, t / 0.6);
     ctx.globalAlpha = reveal;
     ctx.fillStyle = s.text;
-    ctx.font = "800 66px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+    ctx.font = `800 66px ${VIDEO_FONT}`;
     ctx.fillText((ad.headline ?? "").slice(0, 34), pad + 30, contentTop + heroH - 210);
     if (ad.subhead) {
       ctx.fillStyle = "rgba(255,255,255,0.82)";
-      ctx.font = "500 36px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+      ctx.font = `500 36px ${VIDEO_FONT}`;
       ctx.fillText(ad.subhead.slice(0, 46), pad + 30, contentTop + heroH - 128);
     }
     ctx.globalAlpha = 1;
 
     if (ad.price != null) {
       ctx.fillStyle = s.accent;
-      ctx.font = "800 74px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+      ctx.font = `800 74px ${VIDEO_FONT}`;
       ctx.fillText(money(ad.price), pad + 30, contentTop + heroH - 78);
     }
     if (ad.cta) {
       const label = ad.cta.toUpperCase();
-      ctx.font = "800 34px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+      ctx.font = `700 34px ${VIDEO_FONT}`;
       const bw = ctx.measureText(label).width + 68;
       const pulse = 1 + 0.03 * Math.sin(t * 4);
       const bh = 78 * pulse;
@@ -148,7 +149,7 @@ export async function renderAdVideo(ad: AdCreative, opts: AdVideoOptions = {}): 
     drawSearchBar(ctx, pad, barY, W - pad * 2, barH, s.accent);
 
     ctx.fillStyle = "rgba(255,255,255,0.7)";
-    ctx.font = "800 38px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+    ctx.font = `700 38px ${VIDEO_FONT}`;
     ctx.fillText((ad.brand ?? "PUBSTORE").toUpperCase(), pad, H - pad - 34);
   };
 

@@ -7,6 +7,14 @@
    text selection, tap highlights, and overscroll bounce.
    Inputs/textareas/contenteditable remain fully interactive.
    ============================================================ */
+@font-face {
+  font-family: 'TikTok Sans';
+  src: url('/__l5e/assets-v1/ece78693-9c6d-4894-b4f7-0785ed41f522/TikTokSans.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+}
+
 @layer base {
   html, body {
     -webkit-tap-highlight-color: transparent;
@@ -215,12 +223,12 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', system-ui, Roboto, 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-weight: 700;
+    font-family: 'TikTok Sans', Arial, sans-serif;
+    font-weight: 400;
     font-feature-settings: "kern", "liga", "calt", "ss01", "tnum";
     font-synthesis: none;
     text-rendering: optimizeLegibility;
-    letter-spacing: -0.014em;
+    letter-spacing: 0;
     -webkit-tap-highlight-color: transparent;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -228,17 +236,17 @@
     touch-action: manipulation;
   }
 
-  /* Native typographic scale — confident, bold native feel */
+  /* Compact creator-platform scale inspired by TikTok Web and CapCut. */
   p, span, a, li, label, div { font-weight: inherit; }
-  h1, h2, h3, h4, h5, h6 { letter-spacing: -0.024em; font-weight: 900; }
-  h1 { letter-spacing: -0.03em; font-weight: 900; }
-  strong, b { font-weight: 900; }
+  h1, h2, h3, h4, h5, h6 { letter-spacing: 0; font-weight: 700; }
+  h1 { font-weight: 700; }
+  strong, b { font-weight: 700; }
 
   /* Prices — extra bold, tabular numerals */
   [data-price], .price, .product-price {
-    font-weight: 900 !important;
+    font-weight: 700 !important;
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
   }
 
   /* iOS focus-zoom prevention — inputs MUST be >= 16px to avoid auto-zoom jump */
@@ -340,9 +348,9 @@
     background: var(--gradient-story);
   }
   .font-brand {
-    font-family: 'Billabong', 'Snell Roundhand', 'Brush Script MT', cursive;
-    font-weight: 400;
-    letter-spacing: 0.5px;
+    font-family: 'TikTok Sans', Arial, sans-serif;
+    font-weight: 800;
+    letter-spacing: 0;
   }
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);
@@ -624,21 +632,21 @@
 
   background: linear-gradient(180deg, hsl(var(--rides-bg-0)) 0%, hsl(var(--rides-bg-1)) 100%);
   color: hsl(var(--rides-fg));
-  font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: 'TikTok Sans', Arial, sans-serif;
   font-feature-settings: "ss01", "tnum";
   min-height: 100dvh;
 }
 .rides-theme h1, .rides-theme h2, .rides-theme h3, .rides-theme h4,
 .rides-theme .font-display {
-  font-family: 'Sora', 'Manrope', sans-serif;
-  letter-spacing: -0.02em;
+  font-family: 'TikTok Sans', Arial, sans-serif;
+  letter-spacing: 0;
   color: hsl(var(--rides-fg));
 }
 .rides-theme [data-hud],
 .rides-theme .font-mono-num {
-  font-family: 'Manrope', sans-serif;
+  font-family: 'TikTok Sans', Arial, sans-serif;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 
 /* Clean surfaces — no heavy glass */
@@ -664,9 +672,9 @@
   position: relative;
   background: hsl(var(--rides-mint));
   color: #ffffff;
-  font-family: 'Sora', sans-serif;
+  font-family: 'TikTok Sans', Arial, sans-serif;
   font-weight: 700;
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
   border: 1px solid hsl(var(--rides-mint));
   box-shadow: 0 8px 20px -10px hsl(var(--rides-mint) / 0.55);
   transition: transform .18s ease, box-shadow .25s ease, background .2s ease;
@@ -701,10 +709,10 @@
 
 /* Quiet uppercase label */
 .rides-label {
-  font-family: 'Sora', sans-serif;
+  font-family: 'TikTok Sans', Arial, sans-serif;
   font-weight: 600;
   font-size: 10px;
-  letter-spacing: 0.16em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: hsl(var(--rides-muted));
 }
