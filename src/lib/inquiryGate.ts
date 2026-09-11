@@ -12,6 +12,15 @@ export function isApprovalExpired(decidedAt?: string | null) {
   return Date.now() - new Date(decidedAt).getTime() > INQUIRY_APPROVAL_TTL_MS;
 }
 
+// Sellers whose products skip the inquire-to-unlock gate — buyers always see
+// Buy now / Add to cart for these.
+export const DIRECT_BUY_SUPPLIER_EMAILS = ["kukistacks8@gmail.com"];
+
+export function isDirectBuySupplier(email?: string | null): boolean {
+  if (!email) return false;
+  return DIRECT_BUY_SUPPLIER_EMAILS.includes(email.trim().toLowerCase());
+}
+
 // Inquiry status helper — "approved" only when decided within the TTL window.
 export async function getInquiryStatus(buyerId: string, productId: string): Promise<InquiryGateStatus> {
   const { data } = await supabase

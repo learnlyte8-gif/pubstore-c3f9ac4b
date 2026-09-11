@@ -83,6 +83,7 @@ export type Product = {
   supplierId: string;
   /** Lightweight supplier fields embedded for cards (verified badge, etc.) */
   supplierVerified?: boolean;
+  supplierEmail?: string | null;
   supplierGold?: boolean;
   supplierName?: string;
   supplierLocation?: string | null;
