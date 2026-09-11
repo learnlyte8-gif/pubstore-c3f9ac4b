@@ -337,13 +337,23 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
     return canvas;
   }
 
+  // Gallery artwork must stop here so headline, subhead, price and CTA all fit below it.
+  const artworkMaxY = rowTop - (vertical ? 260 : 200);
+
   if (s.layout === "hero-five" && images.length) {
-    const heroHeight = vertical ? 860 : 430;
-    drawClippedImage(ctx, images[0], pad, contentTop, W - pad * 2, heroHeight, 34);
-    const thumbY = contentTop + heroHeight + 18;
     const thumbGap = 12;
     const thumbW = (W - pad * 2 - thumbGap * 4) / 5;
-    const thumbH = vertical ? 210 : 120;
+    let heroHeight = vertical ? 860 : 430;
+    let thumbH = vertical ? 210 : 120;
+    const total = heroHeight + 18 + thumbH;
+    const room = artworkMaxY - contentTop;
+    if (total > room) {
+      const k = room / total;
+      heroHeight = Math.round(heroHeight * k);
+      thumbH = Math.round(thumbH * k);
+    }
+    drawClippedImage(ctx, images[0], pad, contentTop, W - pad * 2, heroHeight, 34);
+    const thumbY = contentTop + heroHeight + 18;
     for (let i = 0; i < 5; i++) {
       const thumb = images[i + 1] ?? images[(i + 1) % images.length];
       if (thumb) drawClippedImage(ctx, thumb, pad + i * (thumbW + thumbGap), thumbY, thumbW, thumbH, 18);
@@ -352,10 +362,21 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
   } else if (s.layout === "staggered" && images.length) {
     const gap = 18;
     const colW = (W - pad * 2 - gap) / 2;
-    const leftHeights = vertical ? [620, 470] : [330, 250];
-    const rightHeights = vertical ? [440, 650] : [240, 340];
+    const offset = vertical ? 80 : 48;
+    let leftHeights = vertical ? [620, 470] : [330, 250];
+    let rightHeights = vertical ? [440, 650] : [240, 340];
+    const tallest = Math.max(
+      leftHeights.reduce((a, b) => a + b, 0) + gap,
+      offset + rightHeights.reduce((a, b) => a + b, 0) + gap,
+    );
+    const room = artworkMaxY - contentTop;
+    if (tallest > room) {
+      const k = room / tallest;
+      leftHeights = leftHeights.map((h) => Math.round(h * k));
+      rightHeights = rightHeights.map((h) => Math.round(h * k));
+    }
     let leftY = contentTop;
-    let rightY = contentTop + (vertical ? 80 : 48);
+    let rightY = contentTop + offset;
     leftHeights.forEach((height, i) => {
       const tile = images[(i * 2) % images.length];
       if (tile) drawClippedImage(ctx, tile, pad, leftY, colW, height, 30);
