@@ -385,8 +385,30 @@ function AdCard({ ad, product, template, onChanged }: { ad: Ad; product?: Produc
               <option value="vertical">Vertical reel</option>
             </select>
           </div>
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              className={input}
+              type="number"
+              step="0.01"
+              min="0"
+              value={draft.price ?? ""}
+              onChange={(e) => setDraft({ ...draft, price: e.target.value === "" ? null : Number(e.target.value) })}
+              placeholder={`Price on image${product?.price != null ? ` (product ${fmt(Number(product.price))})` : ""}`}
+            />
+            <input
+              className={input}
+              type="number"
+              step="0.01"
+              min="0"
+              value={draft.original_price ?? ""}
+              onChange={(e) => setDraft({ ...draft, original_price: e.target.value === "" ? null : Number(e.target.value) })}
+              placeholder="Was price (crossed out)"
+            />
+          </div>
+          <p className="text-[11px] text-muted-foreground">Leave the prices empty to use the product price.</p>
         </div>
       </div>
+
 
       <textarea className={area} rows={4} value={draft.caption ?? ""} onChange={(e) => setDraft({ ...draft, caption: e.target.value })} placeholder="Caption" />
       <input
