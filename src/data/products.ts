@@ -292,6 +292,7 @@ type DbProductWithSupplier = DbProduct & {
     latitude: number | string | null;
     longitude: number | string | null;
     trade_type?: string | null;
+    email?: string | null;
   } | null;
 };
 
@@ -315,6 +316,7 @@ export const mapProduct = (p: DbProduct | DbProductWithSupplier): Product => {
     freeShipping: !!p.free_shipping,
     supplierId: p.supplier_id,
     supplierVerified: sup ? !!sup.verified : undefined,
+    supplierEmail: sup?.email ?? null,
     supplierGold: sup ? !!sup.gold : undefined,
     supplierName: sup?.name ?? undefined,
     supplierLocation:
