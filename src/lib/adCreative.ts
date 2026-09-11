@@ -279,6 +279,7 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
   const galleryLayout = s.layout === "hero-five" || s.layout === "staggered" || s.layout === "marketplace";
   const catalog = s.layout === "catalog";
   let textBottom = contentTop;
+  let overlayCopy = false; // true only for the full-bleed vertical photo layout
   // Price + CTA row is anchored above the footer; nothing else may enter this band.
   const rowH = 100;
   const rowTop = H - pad - 60 - rowH;
