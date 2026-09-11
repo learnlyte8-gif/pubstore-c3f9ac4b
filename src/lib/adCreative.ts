@@ -368,8 +368,8 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
     });
     textBottom = Math.max(leftY, rightY) + 10;
   } else if (s.layout === "marketplace" && images.length) {
-    const gridTop = contentTop + (vertical ? 300 : 210);
-    const gridHeight = vertical ? 900 : 470;
+    const gridTop = contentTop + marketplaceReserve;
+    const gridHeight = Math.max(240, rowTop - gridTop - 28);
     const gap = 14;
     const cellW = (W - pad * 2 - gap) / 2;
     const cellH = (gridHeight - gap) / 2;
