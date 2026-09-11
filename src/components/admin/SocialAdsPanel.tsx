@@ -534,21 +534,53 @@ function Templates() {
       </Card>
 
       {loading ? <SkeletonList /> : rows.length === 0 ? <Empty label="No templates yet" /> : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {rows.map((t) => (
-            <Card key={t.id} className="p-3">
+            <Card key={t.id} className="p-3 space-y-2">
+              <TemplatePreview template={t} sampleImages={sampleImages} />
               <div className="flex items-start gap-2">
-                <span className="w-10 h-10 rounded-lg border shrink-0" style={{ background: `linear-gradient(135deg, ${t.style?.bg ?? "#0f172a"}, ${t.style?.accent ?? "#22c55e"})` }} />
                 <div className="min-w-0">
                   <p className="text-[13px] font-medium truncate">{t.name}</p>
-                   <p className="text-[11px] text-muted-foreground capitalize">{t.format === "vertical" ? "Vertical reel" : "Square post"} · {(t.style?.layout ?? "deal").replace(/-/g, " ")}</p>
+                  <p className="text-[11px] text-muted-foreground capitalize">{t.format === "vertical" ? "Vertical reel" : "Square post"} · {(t.style?.layout ?? "deal").replace(/-/g, " ")}</p>
                 </div>
                 <button onClick={() => remove(t.id)} className="ml-auto text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
               </div>
-              {t.description && <p className="text-[12px] text-muted-foreground mt-2 line-clamp-2">{t.description}</p>}
+              {t.description && <p className="text-[12px] text-muted-foreground line-clamp-2">{t.description}</p>}
             </Card>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+function TemplatePreview({ template, sampleImages }: { template: Template; sampleImages: string[] }) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    adCreativeDataUrl({
+      headline: "Wireless earbuds",
+      subhead: "Compact picks · ready to ship",
+      badge: "50% OFF",
+      cta: "Shop now",
+      price: 1.32,
+      originalPrice: 2.64,
+      imageUrls: sampleImages,
+      format: template.format,
+      style: template.style ?? {},
+    })
+      .then((u) => { if (alive) setUrl(u); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [template, sampleImages]);
+
+  return (
+    <div className="rounded-lg overflow-hidden border bg-muted">
+      {url ? (
+        <a href={url} target="_blank" rel="noreferrer" title="Open full size"><img src={url} alt={`${template.name} preview`} className="w-full" /></a>
+      ) : (
+        <div className="aspect-square flex items-center justify-center"><Loader2 className="w-4 h-4 animate-spin" /></div>
       )}
     </div>
   );
