@@ -37,10 +37,10 @@ type Ad = {
   format: "square" | "vertical"; status: string;
   headline: string | null; subhead: string | null; badge: string | null;
   caption: string | null; hashtags: string[]; cta: string | null;
-  image_url: string | null; video_url: string | null;
+  image_url: string | null; image_urls: string[]; video_url: string | null;
   platforms: string[]; scheduled_at: string | null; created_at: string;
 };
-type Product = { id: string; title: string; price: number | null; original_price: number | null; image: string | null; video_url: string | null };
+type Product = { id: string; title: string; price: number | null; original_price: number | null; image: string | null; gallery: string[] | null; video_url: string | null };
 type MediaItem = { id: string; kind: string; url: string; title: string | null; tags: string[]; created_at: string };
 type Account = { id: string; platform: string; username: string; display_name: string | null; profile_url: string | null; active: boolean };
 
@@ -94,7 +94,7 @@ function CreateAds({ onDone }: { onDone: () => void }) {
 
   const load = async () => {
     setLoading(true);
-    let query = sb.from("products").select("id, title, price, original_price, image, video_url").eq("active", true).order("created_at", { ascending: false }).limit(60);
+    let query = sb.from("products").select("id, title, price, original_price, image, gallery, video_url").eq("active", true).order("created_at", { ascending: false }).limit(60);
     if (q.trim()) query = query.ilike("title", `%${q.trim()}%`);
     const { data } = await query;
     setProducts((data ?? []) as Product[]);
@@ -236,7 +236,7 @@ function AdsList() {
     setTemplates((tpl ?? []) as Template[]);
     const ids = Array.from(new Set(list.map((a) => a.product_id).filter(Boolean))) as string[];
     if (ids.length) {
-      const { data: prods } = await sb.from("products").select("id, title, price, original_price, image, video_url").in("id", ids);
+      const { data: prods } = await sb.from("products").select("id, title, price, original_price, image, gallery, video_url").in("id", ids);
       const map: Record<string, Product> = {};
       for (const p of prods ?? []) map[p.id] = p as Product;
       setProducts(map);
@@ -305,6 +305,9 @@ function AdCard({ ad, product, template, onChanged }: { ad: Ad; product?: Produc
       price: product?.price ?? null,
       originalPrice: product?.original_price ?? null,
       imageUrl: draft.image_url,
+      imageUrls: draft.image_urls?.length
+        ? draft.image_urls
+        : [draft.image_url, product?.image, ...(product?.gallery ?? [])].filter((url): url is string => Boolean(url)),
       format: draft.format,
       style: template?.style ?? {},
     }),
@@ -327,7 +330,7 @@ function AdCard({ ad, product, template, onChanged }: { ad: Ad; product?: Produc
       headline: next.headline, subhead: next.subhead, badge: next.badge,
       caption: next.caption, cta: next.cta, hashtags: next.hashtags,
       status: next.status, platforms: next.platforms, scheduled_at: next.scheduled_at,
-      image_url: next.image_url, format: next.format,
+      image_url: next.image_url, image_urls: next.image_urls, format: next.format,
     }).eq("id", ad.id);
     setSaving(false);
     if (error) return toast.error(error.message);
@@ -444,7 +447,7 @@ function AdCard({ ad, product, template, onChanged }: { ad: Ad; product?: Produc
 function Templates() {
   const [rows, setRows] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ name: "", format: "square", description: "", caption_prompt: "", bg: "#0f172a", accent: "#22c55e", text: "#ffffff" });
+  const [form, setForm] = useState({ name: "", format: "square", layout: "deal", description: "", caption_prompt: "", bg: "#0f172a", accent: "#22c55e", text: "#ffffff" });
 
   const load = async () => {
     setLoading(true);
@@ -461,7 +464,7 @@ function Templates() {
       format: form.format,
       description: form.description || null,
       caption_prompt: form.caption_prompt || null,
-      style: { bg: form.bg, accent: form.accent, text: form.text, layout: form.format === "vertical" ? "hook" : "deal" },
+      style: { bg: form.bg, accent: form.accent, text: form.text, layout: form.layout },
     });
     if (error) return toast.error(error.message);
     setForm({ ...form, name: "", description: "", caption_prompt: "" });
@@ -478,12 +481,21 @@ function Templates() {
   return (
     <div className="space-y-4">
       <Card className="p-4 space-y-3">
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-3">
           <Field label="Name"><input className={input} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Flash sale — vertical" /></Field>
           <Field label="Format">
             <select className={input} value={form.format} onChange={(e) => setForm({ ...form, format: e.target.value })}>
               <option value="square">Square post (1:1)</option>
               <option value="vertical">Vertical reel (9:16)</option>
+            </select>
+          </Field>
+          <Field label="Layout">
+            <select className={input} value={form.layout} onChange={(e) => setForm({ ...form, layout: e.target.value })}>
+              <option value="deal">Bold deal</option>
+              <option value="clean">Clean product</option>
+              <option value="hero-five">One image + five</option>
+              <option value="staggered">Staggered gallery</option>
+              <option value="marketplace">Marketplace wholesale</option>
             </select>
           </Field>
         </div>
@@ -505,7 +517,7 @@ function Templates() {
                 <span className="w-10 h-10 rounded-lg border shrink-0" style={{ background: `linear-gradient(135deg, ${t.style?.bg ?? "#0f172a"}, ${t.style?.accent ?? "#22c55e"})` }} />
                 <div className="min-w-0">
                   <p className="text-[13px] font-medium truncate">{t.name}</p>
-                  <p className="text-[11px] text-muted-foreground capitalize">{t.format === "vertical" ? "Vertical reel" : "Square post"}</p>
+                   <p className="text-[11px] text-muted-foreground capitalize">{t.format === "vertical" ? "Vertical reel" : "Square post"} · {(t.style?.layout ?? "deal").replace(/-/g, " ")}</p>
                 </div>
                 <button onClick={() => remove(t.id)} className="ml-auto text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
               </div>

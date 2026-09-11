@@ -58,6 +58,10 @@ Deno.serve(async (req) => {
     const results: any[] = [];
 
     for (const p of products) {
+      const imageUrls = Array.from(new Set(
+        [p.image, ...(Array.isArray(p.gallery) ? p.gallery : [])]
+          .filter((url): url is string => typeof url === "string" && /^https?:\/\//i.test(url)),
+      )).slice(0, 6);
       const discount =
         p.original_price && Number(p.original_price) > Number(p.price)
           ? Math.round((1 - Number(p.price) / Number(p.original_price)) * 100)
@@ -129,7 +133,8 @@ No fake claims, no invented specs.`;
         caption: String(parsed.caption ?? "").slice(0, 1200),
         cta: String(parsed.cta ?? "Shop now").slice(0, 40),
         hashtags,
-        image_url: p.image ?? (Array.isArray(p.gallery) ? p.gallery[0] : null) ?? null,
+        image_url: imageUrls[0] ?? null,
+        image_urls: imageUrls,
         video_url: p.video_url ?? null,
         platforms,
         created_by: user.id,
