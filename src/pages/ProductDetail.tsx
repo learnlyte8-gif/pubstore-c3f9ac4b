@@ -92,7 +92,7 @@ export default function ProductDetail() {
   const total = unitPrice * qty;
   const related = relatedAll.filter((r) => r.id !== product.id).slice(0, 6);
 
-  const gated = hasInquired === false;
+  const gated = !isDirectBuySupplier(supplier?.email) && hasInquired === false;
   const handleAdd = () => {
     if (gated) { setInquiryOpen(true); return; }
     addToCart(product.id, qty);
