@@ -69,7 +69,7 @@ class PushService {
           'platform': Platform.isIOS ? 'ios' : 'android',
           'user_agent': 'pubstore-flutter',
         },
-        onConflict: 'user_id,endpoint',
+        onConflict: 'endpoint',
       );
     } catch (_) {}
   }

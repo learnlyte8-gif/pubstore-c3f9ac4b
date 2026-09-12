@@ -1,0 +1,1 @@
+DELETE FROM public.push_subscriptions a USING public.push_subscriptions b WHERE a.user_id = b.user_id AND a.endpoint = b.endpoint AND a.id < b.id; CREATE UNIQUE INDEX IF NOT EXISTS push_subscriptions_user_endpoint_unique ON public.push_subscriptions (user_id, endpoint);

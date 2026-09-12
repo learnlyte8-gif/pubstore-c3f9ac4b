@@ -157,7 +157,7 @@ class _GroupBuyDetailScreenState extends State<GroupBuyDetailScreen> {
         'group_buy_id': widget.groupBuyId,
         'user_id': uid,
         'qty': _qty,
-      }, onConflict: 'group_buy_id,user_id');
+      }, onConflict: 'group_id,user_id');
       if (_myInvite != null && _myInvite!['status'] == 'pending') {
         await supabase
             .from('group_buy_invites')
