@@ -318,6 +318,7 @@ function AdCard({ ad, product, template, onChanged }: { ad: Ad; product?: Produc
         : [draft.image_url, product?.image, ...(product?.gallery ?? [])].filter((url): url is string => Boolean(url)),
       format: draft.format,
       style: template?.style ?? {},
+      offsets: draft.layout ?? {},
     }),
     [draft, product, template],
   );
