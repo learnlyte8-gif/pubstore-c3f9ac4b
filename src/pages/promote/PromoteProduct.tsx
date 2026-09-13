@@ -13,6 +13,7 @@ import {
   channelShareUrl, copyToClipboard, money, shareMessage, shareUrlForCode, type ShareChannel,
 } from "@/lib/promote";
 import { downloadAdCreative } from "@/lib/adCreative";
+import PromoterAdStudio from "@/components/promote/PromoterAdStudio";
 
 const sb = supabase as any;
 
@@ -186,6 +187,8 @@ export default function PromoteProduct() {
                 </Button>
               </div>
             </div>
+
+            <PromoterAdStudio product={product} />
 
             <div className="rounded-2xl border bg-muted/40 p-3 text-[11px] text-muted-foreground leading-relaxed">
               Share honestly: use the real price and photos shown here, never claim to be PUBSTORE or the seller, and don't spam.
