@@ -365,11 +365,13 @@ export function drawShopCard(
     ty += titleSize * 1.2;
   }
 
-  drawStars(ctx, x + pad, ty + 4 * k, Math.round(30 * k), accent, opts.sub ?? "Free delivery");
+  drawStars(ctx, x + pad, ty + 4 * k, Math.round(30 * k), accent, opts.sub ?? "Free delivery", w - pad * 2);
   ty += Math.round(52 * k);
 
   if (opts.price != null) {
     const priceSize = Math.round(58 * k);
+    // never let the price slide under the button
+    ty = Math.min(ty, y + h - pad - Math.round(84 * k) - priceSize - Math.round(12 * k));
     ctx.fillStyle = "#0f172a";
     ctx.font = `800 ${priceSize}px ${AD_FONT}`;
     ctx.fillText(money(opts.price), x + pad, ty);
