@@ -341,6 +341,7 @@ function AdCard({ ad, product, template, onChanged }: { ad: Ad; product?: Produc
       status: next.status, platforms: next.platforms, scheduled_at: next.scheduled_at,
       image_url: next.image_url, image_urls: next.image_urls, format: next.format,
       price: next.price, original_price: next.original_price,
+      layout: next.layout ?? {},
     } as any).eq("id", ad.id);
     setSaving(false);
     if (error) return toast.error(error.message);
