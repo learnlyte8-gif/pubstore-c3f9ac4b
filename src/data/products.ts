@@ -262,6 +262,11 @@ type DbProduct = {
   ad_headline?: string | null;
   ad_tagline?: string | null;
   video_url?: string | null;
+  promote_enabled?: boolean | null;
+  commission_type?: string | null;
+  commission_value?: number | string | null;
+  commission_release_days?: number | null;
+  min_promoter_level?: number | null;
 };
 
 
