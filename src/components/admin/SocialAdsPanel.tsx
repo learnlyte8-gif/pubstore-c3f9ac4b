@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Sparkles, Plus, Trash2, Download, Copy, Upload, Loader2, Image as ImageIcon,
-  Film, Check, Search, Link2,
+  Film, Check, Search, Link2, Move,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
