@@ -624,7 +624,7 @@ export default function Messages() {
   if (active) {
     const supplierOwnerId = active.supplier?.owner_id;
     return createPortal(
-      <div className="fixed inset-0 z-[100] flex flex-col bg-background animate-fade-in">
+      <div className="fixed inset-0 z-[100] flex flex-col bg-card animate-fade-in">
         {/* Header */}
         <div className="px-2 py-2 border-b border-border/60 glass-strong shadow-soft flex items-center gap-2 z-10 safe-top">
           <button onClick={() => setActiveId(null)} aria-label="Back" className="p-2 rounded-full hover:bg-muted active:scale-95 transition">
