@@ -362,16 +362,29 @@ function AdCard({ ad, product, template, onChanged }: { ad: Ad; product?: Produc
   return (
     <Card className="p-4 space-y-3">
       <div className="grid gap-4 md:grid-cols-[minmax(0,320px)_1fr] items-start">
-        <div className="rounded-xl overflow-hidden border bg-muted w-full max-w-[360px] mx-auto md:mx-0">
-          {rendering ? (
-            <div className="aspect-square flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin" /></div>
-          ) : preview ? (
-            <a href={preview} target="_blank" rel="noreferrer" title="Open full size">
-              <img src={preview} alt="Ad preview" className="w-full" />
-            </a>
+        <div className="w-full max-w-[420px] mx-auto md:mx-0 space-y-2">
+          {editingLayout ? (
+            <AdLayoutEditor
+              creative={creative}
+              offsets={draft.layout ?? {}}
+              onChange={(next) => setDraft({ ...draft, layout: next })}
+            />
           ) : (
-            <div className="aspect-square flex items-center justify-center text-[11px] text-muted-foreground">No preview</div>
+            <div className="rounded-xl overflow-hidden border bg-muted">
+              {rendering ? (
+                <div className="aspect-square flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin" /></div>
+              ) : preview ? (
+                <a href={preview} target="_blank" rel="noreferrer" title="Open full size">
+                  <img src={preview} alt="Ad preview" className="w-full" />
+                </a>
+              ) : (
+                <div className="aspect-square flex items-center justify-center text-[11px] text-muted-foreground">No preview</div>
+              )}
+            </div>
           )}
+          <Button size="sm" variant={editingLayout ? "default" : "outline"} className="w-full" onClick={() => setEditingLayout((v) => !v)}>
+            <Move className="w-3.5 h-3.5 mr-1" /> {editingLayout ? "Done moving" : "Move things around"}
+          </Button>
         </div>
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex items-center gap-2">
