@@ -293,6 +293,14 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
           )}
         </div>
       </Link>
+      {product.promoteEnabled && commissionPerUnit(product) > 0 && (
+        <Link
+          to={`/promote/product/${product.id}`}
+          className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-primary/10 text-primary"
+        >
+          <Megaphone className="w-2.5 h-2.5" /> Earn {fmtPrice(commissionPerUnit(product))} per sale
+        </Link>
+      )}
       <ShareToChatSheet open={shareOpen} onClose={() => setShareOpen(false)} attachment={shareAttachment} />
       <InquiryGateDialog
         open={inquiryOpen}
