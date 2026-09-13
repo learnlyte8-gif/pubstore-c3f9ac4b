@@ -2,14 +2,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Sparkles, Plus, Trash2, Download, Copy, Upload, Loader2, Image as ImageIcon,
-  Film, Check, Search, Link2,
+  Film, Check, Search, Link2, Move,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ConsolePage, Card, Field, SkeletonList, Empty, StatusBadge, fmt } from "@/components/admin/ui";
 import { aiFunctionHeaders } from "@/lib/aiAuth";
 import { ensureUploadIdentity } from "@/lib/uploadAuth";
-import { adCreativeDataUrl, downloadAdCreative, type AdStyle } from "@/lib/adCreative";
+import { adCreativeDataUrl, downloadAdCreative, type AdStyle, type AdOffsets } from "@/lib/adCreative";
+import AdLayoutEditor from "@/components/admin/AdLayoutEditor";
 import { downloadAdVideo } from "@/lib/adVideo";
 
 const sb = supabase as any;
@@ -40,6 +41,7 @@ type Ad = {
   caption: string | null; hashtags: string[]; cta: string | null;
   image_url: string | null; image_urls: string[]; video_url: string | null;
   price: number | null; original_price: number | null;
+  layout: AdOffsets | null;
   platforms: string[]; scheduled_at: string | null; created_at: string;
 };
 type Product = { id: string; title: string; price: number | null; original_price: number | null; image: string | null; gallery: string[] | null; video_url: string | null };
@@ -294,6 +296,7 @@ function AdCard({ ad, product, template, onChanged }: { ad: Ad; product?: Produc
   const [rendering, setRendering] = useState(true);
   const [makingVideo, setMakingVideo] = useState(false);
   const [videoSeconds, setVideoSeconds] = useState(8);
+  const [editingLayout, setEditingLayout] = useState(false);
 
   const [accounts, setAccounts] = useState<Account[]>([]);
 
@@ -315,6 +318,7 @@ function AdCard({ ad, product, template, onChanged }: { ad: Ad; product?: Produc
         : [draft.image_url, product?.image, ...(product?.gallery ?? [])].filter((url): url is string => Boolean(url)),
       format: draft.format,
       style: template?.style ?? {},
+      offsets: draft.layout ?? {},
     }),
     [draft, product, template],
   );
@@ -337,6 +341,7 @@ function AdCard({ ad, product, template, onChanged }: { ad: Ad; product?: Produc
       status: next.status, platforms: next.platforms, scheduled_at: next.scheduled_at,
       image_url: next.image_url, image_urls: next.image_urls, format: next.format,
       price: next.price, original_price: next.original_price,
+      layout: next.layout ?? {},
     } as any).eq("id", ad.id);
     setSaving(false);
     if (error) return toast.error(error.message);
@@ -357,16 +362,29 @@ function AdCard({ ad, product, template, onChanged }: { ad: Ad; product?: Produc
   return (
     <Card className="p-4 space-y-3">
       <div className="grid gap-4 md:grid-cols-[minmax(0,320px)_1fr] items-start">
-        <div className="rounded-xl overflow-hidden border bg-muted w-full max-w-[360px] mx-auto md:mx-0">
-          {rendering ? (
-            <div className="aspect-square flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin" /></div>
-          ) : preview ? (
-            <a href={preview} target="_blank" rel="noreferrer" title="Open full size">
-              <img src={preview} alt="Ad preview" className="w-full" />
-            </a>
+        <div className="w-full max-w-[420px] mx-auto md:mx-0 space-y-2">
+          {editingLayout ? (
+            <AdLayoutEditor
+              creative={creative}
+              offsets={draft.layout ?? {}}
+              onChange={(next) => setDraft({ ...draft, layout: next })}
+            />
           ) : (
-            <div className="aspect-square flex items-center justify-center text-[11px] text-muted-foreground">No preview</div>
+            <div className="rounded-xl overflow-hidden border bg-muted">
+              {rendering ? (
+                <div className="aspect-square flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin" /></div>
+              ) : preview ? (
+                <a href={preview} target="_blank" rel="noreferrer" title="Open full size">
+                  <img src={preview} alt="Ad preview" className="w-full" />
+                </a>
+              ) : (
+                <div className="aspect-square flex items-center justify-center text-[11px] text-muted-foreground">No preview</div>
+              )}
+            </div>
           )}
+          <Button size="sm" variant={editingLayout ? "default" : "outline"} className="w-full" onClick={() => setEditingLayout((v) => !v)}>
+            <Move className="w-3.5 h-3.5 mr-1" /> {editingLayout ? "Done moving" : "Move things around"}
+          </Button>
         </div>
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex items-center gap-2">

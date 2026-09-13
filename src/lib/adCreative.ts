@@ -268,7 +268,15 @@ export function drawProductCard(
 }
 
 /** Star rating row, used by the shop-card templates. */
-function drawStars(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, accent: string, label?: string) {
+function drawStars(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  accent: string,
+  label?: string,
+  maxWidth?: number,
+) {
   ctx.save();
   ctx.fillStyle = "#f59e0b";
   ctx.font = `700 ${size}px ${AD_FONT}`;
@@ -278,7 +286,13 @@ function drawStars(ctx: CanvasRenderingContext2D, x: number, y: number, size: nu
   if (label) {
     ctx.fillStyle = "rgba(15,23,42,0.55)";
     ctx.font = `500 ${Math.round(size * 0.86)}px ${AD_FONT}`;
-    ctx.fillText(label, x + w + 12, y + 2);
+    const room = maxWidth ? maxWidth - w - 12 : Infinity;
+    let text = label;
+    if (room > 0 && ctx.measureText(text).width > room) {
+      while (text.length > 1 && ctx.measureText(`${text}…`).width > room) text = text.slice(0, -1);
+      text = `${text}…`;
+    }
+    if (room > size) ctx.fillText(text, x + w + 12, y + 2);
   }
   ctx.restore();
 }
@@ -298,7 +312,7 @@ export function drawShopCard(
   },
 ) {
   const { x, y, w, h, accent } = opts;
-  const k = opts.compact ? w / 480 : w / 900; // scale type with the card width
+  const k = opts.compact ? w / 620 : w / 900; // scale type with the card width
   const pad = Math.round(26 * k * (opts.compact ? 1 : 1));
 
   ctx.save();
@@ -311,7 +325,13 @@ export function drawShopCard(
   ctx.restore();
 
   const btnH = Math.round(84 * k);
-  const copyH = Math.round(190 * k);
+  const titleSize = Math.round(40 * k);
+  const starSize = Math.round(30 * k);
+  const priceSize = Math.round(58 * k);
+  const titleLines = opts.compact ? 1 : 2;
+  const copyH =
+    Math.round(22 * k) + titleLines * Math.round(titleSize * 1.2) +
+    Math.round(starSize * 1.5) + priceSize + Math.round(18 * k);
   const imgH = Math.max(80, h - copyH - btnH - pad * 2);
 
   if (opts.img) {
@@ -344,18 +364,16 @@ export function drawShopCard(
   let ty = y + pad + imgH + Math.round(22 * k);
   ctx.textBaseline = "top";
   ctx.fillStyle = "#0f172a";
-  const titleSize = Math.round(40 * k);
   ctx.font = `700 ${titleSize}px ${AD_FONT}`;
-  for (const line of wrap(ctx, opts.title, w - pad * 2, 2)) {
+  for (const line of wrap(ctx, opts.title, w - pad * 2, titleLines)) {
     ctx.fillText(line, x + pad, ty);
-    ty += titleSize * 1.2;
+    ty += Math.round(titleSize * 1.2);
   }
 
-  drawStars(ctx, x + pad, ty + 4 * k, Math.round(30 * k), accent, opts.sub ?? "Free delivery");
-  ty += Math.round(52 * k);
+  drawStars(ctx, x + pad, ty + 4 * k, starSize, accent, opts.sub ?? "Free delivery", w - pad * 2);
+  ty += Math.round(starSize * 1.5);
 
   if (opts.price != null) {
-    const priceSize = Math.round(58 * k);
     ctx.fillStyle = "#0f172a";
     ctx.font = `800 ${priceSize}px ${AD_FONT}`;
     ctx.fillText(money(opts.price), x + pad, ty);
