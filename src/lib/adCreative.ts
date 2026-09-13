@@ -364,20 +364,16 @@ export function drawShopCard(
   let ty = y + pad + imgH + Math.round(22 * k);
   ctx.textBaseline = "top";
   ctx.fillStyle = "#0f172a";
-  const titleSize = Math.round(40 * k);
   ctx.font = `700 ${titleSize}px ${AD_FONT}`;
-  for (const line of wrap(ctx, opts.title, w - pad * 2, 2)) {
+  for (const line of wrap(ctx, opts.title, w - pad * 2, titleLines)) {
     ctx.fillText(line, x + pad, ty);
-    ty += titleSize * 1.2;
+    ty += Math.round(titleSize * 1.2);
   }
 
-  drawStars(ctx, x + pad, ty + 4 * k, Math.round(30 * k), accent, opts.sub ?? "Free delivery", w - pad * 2);
-  ty += Math.round(52 * k);
+  drawStars(ctx, x + pad, ty + 4 * k, starSize, accent, opts.sub ?? "Free delivery", w - pad * 2);
+  ty += Math.round(starSize * 1.5);
 
   if (opts.price != null) {
-    const priceSize = Math.round(58 * k);
-    // never let the price slide under the button
-    ty = Math.min(ty, y + h - pad - Math.round(84 * k) - priceSize - Math.round(12 * k));
     ctx.fillStyle = "#0f172a";
     ctx.font = `800 ${priceSize}px ${AD_FONT}`;
     ctx.fillText(money(opts.price), x + pad, ty);
