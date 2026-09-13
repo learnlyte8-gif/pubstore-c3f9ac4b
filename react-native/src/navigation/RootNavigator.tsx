@@ -22,6 +22,7 @@ import { PrivacyScreen } from '@/screens/PrivacyScreen';
 import { TermsScreen } from '@/screens/TermsScreen';
 import { MyStoreScreen } from '@/screens/MyStoreScreen';
 import { WishlistScreen } from '@/screens/WishlistScreen';
+import { PromoteScreen } from '@/screens/PromoteScreen';
 import { MoreScreen } from '@/screens/MoreScreen';
 import {
   RestaurantsScreen, StaysScreen, PropertiesScreen, AutoScreen, CarRentalsScreen,
@@ -38,6 +39,7 @@ export type RootStackParamList = {
   Addresses: undefined; PaymentMethods: undefined; Settings: undefined;
   Account: undefined; HelpCenter: undefined; Verification: undefined;
   Privacy: undefined; Terms: undefined; MyStore: undefined; More: undefined; Wishlist: undefined;
+  Promote: undefined;
   Restaurants: undefined; Stays: undefined; Properties: undefined; Auto: undefined;
   CarRentals: undefined; Jobs: undefined; Services: undefined; Agro: undefined;
   Industrial: undefined; Finance: undefined; News: undefined; Live: undefined;
@@ -89,6 +91,7 @@ export function RootNavigator() {
       <Stack.Screen name="Terms" component={TermsScreen} />
       <Stack.Screen name="MyStore" component={MyStoreScreen} />
       <Stack.Screen name="Wishlist" component={WishlistScreen} />
+      <Stack.Screen name="Promote" component={PromoteScreen} />
 
       <Stack.Screen name="Restaurants" component={RestaurantsScreen} />
       <Stack.Screen name="Stays" component={StaysScreen} />
