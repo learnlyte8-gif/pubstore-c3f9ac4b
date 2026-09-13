@@ -152,7 +152,7 @@ export default function AppShell() {
       <OpenAppBanner />
 
       {/* Top bar — solid, elevated */}
-      <header className="sticky top-0 z-40 bg-card safe-top shadow-[0_8px_32px_-8px_hsl(0_0%_0%_/_0.18),0_2px_8px_-2px_hsl(0_0%_0%_/_0.10)]" style={{ backgroundImage: headerGradient }}>
+      <header className="sticky top-0 z-40 bg-card safe-top shadow-[0_8px_32px_-8px_hsl(0_0%_0%_/_0.18),0_2px_8px_-2px_hsl(0_0%_0%_/_0.10)]">
         <div className="max-w-2xl lg:max-w-[1600px] mx-auto px-3 lg:px-6 pt-1.5 pb-2 flex flex-col gap-2" data-tier={tier}>
           {/* Row 1: brand + Tapson + action icons */}
           <div className="h-10 flex items-center gap-2">
