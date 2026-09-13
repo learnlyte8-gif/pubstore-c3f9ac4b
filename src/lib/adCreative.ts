@@ -325,7 +325,13 @@ export function drawShopCard(
   ctx.restore();
 
   const btnH = Math.round(84 * k);
-  const copyH = Math.round(236 * k);
+  const titleSize = Math.round(40 * k);
+  const starSize = Math.round(30 * k);
+  const priceSize = Math.round(58 * k);
+  const titleLines = opts.compact ? 1 : 2;
+  const copyH =
+    Math.round(22 * k) + titleLines * Math.round(titleSize * 1.2) +
+    Math.round(starSize * 1.5) + priceSize + Math.round(18 * k);
   const imgH = Math.max(80, h - copyH - btnH - pad * 2);
 
   if (opts.img) {
