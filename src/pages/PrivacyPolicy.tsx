@@ -137,12 +137,17 @@ export default function PrivacyPolicy() {
         Our AI features, such as semantic search, product import, and listing generation, may process data you provide to generate outputs. We do not use your personal messages or confidential account information to train third-party AI models. AI outputs are generated for your convenience and should be reviewed before use.
       </p>
 
-      <h2 className="text-xl font-bold mt-8 mb-3">13. Changes to this Privacy Policy</h2>
+      <h2 className="text-xl font-bold mt-8 mb-3">13. Promote &amp; Earn</h2>
+      <p>
+        When you open a promoter link we store a random visitor identifier, the link code, the referring page, and basic device and network information so the correct promoter is credited for a sale. If you later sign in, that visit is linked to your account for up to 7 days. Promoters see the number of clicks and completed sales for their links, plus the commission amount — they never see your name, contact details, or address. Sellers see which promoter brought a sale so they can be charged the agreed commission.
+      </p>
+
+      <h2 className="text-xl font-bold mt-8 mb-3">14. Changes to this Privacy Policy</h2>
       <p>
         We may update this Privacy Policy from time to time. We will notify you of material changes through the app, email, or a prominent notice on the Platform. The "Last updated" date at the top of this page indicates the most recent revision.
       </p>
 
-      <h2 className="text-xl font-bold mt-8 mb-3">14. Contact us</h2>
+      <h2 className="text-xl font-bold mt-8 mb-3">15. Contact us</h2>
       <p>
         If you have questions or concerns about this Privacy Policy or our data practices, please contact us:
       </p>
