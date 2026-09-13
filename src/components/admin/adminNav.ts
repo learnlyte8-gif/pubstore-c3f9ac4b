@@ -41,6 +41,7 @@ export const adminNavGroups: AdminNavGroup[] = [
       { icon: Package, label: "Products", section: "products" },
       { icon: Megaphone, label: "Ad campaigns", section: "ads" },
       { icon: Share2, label: "Social ad studio", section: "social-ads" },
+      { icon: Megaphone, label: "Promote & Earn", section: "promote" },
       { icon: Ticket, label: "Coupons", section: "coupons" },
       { icon: Newspaper, label: "News & editorial", section: "news" },
     ],

@@ -12,6 +12,7 @@ import {
   ProductsPanel, AdsPanel, CouponsPanel, NewsPanel, UsersPanel, AiCreditsPanel, PlansPanel,
 } from "@/components/admin/panels";
 import RevenuePanel from "@/components/admin/RevenuePanel";
+import PromotePanel from "@/components/admin/PromotePanel";
 import SocialAdsPanel from "@/components/admin/SocialAdsPanel";
 
 const sb = supabase as any;
@@ -75,6 +76,7 @@ function AdminSection({ section }: { section: string }) {
     case "products": return <ProductsPanel />;
     case "ads": return <AdsPanel />;
     case "social-ads": return <SocialAdsPanel />;
+    case "promote": return <PromotePanel />;
     case "coupons": return <CouponsPanel />;
     case "news": return <NewsPanel />;
     case "users": return <UsersPanel />;

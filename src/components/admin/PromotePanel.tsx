@@ -66,13 +66,15 @@ function Overview() {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
       <Card label="Promoters" value={String(o.promoters ?? 0)} />
-      <Card label="Active links" value={String(o.links ?? 0)} />
+      <Card label="Active promoters" value={String(o.active_promoters ?? 0)} />
       <Card label="Clicks" value={String(o.clicks ?? 0)} />
-      <Card label="Attributed sales" value={String(o.commission_count ?? 0)} />
-      <Card label="Pending commission" value={money(o.pending_amount)} />
-      <Card label="Available commission" value={money(o.available_amount)} />
-      <Card label="Paid out" value={money(o.paid_amount)} />
-      <Card label="Reversed" value={money(o.reversed_amount)} />
+      <Card label="Attributed orders" value={String(o.attributed_orders ?? 0)} />
+      <Card label="Pending commission" value={money(o.commission_pending)} />
+      <Card label="Available commission" value={money(o.commission_available)} />
+      <Card label="Paid out" value={money(o.commission_paid)} />
+      <Card label="Reversed" value={money(o.commission_reversed)} />
+      <Card label="Promoter GMV" value={money(o.promoter_gmv)} />
+      <Card label="Open risk events" value={String(o.fraud_open ?? 0)} />
     </div>
   );
 }
@@ -117,7 +119,7 @@ function Commissions() {
           {rows.map((r: any) => (
             <div key={r.id} className="p-3 flex items-center gap-3 flex-wrap">
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold">{money(r.amount)} · {r.status}</p>
+                <p className="text-sm font-semibold">{money(r.commission_amount)} · {r.status}</p>
                 <p className="text-[11px] text-muted-foreground truncate">
                   promoter {r.promoter_id?.slice(0, 8)} · order {r.order_id?.slice(0, 8)} · {new Date(r.created_at).toLocaleString()}
                 </p>
@@ -211,11 +213,11 @@ function Fraud() {
     <div className="rounded-xl border divide-y">
       {rows.map((f: any) => (
         <div key={f.id} className="p-3">
-          <p className="text-sm font-semibold">{f.kind}</p>
+          <p className="text-sm font-semibold">{f.kind} · {f.severity ?? "info"}</p>
           <p className="text-[11px] text-muted-foreground">
             promoter {f.promoter_id?.slice(0, 8)} · {new Date(f.created_at).toLocaleString()}
           </p>
-          {f.details ? <pre className="mt-1 text-[10px] text-muted-foreground whitespace-pre-wrap">{JSON.stringify(f.details)}</pre> : null}
+          {f.detail ? <pre className="mt-1 text-[10px] text-muted-foreground whitespace-pre-wrap">{JSON.stringify(f.detail)}</pre> : null}
         </div>
       ))}
     </div>
