@@ -25,11 +25,6 @@ import AiCreditsChip from "@/components/AiCreditsChip";
 import OpenAppBanner from "@/components/OpenAppBanner";
 
 
-const TIER_HSL: Record<Tier, string> = {
-  bronze: "30 65% 45%",
-  silver: "215 16% 65%",
-  gold: "43 96% 56%",
-};
 
 let shellNotifChannelNonce = 0;
 
@@ -89,7 +84,7 @@ export default function AppShell() {
   const { info: tierInfo } = useMyTier();
   const { balance, userId: walletUserId } = useWallet();
   const tier: Tier = tierInfo?.buyer_tier ?? "bronze";
-  const tierHsl = TIER_HSL[tier];
+  
   const countryCode = useCountryCode();
   const headerGradient = undefined;
 
