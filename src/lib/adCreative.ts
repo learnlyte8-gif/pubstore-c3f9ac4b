@@ -267,6 +267,132 @@ export function drawProductCard(
   ctx.textBaseline = "top";
 }
 
+/** Star rating row, used by the shop-card templates. */
+function drawStars(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, accent: string, label?: string) {
+  ctx.save();
+  ctx.fillStyle = "#f59e0b";
+  ctx.font = `700 ${size}px ${AD_FONT}`;
+  ctx.textBaseline = "top";
+  ctx.fillText("★★★★★", x, y);
+  const w = ctx.measureText("★★★★★").width;
+  if (label) {
+    ctx.fillStyle = "rgba(15,23,42,0.55)";
+    ctx.font = `500 ${Math.round(size * 0.86)}px ${AD_FONT}`;
+    ctx.fillText(label, x + w + 12, y + 2);
+  }
+  ctx.restore();
+}
+
+/**
+ * A faithful copy of the shop's product card: white rounded card, square image,
+ * badge, 2-line title, rating, price (with was-price) and a full-width buy button.
+ */
+export function drawShopCard(
+  ctx: CanvasRenderingContext2D,
+  opts: {
+    img?: HTMLImageElement | null;
+    x: number; y: number; w: number; h: number;
+    title: string; sub?: string | null; badge?: string | null;
+    price?: number | null; originalPrice?: number | null;
+    accent: string; cta?: string | null; compact?: boolean;
+  },
+) {
+  const { x, y, w, h, accent } = opts;
+  const k = opts.compact ? w / 480 : w / 900; // scale type with the card width
+  const pad = Math.round(26 * k * (opts.compact ? 1 : 1));
+
+  ctx.save();
+  ctx.shadowColor = "rgba(15,23,42,0.22)";
+  ctx.shadowBlur = 30 * k;
+  ctx.shadowOffsetY = 10 * k;
+  ctx.fillStyle = "#ffffff";
+  roundRect(ctx, x, y, w, h, 34 * k);
+  ctx.fill();
+  ctx.restore();
+
+  const btnH = Math.round(84 * k);
+  const copyH = Math.round(190 * k);
+  const imgH = Math.max(80, h - copyH - btnH - pad * 2);
+
+  if (opts.img) {
+    ctx.save();
+    roundRect(ctx, x + pad, y + pad, w - pad * 2, imgH, 26 * k);
+    ctx.clip();
+    drawCover(ctx, opts.img, x + pad, y + pad, w - pad * 2, imgH);
+    ctx.restore();
+  } else {
+    ctx.fillStyle = "#e2e8f0";
+    roundRect(ctx, x + pad, y + pad, w - pad * 2, imgH, 26 * k);
+    ctx.fill();
+  }
+
+  if (opts.badge) {
+    ctx.save();
+    ctx.font = `800 ${Math.round(30 * k)}px ${AD_FONT}`;
+    const label = opts.badge.toUpperCase();
+    const bw = ctx.measureText(label).width + 34 * k;
+    const bh = 52 * k;
+    ctx.fillStyle = accent;
+    roundRect(ctx, x + pad + 18 * k, y + pad + 18 * k, bw, bh, bh / 2);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, x + pad + 18 * k + 17 * k, y + pad + 18 * k + bh / 2 + 1);
+    ctx.restore();
+  }
+
+  let ty = y + pad + imgH + Math.round(22 * k);
+  ctx.textBaseline = "top";
+  ctx.fillStyle = "#0f172a";
+  const titleSize = Math.round(40 * k);
+  ctx.font = `700 ${titleSize}px ${AD_FONT}`;
+  for (const line of wrap(ctx, opts.title, w - pad * 2, 2)) {
+    ctx.fillText(line, x + pad, ty);
+    ty += titleSize * 1.2;
+  }
+
+  drawStars(ctx, x + pad, ty + 4 * k, Math.round(30 * k), accent, opts.sub ?? "Free delivery");
+  ty += Math.round(52 * k);
+
+  if (opts.price != null) {
+    const priceSize = Math.round(58 * k);
+    ctx.fillStyle = "#0f172a";
+    ctx.font = `800 ${priceSize}px ${AD_FONT}`;
+    ctx.fillText(money(opts.price), x + pad, ty);
+    const pw = ctx.measureText(money(opts.price)).width;
+    if (opts.originalPrice && Number(opts.originalPrice) > Number(opts.price)) {
+      const os = Math.round(34 * k);
+      ctx.fillStyle = "rgba(15,23,42,0.5)";
+      ctx.font = `600 ${os}px ${AD_FONT}`;
+      const ox = x + pad + pw + 18 * k;
+      const oy = ty + priceSize - os - 4;
+      ctx.fillText(money(opts.originalPrice), ox, oy);
+      const ow = ctx.measureText(money(opts.originalPrice)).width;
+      ctx.strokeStyle = "rgba(15,23,42,0.5)";
+      ctx.lineWidth = Math.max(2, 4 * k);
+      ctx.beginPath();
+      ctx.moveTo(ox, oy + os * 0.58);
+      ctx.lineTo(ox + ow, oy + os * 0.58);
+      ctx.stroke();
+    }
+  }
+
+  const label = (opts.cta ?? "Add to cart").toUpperCase();
+  const by = y + h - pad - btnH;
+  ctx.fillStyle = accent;
+  roundRect(ctx, x + pad, by, w - pad * 2, btnH, btnH / 2);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `800 ${Math.round(36 * k)}px ${AD_FONT}`;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "center";
+  ctx.fillText(label, x + w / 2, by + btnH / 2 + 1);
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+}
+
+
+
 /** Draws the creative and returns the canvas. */
 export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElement> {
   const s = { ...FALLBACK_STYLE, ...(ad.style ?? {}) };
