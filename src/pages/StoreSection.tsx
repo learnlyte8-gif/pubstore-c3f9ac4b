@@ -1321,6 +1321,10 @@ function EditProductView({ productId }: { productId: string }) {
       free_shipping: !!product.free_shipping,
       active: product.active !== false,
       video_url: (product as any).video_url ?? "",
+      promote_enabled: !!(product as any).promote_enabled,
+      commission_type: (product as any).commission_type ?? "percent",
+      commission_value: String((product as any).commission_value ?? 10),
+      commission_release_days: String((product as any).commission_release_days ?? 7),
     });
     const g: string[] = Array.isArray(product.gallery) ? product.gallery.filter(Boolean) : [];
     if (g.length === 0 && product.image) g.push(product.image);
