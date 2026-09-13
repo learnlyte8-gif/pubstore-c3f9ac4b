@@ -25,11 +25,6 @@ import AiCreditsChip from "@/components/AiCreditsChip";
 import OpenAppBanner from "@/components/OpenAppBanner";
 
 
-const TIER_HSL: Record<Tier, string> = {
-  bronze: "30 65% 45%",
-  silver: "215 16% 65%",
-  gold: "43 96% 56%",
-};
 
 let shellNotifChannelNonce = 0;
 
@@ -89,9 +84,9 @@ export default function AppShell() {
   const { info: tierInfo } = useMyTier();
   const { balance, userId: walletUserId } = useWallet();
   const tier: Tier = tierInfo?.buyer_tier ?? "bronze";
-  const tierHsl = TIER_HSL[tier];
+  
   const countryCode = useCountryCode();
-  const headerGradient = `linear-gradient(135deg, hsl(var(--primary) / 0.45) 0%, hsl(var(--background)) 55%, hsl(${tierHsl} / 0.65) 100%)`;
+  const headerGradient = undefined;
 
   // Match the phone status bar to the header's top-left color (primary @ 0.45 over background).
   useEffect(() => {
@@ -152,7 +147,7 @@ export default function AppShell() {
       <OpenAppBanner />
 
       {/* Top bar — solid, elevated */}
-      <header className="sticky top-0 z-40 bg-background safe-top shadow-[0_8px_32px_-8px_hsl(0_0%_0%_/_0.18),0_2px_8px_-2px_hsl(0_0%_0%_/_0.10)]" style={{ backgroundImage: headerGradient }}>
+      <header className="sticky top-0 z-40 bg-card safe-top shadow-[0_8px_32px_-8px_hsl(0_0%_0%_/_0.18),0_2px_8px_-2px_hsl(0_0%_0%_/_0.10)]">
         <div className="max-w-2xl lg:max-w-[1600px] mx-auto px-3 lg:px-6 pt-1.5 pb-2 flex flex-col gap-2" data-tier={tier}>
           {/* Row 1: brand + Tapson + action icons */}
           <div className="h-10 flex items-center gap-2">
@@ -272,7 +267,7 @@ export default function AppShell() {
 
       {/* Bottom nav — mobile/tablet only; on desktop the tabs live in the app bar */}
       <nav
-        className="fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border lg:hidden"
+        className="fixed bottom-0 inset-x-0 z-40 bg-card/95 backdrop-blur-xl border-t border-border lg:hidden"
         aria-label="Primary"
       >
 
@@ -479,7 +474,7 @@ function RailDrawer() {
       </SheetTrigger>
       <SheetContent
         side="left"
-        className="w-[88vw] max-w-sm p-0 border-r border-border/60 bg-background flex flex-col"
+        className="w-[88vw] max-w-sm p-0 border-r border-border/60 bg-card flex flex-col"
       >
         {/* Editorial brand header */}
         <div className="relative px-6 pt-7 pb-6 border-b border-border/60 bg-[linear-gradient(180deg,hsl(var(--muted)/0.4),transparent)]">
