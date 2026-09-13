@@ -268,7 +268,15 @@ export function drawProductCard(
 }
 
 /** Star rating row, used by the shop-card templates. */
-function drawStars(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, accent: string, label?: string) {
+function drawStars(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  accent: string,
+  label?: string,
+  maxWidth?: number,
+) {
   ctx.save();
   ctx.fillStyle = "#f59e0b";
   ctx.font = `700 ${size}px ${AD_FONT}`;
@@ -278,7 +286,13 @@ function drawStars(ctx: CanvasRenderingContext2D, x: number, y: number, size: nu
   if (label) {
     ctx.fillStyle = "rgba(15,23,42,0.55)";
     ctx.font = `500 ${Math.round(size * 0.86)}px ${AD_FONT}`;
-    ctx.fillText(label, x + w + 12, y + 2);
+    const room = maxWidth ? maxWidth - w - 12 : Infinity;
+    let text = label;
+    if (room > 0 && ctx.measureText(text).width > room) {
+      while (text.length > 1 && ctx.measureText(`${text}…`).width > room) text = text.slice(0, -1);
+      text = `${text}…`;
+    }
+    if (room > size) ctx.fillText(text, x + w + 12, y + 2);
   }
   ctx.restore();
 }
