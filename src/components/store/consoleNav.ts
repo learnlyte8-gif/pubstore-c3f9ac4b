@@ -1,4 +1,4 @@
-import { Package, BarChart3, Megaphone, Truck, Star, ShoppingBag, MessageCircle, Settings, Download, BedDouble, Car, Factory, Newspaper, Navigation, Wrench, Home as HomeIcon, Banknote, Sprout, Inbox, UtensilsCrossed, Crown, Store, LayoutDashboard } from "lucide-react";
+import { Package, BarChart3, Megaphone, Truck, Star, ShoppingBag, MessageCircle, Settings, Download, BedDouble, Car, Factory, Newspaper, Navigation, Wrench, Home as HomeIcon, Banknote, Sprout, Inbox, UtensilsCrossed, Crown, Store, LayoutDashboard, Users } from "lucide-react";
 
 export type ConsoleNavItem = {
   icon: any;
@@ -35,6 +35,7 @@ export const consoleNavGroups: ConsoleNavGroup[] = [
     items: [
       { icon: Megaphone, label: "PUBSTORE Ads", to: "/store/ads" },
       { icon: Megaphone, label: "Promotions & coupons", to: "/store/promote" },
+      { icon: Users, label: "Promoted sales", to: "/store/promoted-sales" },
       { icon: BarChart3, label: "Analytics & insights", to: "/store/analytics" },
       { icon: Star, label: "Reviews", to: "/store/reviews" },
     ],

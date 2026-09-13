@@ -48,6 +48,7 @@ const titles: Record<string, { title: string; sub: string }> = {
   "services/properties": { title: "My properties", sub: "Real estate listings" },
   "services/logistics": { title: "Courier / logistics", sub: "Register as a courier · partner with suppliers" },
   "services/finance": { title: "Finance products", sub: "Loans, insurance, financing" },
+  "promoted-sales": { title: "Promoted sales", sub: "Sales brought in by promoters & commission owed" },
   "services/car-rentals": { title: "Car rentals", sub: "Self-drive listings, rules & penalties" },
   "services/agro": { title: "Agro listings", sub: "Produce, machinery, inputs, livestock, projects" },
 };
