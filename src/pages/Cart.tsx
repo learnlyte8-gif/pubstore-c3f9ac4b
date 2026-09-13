@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, MapPin, Tag, X, CheckCircle2, Wallet, Smartphone, CreditCard, Banknote, ShieldCheck, Loader2, Truck, BadgeCheck } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, MapPin, Tag, X, CheckCircle2, Wallet, Smartphone, CreditCard, Banknote, ShieldCheck, Loader2, Truck, BadgeCheck, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { useShop } from "@/store/shop";
 import { Button } from "@/components/ui/button";
