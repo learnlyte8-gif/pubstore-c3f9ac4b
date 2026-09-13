@@ -1373,8 +1373,12 @@ function EditProductView({ productId }: { productId: string }) {
         free_shipping: form.free_shipping,
         active: form.active,
         video_url: form.video_url.trim() || null,
+        promote_enabled: form.promote_enabled,
+        commission_type: form.commission_type,
+        commission_value: Number(form.commission_value) || 0,
+        commission_release_days: Number(form.commission_release_days) || 7,
         updated_at: new Date().toISOString(),
-      }).eq("id", productId);
+      } as any).eq("id", productId);
       if (error) throw error;
 
       toast.success("Product updated");
