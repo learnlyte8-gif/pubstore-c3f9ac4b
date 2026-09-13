@@ -23,6 +23,7 @@ import TierBadge from "@/components/TierBadge";
 import { useWallet } from "@/hooks/useWallet";
 import AiCreditsChip from "@/components/AiCreditsChip";
 import OpenAppBanner from "@/components/OpenAppBanner";
+import { claimPromoterAttribution } from "@/lib/promote";
 
 
 
