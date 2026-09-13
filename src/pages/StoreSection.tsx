@@ -1297,6 +1297,7 @@ function EditProductView({ productId }: { productId: string }) {
     moq: "1", unit: "piece", lead_time: "", ship_from: "",
     category_slug: "electronics", free_shipping: false, active: true,
     video_url: "",
+    promote_enabled: false, commission_type: "percent", commission_value: "10", commission_release_days: "7",
   });
   const [gallery, setGallery] = useState<string[]>([]);
   const [newFiles, setNewFiles] = useState<File[]>([]);
@@ -1320,6 +1321,10 @@ function EditProductView({ productId }: { productId: string }) {
       free_shipping: !!product.free_shipping,
       active: product.active !== false,
       video_url: (product as any).video_url ?? "",
+      promote_enabled: !!(product as any).promote_enabled,
+      commission_type: (product as any).commission_type ?? "percent",
+      commission_value: String((product as any).commission_value ?? 10),
+      commission_release_days: String((product as any).commission_release_days ?? 7),
     });
     const g: string[] = Array.isArray(product.gallery) ? product.gallery.filter(Boolean) : [];
     if (g.length === 0 && product.image) g.push(product.image);
@@ -1368,8 +1373,12 @@ function EditProductView({ productId }: { productId: string }) {
         free_shipping: form.free_shipping,
         active: form.active,
         video_url: form.video_url.trim() || null,
+        promote_enabled: form.promote_enabled,
+        commission_type: form.commission_type,
+        commission_value: Number(form.commission_value) || 0,
+        commission_release_days: Number(form.commission_release_days) || 7,
         updated_at: new Date().toISOString(),
-      }).eq("id", productId);
+      } as any).eq("id", productId);
       if (error) throw error;
 
       toast.success("Product updated");
@@ -1492,6 +1501,30 @@ function EditProductView({ productId }: { productId: string }) {
         Listed (visible to buyers)
       </label>
 
+      <div className="rounded-xl border p-3 space-y-3">
+        <label className="flex items-center gap-2 text-sm font-semibold">
+          <input type="checkbox" checked={form.promote_enabled} onChange={(e) => setForm({ ...form, promote_enabled: e.target.checked })} />
+          Let promoters earn commission on this product
+        </label>
+        {form.promote_enabled && (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <select value={form.commission_type} onChange={(e) => setForm({ ...form, commission_type: e.target.value })} className="w-full h-12 rounded-xl border bg-background px-4 text-sm">
+                <option value="percent">Percent of price</option>
+                <option value="fixed">Fixed amount</option>
+              </select>
+              <input value={form.commission_value} onChange={(e) => setForm({ ...form, commission_value: e.target.value })} placeholder={form.commission_type === "percent" ? "e.g. 10 (%)" : "e.g. 5.00 ($)"} type="number" step="0.01" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+            </div>
+            <input value={form.commission_release_days} onChange={(e) => setForm({ ...form, commission_release_days: e.target.value })} placeholder="Days after delivery before payout" type="number" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+            <p className="text-xs text-muted-foreground">
+              Promoters earn {form.commission_type === "percent" ? `${form.commission_value || 0}%` : `$${form.commission_value || 0}`} per unit sold
+              {form.price ? ` — about $${(form.commission_type === "percent" ? (Number(form.price) * (Number(form.commission_value) || 0)) / 100 : Number(form.commission_value) || 0).toFixed(2)} each` : ""}.
+            </p>
+          </>
+        )}
+      </div>
+
+
       <div className="flex gap-2 pt-2">
         <Button type="submit" disabled={saving} className="flex-1 h-12">
           {saving ? <><CircleSpinner size={16} className="mr-2" /> Saving…</> : "Save changes"}
@@ -1519,6 +1552,7 @@ function NewProductView() {
     moq: "1", unit: "piece", lead_time: "7-15 days", ship_from: "",
     category_slug: "electronics", free_shipping: false,
     video_url: "",
+    promote_enabled: false, commission_type: "percent", commission_value: "10", commission_release_days: "7",
   });
   const { data: cats = [] } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
 
@@ -1567,7 +1601,11 @@ function NewProductView() {
         category_slug: form.category_slug,
         free_shipping: form.free_shipping,
         active: true,
-      }).select().single();
+        promote_enabled: form.promote_enabled,
+        commission_type: form.commission_type,
+        commission_value: Number(form.commission_value) || 0,
+        commission_release_days: Number(form.commission_release_days) || 7,
+      } as any).select().single();
       if (error) throw error;
 
       toast.success("Product published 🎉");
@@ -1703,6 +1741,24 @@ function NewProductView() {
         <input type="checkbox" checked={form.free_shipping} onChange={(e) => setForm({ ...form, free_shipping: e.target.checked })} />
         Free shipping
       </label>
+      <div className="rounded-xl border p-3 space-y-3">
+        <label className="flex items-center gap-2 text-sm font-semibold">
+          <input type="checkbox" checked={form.promote_enabled} onChange={(e) => setForm({ ...form, promote_enabled: e.target.checked })} />
+          Let promoters earn commission on this product
+        </label>
+        {form.promote_enabled && (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <select value={form.commission_type} onChange={(e) => setForm({ ...form, commission_type: e.target.value })} className="w-full h-12 rounded-xl border bg-background px-4 text-sm">
+                <option value="percent">Percent of price</option>
+                <option value="fixed">Fixed amount</option>
+              </select>
+              <input value={form.commission_value} onChange={(e) => setForm({ ...form, commission_value: e.target.value })} placeholder={form.commission_type === "percent" ? "e.g. 10 (%)" : "e.g. 5.00 ($)"} type="number" step="0.01" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+            </div>
+            <input value={form.commission_release_days} onChange={(e) => setForm({ ...form, commission_release_days: e.target.value })} placeholder="Days after delivery before payout" type="number" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+          </>
+        )}
+      </div>
       <Button type="submit" disabled={submitting} className="w-full h-12">
         {submitting ? <><CircleSpinner size={16} className="mr-2" /> Publishing…</> : "Publish product"}
       </Button>

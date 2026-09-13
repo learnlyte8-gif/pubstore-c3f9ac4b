@@ -74,6 +74,11 @@ import InterstitialAdManager from "./components/ads/InterstitialAdManager.tsx";
 import Admin from "./pages/Admin.tsx";
 import AdminConsoleShell from "@/components/admin/AdminConsoleShell";
 import OAuthConsent from "./pages/OAuthConsent.tsx";
+import PromoteProducts from "./pages/promote/PromoteProducts.tsx";
+import PromoteProduct from "./pages/promote/PromoteProduct.tsx";
+import PromoteLinks from "./pages/promote/PromoteLinks.tsx";
+import PromoteEarnings from "./pages/promote/PromoteEarnings.tsx";
+import PromoteRedirect from "./pages/PromoteRedirect.tsx";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -171,6 +176,11 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
                 <Route path="/settings/notifications" element={<NotificationPreferences />} />
                 <Route path="/wallet" element={<Wallet />} />
+                <Route path="/promote" element={<PromoteProducts />} />
+                <Route path="/promote/product/:id" element={<PromoteProduct />} />
+                <Route path="/promote/links" element={<PromoteLinks />} />
+                <Route path="/promote/earnings" element={<PromoteEarnings />} />
+                <Route path="/x/:code" element={<PromoteRedirect />} />
                 <Route path="/ai-credits" element={<AiCredits />} />
                 <Route path="/verification" element={<Verification />} />
                 <Route path="/news" element={<News />} />

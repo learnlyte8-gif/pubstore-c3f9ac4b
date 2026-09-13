@@ -107,6 +107,24 @@ export type Product = {
   adHasReel?: boolean;
   adHeadline?: string | null;
   adTagline?: string | null;
+  /** Promote & Earn: seller allows other users to promote this product for a commission. */
+  promoteEnabled?: boolean;
+  commissionType?: "percent" | "fixed";
+  commissionValue?: number;
+  commissionReleaseDays?: number;
+  minPromoterLevel?: number;
+};
+
+/** Commission a promoter earns per unit sold, in USD. */
+export const commissionPerUnit = (p: {
+  price: number;
+  commissionType?: "percent" | "fixed";
+  commissionValue?: number;
+}): number => {
+  const value = Number(p.commissionValue ?? 0);
+  if (value <= 0) return 0;
+  const raw = p.commissionType === "fixed" ? value : (Number(p.price) || 0) * (value / 100);
+  return Math.max(0, Math.min(Number(p.price) || 0, Math.round(raw * 100) / 100));
 };
 
 
@@ -244,6 +262,11 @@ type DbProduct = {
   ad_headline?: string | null;
   ad_tagline?: string | null;
   video_url?: string | null;
+  promote_enabled?: boolean | null;
+  commission_type?: string | null;
+  commission_value?: number | string | null;
+  commission_release_days?: number | null;
+  min_promoter_level?: number | null;
 };
 
 
@@ -337,6 +360,11 @@ export const mapProduct = (p: DbProduct | DbProductWithSupplier): Product => {
     adHasReel: !!p.ad_has_reel,
     adHeadline: p.ad_headline ?? null,
     adTagline: p.ad_tagline ?? null,
+    promoteEnabled: !!p.promote_enabled,
+    commissionType: (p.commission_type as "percent" | "fixed") ?? "percent",
+    commissionValue: Number(p.commission_value ?? 0),
+    commissionReleaseDays: p.commission_release_days ?? 7,
+    minPromoterLevel: p.min_promoter_level ?? 1,
   };
 };
 
