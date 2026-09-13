@@ -296,6 +296,7 @@ function AdCard({ ad, product, template, onChanged }: { ad: Ad; product?: Produc
   const [rendering, setRendering] = useState(true);
   const [makingVideo, setMakingVideo] = useState(false);
   const [videoSeconds, setVideoSeconds] = useState(8);
+  const [editingLayout, setEditingLayout] = useState(false);
 
   const [accounts, setAccounts] = useState<Account[]>([]);
 
