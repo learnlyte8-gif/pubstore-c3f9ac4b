@@ -8,8 +8,26 @@ export type AdStyle = {
   bg?: string;
   accent?: string;
   text?: string;
-  layout?: "deal" | "clean" | "hook" | "sale" | "hero-five" | "staggered" | "marketplace" | "catalog" | string;
+  layout?:
+    | "deal" | "clean" | "hook" | "sale" | "hero-five" | "staggered" | "marketplace" | "catalog"
+    | "product-card" | "product-card-multi" | string;
 };
+
+/** Per-element nudges (canvas pixels) produced by the drag-and-drop editor. */
+export type AdOffset = { dx: number; dy: number };
+export type AdOffsets = Record<string, AdOffset>;
+
+/** Elements an admin can drag on any template. */
+export const AD_ELEMENTS = [
+  { key: "art", label: "Images" },
+  { key: "badge", label: "Badge" },
+  { key: "headline", label: "Headline" },
+  { key: "subhead", label: "Subhead" },
+  { key: "price", label: "Price" },
+  { key: "cta", label: "Button" },
+  { key: "searchbar", label: "Search bar" },
+  { key: "brand", label: "Brand" },
+] as const;
 
 export type AdCreative = {
   headline?: string | null;
@@ -23,7 +41,10 @@ export type AdCreative = {
   brand?: string;
   format?: "square" | "vertical";
   style?: AdStyle;
+  /** Drag-and-drop layout nudges, keyed by AD_ELEMENTS key. */
+  offsets?: AdOffsets | null;
 };
+
 
 const FALLBACK_STYLE: Required<AdStyle> = {
   bg: "#0f172a",
