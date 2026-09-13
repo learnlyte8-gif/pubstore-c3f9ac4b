@@ -984,6 +984,199 @@ export type Database = {
         }
         Relationships: []
       }
+      commission_adjustments: {
+        Row: {
+          amount: number
+          commission_id: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          id: string
+          kind: string
+          promoter_id: string
+          reason: string | null
+        }
+        Insert: {
+          amount: number
+          commission_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          kind?: string
+          promoter_id: string
+          reason?: string | null
+        }
+        Update: {
+          amount?: number
+          commission_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          kind?: string
+          promoter_id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_adjustments_commission_id_fkey"
+            columns: ["commission_id"]
+            isOneToOne: false
+            referencedRelation: "commissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commission_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          after: Json | null
+          before: Json | null
+          commission_id: string | null
+          created_at: string
+          id: string
+          promoter_id: string | null
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          commission_id?: string | null
+          created_at?: string
+          id?: string
+          promoter_id?: string | null
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          commission_id?: string | null
+          created_at?: string
+          id?: string
+          promoter_id?: string | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      commissions: {
+        Row: {
+          available_at: string | null
+          campaign: string | null
+          cancelled_at: string | null
+          commission_amount: number
+          commission_base: number
+          commission_rate: number
+          commission_type: string
+          confirmed_at: string | null
+          created_at: string
+          currency: string
+          exchange_rate: number
+          id: string
+          link_id: string | null
+          note: string | null
+          order_id: string
+          order_item_id: string | null
+          paid_at: string | null
+          product_id: string | null
+          promoter_id: string
+          promotion_id: string | null
+          ref_code: string | null
+          release_days: number
+          status: string
+          supplier_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          available_at?: string | null
+          campaign?: string | null
+          cancelled_at?: string | null
+          commission_amount?: number
+          commission_base?: number
+          commission_rate?: number
+          commission_type?: string
+          confirmed_at?: string | null
+          created_at?: string
+          currency?: string
+          exchange_rate?: number
+          id?: string
+          link_id?: string | null
+          note?: string | null
+          order_id: string
+          order_item_id?: string | null
+          paid_at?: string | null
+          product_id?: string | null
+          promoter_id: string
+          promotion_id?: string | null
+          ref_code?: string | null
+          release_days?: number
+          status?: string
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          available_at?: string | null
+          campaign?: string | null
+          cancelled_at?: string | null
+          commission_amount?: number
+          commission_base?: number
+          commission_rate?: number
+          commission_type?: string
+          confirmed_at?: string | null
+          created_at?: string
+          currency?: string
+          exchange_rate?: number
+          id?: string
+          link_id?: string | null
+          note?: string | null
+          order_id?: string
+          order_item_id?: string | null
+          paid_at?: string | null
+          product_id?: string | null
+          promoter_id?: string
+          promotion_id?: string | null
+          ref_code?: string | null
+          release_days?: number
+          status?: string
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commissions_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commissions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commissions_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commissions_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_members: {
         Row: {
           conversation_id: string
@@ -3944,6 +4137,9 @@ export type Database = {
           ad_tagline: string | null
           badge: string | null
           category_slug: string | null
+          commission_release_days: number
+          commission_type: string
+          commission_value: number
           created_at: string
           deal_ends_at: string | null
           description: string | null
@@ -3956,9 +4152,11 @@ export type Database = {
           image: string | null
           lead_time: string | null
           lead_time_days: number | null
+          min_promoter_level: number
           moq: number | null
           original_price: number | null
           price: number
+          promote_enabled: boolean
           rating: number | null
           ready_to_ship: boolean
           reel_url: string | null
@@ -3987,6 +4185,9 @@ export type Database = {
           ad_tagline?: string | null
           badge?: string | null
           category_slug?: string | null
+          commission_release_days?: number
+          commission_type?: string
+          commission_value?: number
           created_at?: string
           deal_ends_at?: string | null
           description?: string | null
@@ -3999,9 +4200,11 @@ export type Database = {
           image?: string | null
           lead_time?: string | null
           lead_time_days?: number | null
+          min_promoter_level?: number
           moq?: number | null
           original_price?: number | null
           price?: number
+          promote_enabled?: boolean
           rating?: number | null
           ready_to_ship?: boolean
           reel_url?: string | null
@@ -4030,6 +4233,9 @@ export type Database = {
           ad_tagline?: string | null
           badge?: string | null
           category_slug?: string | null
+          commission_release_days?: number
+          commission_type?: string
+          commission_value?: number
           created_at?: string
           deal_ends_at?: string | null
           description?: string | null
@@ -4042,9 +4248,11 @@ export type Database = {
           image?: string | null
           lead_time?: string | null
           lead_time_days?: number | null
+          min_promoter_level?: number
           moq?: number | null
           original_price?: number | null
           price?: number
+          promote_enabled?: boolean
           rating?: number | null
           ready_to_ship?: boolean
           reel_url?: string | null
@@ -4152,6 +4360,338 @@ export type Database = {
           verticals?: string[]
         }
         Relationships: []
+      }
+      promoter_fraud_events: {
+        Row: {
+          created_at: string
+          detail: Json
+          id: string
+          kind: string
+          order_id: string | null
+          promoter_id: string
+          resolved: boolean
+          severity: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: Json
+          id?: string
+          kind: string
+          order_id?: string | null
+          promoter_id: string
+          resolved?: boolean
+          severity?: string
+        }
+        Update: {
+          created_at?: string
+          detail?: Json
+          id?: string
+          kind?: string
+          order_id?: string | null
+          promoter_id?: string
+          resolved?: boolean
+          severity?: string
+        }
+        Relationships: []
+      }
+      promoter_payouts: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          method: string
+          promoter_id: string
+          reference: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          method?: string
+          promoter_id: string
+          reference?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          method?: string
+          promoter_id?: string
+          reference?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      promoter_profiles: {
+        Row: {
+          accepted_terms_at: string | null
+          code: string
+          created_at: string
+          currency: string
+          frozen: boolean
+          frozen_reason: string | null
+          level: number
+          public_leaderboard: boolean
+          risk_band: string
+          risk_score: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accepted_terms_at?: string | null
+          code: string
+          created_at?: string
+          currency?: string
+          frozen?: boolean
+          frozen_reason?: string | null
+          level?: number
+          public_leaderboard?: boolean
+          risk_band?: string
+          risk_score?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accepted_terms_at?: string | null
+          code?: string
+          created_at?: string
+          currency?: string
+          frozen?: boolean
+          frozen_reason?: string | null
+          level?: number
+          public_leaderboard?: boolean
+          risk_band?: string
+          risk_score?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      promotion_attributions: {
+        Row: {
+          campaign: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          link_id: string | null
+          product_id: string | null
+          promoter_id: string
+          promotion_id: string
+          source: string | null
+          updated_at: string
+          user_id: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          campaign?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          link_id?: string | null
+          product_id?: string | null
+          promoter_id: string
+          promotion_id: string
+          source?: string | null
+          updated_at?: string
+          user_id?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          campaign?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          link_id?: string | null
+          product_id?: string | null
+          promoter_id?: string
+          promotion_id?: string
+          source?: string | null
+          updated_at?: string
+          user_id?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_attributions_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_attributions_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promotion_clicks: {
+        Row: {
+          campaign: string | null
+          created_at: string
+          id: string
+          ip_hash: string | null
+          is_bot: boolean
+          landing_page: string | null
+          link_id: string
+          medium: string | null
+          product_id: string | null
+          promoter_id: string
+          promotion_id: string
+          source: string | null
+          user_agent: string | null
+          user_id: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          campaign?: string | null
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+          is_bot?: boolean
+          landing_page?: string | null
+          link_id: string
+          medium?: string | null
+          product_id?: string | null
+          promoter_id: string
+          promotion_id: string
+          source?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          campaign?: string | null
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+          is_bot?: boolean
+          landing_page?: string | null
+          link_id?: string
+          medium?: string | null
+          product_id?: string | null
+          promoter_id?: string
+          promotion_id?: string
+          source?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_clicks_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_clicks_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promotion_links: {
+        Row: {
+          campaign: string | null
+          channel: string
+          clicks: number
+          code: string
+          created_at: string
+          id: string
+          product_id: string | null
+          promoter_id: string
+          promotion_id: string
+          updated_at: string
+        }
+        Insert: {
+          campaign?: string | null
+          channel?: string
+          clicks?: number
+          code: string
+          created_at?: string
+          id?: string
+          product_id?: string | null
+          promoter_id: string
+          promotion_id: string
+          updated_at?: string
+        }
+        Update: {
+          campaign?: string | null
+          channel?: string
+          clicks?: number
+          code?: string
+          created_at?: string
+          id?: string
+          product_id?: string | null
+          promoter_id?: string
+          promotion_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_links_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_links_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promotions: {
+        Row: {
+          campaign: string | null
+          created_at: string
+          id: string
+          product_id: string | null
+          promoter_id: string
+          updated_at: string
+        }
+        Insert: {
+          campaign?: string | null
+          created_at?: string
+          id?: string
+          product_id?: string | null
+          promoter_id: string
+          updated_at?: string
+        }
+        Update: {
+          campaign?: string | null
+          created_at?: string
+          id?: string
+          product_id?: string | null
+          promoter_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       properties: {
         Row: {
@@ -6796,10 +7336,27 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      promoter_earnings_summary: {
+        Row: {
+          available_amount: number | null
+          confirming_amount: number | null
+          paid_amount: number | null
+          pending_amount: number | null
+          promoter_id: string | null
+          reversed_amount: number | null
+          sales_count: number | null
+          sales_revenue: number | null
+          total_earned: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _ad_reset_daily: { Args: { _id: string }; Returns: undefined }
+      _create_promo_commissions: {
+        Args: { _order_id: string }
+        Returns: undefined
+      }
       _dispatch_order_email: {
         Args: { event: string; order_id: string; status?: string }
         Returns: undefined
@@ -6858,6 +7415,66 @@ export type Database = {
         }
       }
       activate_scheduled_rides: { Args: never; Returns: undefined }
+      admin_promote_overview: { Args: never; Returns: Json }
+      admin_set_commission_status: {
+        Args: { _commission_id: string; _reason?: string; _status: string }
+        Returns: {
+          available_at: string | null
+          campaign: string | null
+          cancelled_at: string | null
+          commission_amount: number
+          commission_base: number
+          commission_rate: number
+          commission_type: string
+          confirmed_at: string | null
+          created_at: string
+          currency: string
+          exchange_rate: number
+          id: string
+          link_id: string | null
+          note: string | null
+          order_id: string
+          order_item_id: string | null
+          paid_at: string | null
+          product_id: string | null
+          promoter_id: string
+          promotion_id: string | null
+          ref_code: string | null
+          release_days: number
+          status: string
+          supplier_id: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "commissions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_set_promoter_hold: {
+        Args: { _frozen: boolean; _promoter_id: string; _reason?: string }
+        Returns: {
+          accepted_terms_at: string | null
+          code: string
+          created_at: string
+          currency: string
+          frozen: boolean
+          frozen_reason: string | null
+          level: number
+          public_leaderboard: boolean
+          risk_band: string
+          risk_score: number
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "promoter_profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       ai_buy_credit_pack: { Args: { _pack_code: string }; Returns: Json }
       ai_consume_credits: {
         Args: {
@@ -7168,6 +7785,7 @@ export type Database = {
           scheduled_at: string
         }[]
       }
+      gen_short_code: { Args: { _len?: number }; Returns: string }
       get_email_by_username: { Args: { p_username: string }; Returns: string }
       get_user_tier_info: {
         Args: { _user_id: string }
@@ -7428,6 +8046,79 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      product_commission_per_unit: {
+        Args: { _type: string; _unit_price: number; _value: number }
+        Returns: number
+      }
+      promote_claim_attribution: {
+        Args: { _visitor_id: string }
+        Returns: undefined
+      }
+      promote_get_link: {
+        Args: { _campaign?: string; _channel?: string; _product_id: string }
+        Returns: {
+          campaign: string | null
+          channel: string
+          clicks: number
+          code: string
+          created_at: string
+          id: string
+          product_id: string | null
+          promoter_id: string
+          promotion_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "promotion_links"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      promote_mature_commissions: { Args: never; Returns: number }
+      promoter_ensure_profile: {
+        Args: never
+        Returns: {
+          accepted_terms_at: string | null
+          code: string
+          created_at: string
+          currency: string
+          frozen: boolean
+          frozen_reason: string | null
+          level: number
+          public_leaderboard: boolean
+          risk_band: string
+          risk_score: number
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "promoter_profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      promoter_withdraw_earnings: {
+        Args: { _amount: number }
+        Returns: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          method: string
+          promoter_id: string
+          reference: string | null
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "promoter_payouts"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -7780,6 +8471,16 @@ export type Database = {
           _campaign_id: string
           _event: Database["public"]["Enums"]["ad_event_kind"]
           _placement: Database["public"]["Enums"]["ad_placement"]
+        }
+        Returns: Json
+      }
+      track_promotion_click: {
+        Args: {
+          _code: string
+          _landing_page?: string
+          _source?: string
+          _user_agent?: string
+          _visitor_id?: string
         }
         Returns: Json
       }
