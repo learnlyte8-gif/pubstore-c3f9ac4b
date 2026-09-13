@@ -5374,6 +5374,7 @@ export type Database = {
           id: string
           image_url: string | null
           image_urls: string[]
+          layout: Json
           media_id: string | null
           original_price: number | null
           platforms: string[]
@@ -5400,6 +5401,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           image_urls?: string[]
+          layout?: Json
           media_id?: string | null
           original_price?: number | null
           platforms?: string[]
@@ -5426,6 +5428,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           image_urls?: string[]
+          layout?: Json
           media_id?: string | null
           original_price?: number | null
           platforms?: string[]
