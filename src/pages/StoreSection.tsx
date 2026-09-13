@@ -1501,6 +1501,30 @@ function EditProductView({ productId }: { productId: string }) {
         Listed (visible to buyers)
       </label>
 
+      <div className="rounded-xl border p-3 space-y-3">
+        <label className="flex items-center gap-2 text-sm font-semibold">
+          <input type="checkbox" checked={form.promote_enabled} onChange={(e) => setForm({ ...form, promote_enabled: e.target.checked })} />
+          Let promoters earn commission on this product
+        </label>
+        {form.promote_enabled && (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <select value={form.commission_type} onChange={(e) => setForm({ ...form, commission_type: e.target.value })} className="w-full h-12 rounded-xl border bg-background px-4 text-sm">
+                <option value="percent">Percent of price</option>
+                <option value="fixed">Fixed amount</option>
+              </select>
+              <input value={form.commission_value} onChange={(e) => setForm({ ...form, commission_value: e.target.value })} placeholder={form.commission_type === "percent" ? "e.g. 10 (%)" : "e.g. 5.00 ($)"} type="number" step="0.01" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+            </div>
+            <input value={form.commission_release_days} onChange={(e) => setForm({ ...form, commission_release_days: e.target.value })} placeholder="Days after delivery before payout" type="number" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+            <p className="text-xs text-muted-foreground">
+              Promoters earn {form.commission_type === "percent" ? `${form.commission_value || 0}%` : `$${form.commission_value || 0}`} per unit sold
+              {form.price ? ` — about $${(form.commission_type === "percent" ? (Number(form.price) * (Number(form.commission_value) || 0)) / 100 : Number(form.commission_value) || 0).toFixed(2)} each` : ""}.
+            </p>
+          </>
+        )}
+      </div>
+
+
       <div className="flex gap-2 pt-2">
         <Button type="submit" disabled={saving} className="flex-1 h-12">
           {saving ? <><CircleSpinner size={16} className="mr-2" /> Saving…</> : "Save changes"}
