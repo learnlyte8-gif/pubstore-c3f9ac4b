@@ -74,6 +74,11 @@ import InterstitialAdManager from "./components/ads/InterstitialAdManager.tsx";
 import Admin from "./pages/Admin.tsx";
 import AdminConsoleShell from "@/components/admin/AdminConsoleShell";
 import OAuthConsent from "./pages/OAuthConsent.tsx";
+import PromoteProducts from "./pages/promote/PromoteProducts.tsx";
+import PromoteProduct from "./pages/promote/PromoteProduct.tsx";
+import PromoteLinks from "./pages/promote/PromoteLinks.tsx";
+import PromoteEarnings from "./pages/promote/PromoteEarnings.tsx";
+import PromoteRedirect from "./pages/PromoteRedirect.tsx";
 
 const queryClient = new QueryClient({
   defaultOptions: {
