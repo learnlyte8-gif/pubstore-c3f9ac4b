@@ -13,6 +13,7 @@ import {
   channelShareUrl, copyToClipboard, money, shareMessage, shareUrlForCode, type ShareChannel,
 } from "@/lib/promote";
 import { downloadAdCreative } from "@/lib/adCreative";
+import PromoterAdStudio from "@/components/promote/PromoterAdStudio";
 
 const sb = supabase as any;
 
