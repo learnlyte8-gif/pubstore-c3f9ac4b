@@ -276,6 +276,18 @@ export default function ProductDetail() {
         )}
       </div>
 
+      {product.promoteEnabled && commissionPerUnit(product) > 0 ? (
+        <Link
+          to={`/promote/product/${product.id}`}
+          className="mx-4 lg:mx-0 mt-4 flex items-center gap-2 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 hover:bg-primary/10 transition"
+        >
+          <Megaphone className="w-4 h-4 text-primary shrink-0" />
+          <span className="text-sm font-bold text-primary">
+            Promote &amp; Earn — earn ${commissionPerUnit(product).toFixed(2)} per sale
+          </span>
+        </Link>
+      ) : null}
+
       <section className="px-4 mt-4 grid grid-cols-3 gap-2 lg:px-0">
 
         <Trust icon={ShieldCheck} title="Trade Assurance" desc="Refund if not delivered" />
