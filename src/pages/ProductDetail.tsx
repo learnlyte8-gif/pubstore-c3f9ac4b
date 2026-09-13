@@ -104,7 +104,7 @@ export default function ProductDetail() {
   };
 
   return (
-    <div className=" -mt-px lg:max-w-[1240px] lg:mx-auto lg:px-6 lg:py-6">
+    <div className=" -mt-px lg:max-w-[1240px] lg:mx-auto lg:px-6 lg:py-6 bg-card min-h-screen">
 
       <Helmet>
         <title>{`${product.title} — PUBSTORE`}</title>
