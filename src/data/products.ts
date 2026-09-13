@@ -107,6 +107,24 @@ export type Product = {
   adHasReel?: boolean;
   adHeadline?: string | null;
   adTagline?: string | null;
+  /** Promote & Earn: seller allows other users to promote this product for a commission. */
+  promoteEnabled?: boolean;
+  commissionType?: "percent" | "fixed";
+  commissionValue?: number;
+  commissionReleaseDays?: number;
+  minPromoterLevel?: number;
+};
+
+/** Commission a promoter earns per unit sold, in USD. */
+export const commissionPerUnit = (p: {
+  price: number;
+  commissionType?: "percent" | "fixed";
+  commissionValue?: number;
+}): number => {
+  const value = Number(p.commissionValue ?? 0);
+  if (value <= 0) return 0;
+  const raw = p.commissionType === "fixed" ? value : (Number(p.price) || 0) * (value / 100);
+  return Math.max(0, Math.min(Number(p.price) || 0, Math.round(raw * 100) / 100));
 };
 
 
