@@ -325,7 +325,7 @@ export function drawShopCard(
   ctx.restore();
 
   const btnH = Math.round(84 * k);
-  const copyH = Math.round(190 * k);
+  const copyH = Math.round(236 * k);
   const imgH = Math.max(80, h - copyH - btnH - pad * 2);
 
   if (opts.img) {
