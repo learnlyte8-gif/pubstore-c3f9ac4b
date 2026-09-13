@@ -45,7 +45,7 @@ export default function PromoteProducts() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search products to promote"
-            className="pl-9 rounded-full h-11"
+            className="pl-9 rounded-full h-11 border border-input bg-background shadow-sm"
           />
         </div>
 

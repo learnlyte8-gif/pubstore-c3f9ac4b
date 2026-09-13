@@ -10,7 +10,7 @@ import type { Profile } from '@/types';
 
 type RouteName =
   | 'Orders' | 'Wallet' | 'Notifications' | 'Account' | 'Addresses' | 'PaymentMethods'
-  | 'Verification' | 'HelpCenter' | 'Settings' | 'Privacy' | 'MyStore' | 'Wishlist';
+  | 'Verification' | 'HelpCenter' | 'Settings' | 'Privacy' | 'MyStore' | 'Wishlist' | 'Promote';
 
 const ROWS: { icon: string; label: string; route: RouteName }[] = [
   { icon: 'receipt-outline', label: 'Orders', route: 'Orders' },
@@ -18,6 +18,7 @@ const ROWS: { icon: string; label: string; route: RouteName }[] = [
   { icon: 'wallet-outline', label: 'Wallet', route: 'Wallet' },
   { icon: 'notifications-outline', label: 'Notifications', route: 'Notifications' },
   { icon: 'storefront-outline', label: 'My store', route: 'MyStore' },
+  { icon: 'megaphone-outline', label: 'Promote & Earn', route: 'Promote' },
   { icon: 'person-outline', label: 'Profile', route: 'Account' },
   { icon: 'location-outline', label: 'Addresses', route: 'Addresses' },
   { icon: 'card-outline', label: 'Payment methods', route: 'PaymentMethods' },
