@@ -26,6 +26,12 @@ import OpenAppBanner from "@/components/OpenAppBanner";
 
 
 
+const TIER_HSL: Record<Tier, string> = {
+  bronze: "30 65% 45%",
+  silver: "215 16% 65%",
+  gold: "43 96% 56%",
+};
+
 let shellNotifChannelNonce = 0;
 
 const makeShellNotifChannelName = (uid: string) => `shell-notif:${uid}:${++shellNotifChannelNonce}`;
@@ -84,9 +90,10 @@ export default function AppShell() {
   const { info: tierInfo } = useMyTier();
   const { balance, userId: walletUserId } = useWallet();
   const tier: Tier = tierInfo?.buyer_tier ?? "bronze";
-  
+  const headerGradient = `linear-gradient(135deg, hsl(var(--primary) / 0.45) 0%, hsl(var(--card)) 55%, hsl(${TIER_HSL[tier]} / 0.65) 100%)`;
+
   const countryCode = useCountryCode();
-  const headerGradient = undefined;
+
 
   // Match the phone status bar to the header's top-left color (primary @ 0.45 over background).
   useEffect(() => {
@@ -147,7 +154,7 @@ export default function AppShell() {
       <OpenAppBanner />
 
       {/* Top bar — solid, elevated */}
-      <header className="sticky top-0 z-40 bg-card safe-top shadow-[0_8px_32px_-8px_hsl(0_0%_0%_/_0.18),0_2px_8px_-2px_hsl(0_0%_0%_/_0.10)]">
+      <header className="sticky top-0 z-40 bg-card safe-top shadow-[0_8px_32px_-8px_hsl(0_0%_0%_/_0.18),0_2px_8px_-2px_hsl(0_0%_0%_/_0.10)]" style={{ backgroundImage: headerGradient }}>
         <div className="max-w-2xl lg:max-w-[1600px] mx-auto px-3 lg:px-6 pt-1.5 pb-2 flex flex-col gap-2" data-tier={tier}>
           {/* Row 1: brand + Tapson + action icons */}
           <div className="h-10 flex items-center gap-2">
