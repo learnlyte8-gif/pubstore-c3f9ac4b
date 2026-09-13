@@ -1297,6 +1297,7 @@ function EditProductView({ productId }: { productId: string }) {
     moq: "1", unit: "piece", lead_time: "", ship_from: "",
     category_slug: "electronics", free_shipping: false, active: true,
     video_url: "",
+    promote_enabled: false, commission_type: "percent", commission_value: "10", commission_release_days: "7",
   });
   const [gallery, setGallery] = useState<string[]>([]);
   const [newFiles, setNewFiles] = useState<File[]>([]);
