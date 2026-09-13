@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft, Heart, Share2, Star, Truck, ShieldCheck, Minus, Plus, MessageCircle, ShoppingCart, Store, Globe, Package,
+  ArrowLeft, Heart, Share2, Star, Truck, ShieldCheck, Minus, Plus, MessageCircle, ShoppingCart, Store, Globe, Package, Megaphone,
 } from "lucide-react";
 import { toast } from "sonner";
-import { tierPriceFor, discountPct, type Product } from "@/data/products";
+import { tierPriceFor, discountPct, commissionPerUnit, type Product } from "@/data/products";
 import { useProduct, useSupplier, useTierPrices, useReviews, useProducts } from "@/hooks/useCatalog";
 import { useShop } from "@/store/shop";
 import { Button } from "@/components/ui/button";
