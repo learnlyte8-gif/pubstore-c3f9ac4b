@@ -1601,7 +1601,11 @@ function NewProductView() {
         category_slug: form.category_slug,
         free_shipping: form.free_shipping,
         active: true,
-      }).select().single();
+        promote_enabled: form.promote_enabled,
+        commission_type: form.commission_type,
+        commission_value: Number(form.commission_value) || 0,
+        commission_release_days: Number(form.commission_release_days) || 7,
+      } as any).select().single();
       if (error) throw error;
 
       toast.success("Product published 🎉");
