@@ -434,6 +434,102 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
   const rowTop = H - pad - 60 - rowH;
   const marketplaceReserve = vertical ? 380 : 300;
 
+  // Drag-and-drop nudges from the editor: every element can be moved freely.
+  const off = (key: string) => ad.offsets?.[key] ?? { dx: 0, dy: 0 };
+  const at = (key: string, fn: () => void) => {
+    const o = off(key);
+    ctx.save();
+    ctx.translate(o.dx, o.dy);
+    try { fn(); } finally { ctx.restore(); }
+  };
+  const brandFooter = (colour: string) =>
+    at("brand", () => {
+      ctx.fillStyle = colour;
+      ctx.font = `700 38px ${AD_FONT}`;
+      ctx.textBaseline = "top";
+      ctx.fillText((ad.brand ?? "PUBSTORE").toUpperCase(), pad, H - pad - 34);
+    });
+  const searchBar = () => at("searchbar", () => drawSearchBar(ctx, pad, barY, W - pad * 2, barH, s.accent));
+
+  // --- Shop-card templates: pixel-for-pixel like the store's product cards ---
+  if (s.layout === "product-card" || s.layout === "product-card-multi") {
+    const multi = s.layout === "product-card-multi";
+    const headline = (ad.headline ?? "").trim();
+
+    let top = contentTop;
+    if (multi) {
+      at("headline", () => {
+        ctx.textBaseline = "top";
+        ctx.fillStyle = s.text;
+        ctx.font = `800 ${vertical ? 72 : 60}px ${AD_FONT}`;
+        let hy = contentTop;
+        for (const line of wrap(ctx, headline, W - pad * 2, 2)) {
+          ctx.fillText(line, pad, hy);
+          hy += (vertical ? 72 : 60) * 1.16;
+        }
+      });
+      ctx.font = `800 ${vertical ? 72 : 60}px ${AD_FONT}`;
+      top = contentTop + wrap(ctx, headline, W - pad * 2, 2).length * (vertical ? 72 : 60) * 1.16 + 8;
+      if (ad.subhead) {
+        at("subhead", () => {
+          ctx.fillStyle = sub;
+          ctx.font = `500 34px ${AD_FONT}`;
+          ctx.fillText(wrap(ctx, ad.subhead!, W - pad * 2, 1)[0] ?? "", pad, top);
+        });
+        top += 50;
+      }
+      top += 14;
+
+      const gap = 22;
+      const cols = 2;
+      const rows = vertical ? 3 : 2;
+      const cardW = (W - pad * 2 - gap) / cols;
+      const cardH = (H - top - pad - 60 - gap * (rows - 1)) / rows;
+      at("art", () => {
+        for (let i = 0; i < cols * rows; i++) {
+          drawShopCard(ctx, {
+            img: images.length ? images[i % images.length] : null,
+            x: pad + (i % cols) * (cardW + gap),
+            y: top + Math.floor(i / cols) * (cardH + gap),
+            w: cardW,
+            h: cardH,
+            title: headline || "Pubstore pick",
+            sub: ad.subhead,
+            badge: i === 0 ? ad.badge : null,
+            price: ad.price,
+            originalPrice: ad.originalPrice,
+            accent: s.accent,
+            cta: ad.cta ?? "Add to cart",
+            compact: true,
+          });
+        }
+      });
+    } else {
+      const cardW = W - pad * 2;
+      const cardH = Math.min(H - top - pad - 80, vertical ? 1420 : 860);
+      at("art", () => {
+        drawShopCard(ctx, {
+          img: images[0] ?? null,
+          x: pad,
+          y: top + (vertical ? 40 : 0),
+          w: cardW,
+          h: cardH,
+          title: headline || "Pubstore pick",
+          sub: ad.subhead,
+          badge: ad.badge,
+          price: ad.price,
+          originalPrice: ad.originalPrice,
+          accent: s.accent,
+          cta: ad.cta ?? "Add to cart",
+        });
+      });
+    }
+
+    searchBar();
+    brandFooter(isLightBg(s.bg) ? "rgba(15,23,42,0.55)" : "rgba(255,255,255,0.7)");
+    return canvas;
+  }
+
   if (catalog) {
     // Dark headline band, then a grid of marketplace product cards
     const bandH = vertical ? 300 : 240;
@@ -463,32 +559,35 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
     const rows = vertical ? 3 : 2;
     const cardW = (W - pad * 2 - gap) / cols;
     const cardH = (H - gridTop - pad - 70 - gap * (rows - 1)) / rows;
-    for (let i = 0; i < cols * rows; i++) {
-      const tile = images.length ? images[i % images.length] : null;
-      drawProductCard(ctx, {
-        img: tile,
-        x: pad + (i % cols) * (cardW + gap),
-        y: gridTop + Math.floor(i / cols) * (cardH + gap),
-        w: cardW,
-        h: cardH,
-        title: (ad.headline ?? "Pubstore pick").slice(0, 26),
-        sub: (ad.subhead ?? "").slice(0, 30),
-        price: ad.price,
-        accent: s.accent,
-        cta: ad.cta ?? "BUY",
-      });
-    }
+    at("art", () => {
+      for (let i = 0; i < cols * rows; i++) {
+        const tile = images.length ? images[i % images.length] : null;
+        drawProductCard(ctx, {
+          img: tile,
+          x: pad + (i % cols) * (cardW + gap),
+          y: gridTop + Math.floor(i / cols) * (cardH + gap),
+          w: cardW,
+          h: cardH,
+          title: (ad.headline ?? "Pubstore pick").slice(0, 26),
+          sub: (ad.subhead ?? "").slice(0, 30),
+          price: ad.price,
+          accent: s.accent,
+          cta: ad.cta ?? "BUY",
+        });
+      }
+    });
 
-    drawSearchBar(ctx, pad, barY, W - pad * 2, barH, s.accent);
-    ctx.fillStyle = "rgba(255,255,255,0.8)";
-    ctx.font = `700 34px ${AD_FONT}`;
-    ctx.textBaseline = "top";
-    ctx.fillText((ad.brand ?? "PUBSTORE").toUpperCase(), pad, H - pad - 4);
+    searchBar();
+    brandFooter("rgba(255,255,255,0.8)");
     return canvas;
   }
 
   // Gallery artwork must stop here so headline, subhead, price and CTA all fit below it.
   const artworkMaxY = rowTop - (vertical ? 260 : 200);
+
+  const artOffset = off("art");
+  ctx.save();
+  ctx.translate(artOffset.dx, artOffset.dy);
 
   if (s.layout === "hero-five" && images.length) {
     const thumbGap = 12;
@@ -580,6 +679,8 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
     textBottom = contentTop + boxH + 28;
   }
 
+  ctx.restore();
+
   // Copy area: starts under the artwork, and must end before the price/CTA row
   const marketplace = s.layout === "marketplace";
   let copyTop = marketplace ? contentTop : overlayCopy ? Math.max(contentTop + 80, 240) : textBottom;
@@ -590,12 +691,15 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
     ctx.font = `700 40px ${AD_FONT}`;
     const tw = ctx.measureText(ad.badge.toUpperCase()).width;
     const by = marketplace ? contentTop : contentTop + 20;
-    ctx.fillStyle = s.accent;
-    roundRect(ctx, pad, by, tw + 56, 76, 38);
-    ctx.fill();
-    ctx.fillStyle = "#0b1020";
-    ctx.textBaseline = "middle";
-    ctx.fillText(ad.badge.toUpperCase(), pad + 28, by + 39);
+    at("badge", () => {
+      ctx.fillStyle = s.accent;
+      roundRect(ctx, pad, by, tw + 56, 76, 38);
+      ctx.fill();
+      ctx.fillStyle = "#0b1020";
+      ctx.textBaseline = "middle";
+      ctx.font = `700 40px ${AD_FONT}`;
+      ctx.fillText(ad.badge!.toUpperCase(), pad + 28, by + 39);
+    });
     if (marketplace) copyTop = by + 76 + 18;
   }
 
@@ -632,59 +736,70 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
   }
 
   let y = copyTop;
-  ctx.fillStyle = textColor;
-  ctx.font = `800 ${hlSize}px ${AD_FONT}`;
-  for (const line of hlLines) {
-    if (y + hlSize * 1.16 > copyMaxY + hlSize * 0.2) break;
-    ctx.fillText(line, pad, y);
-    y += hlSize * 1.16;
-  }
+  at("headline", () => {
+    ctx.fillStyle = textColor;
+    ctx.font = `800 ${hlSize}px ${AD_FONT}`;
+    let hy = y;
+    for (const line of hlLines) {
+      if (hy + hlSize * 1.16 > copyMaxY + hlSize * 0.2) break;
+      ctx.fillText(line, pad, hy);
+      hy += hlSize * 1.16;
+    }
+  });
+  y += hlLines.length * hlSize * 1.16;
 
   if (subSize && subLines.length) {
     y += 12;
-    ctx.fillStyle = sub;
-    ctx.font = `500 ${subSize}px ${AD_FONT}`;
-    for (const line of subLines) {
-      if (y + subSize * 1.3 > copyMaxY + subSize * 0.3) break;
-      ctx.fillText(line, pad, y);
-      y += subSize * 1.3;
-    }
+    at("subhead", () => {
+      ctx.fillStyle = sub;
+      ctx.font = `500 ${subSize}px ${AD_FONT}`;
+      let sy = y;
+      for (const line of subLines) {
+        if (sy + subSize * 1.3 > copyMaxY + subSize * 0.3) break;
+        ctx.fillText(line, pad, sy);
+        sy += subSize * 1.3;
+      }
+    });
   }
 
   const baseY = rowTop;
 
   if (ad.price != null) {
-    ctx.fillStyle = s.accent;
-    ctx.font = `800 92px ${AD_FONT}`;
-    ctx.fillText(money(ad.price), pad, baseY);
-    const pw = ctx.measureText(money(ad.price)).width;
-    if (ad.originalPrice && Number(ad.originalPrice) > Number(ad.price)) {
-      ctx.fillStyle = sub;
-      ctx.font = `600 50px ${AD_FONT}`;
-      const ow = ctx.measureText(money(ad.originalPrice)).width;
-      const ox = pad + pw + 32;
-      ctx.fillText(money(ad.originalPrice), ox, baseY + 38);
-      ctx.strokeStyle = sub;
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.moveTo(ox, baseY + 64);
-      ctx.lineTo(ox + ow, baseY + 64);
-      ctx.stroke();
-    }
+    at("price", () => {
+      ctx.fillStyle = s.accent;
+      ctx.font = `800 92px ${AD_FONT}`;
+      ctx.fillText(money(ad.price), pad, baseY);
+      const pw = ctx.measureText(money(ad.price)).width;
+      if (ad.originalPrice && Number(ad.originalPrice) > Number(ad.price)) {
+        ctx.fillStyle = sub;
+        ctx.font = `600 50px ${AD_FONT}`;
+        const ow = ctx.measureText(money(ad.originalPrice)).width;
+        const ox = pad + pw + 32;
+        ctx.fillText(money(ad.originalPrice), ox, baseY + 38);
+        ctx.strokeStyle = sub;
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(ox, baseY + 64);
+        ctx.lineTo(ox + ow, baseY + 64);
+        ctx.stroke();
+      }
+    });
   }
 
   if (ad.cta) {
-    ctx.font = `700 44px ${AD_FONT}`;
-    const cw = ctx.measureText(ad.cta).width + 88;
-    const cx = W - pad - cw;
-    const cy = baseY + 6;
-    ctx.fillStyle = s.accent;
-    roundRect(ctx, cx, cy, cw, 92, 46);
-    ctx.fill();
-    ctx.fillStyle = "#0b1020";
-    ctx.textBaseline = "middle";
-    ctx.fillText(ad.cta, cx + 44, cy + 48);
-    ctx.textBaseline = "top";
+    at("cta", () => {
+      ctx.font = `700 44px ${AD_FONT}`;
+      const cw = ctx.measureText(ad.cta!).width + 88;
+      const cx = W - pad - cw;
+      const cy = baseY + 6;
+      ctx.fillStyle = s.accent;
+      roundRect(ctx, cx, cy, cw, 92, 46);
+      ctx.fill();
+      ctx.fillStyle = "#0b1020";
+      ctx.textBaseline = "middle";
+      ctx.fillText(ad.cta!, cx + 44, cy + 48);
+      ctx.textBaseline = "top";
+    });
   }
 
   if (galleryLayout) {
@@ -696,15 +811,18 @@ export async function renderAdCreative(ad: AdCreative): Promise<HTMLCanvasElemen
     ctx.stroke();
   }
 
-  drawSearchBar(ctx, pad, barY, W - pad * 2, barH, s.accent);
-
-  // Brand footer
-  ctx.fillStyle = light ? "rgba(15,23,42,0.55)" : "rgba(255,255,255,0.65)";
-  ctx.font = `700 38px ${AD_FONT}`;
-  ctx.fillText((ad.brand ?? "PUBSTORE").toUpperCase(), pad, H - pad - 34);
+  searchBar();
+  brandFooter(light ? "rgba(15,23,42,0.55)" : "rgba(255,255,255,0.65)");
 
   return canvas;
 }
+
+/** True when a hex background is light enough to need dark text. */
+function isLightBg(hex: string) {
+  const [r, g, b] = parseHex(hex);
+  return (r * 299 + g * 587 + b * 114) / 1000 > 150;
+}
+
 
 export async function adCreativeDataUrl(ad: AdCreative): Promise<string> {
   const canvas = await renderAdCreative(ad);
