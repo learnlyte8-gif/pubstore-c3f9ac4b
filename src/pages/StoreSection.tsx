@@ -1741,6 +1741,24 @@ function NewProductView() {
         <input type="checkbox" checked={form.free_shipping} onChange={(e) => setForm({ ...form, free_shipping: e.target.checked })} />
         Free shipping
       </label>
+      <div className="rounded-xl border p-3 space-y-3">
+        <label className="flex items-center gap-2 text-sm font-semibold">
+          <input type="checkbox" checked={form.promote_enabled} onChange={(e) => setForm({ ...form, promote_enabled: e.target.checked })} />
+          Let promoters earn commission on this product
+        </label>
+        {form.promote_enabled && (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <select value={form.commission_type} onChange={(e) => setForm({ ...form, commission_type: e.target.value })} className="w-full h-12 rounded-xl border bg-background px-4 text-sm">
+                <option value="percent">Percent of price</option>
+                <option value="fixed">Fixed amount</option>
+              </select>
+              <input value={form.commission_value} onChange={(e) => setForm({ ...form, commission_value: e.target.value })} placeholder={form.commission_type === "percent" ? "e.g. 10 (%)" : "e.g. 5.00 ($)"} type="number" step="0.01" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+            </div>
+            <input value={form.commission_release_days} onChange={(e) => setForm({ ...form, commission_release_days: e.target.value })} placeholder="Days after delivery before payout" type="number" className="w-full h-12 rounded-xl border bg-background px-4 text-sm" />
+          </>
+        )}
+      </div>
       <Button type="submit" disabled={submitting} className="w-full h-12">
         {submitting ? <><CircleSpinner size={16} className="mr-2" /> Publishing…</> : "Publish product"}
       </Button>
