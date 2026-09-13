@@ -188,6 +188,8 @@ export default function PromoteProduct() {
               </div>
             </div>
 
+            <PromoterAdStudio product={product} />
+
             <div className="rounded-2xl border bg-muted/40 p-3 text-[11px] text-muted-foreground leading-relaxed">
               Share honestly: use the real price and photos shown here, never claim to be PUBSTORE or the seller, and don't spam.
               Buying through your own link earns nothing, and commissions are reversed if the order is refunded.
