@@ -91,7 +91,7 @@ export default function AppShell() {
   const tier: Tier = tierInfo?.buyer_tier ?? "bronze";
   const tierHsl = TIER_HSL[tier];
   const countryCode = useCountryCode();
-  const headerGradient = `linear-gradient(135deg, hsl(var(--primary) / 0.45) 0%, hsl(var(--background)) 55%, hsl(${tierHsl} / 0.65) 100%)`;
+  const headerGradient = undefined;
 
   // Match the phone status bar to the header's top-left color (primary @ 0.45 over background).
   useEffect(() => {
