@@ -176,6 +176,11 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
                 <Route path="/settings/notifications" element={<NotificationPreferences />} />
                 <Route path="/wallet" element={<Wallet />} />
+                <Route path="/promote" element={<PromoteProducts />} />
+                <Route path="/promote/product/:id" element={<PromoteProduct />} />
+                <Route path="/promote/links" element={<PromoteLinks />} />
+                <Route path="/promote/earnings" element={<PromoteEarnings />} />
+                <Route path="/x/:code" element={<PromoteRedirect />} />
                 <Route path="/ai-credits" element={<AiCredits />} />
                 <Route path="/verification" element={<Verification />} />
                 <Route path="/news" element={<News />} />
