@@ -312,7 +312,7 @@ export function drawShopCard(
   },
 ) {
   const { x, y, w, h, accent } = opts;
-  const k = opts.compact ? w / 480 : w / 900; // scale type with the card width
+  const k = opts.compact ? w / 620 : w / 900; // scale type with the card width
   const pad = Math.round(26 * k * (opts.compact ? 1 : 1));
 
   ctx.save();
