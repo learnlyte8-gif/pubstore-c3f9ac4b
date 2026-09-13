@@ -92,6 +92,7 @@ export default function StoreSection() {
           {key === "orders" && <OrdersView />}
           {key === "analytics" && <AnalyticsView />}
           {key === "promote" && <PromoteView />}
+          {key === "promoted-sales" && <PromotedSalesView />}
           {key === "reviews" && <ReviewsView />}
           {key === "shipping" && <ShippingView />}
           {key === "profile" && <ProfileView />}
