@@ -417,8 +417,22 @@ export default function Cart() {
       if (payMethod === "wallet" || payMethod === "cod") {
         const created = await createOrders(user.id, "placed");
         if (payMethod === "wallet") {
-          for (const o of created) {
-            await payOrder(o.id);
+          const paid: string[] = [];
+          try {
+            for (const o of created) {
+              await payOrder(o.id);
+              paid.push(o.id);
+            }
+          } catch (payErr) {
+            // Payment failed — never leave unpaid "placed" orders behind.
+            const unpaid = created.filter((o) => !paid.includes(o.id)).map((o) => o.id);
+            if (unpaid.length) {
+              await supabase.from("orders").update({ status: "cancelled" as any }).in("id", unpaid);
+            }
+            toast.error("Payment could not be completed", {
+              description: await getEdgeFunctionErrorMessage(payErr, "Nothing was charged. Please try again."),
+            });
+            return;
           }
         }
         await clearCart();
@@ -426,6 +440,7 @@ export default function Cart() {
         navigate("/orders");
         return;
       }
+
 
 
       // Real-money flows: orders are first created as awaiting_payment
