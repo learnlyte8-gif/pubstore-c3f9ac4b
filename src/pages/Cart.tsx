@@ -656,6 +656,17 @@ export default function Cart() {
                     );
                   })}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const msg = `Hi ${supplierName}, I'd like to negotiate delivery for my order (${group?.items.length ?? 0} item${(group?.items.length ?? 0) === 1 ? "" : "s"}, ${fmt(group?.subtotal ?? 0)}). Where can you deliver and how much would delivery cost?`;
+                    navigate(`/messages?supplier=${sid}&prefill=${encodeURIComponent(msg)}`);
+                  }}
+                  className="mt-2 w-full h-9 rounded-full bg-muted text-[11px] font-bold flex items-center justify-center gap-1.5 hover:bg-muted/70"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" /> Negotiate delivery with seller
+                </button>
+
               </div>
             );
           })}
