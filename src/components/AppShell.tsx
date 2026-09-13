@@ -81,6 +81,7 @@ export default function AppShell() {
   const { chatsWithUnread } = useUnreadChats();
   const location = useLocation();
   useStatusBarSync();
+  const headerGradient = `linear-gradient(135deg, hsl(var(--primary) / 0.45) 0%, hsl(var(--card)) 55%, hsl(${TIER_HSL[tier]} / 0.65) 100%)`;
   const { info: tierInfo } = useMyTier();
   const { balance, userId: walletUserId } = useWallet();
   const tier: Tier = tierInfo?.buyer_tier ?? "bronze";
