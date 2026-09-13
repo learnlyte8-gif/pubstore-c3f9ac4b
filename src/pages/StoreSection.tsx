@@ -1552,6 +1552,7 @@ function NewProductView() {
     moq: "1", unit: "piece", lead_time: "7-15 days", ship_from: "",
     category_slug: "electronics", free_shipping: false,
     video_url: "",
+    promote_enabled: false, commission_type: "percent", commission_value: "10", commission_release_days: "7",
   });
   const { data: cats = [] } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
 
