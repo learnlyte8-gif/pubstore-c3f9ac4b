@@ -142,9 +142,11 @@ export default function AppShell() {
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
+      if (s) claimPromoterAttribution();
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      if (session) claimPromoterAttribution();
     });
     return () => sub.subscription.unsubscribe();
   }, []);
