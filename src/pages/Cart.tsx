@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import CircleSpinner from "@/components/CircleSpinner";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, MapPin, Tag, X, CheckCircle2, Wallet, Smartphone, CreditCard, Banknote, ShieldCheck, Loader2, Truck, BadgeCheck } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, MapPin, Tag, X, CheckCircle2, Wallet, Smartphone, CreditCard, Banknote, ShieldCheck, Loader2, Truck, BadgeCheck, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { useShop } from "@/store/shop";
 import { Button } from "@/components/ui/button";
@@ -417,8 +417,22 @@ export default function Cart() {
       if (payMethod === "wallet" || payMethod === "cod") {
         const created = await createOrders(user.id, "placed");
         if (payMethod === "wallet") {
-          for (const o of created) {
-            await payOrder(o.id);
+          const paid: string[] = [];
+          try {
+            for (const o of created) {
+              await payOrder(o.id);
+              paid.push(o.id);
+            }
+          } catch (payErr) {
+            // Payment failed — never leave unpaid "placed" orders behind.
+            const unpaid = created.filter((o) => !paid.includes(o.id)).map((o) => o.id);
+            if (unpaid.length) {
+              await supabase.from("orders").update({ status: "cancelled" as any }).in("id", unpaid);
+            }
+            toast.error("Payment could not be completed", {
+              description: await getEdgeFunctionErrorMessage(payErr, "Nothing was charged. Please try again."),
+            });
+            return;
           }
         }
         await clearCart();
@@ -426,6 +440,7 @@ export default function Cart() {
         navigate("/orders");
         return;
       }
+
 
 
       // Real-money flows: orders are first created as awaiting_payment
@@ -641,6 +656,17 @@ export default function Cart() {
                     );
                   })}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const msg = `Hi ${supplierName}, I'd like to negotiate delivery for my order (${group?.items.length ?? 0} item${(group?.items.length ?? 0) === 1 ? "" : "s"}, ${fmt(group?.subtotal ?? 0)}). Where can you deliver and how much would delivery cost?`;
+                    navigate(`/messages?supplier=${sid}&prefill=${encodeURIComponent(msg)}`);
+                  }}
+                  className="mt-2 w-full h-9 rounded-full bg-muted text-[11px] font-bold flex items-center justify-center gap-1.5 hover:bg-muted/70"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" /> Negotiate delivery with seller
+                </button>
+
               </div>
             );
           })}
