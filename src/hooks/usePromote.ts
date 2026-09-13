@@ -113,10 +113,13 @@ export function usePromotableProducts(sort: PromoteSort = "earning", search = ""
         .eq("active", true)
         .gt("commission_value", 0)
         .limit(60);
-      if (search.trim()) q = q.ilike("title", `%${search.trim()}%`);
+      const searching = !!search.trim();
+      if (searching) q = q.ilike("title", `%${search.trim()}%`);
       if (category) q = q.eq("category_slug", category);
 
-      if (sort === "new") q = q.order("created_at", { ascending: false });
+      // Match the admin ads studio: while searching, always show newest first.
+      if (searching) q = q.order("created_at", { ascending: false });
+      else if (sort === "new") q = q.order("created_at", { ascending: false });
       else if (sort === "trending") q = q.order("sold", { ascending: false });
       else if (sort === "converting") q = q.order("review_count", { ascending: false });
       else if (sort === "deals") q = q.order("original_price", { ascending: false, nullsFirst: false });
@@ -125,7 +128,7 @@ export function usePromotableProducts(sort: PromoteSort = "earning", search = ""
       const { data, error } = await q;
       if (error) throw error;
       const mapped = (data ?? []).map((p: any) => mapProduct(p));
-      if (sort === "earning") {
+      if (sort === "earning" && !searching) {
         return mapped.sort((a, b) => {
           const ca = a.commissionType === "fixed" ? (a.commissionValue ?? 0) : a.price * ((a.commissionValue ?? 0) / 100);
           const cb = b.commissionType === "fixed" ? (b.commissionValue ?? 0) : b.price * ((b.commissionValue ?? 0) / 100);

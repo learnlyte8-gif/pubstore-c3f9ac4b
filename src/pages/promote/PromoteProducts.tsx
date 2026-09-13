@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Search, TrendingUp, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -10,8 +10,14 @@ import { money } from "@/lib/promote";
 export default function PromoteProducts() {
   const [sort, setSort] = useState<PromoteSort>("earning");
   const [search, setSearch] = useState("");
+  const [debounced, setDebounced] = useState("");
+  // Same live-search feel as the admin ads studio: results update as you type.
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
   const { profile, userId } = usePromoterProfile();
-  const { data: products, isLoading } = usePromotableProducts(sort, search);
+  const { data: products, isLoading } = usePromotableProducts(sort, debounced);
 
   return (
     <div className="pb-24 lg:pb-10">
