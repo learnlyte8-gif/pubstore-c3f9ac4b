@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { ConsolePage, Card, Field, SkeletonList, Empty, StatusBadge, fmt } from "@/components/admin/ui";
 import { aiFunctionHeaders } from "@/lib/aiAuth";
 import { ensureUploadIdentity } from "@/lib/uploadAuth";
-import { adCreativeDataUrl, downloadAdCreative, type AdStyle } from "@/lib/adCreative";
+import { adCreativeDataUrl, downloadAdCreative, type AdStyle, type AdOffsets } from "@/lib/adCreative";
+import AdLayoutEditor from "@/components/admin/AdLayoutEditor";
 import { downloadAdVideo } from "@/lib/adVideo";
 
 const sb = supabase as any;
