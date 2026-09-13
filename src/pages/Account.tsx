@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Package, MapPin, CreditCard, Heart, MessageCircle, Store, Settings, HelpCircle, Shield, ShieldCheck, LogOut, ChevronRight,
-  Wallet, Plus, ArrowUpRight, Sparkles, Pencil, type LucideIcon,
+  Wallet, Plus, ArrowUpRight, Sparkles, Pencil, Megaphone, type LucideIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -256,6 +256,7 @@ export default function Account() {
         <Section title="Account">
           <Row icon={Wallet} label="PUBSTORE Pay" hint={`${fmt(balance)} available`} to="/wallet" />
           <Row icon={Sparkles} label="AI credits & plans" hint="Tapson, AI ads, smart search" to="/ai-credits" />
+          <Row icon={Megaphone} label="Promote & Earn" hint="Share products and earn commission" to="/promote" />
 
           <Row icon={MapPin} label="Addresses" hint={profile?.address || "Add address"} to="/addresses" />
           <Row icon={CreditCard} label="Payment methods" hint="Cards, wallets" to="/payment-methods" />
