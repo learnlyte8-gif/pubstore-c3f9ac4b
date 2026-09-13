@@ -460,6 +460,7 @@ const RAIL_SECTIONS: { title: string; items: RailItem[] }[] = [
   {
     title: "Work & Money",
     items: [
+      { to: "/promote", label: "Promote & Earn", icon: Megaphone, hint: "Earn by sharing" },
       { to: "/jobs", label: "Jobs", icon: Briefcase, hint: "Find work" },
       { to: "/finance", label: "Finance", icon: Landmark, hint: "Loans & wallet" },
       { to: "/news", label: "News", icon: Newspaper, hint: "Today's stories" },
