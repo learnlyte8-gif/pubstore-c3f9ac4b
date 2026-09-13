@@ -360,6 +360,11 @@ export const mapProduct = (p: DbProduct | DbProductWithSupplier): Product => {
     adHasReel: !!p.ad_has_reel,
     adHeadline: p.ad_headline ?? null,
     adTagline: p.ad_tagline ?? null,
+    promoteEnabled: !!p.promote_enabled,
+    commissionType: (p.commission_type as "percent" | "fixed") ?? "percent",
+    commissionValue: Number(p.commission_value ?? 0),
+    commissionReleaseDays: p.commission_release_days ?? 7,
+    minPromoterLevel: p.min_promoter_level ?? 1,
   };
 };
 
