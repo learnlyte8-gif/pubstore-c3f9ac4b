@@ -239,6 +239,9 @@ type DbSupplier = {
   trade_type?: string | null;
   export_countries?: string[] | null;
   verticals?: string[] | null;
+  collection_point_images?: string[] | null;
+  collection_point_address?: string | null;
+  delivery_note?: string | null;
 };
 
 type DbProduct = {
