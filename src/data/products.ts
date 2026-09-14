@@ -309,6 +309,9 @@ export const mapSupplier = (s: DbSupplier): Supplier => ({
   tradeType: ((s.trade_type as Supplier["tradeType"]) ?? "both"),
   exportCountries: (s.export_countries ?? []) as string[],
   verticals: (s.verticals ?? []) as string[],
+  collectionPointImages: (s.collection_point_images ?? []) as string[],
+  collectionPointAddress: s.collection_point_address ?? null,
+  deliveryNote: s.delivery_note ?? null,
 });
 
 type DbProductWithSupplier = DbProduct & {
