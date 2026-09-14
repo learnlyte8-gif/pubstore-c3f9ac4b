@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CheckCircle2, Circle, ChevronRight, Briefcase, Tag, ShieldCheck, Sparkles } from "lucide-react";
+import { CheckCircle2, Circle, ChevronRight, Briefcase, Tag, ShieldCheck, Sparkles, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Supplier } from "@/data/products";
 import type { VerificationStatus } from "@/hooks/useVerification";
@@ -27,6 +27,8 @@ export function buildOnboardingSteps(
     email?: string | null;
     categories?: string[];
     onboarding_completed_at?: string | null;
+    collectionPointImages?: string[];
+    deliveryNote?: string | null;
   }) | null,
   verification: VerificationStatus,
 ): OnboardingStep[] {
@@ -38,6 +40,8 @@ export function buildOnboardingSteps(
     (supplier?.phone || supplier?.email)
   );
   const categoriesDone = (supplier?.categories?.length ?? 0) > 0;
+  const collectionImages = supplier?.collectionPointImages?.length ?? 0;
+  const collectionDone = collectionImages > 0 && !!supplier?.deliveryNote?.trim();
   const verificationDone = verification === "approved";
 
   return [
@@ -56,6 +60,17 @@ export function buildOnboardingSteps(
       done: categoriesDone,
       to: "/store/profile?step=categories",
       icon: Tag,
+    },
+    {
+      id: "collection",
+      label: "Collection point & delivery",
+      hint: collectionDone
+        ? `${collectionImages} photo${collectionImages === 1 ? "" : "s"} · note added`
+        : collectionImages > 0 ? "Add your delivery note"
+        : "Photos of your pickup spot + delivery note",
+      done: collectionDone,
+      to: "/store/profile?step=collection",
+      icon: MapPin,
     },
     {
       id: "verification",

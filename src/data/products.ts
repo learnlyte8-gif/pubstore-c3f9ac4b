@@ -51,6 +51,10 @@ export type Supplier = {
   onboardingCompletedAt: string | null;
   tradeType: "retail" | "wholesale" | "both";
   exportCountries: string[];
+  /** Photos of where buyers collect orders. */
+  collectionPointImages: string[];
+  collectionPointAddress: string | null;
+  deliveryNote: string | null;
   /** High-level service offerings the supplier provides (shop, agro, stays, …). */
   verticals: string[];
 };
@@ -235,6 +239,9 @@ type DbSupplier = {
   trade_type?: string | null;
   export_countries?: string[] | null;
   verticals?: string[] | null;
+  collection_point_images?: string[] | null;
+  collection_point_address?: string | null;
+  delivery_note?: string | null;
 };
 
 type DbProduct = {
@@ -302,6 +309,9 @@ export const mapSupplier = (s: DbSupplier): Supplier => ({
   tradeType: ((s.trade_type as Supplier["tradeType"]) ?? "both"),
   exportCountries: (s.export_countries ?? []) as string[],
   verticals: (s.verticals ?? []) as string[],
+  collectionPointImages: (s.collection_point_images ?? []) as string[],
+  collectionPointAddress: s.collection_point_address ?? null,
+  deliveryNote: s.delivery_note ?? null,
 });
 
 type DbProductWithSupplier = DbProduct & {

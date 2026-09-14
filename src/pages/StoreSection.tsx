@@ -2474,6 +2474,9 @@ function ProfileView() {
     tradeType: "both" as "retail" | "wholesale" | "both",
     categories: [] as string[],
     verticals: [] as string[],
+    collectionImages: [] as string[],
+    collectionAddress: "",
+    deliveryNote: "",
     manualPayEnabled: false,
     manualPayNumber: "",
     manualPayName: "",
@@ -2483,6 +2486,8 @@ function ProfileView() {
   const [uploading, setUploading] = useState<"logo" | "banner" | null>(null);
   const logoRef = useRef<HTMLInputElement>(null);
   const bannerRef = useRef<HTMLInputElement>(null);
+  const collectionRef = useRef<HTMLInputElement>(null);
+  const [uploadingCollection, setUploadingCollection] = useState(false);
   const { data: cats = [] } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
 
   useEffect(() => {
@@ -2503,6 +2508,9 @@ function ProfileView() {
       tradeType: (supplier.tradeType ?? "both"),
       categories: supplier.categories || [],
       verticals: (supplier as any).verticals || [],
+      collectionImages: (supplier as any).collectionPointImages || [],
+      collectionAddress: (supplier as any).collectionPointAddress || "",
+      deliveryNote: (supplier as any).deliveryNote || "",
       manualPayEnabled: !!(supplier as any).manual_payment_enabled,
       manualPayNumber: (supplier as any).manual_payment_number || "",
       manualPayName: (supplier as any).manual_payment_name || "",
@@ -2582,6 +2590,44 @@ function ProfileView() {
     }));
   };
 
+  const uploadCollectionImages = async (files: FileList) => {
+    if (!supplier) return;
+    setUploadingCollection(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not signed in");
+      const urls: string[] = [];
+      for (const file of Array.from(files).slice(0, 8)) {
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `${user.id}/store/collection-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("product-images").upload(path, file, { upsert: true });
+        if (upErr) throw upErr;
+        urls.push(supabase.storage.from("product-images").getPublicUrl(path).data.publicUrl);
+      }
+      const next = [...form.collectionImages, ...urls];
+      setForm((f) => ({ ...f, collectionImages: next }));
+      const { error } = await (supabase.from("suppliers") as any)
+        .update({ collection_point_images: next }).eq("id", supplier.id);
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ["my-supplier"] });
+      toast.success("Collection point photos added");
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
+    } finally {
+      setUploadingCollection(false);
+    }
+  };
+
+  const removeCollectionImage = async (url: string) => {
+    if (!supplier) return;
+    const next = form.collectionImages.filter((u) => u !== url);
+    setForm((f) => ({ ...f, collectionImages: next }));
+    const { error } = await (supabase.from("suppliers") as any)
+      .update({ collection_point_images: next }).eq("id", supplier.id);
+    if (error) toast.error(error.message);
+    else qc.invalidateQueries({ queryKey: ["my-supplier"] });
+  };
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supplier) return;
@@ -2597,6 +2643,9 @@ function ProfileView() {
       trade_type: form.tradeType || "both",
       categories: form.categories,
       verticals: form.verticals,
+      collection_point_images: form.collectionImages,
+      collection_point_address: form.collectionAddress || null,
+      delivery_note: form.deliveryNote || null,
       manual_payment_enabled: form.manualPayEnabled,
       manual_payment_number: form.manualPayNumber || null,
       manual_payment_name: form.manualPayName || null,
@@ -2679,6 +2728,70 @@ function ProfileView() {
           lng={form.longitude}
           address={form.locationAddress}
           onChange={handlePin}
+        />
+      </div>
+
+      {/* Collection point */}
+      <div data-step="collection">
+        <p className="text-xs font-bold mb-1 text-muted-foreground uppercase tracking-wide">Collection point</p>
+        <p className="text-[11px] text-muted-foreground mb-2 leading-snug">
+          Add photos of the place buyers or couriers collect orders, so they can find it easily.
+        </p>
+        <div className="grid grid-cols-3 gap-2">
+          {form.collectionImages.map((url) => (
+            <div key={url} className="relative aspect-square rounded-xl overflow-hidden border bg-muted">
+              <img src={url} alt="Collection point" className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => removeCollectionImage(url)}
+                className="absolute top-1 right-1 w-6 h-6 rounded-full bg-background/90 border flex items-center justify-center text-[11px] font-bold"
+                aria-label="Remove photo"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => collectionRef.current?.click()}
+            className="aspect-square rounded-xl border-2 border-dashed border-border bg-muted hover:border-primary transition-colors flex flex-col items-center justify-center text-muted-foreground"
+          >
+            {uploadingCollection ? <CircleSpinner size={20} /> : (
+              <>
+                <ImageIcon className="w-5 h-5 mb-1" />
+                <span className="text-[10px] font-bold">Add photo</span>
+              </>
+            )}
+          </button>
+        </div>
+        <input
+          ref={collectionRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={(e) => e.target.files?.length && uploadCollectionImages(e.target.files)}
+        />
+        <input
+          value={form.collectionAddress}
+          onChange={(e) => setForm({ ...form, collectionAddress: e.target.value })}
+          placeholder="Collection point address / directions"
+          className="w-full h-12 rounded-xl border bg-background px-4 text-sm mt-2"
+        />
+      </div>
+
+      {/* Delivery note */}
+      <div>
+        <p className="text-xs font-bold mb-1 text-muted-foreground uppercase tracking-wide">Delivery note</p>
+        <p className="text-[11px] text-muted-foreground mb-2 leading-snug">
+          Shown to buyers at checkout — delivery times, fees, collection hours or packaging details.
+        </p>
+        <textarea
+          value={form.deliveryNote}
+          onChange={(e) => setForm({ ...form, deliveryNote: e.target.value })}
+          placeholder="e.g. Orders ready for collection within 24h, Mon–Sat 8am–5pm. Delivery in Harare $3."
+          rows={4}
+          className="w-full rounded-xl border bg-background p-4 text-sm"
         />
       </div>
 
