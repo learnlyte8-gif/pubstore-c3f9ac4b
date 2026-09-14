@@ -40,6 +40,8 @@ export function buildOnboardingSteps(
     (supplier?.phone || supplier?.email)
   );
   const categoriesDone = (supplier?.categories?.length ?? 0) > 0;
+  const collectionImages = supplier?.collectionPointImages?.length ?? 0;
+  const collectionDone = collectionImages > 0 && !!supplier?.deliveryNote?.trim();
   const verificationDone = verification === "approved";
 
   return [
