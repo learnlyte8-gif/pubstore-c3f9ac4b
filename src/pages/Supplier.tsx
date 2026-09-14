@@ -66,9 +66,9 @@ export default function Supplier() {
       setFollowerCount((n) => n + 1);
       await supabase.from("followers").insert({ supplier_id: id, user_id: userId });
       if (supplierOwner && supplierOwner !== userId) {
-        await supabase.from("notifications").insert({
-          user_id: supplierOwner, type: "follower",
-          title: "New follower", body: "Someone just followed your store.", link: `/supplier/${id}`,
+        await supabase.rpc("notify_peer", {
+          _user_id: supplierOwner, _type: "follower",
+          _title: "New follower", _body: "Someone just followed your store.", _link: `/supplier/${id}`,
         });
       }
     }

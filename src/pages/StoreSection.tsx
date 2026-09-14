@@ -1799,12 +1799,12 @@ function OrdersView() {
       .update({ status: status as any, updated_at: new Date().toISOString() })
       .eq("id", orderId);
     if (error) { toast.error(error.message); return; }
-    await supabase.from("notifications").insert({
-      user_id: buyerId,
-      title: "Order update",
-      body: `Your order is now ${status}`,
-      type: "order",
-      link: "/orders",
+    await supabase.rpc("notify_peer", {
+      _user_id: buyerId,
+      _title: "Order update",
+      _body: `Your order is now ${status}`,
+      _type: "order",
+      _link: "/orders",
     });
     toast.success(`Order marked ${status}`);
     qc.invalidateQueries({ queryKey: ["store-orders"] });

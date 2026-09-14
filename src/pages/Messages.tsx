@@ -531,7 +531,7 @@ export default function Messages() {
     const otherId = conv?.buyer_id === userId ? conv?.supplier?.owner_id : conv?.buyer_id;
     if (otherId && otherId !== userId) {
       await supabase.from("notifications").insert({
-        user_id: otherId, type: "message", title: "New message",
+        user_id: otherId, conversation_id: activeId, type: "message", title: "New message",
         body: body.length > 80 ? body.slice(0, 80) + "…" : body, link: "/messages",
       });
     }

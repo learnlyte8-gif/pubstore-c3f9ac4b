@@ -95,11 +95,11 @@ export async function sendCartUnlockMessage(opts: {
     .update({ last_message: body, last_message_at: new Date().toISOString() })
     .eq("id", convId);
 
-  await supabase.from("notifications").insert({
-    user_id: buyerId,
-    type: "inquiry_approved",
-    title: "Cart unlocked",
-    body: `You can now add "${(p as any).title}" to your cart.`,
-    link: `/messages?supplier=${supplierId}`,
+  await supabase.rpc("notify_peer", {
+    _user_id: buyerId,
+    _type: "inquiry_approved",
+    _title: "Cart unlocked",
+    _body: `You can now add "${(p as any).title}" to your cart.`,
+    _link: `/messages?supplier=${supplierId}`,
   });
 }
