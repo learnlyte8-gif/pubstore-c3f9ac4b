@@ -2486,6 +2486,8 @@ function ProfileView() {
   const [uploading, setUploading] = useState<"logo" | "banner" | null>(null);
   const logoRef = useRef<HTMLInputElement>(null);
   const bannerRef = useRef<HTMLInputElement>(null);
+  const collectionRef = useRef<HTMLInputElement>(null);
+  const [uploadingCollection, setUploadingCollection] = useState(false);
   const { data: cats = [] } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
 
   useEffect(() => {
