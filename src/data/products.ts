@@ -51,6 +51,10 @@ export type Supplier = {
   onboardingCompletedAt: string | null;
   tradeType: "retail" | "wholesale" | "both";
   exportCountries: string[];
+  /** Photos of where buyers collect orders. */
+  collectionPointImages: string[];
+  collectionPointAddress: string | null;
+  deliveryNote: string | null;
   /** High-level service offerings the supplier provides (shop, agro, stays, …). */
   verticals: string[];
 };
