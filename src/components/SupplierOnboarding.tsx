@@ -62,6 +62,17 @@ export function buildOnboardingSteps(
       icon: Tag,
     },
     {
+      id: "collection",
+      label: "Collection point & delivery",
+      hint: collectionDone
+        ? `${collectionImages} photo${collectionImages === 1 ? "" : "s"} · note added`
+        : collectionImages > 0 ? "Add your delivery note"
+        : "Photos of your pickup spot + delivery note",
+      done: collectionDone,
+      to: "/store/profile?step=collection",
+      icon: MapPin,
+    },
+    {
       id: "verification",
       label: "Identity verification",
       hint:
