@@ -2588,6 +2588,44 @@ function ProfileView() {
     }));
   };
 
+  const uploadCollectionImages = async (files: FileList) => {
+    if (!supplier) return;
+    setUploadingCollection(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not signed in");
+      const urls: string[] = [];
+      for (const file of Array.from(files).slice(0, 8)) {
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `${user.id}/store/collection-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("product-images").upload(path, file, { upsert: true });
+        if (upErr) throw upErr;
+        urls.push(supabase.storage.from("product-images").getPublicUrl(path).data.publicUrl);
+      }
+      const next = [...form.collectionImages, ...urls];
+      setForm((f) => ({ ...f, collectionImages: next }));
+      const { error } = await (supabase.from("suppliers") as any)
+        .update({ collection_point_images: next }).eq("id", supplier.id);
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ["my-supplier"] });
+      toast.success("Collection point photos added");
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
+    } finally {
+      setUploadingCollection(false);
+    }
+  };
+
+  const removeCollectionImage = async (url: string) => {
+    if (!supplier) return;
+    const next = form.collectionImages.filter((u) => u !== url);
+    setForm((f) => ({ ...f, collectionImages: next }));
+    const { error } = await (supabase.from("suppliers") as any)
+      .update({ collection_point_images: next }).eq("id", supplier.id);
+    if (error) toast.error(error.message);
+    else qc.invalidateQueries({ queryKey: ["my-supplier"] });
+  };
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supplier) return;
