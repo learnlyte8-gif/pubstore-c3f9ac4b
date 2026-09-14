@@ -27,6 +27,8 @@ export function buildOnboardingSteps(
     email?: string | null;
     categories?: string[];
     onboarding_completed_at?: string | null;
+    collectionPointImages?: string[];
+    deliveryNote?: string | null;
   }) | null,
   verification: VerificationStatus,
 ): OnboardingStep[] {
