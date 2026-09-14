@@ -6440,9 +6440,12 @@ export type Database = {
           business_type: string | null
           categories: string[]
           city: string | null
+          collection_point_address: string | null
+          collection_point_images: string[]
           country: string | null
           country_code: string | null
           created_at: string
+          delivery_note: string | null
           email: string | null
           export_countries: string[]
           gold: boolean | null
@@ -6481,9 +6484,12 @@ export type Database = {
           business_type?: string | null
           categories?: string[]
           city?: string | null
+          collection_point_address?: string | null
+          collection_point_images?: string[]
           country?: string | null
           country_code?: string | null
           created_at?: string
+          delivery_note?: string | null
           email?: string | null
           export_countries?: string[]
           gold?: boolean | null
@@ -6522,9 +6528,12 @@ export type Database = {
           business_type?: string | null
           categories?: string[]
           city?: string | null
+          collection_point_address?: string | null
+          collection_point_images?: string[]
           country?: string | null
           country_code?: string | null
           created_at?: string
+          delivery_note?: string | null
           email?: string | null
           export_countries?: string[]
           gold?: boolean | null
