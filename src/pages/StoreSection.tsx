@@ -2731,6 +2731,70 @@ function ProfileView() {
         />
       </div>
 
+      {/* Collection point */}
+      <div data-step="collection">
+        <p className="text-xs font-bold mb-1 text-muted-foreground uppercase tracking-wide">Collection point</p>
+        <p className="text-[11px] text-muted-foreground mb-2 leading-snug">
+          Add photos of the place buyers or couriers collect orders, so they can find it easily.
+        </p>
+        <div className="grid grid-cols-3 gap-2">
+          {form.collectionImages.map((url) => (
+            <div key={url} className="relative aspect-square rounded-xl overflow-hidden border bg-muted">
+              <img src={url} alt="Collection point" className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => removeCollectionImage(url)}
+                className="absolute top-1 right-1 w-6 h-6 rounded-full bg-background/90 border flex items-center justify-center text-[11px] font-bold"
+                aria-label="Remove photo"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => collectionRef.current?.click()}
+            className="aspect-square rounded-xl border-2 border-dashed border-border bg-muted hover:border-primary transition-colors flex flex-col items-center justify-center text-muted-foreground"
+          >
+            {uploadingCollection ? <CircleSpinner size={20} /> : (
+              <>
+                <ImageIcon className="w-5 h-5 mb-1" />
+                <span className="text-[10px] font-bold">Add photo</span>
+              </>
+            )}
+          </button>
+        </div>
+        <input
+          ref={collectionRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={(e) => e.target.files?.length && uploadCollectionImages(e.target.files)}
+        />
+        <input
+          value={form.collectionAddress}
+          onChange={(e) => setForm({ ...form, collectionAddress: e.target.value })}
+          placeholder="Collection point address / directions"
+          className="w-full h-12 rounded-xl border bg-background px-4 text-sm mt-2"
+        />
+      </div>
+
+      {/* Delivery note */}
+      <div>
+        <p className="text-xs font-bold mb-1 text-muted-foreground uppercase tracking-wide">Delivery note</p>
+        <p className="text-[11px] text-muted-foreground mb-2 leading-snug">
+          Shown to buyers at checkout — delivery times, fees, collection hours or packaging details.
+        </p>
+        <textarea
+          value={form.deliveryNote}
+          onChange={(e) => setForm({ ...form, deliveryNote: e.target.value })}
+          placeholder="e.g. Orders ready for collection within 24h, Mon–Sat 8am–5pm. Delivery in Harare $3."
+          rows={4}
+          className="w-full rounded-xl border bg-background p-4 text-sm"
+        />
+      </div>
+
       {/* Business details */}
       <div>
         <p className="text-xs font-bold mb-2 text-muted-foreground uppercase tracking-wide">Business details</p>
