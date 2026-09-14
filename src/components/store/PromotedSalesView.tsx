@@ -32,8 +32,8 @@ export default function PromotedSalesView() {
 
   const { data: rows = [], isLoading } = usePromotedSales(supplierId);
 
-  const total = rows.reduce((s: number, r: any) => s + Number(r.amount ?? 0), 0);
-  const paidOut = rows.filter((r: any) => r.status === "paid").reduce((s: number, r: any) => s + Number(r.amount ?? 0), 0);
+  const total = rows.reduce((s: number, r: any) => s + Number(r.commission_amount ?? 0), 0);
+  const paidOut = rows.filter((r: any) => r.status === "paid").reduce((s: number, r: any) => s + Number(r.commission_amount ?? 0), 0);
 
   if (isLoading) return <div className="p-8 text-center"><CircleSpinner size={28} /></div>;
 
@@ -63,7 +63,7 @@ export default function PromotedSalesView() {
                 </p>
               </div>
               <div className="text-right shrink-0">
-                <p className="text-sm font-bold tabular-nums">{money(r.amount)}</p>
+                <p className="text-sm font-bold tabular-nums">{money(r.commission_amount)}</p>
                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${STATUS_STYLE[r.status] ?? "bg-muted"}`}>{r.status}</span>
               </div>
             </div>

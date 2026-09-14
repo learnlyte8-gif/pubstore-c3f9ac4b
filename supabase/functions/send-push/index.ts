@@ -147,7 +147,11 @@ Deno.serve(async (req) => {
       ),
     );
 
-    // Clean up dead subscriptions (404/410)
+    // Clean up unusable subscriptions: gone (404/410) and ones whose VAPID
+    // key pair no longer matches ours (401/403 BadJwtToken/VapidPkHashMismatch
+    // — mostly Apple endpoints created before a key rotation). Keeping those
+    // rows made every future send fail forever; deleting them lets the browser
+    // re-subscribe with the current key on the user's next visit.
     const dead: string[] = [];
     let okCount = 0;
     const errors: Array<{ endpoint: string; status?: number; message?: string; body?: string }> = [];
@@ -158,11 +162,17 @@ Deno.serve(async (req) => {
         const err = r.reason as { statusCode?: number; body?: string; message?: string };
         const endpoint = (subs as SubRow[])[i].endpoint;
         errors.push({ endpoint: endpoint.slice(0, 60), status: err?.statusCode, message: err?.message, body: err?.body });
-        if (err?.statusCode === 404 || err?.statusCode === 410) {
+        const status = err?.statusCode;
+        const reason = String(err?.body ?? "");
+        const staleKey =
+          (status === 401 || status === 403) &&
+          /BadJwtToken|VapidPkHashMismatch|InvalidProviderToken|ExpiredProviderToken|invalid.*(jwt|token|key)/i.test(reason);
+        if (status === 404 || status === 410 || staleKey) {
           dead.push(endpoint);
         }
       }
     });
+
     if (errors.length) console.error("push failures", JSON.stringify(errors));
     if (dead.length) {
       await supabase.from("push_subscriptions").delete().in("endpoint", dead);

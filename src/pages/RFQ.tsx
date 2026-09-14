@@ -453,9 +453,9 @@ function QuoteForm({ rfqId, supplierId, buyerId, onPosted }: { rfqId: string; su
       price_per_unit: price, lead_time: leadTime || null, moq: moq || null, notes: notes || null,
     });
     if (error) { toast.error("Could not submit quote", { description: error.message }); setSubmitting(false); return; }
-    await supabase.from("notifications").insert({
-      user_id: buyerId, type: "rfq_quote", title: "New quote received",
-      body: `A supplier sent you a quote at $${price.toFixed(2)}`, link: "/rfq",
+    await supabase.rpc("notify_peer", {
+      _user_id: buyerId, _type: "rfq_quote", _title: "New quote received",
+      _body: `A supplier sent you a quote at $${price.toFixed(2)}`, _link: "/rfq",
     });
     toast.success("Quote submitted");
     setPrice(0); setLeadTime(""); setMoq(0); setNotes(""); setSubmitting(false);

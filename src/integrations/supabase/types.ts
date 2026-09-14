@@ -7873,6 +7873,16 @@ export type Database = {
         }
         Returns: number
       }
+      notify_peer: {
+        Args: {
+          _body?: string
+          _link?: string
+          _title: string
+          _type: string
+          _user_id: string
+        }
+        Returns: string
+      }
       open_order_dispute: {
         Args: { _order_id: string; _reason: string }
         Returns: {
