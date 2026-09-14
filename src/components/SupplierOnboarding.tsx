@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CheckCircle2, Circle, ChevronRight, Briefcase, Tag, ShieldCheck, Sparkles } from "lucide-react";
+import { CheckCircle2, Circle, ChevronRight, Briefcase, Tag, ShieldCheck, Sparkles, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Supplier } from "@/data/products";
 import type { VerificationStatus } from "@/hooks/useVerification";
