@@ -58,7 +58,9 @@ export default function SocialAuthButtons({
         /* storage unavailable — fall back to the default destination */
       }
       const result = await lovable.auth.signInWithOAuth(provider, {
-        redirect_uri: window.location.origin,
+        // Public same-origin return URL on our own domain; /auth then routes
+        // the confirmed session to onboarding or the saved destination.
+        redirect_uri: `${window.location.origin}/auth`,
       });
       if (result.error) {
         toast.error(result.error.message || "Sign-in was cancelled");
