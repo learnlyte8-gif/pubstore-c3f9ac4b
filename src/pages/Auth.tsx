@@ -50,6 +50,11 @@ export default function Auth() {
   useEffect(() => {
     const isExternalOAuth = redirectTo.startsWith("/.lovable/oauth/");
     const routeForSession = async (uid: string) => {
+      try {
+        sessionStorage.removeItem(POST_OAUTH_REDIRECT_KEY);
+      } catch {
+        /* ignore */
+      }
       // For external OAuth consent flows, always return to the consent URL
       // so the authorization can be completed. Skip onboarding gating.
       if (isExternalOAuth) {
