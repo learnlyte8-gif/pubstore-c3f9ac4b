@@ -69,8 +69,9 @@ export function buildOnboardingSteps(
     {
       id: "collection",
       label: "Collection point & delivery",
-      hint: collectionDone
+      hint: collectionImages > 0 && !!supplier?.deliveryNote?.trim()
         ? `${collectionImages} photo${collectionImages === 1 ? "" : "s"} · note added`
+        : alreadyOnboarded ? "Optional — add photos & a delivery note"
         : collectionImages > 0 ? "Add your delivery note"
         : "Photos of your pickup spot + delivery note",
       done: collectionDone,
