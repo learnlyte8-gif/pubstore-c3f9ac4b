@@ -9,6 +9,18 @@ import { Input } from "@/components/ui/input";
 import logo from "@/assets/pubstore-logo.png";
 import ShoppingBackdrop from "@/components/ShoppingBackdrop";
 import { PhoneInput, DEFAULT_COUNTRY, toE164, type Country } from "@/components/PhoneInput";
+import SocialAuthButtons, { POST_OAUTH_REDIRECT_KEY } from "@/components/auth/SocialAuthButtons";
+
+/** Destination saved before a social sign-in redirect (see SocialAuthButtons). */
+const savedOAuthRedirect = () => {
+  try {
+    const value = sessionStorage.getItem(POST_OAUTH_REDIRECT_KEY);
+    // Only same-origin paths are honoured.
+    return value && value.startsWith("/") && !value.startsWith("//") ? value : null;
+  } catch {
+    return null;
+  }
+};
 
 const emailSchema = z.string().trim().email({ message: "Enter a valid email" }).max(255);
 const passwordSchema = z
