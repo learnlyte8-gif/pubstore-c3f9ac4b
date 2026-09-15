@@ -35,7 +35,7 @@ type Step = "credentials" | "code";
 export default function Auth() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const redirectTo = params.get("redirect") || "/home";
+  const redirectTo = params.get("redirect") || savedOAuthRedirect() || "/home";
   const [step, setStep] = useState<Step>("credentials");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
