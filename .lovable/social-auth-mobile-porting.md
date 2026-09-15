@@ -1,126 +1,143 @@
-# Social Sign-In on Mobile — Porting Guide
+# Social Sign-In on Mobile — Porting Guide (managed / no custom consent screen)
 
-Goal: the mobile app (native / wrapped) offers the same one-tap **Google, Apple and Microsoft** sign-in as pubstore.app, returns people into the app (never a browser page they can't leave), and shows **"Continue to Pubstore"** on every consent screen.
+Goal: mobile behaves **exactly like pubstore.app**. Same three buttons (Google, Apple, Microsoft), same managed sign-in service, **no custom Google/Apple developer apps, no custom consent screen**. Whatever name the consent screen shows on web is what it shows on mobile — we accept that and do not configure our own credentials.
 
-This guide assumes the web setup already in place:
-- `src/components/auth/SocialAuthButtons.tsx` — the three buttons, shared login/signup flow.
-- `src/pages/Auth.tsx` — hosts the buttons, stores the post-login redirect in `sessionStorage` under `POST_OAUTH_REDIRECT_KEY`, and routes to `/home` or `/onboarding` depending on `profile_completed`.
-- Lovable Cloud managed social auth: Google, Apple, Microsoft providers enabled.
-- Facebook is **not** available via managed OAuth — skip it on mobile too.
+Web reference:
+- `src/components/auth/SocialAuthButtons.tsx` — calls `lovable.auth.signInWithOAuth(provider, { redirect_uri })`.
+- `src/pages/Auth.tsx` — hosts the buttons, saves the post-login destination in `sessionStorage`, routes on `profile_completed`.
+- Facebook is not available — skip it on mobile too.
 
 ---
 
-## 1. Where each piece runs
+## 1. Why mobile fails with `400 Unsupported provider: missing OAuth secret`
 
-| Piece | Web | Mobile |
-| --- | --- | --- |
-| Button UI | `SocialAuthButtons.tsx` | Recreate natively (or reuse if React Native + shared components) |
-| OAuth start | Supabase `signInWithOAuth({ provider, redirectTo })` opens a browser redirect | Same SDK call, but the browser session must return to the app via a **deep link / custom URL scheme** |
-| Session storage | Browser localStorage (`sb-<project>-auth-token`) | Secure store via the Supabase client `storage` adapter (Expo SecureStore / AsyncStorage) |
-| Post-login routing | `Auth.tsx` → `/home` or `/onboarding` | Deep-link handler reads the session, then routes to Home or Onboarding with the same `profile_completed` check |
+That error comes from the Supabase Auth server, and it means the app asked **Supabase's own Google/Apple provider** to run the login — a provider that has no client ID or secret configured on this project, and never will.
 
-The backend, the `auth.users` records and the `profile_completed` routing rule are shared — a user who signs up with Google on web is the same account on mobile.
+The offending calls in the mobile code are the ones that talk to Supabase Auth directly:
 
-## 2. Redirect URLs (the critical part)
+| Call in mobile app | Result |
+| --- | --- |
+| `supabase.auth.signInWithOAuth(provider: OAuthProvider.google, ...)` | 400 `Unsupported provider: missing OAuth secret` |
+| `supabase.auth.signInWithIdToken(provider: google, idToken: ...)` (native `google_sign_in`) | 400 / `Unsupported provider`, and it would need our own Google client IDs — which we explicitly don't want |
 
-Web uses `https://pubstore.app/auth` as the OAuth return URL. Mobile cannot use an https page as the final hop — the browser would stay open. Use a custom scheme instead:
+The website never touches those endpoints. It goes through the **managed OAuth broker** hosted on our own domain:
 
 ```
-tapson-mobile://auth/callback        # same scheme family already used for Pesepay callbacks
+https://pubstore.app/~oauth/initiate?provider=google&redirect_uri=<return-url>&state=<random>
 ```
 
-Rules:
-- Add **both** `https://pubstore.app/auth` and `tapson-mobile://auth/callback` to the allowed redirect URLs in the backend auth settings.
-- Never point `redirectTo` at an in-app protected route directly; always land on the auth callback and route in code afterward (mirrors the web rule).
-- Keep one shared constant for the callback path so web and mobile configs stay in sync.
+The broker owns the Google/Apple/Microsoft credentials, runs the consent screen, and hands back a Supabase `access_token` + `refresh_token`. The app then calls `supabase.auth.setSession(...)`. No provider secret is ever needed in the project or in the app.
 
-## 3. Starting sign-in (mobile code shape)
+**Fix in one line:** on mobile, stop calling `signInWithOAuth` / `signInWithIdToken` / `google_sign_in`; open the broker URL in a browser session and set the returned session.
 
-```ts
-import { supabase } from "./supabase";
+## 2. The mobile flow (parity with web)
 
-async function signInWith(provider: "google" | "apple" | "microsoft") {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider,
-    options: {
-      redirectTo: "tapson-mobile://auth/callback",
-      skipBrowserRedirect: true, // we open the URL ourselves
+```
+[Continue with Google]
+   → open in-app browser (ASWebAuthenticationSession / Chrome Custom Tab):
+     https://pubstore.app/~oauth/initiate
+       ?provider=google
+       &redirect_uri=tapson-mobile://oauth-callback
+       &state=<random hex>
+   → provider consent screen (managed, same as web)
+   → browser redirects to tapson-mobile://oauth-callback
+       ?state=...&access_token=...&refresh_token=...        (or ?error=...)
+   → app verifies state matches, then supabase.auth.setSession(tokens)
+   → route: profile_completed ? Home : Onboarding
+```
+
+Notes:
+- `state` is generated by the app and **must be compared** on return; mismatch = discard the response.
+- On `error` / `error_description`, show the message; a closed browser sheet with no callback = "Sign-in was cancelled".
+- Register `tapson-mobile://` as the URL scheme (already used for Pesepay callbacks) and add `tapson-mobile://oauth-callback` to the allowed redirect URLs in the backend auth settings.
+
+## 3. Code shape
+
+### Flutter (`flutter/lib/services/auth_service.dart`)
+
+Delete `signInWithGoogle()`'s `google_sign_in` + `signInWithIdToken` body (that is the source of the 400) and the `google_sign_in` dependency, and replace it with the broker flow:
+
+```dart
+Future<User?> signInWithProvider(String provider) async {
+  final state = _randomHex(16);
+  final url = Uri.parse('${Env.webAppUrl}/~oauth/initiate').replace(
+    queryParameters: {
+      'provider': provider,                       // google | apple | microsoft
+      'redirect_uri': 'tapson-mobile://oauth-callback',
+      'state': state,
     },
-  });
-  if (error) throw error;
-  // Open data.url in an in-app browser session:
-  // Expo:    WebBrowser.openAuthSessionAsync(data.url, "tapson-mobile://auth/callback")
-  // RN CLI:  Linking.openURL(data.url)
+  );
+
+  // flutter_web_auth_2 (or ASWebAuthenticationSession / Custom Tabs directly)
+  final result = await FlutterWebAuth2.authenticate(
+    url: url.toString(),
+    callbackUrlScheme: 'tapson-mobile',
+  );
+
+  final q = Uri.parse(result).queryParameters;
+  if (q['state'] != state) throw Exception('Sign-in could not be verified');
+  if (q['error'] != null) throw Exception(q['error_description'] ?? 'Sign-in failed');
+  final access = q['access_token'], refresh = q['refresh_token'];
+  if (access == null || refresh == null) return null;  // cancelled
+
+  await supabase.auth.setSession(refresh);             // or recoverSession/setSession pair
+  return supabase.auth.currentUser;
 }
 ```
 
-On the callback, extract `access_token` / `refresh_token` (or the `code` for PKCE) from the deep-link URL and hand it to the SDK:
+`auth_screen.dart` keeps its existing button but calls `signInWithProvider('google')`, and gains the same Apple and Microsoft buttons underneath (same order as web).
+
+### React Native (`react-native/src/screens/AuthScreen.tsx`)
 
 ```ts
-// PKCE flow (recommended): exchange the code
-const { error } = await supabase.auth.exchangeCodeForSession(code);
+import * as WebBrowser from 'expo-web-browser';
+const REDIRECT = 'tapson-mobile://oauth-callback';
+
+async function signInWith(provider: 'google' | 'apple' | 'microsoft') {
+  const state = Math.random().toString(36).slice(2) + Date.now().toString(36);
+  const url = `${ENV.WEB_APP_URL}/~oauth/initiate?provider=${provider}`
+    + `&redirect_uri=${encodeURIComponent(REDIRECT)}&state=${state}`;
+  const res = await WebBrowser.openAuthSessionAsync(url, REDIRECT);
+  if (res.type !== 'success') return;                       // cancelled
+  const p = new URL(res.url.replace('tapson-mobile://', 'https://x/')).searchParams;
+  if (p.get('state') !== state) throw new Error('Sign-in could not be verified');
+  const access_token = p.get('access_token'), refresh_token = p.get('refresh_token');
+  if (!access_token || !refresh_token) throw new Error(p.get('error_description') ?? 'Sign-in failed');
+  await supabase.auth.setSession({ access_token, refresh_token });
+}
 ```
 
-After `exchangeCodeForSession` resolves, the session lives in secure storage and the rest of the app behaves exactly like web.
+Keep the email/password form above it and the same "or continue with" divider, so the screen matches the web page one-for-one.
 
-## 4. Routing after sign-in (parity with `Auth.tsx`)
+## 4. Routing after sign-in (1:1 with `Auth.tsx`)
 
-Web logic, ported 1:1:
+1. Session exists → read `profiles.profile_completed` for `auth.uid()`.
+2. `true` → **Home**; otherwise → **Onboarding**, carrying the intended destination.
+3. Register for push once the session exists (Flutter already does this in `_routeForSession`).
+4. Same email as an existing password account → accounts link by email, no duplicate.
 
-1. Session exists → fetch the profile.
-2. `profile_completed === true` → go to **Home**.
-3. Otherwise → go to **Onboarding**, carrying the originally intended destination.
-4. If the user cancelled the consent screen → return to the sign-in screen with a short "Sign-in was cancelled" message (web does the same via toast).
+## 5. Explicitly out of scope
 
-Note: on web, external OAuth return URLs (`/.lovable/oauth/...`) bypass the onboarding gate via `window.location.href = redirectTo`. On mobile there is no such external hop — the deep link always lands in your handler, so the `profile_completed` check always runs. This is intentional and safer.
+- **No custom Google Cloud / Apple Services ID / Azure app registration.** We accept the managed consent-screen branding on both web and mobile. If that changes later, credentials go into the backend auth settings only — no app code changes on either platform.
+- No native Google Sign-In SDK (`google_sign_in`), no `signInWithIdToken`, no Facebook login, no anonymous sign-in.
+- No secrets in the mobile bundle: the broker holds them.
 
-## 5. Branding the consent screens ("Continue to Pubstore")
+## 6. Troubleshooting
 
-The managed providers show Lovable's name on Google/Apple consent screens. For parity with a branded web setup, mobile uses the **same custom credentials**:
-
-### Google
-- One Google Cloud project ("Pubstore") with an OAuth consent screen configured (name + logo = what users see).
-- Create **three** OAuth clients, all in the same project so the branding is identical:
-  - *Web application* — for pubstore.app (already used by web custom-credential setup).
-  - *iOS* — bundle ID of the app.
-  - *Android* — package name + SHA-1 signing certificate fingerprint.
-- In the backend auth settings (Google provider → own credentials), paste the **Web application** client ID/secret — the backend always talks to Google as a web client; the iOS/Android client IDs are used only if you later switch to native Google Sign-In SDKs.
-- Every redirect URI used (web domain, preview domain, and any proxy) must be whitelisted in both Google Cloud and the backend settings.
-
-### Apple
-- Paid Apple Developer account required ($99/yr).
-- App ID with "Sign In with Apple" capability + a **Services ID** whose return URLs include the backend's Apple callback.
-- Sign in with Apple key (.p8) entered in the backend Apple provider settings.
-- On iOS, Apple **requires** "Sign in with Apple" to be offered if any other third-party login exists — so Apple sign-in is mandatory, not optional, on iOS.
-
-### Microsoft
-- Azure app registration with the mobile redirect added; paste client ID/secret into the backend Microsoft provider.
-
-Once custom credentials are in place, **web and mobile consent screens both read "Pubstore"** because both flow through the same Google/Apple/Microsoft apps.
-
-## 6. Cancellation, errors, edge cases
-
-| Case | Behaviour (match web) |
-| --- | --- |
-| User closes the browser sheet | No session; show "Sign-in was cancelled", stay on the sign-in screen |
-| Provider returns an error (`access_denied`, server error) | Toast/alert with a short message, stay on the sign-in screen |
-| Email already exists from password signup | Accounts link automatically by email — do **not** create a duplicate; show normal routing |
-| New social user | Route to onboarding (profile completion), same as web |
-| Deep link arrives with no session | Ignore it; log to console; do not crash the auth screen |
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `400 Unsupported provider: missing OAuth secret` | App called Supabase Auth's provider endpoint directly | Use the `/~oauth/initiate` broker flow above |
+| Browser opens then immediately closes, no session | `redirect_uri` scheme not registered, or not in the backend allow-list | Register `tapson-mobile://` in iOS `CFBundleURLTypes` / Android intent filter and allow-list the callback |
+| Callback arrives but user stays signed out | Tokens not passed to `setSession`, or state mismatch silently swallowed | Log the callback query keys (never the token values) and confirm `state` matches |
+| Consent screen loops back to sign-in | Session written to a storage adapter the Supabase client isn't using | Ensure one shared secure-storage adapter for the client |
+| Works on Android, fails on iOS | `Linking.openURL` instead of an auth session | Use `ASWebAuthenticationSession` (`openAuthSessionAsync` / `flutter_web_auth_2`) so cookies and the callback are captured |
 
 ## 7. Testing checklist
 
-- [ ] Google sign-in returns to the app and lands on Home for an existing profile.
-- [ ] Apple sign-in on a physical iOS device (Simulator hides real Apple sheet quirks).
-- [ ] Microsoft sign-in end-to-end.
-- [ ] Brand-new Google account → routed to onboarding, completes profile, lands on Home.
-- [ ] Cancel mid-consent → back on the sign-in screen, no stuck spinner.
-- [ ] Consent screen shows "Pubstore" (after custom credentials), not Lovable.
-- [ ] Same email on web + mobile = one account, one wallet, one order history.
-- [ ] Sign-out on mobile clears secure storage; reopening the app returns to the sign-in screen.
-
-## 8. Non-goals / known limits
-
-- No Facebook login (not supported by managed OAuth; would need a separate custom integration — out of scope).
-- No anonymous sign-ins.
-- Auth settings (client IDs, secrets, redirect URL allow-list) live in the backend — mobile never ships secrets in the bundle.
+- [ ] Google, Apple and Microsoft each complete and land on Home for an existing profile.
+- [ ] Brand-new social account → Onboarding → Home.
+- [ ] Cancel mid-consent → back on the sign-in screen, no stuck spinner, no error toast storm.
+- [ ] Same email on web and mobile = one account, one wallet, one order history.
+- [ ] Apple sign-in tested on a physical iOS device (Apple requires it on iOS when other social logins exist).
+- [ ] Sign-out clears secure storage; relaunch returns to the sign-in screen.
+- [ ] No `Unsupported provider` in the auth logs after the change.
