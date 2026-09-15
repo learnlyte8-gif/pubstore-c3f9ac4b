@@ -8156,6 +8156,10 @@ export type Database = {
         Args: { _label?: string; _order_id: string }
         Returns: number
       }
+      register_expo_push_token: {
+        Args: { p_token: string }
+        Returns: undefined
+      }
       register_push_token: {
         Args: { p_token: string; p_user_id: string }
         Returns: undefined
@@ -8522,6 +8526,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      unregister_expo_push_token: {
+        Args: { p_token: string }
+        Returns: undefined
       }
     }
     Enums: {
