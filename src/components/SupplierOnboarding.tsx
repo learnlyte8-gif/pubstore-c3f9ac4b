@@ -27,11 +27,15 @@ export function buildOnboardingSteps(
     email?: string | null;
     categories?: string[];
     onboarding_completed_at?: string | null;
+    onboardingCompletedAt?: string | null;
     collectionPointImages?: string[];
     deliveryNote?: string | null;
   }) | null,
   verification: VerificationStatus,
 ): OnboardingStep[] {
+  // Suppliers who already finished onboarding before the collection-point step
+  // existed are grandfathered in, so they are never re-blocked from publishing.
+  const alreadyOnboarded = !!(supplier?.onboardingCompletedAt || supplier?.onboarding_completed_at);
   const detailsDone = !!(
     supplier?.name &&
     supplier?.country &&
