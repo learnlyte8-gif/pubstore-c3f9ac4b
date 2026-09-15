@@ -9,6 +9,18 @@ import { Input } from "@/components/ui/input";
 import logo from "@/assets/pubstore-logo.png";
 import ShoppingBackdrop from "@/components/ShoppingBackdrop";
 import { PhoneInput, DEFAULT_COUNTRY, toE164, type Country } from "@/components/PhoneInput";
+import SocialAuthButtons, { POST_OAUTH_REDIRECT_KEY } from "@/components/auth/SocialAuthButtons";
+
+/** Destination saved before a social sign-in redirect (see SocialAuthButtons). */
+const savedOAuthRedirect = () => {
+  try {
+    const value = sessionStorage.getItem(POST_OAUTH_REDIRECT_KEY);
+    // Only same-origin paths are honoured.
+    return value && value.startsWith("/") && !value.startsWith("//") ? value : null;
+  } catch {
+    return null;
+  }
+};
 
 const emailSchema = z.string().trim().email({ message: "Enter a valid email" }).max(255);
 const passwordSchema = z
@@ -23,7 +35,7 @@ type Step = "credentials" | "code";
 export default function Auth() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const redirectTo = params.get("redirect") || "/home";
+  const redirectTo = params.get("redirect") || savedOAuthRedirect() || "/home";
   const [step, setStep] = useState<Step>("credentials");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,6 +50,11 @@ export default function Auth() {
   useEffect(() => {
     const isExternalOAuth = redirectTo.startsWith("/.lovable/oauth/");
     const routeForSession = async (uid: string) => {
+      try {
+        sessionStorage.removeItem(POST_OAUTH_REDIRECT_KEY);
+      } catch {
+        /* ignore */
+      }
       // For external OAuth consent flows, always return to the consent URL
       // so the authorization can be completed. Skip onboarding gating.
       if (isExternalOAuth) {
@@ -313,6 +330,7 @@ export default function Auth() {
             <p className="text-[11px] text-muted-foreground text-center pt-1">
               New here? We'll create your account and email you a verification code.
             </p>
+            <SocialAuthButtons redirectTo={redirectTo} disabled={loading} />
           </form>
         ) : (
           <form onSubmit={verifyCode} className="space-y-2 animate-fade-up" style={{ animationDelay: "60ms" }}>
