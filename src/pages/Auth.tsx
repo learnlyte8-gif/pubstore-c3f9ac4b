@@ -330,6 +330,7 @@ export default function Auth() {
             <p className="text-[11px] text-muted-foreground text-center pt-1">
               New here? We'll create your account and email you a verification code.
             </p>
+            <SocialAuthButtons redirectTo={redirectTo} disabled={loading} />
           </form>
         ) : (
           <form onSubmit={verifyCode} className="space-y-2 animate-fade-up" style={{ animationDelay: "60ms" }}>
