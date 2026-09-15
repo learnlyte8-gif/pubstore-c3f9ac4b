@@ -27,11 +27,15 @@ export function buildOnboardingSteps(
     email?: string | null;
     categories?: string[];
     onboarding_completed_at?: string | null;
+    onboardingCompletedAt?: string | null;
     collectionPointImages?: string[];
     deliveryNote?: string | null;
   }) | null,
   verification: VerificationStatus,
 ): OnboardingStep[] {
+  // Suppliers who already finished onboarding before the collection-point step
+  // existed are grandfathered in, so they are never re-blocked from publishing.
+  const alreadyOnboarded = !!(supplier?.onboardingCompletedAt || supplier?.onboarding_completed_at);
   const detailsDone = !!(
     supplier?.name &&
     supplier?.country &&
@@ -41,7 +45,8 @@ export function buildOnboardingSteps(
   );
   const categoriesDone = (supplier?.categories?.length ?? 0) > 0;
   const collectionImages = supplier?.collectionPointImages?.length ?? 0;
-  const collectionDone = collectionImages > 0 && !!supplier?.deliveryNote?.trim();
+  const collectionDone =
+    alreadyOnboarded || (collectionImages > 0 && !!supplier?.deliveryNote?.trim());
   const verificationDone = verification === "approved";
 
   return [
@@ -64,8 +69,9 @@ export function buildOnboardingSteps(
     {
       id: "collection",
       label: "Collection point & delivery",
-      hint: collectionDone
+      hint: collectionImages > 0 && !!supplier?.deliveryNote?.trim()
         ? `${collectionImages} photo${collectionImages === 1 ? "" : "s"} · note added`
+        : alreadyOnboarded ? "Optional — add photos & a delivery note"
         : collectionImages > 0 ? "Add your delivery note"
         : "Photos of your pickup spot + delivery note",
       done: collectionDone,
