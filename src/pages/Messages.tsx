@@ -552,6 +552,26 @@ export default function Messages() {
     setReplyTo(null);
   };
 
+  const sendFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0 || !activeId || !userId) return;
+    setUploading(true);
+    for (const file of Array.from(files).slice(0, 10)) {
+      const res = await uploadChatFile({ file, userId, conversationId: activeId });
+      if ("error" in res) {
+        toast({ title: "Upload failed", description: res.error });
+        continue;
+      }
+      await sendAttachment({
+        kind: res.kind,
+        path: res.path,
+        name: file.name,
+        mime: file.type || undefined,
+        size: file.size,
+      });
+    }
+    setUploading(false);
+  };
+
   const sendHeartReply = async () => {
     if (!activeId || !userId) return;
     await insertMessage(activeId, { body: "❤️" });
