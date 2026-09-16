@@ -234,7 +234,10 @@ export default function ShareToChatSheet({
         : attachment.kind === "supplier" ? `🏬 ${attachment.name}`
         : attachment.kind === "wishlist" ? `❤️ Wishlist · ${attachment.count} items`
         : attachment.kind === "cart-unlock" ? `✅ Cart unlocked · ${attachment.title}`
-        : `🗂 Catalog · ${attachment.count} items`;
+        : attachment.kind === "catalog" ? `🗂 Catalog · ${attachment.count} items`
+        : attachment.kind === "image" ? "📷 Photo"
+        : attachment.kind === "video" ? "🎥 Video"
+        : `📄 ${attachment.name ?? "Document"}`;
 
       for (const convId of targetConvIds) {
         if (note.trim()) {
