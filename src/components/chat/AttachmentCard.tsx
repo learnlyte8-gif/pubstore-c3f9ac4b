@@ -7,7 +7,21 @@ import ChatMediaAttachment from "@/components/chat/ChatMediaAttachment";
 
 export type ChatAttachment =
   | {
-      kind: "image" | "video" | "file";
+      kind: "image";
+      path: string;
+      name?: string;
+      mime?: string;
+      size?: number;
+    }
+  | {
+      kind: "video";
+      path: string;
+      name?: string;
+      mime?: string;
+      size?: number;
+    }
+  | {
+      kind: "file";
       path: string;
       name?: string;
       mime?: string;
