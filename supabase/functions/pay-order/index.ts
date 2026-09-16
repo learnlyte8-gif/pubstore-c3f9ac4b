@@ -47,7 +47,15 @@ Deno.serve(async (req) => {
     });
     if (error) {
       console.error('[pay-order] rpc failed', JSON.stringify(error));
-      return json({ error: error.message }, 400);
+      const raw = `${error.message ?? ''} ${(error as any).details ?? ''}`.toLowerCase();
+      const insufficient =
+        raw.includes('insufficient') ||
+        raw.includes('wallets_balance_check') ||
+        (error as any).code === '23514';
+      const message = insufficient
+        ? 'Not enough money in your personal wallet balance. Top up your wallet and try again.'
+        : error.message;
+      return json({ error: message, code: insufficient ? 'insufficient_balance' : undefined }, 400);
     }
 
     return json({ ok: true, transaction: data });
