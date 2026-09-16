@@ -214,6 +214,9 @@ export default function Messages() {
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [actionMsg, setActionMsg] = useState<Message | null>(null);
   const [forwardMsg, setForwardMsg] = useState<Message | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const mediaInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { perConversation } = useUnreadChats();
   const [tab, setTab] = useState<TabKey>("suppliers");
