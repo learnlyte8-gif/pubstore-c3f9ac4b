@@ -3,8 +3,16 @@ import { Heart, Store, ShieldCheck, Package, ShoppingBag, ShoppingCart, Check } 
 import { useState } from "react";
 import { toast } from "sonner";
 import { useShop } from "@/store/shop";
+import ChatMediaAttachment from "@/components/chat/ChatMediaAttachment";
 
 export type ChatAttachment =
+  | {
+      kind: "image" | "video" | "file";
+      path: string;
+      name?: string;
+      mime?: string;
+      size?: number;
+    }
   | {
       kind: "product";
       id: string;
@@ -59,6 +67,14 @@ export default function AttachmentCard({
   const surface = mine
     ? "bg-white/12 border-white/20 text-primary-foreground"
     : "bg-card border-border/60 text-foreground";
+
+  if (
+    attachment.kind === "image" ||
+    attachment.kind === "video" ||
+    attachment.kind === "file"
+  ) {
+    return <ChatMediaAttachment attachment={attachment} mine={mine} />;
+  }
 
   if (attachment.kind === "product") {
     return (
