@@ -816,9 +816,29 @@ export default function Messages() {
 
         {/* Composer */}
         <div className="px-2 py-2 border-t border-border/60 glass-strong shadow-elevated flex items-center gap-1.5 safe-bottom">
-          <button onClick={() => setProductPickerOpen(true)} aria-label="Share product" className="w-9 h-9 rounded-full bg-ig-gradient text-white flex items-center justify-center active:scale-90 transition shadow-soft">
-            <Camera className="w-4 h-4" />
+          <button onClick={() => mediaInputRef.current?.click()} disabled={uploading} aria-label="Send photo or video" className="w-9 h-9 rounded-full bg-ig-gradient text-white flex items-center justify-center active:scale-90 transition shadow-soft disabled:opacity-60">
+            {uploading ? <CircleSpinner size={16} /> : <Camera className="w-4 h-4" />}
           </button>
+          <button onClick={() => docInputRef.current?.click()} disabled={uploading} aria-label="Send document" className="w-9 h-9 rounded-full bg-muted text-foreground/80 flex items-center justify-center active:scale-90 transition disabled:opacity-60">
+            <Paperclip className="w-4 h-4" />
+          </button>
+          <input
+            ref={mediaInputRef}
+            type="file"
+            accept="image/*,video/*"
+            multiple
+            className="hidden"
+            onChange={(e) => { sendFiles(e.target.files); e.target.value = ""; }}
+          />
+          <input
+            ref={docInputRef}
+            type="file"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,.zip,application/pdf"
+            multiple
+            className="hidden"
+            onChange={(e) => { sendFiles(e.target.files); e.target.value = ""; }}
+          />
+          {/* legacy product share moved to the gallery icon below */}
           <div className="flex-1 relative flex items-center bg-muted rounded-full pr-1">
             <input
               value={draft}
@@ -830,7 +850,7 @@ export default function Messages() {
             {!draft.trim() && (
               <>
                 <button aria-label="Mic" className="w-8 h-8 rounded-full hover:bg-background/60 flex items-center justify-center text-foreground/70"><Mic className="w-4 h-4" /></button>
-                <button onClick={() => setProductPickerOpen(true)} aria-label="Gallery" className="w-8 h-8 rounded-full hover:bg-background/60 flex items-center justify-center text-foreground/70"><ImageIcon className="w-4 h-4" /></button>
+                <button onClick={() => setProductPickerOpen(true)} aria-label="Share a product" className="w-8 h-8 rounded-full hover:bg-background/60 flex items-center justify-center text-foreground/70"><ImageIcon className="w-4 h-4" /></button>
                 <button onClick={sendHeartReply} aria-label="Heart" className="w-8 h-8 rounded-full hover:bg-background/60 flex items-center justify-center text-foreground/70"><Heart className="w-4 h-4" /></button>
               </>
             )}
