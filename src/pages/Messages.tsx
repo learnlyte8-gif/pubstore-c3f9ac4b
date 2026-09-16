@@ -17,6 +17,7 @@ import PendingInquiriesInbox from "@/components/marketplace/PendingInquiriesInbo
 import { toast } from "@/hooks/use-toast";
 import DiscoverPeople from "@/components/social/DiscoverPeople";
 import CircleSpinner from "@/components/CircleSpinner";
+import { uploadChatFile } from "@/lib/chatUpload";
 
 let messageChannelNonce = 0;
 
