@@ -540,7 +540,10 @@ export default function Messages() {
   const sendAttachment = async (attachment: ChatAttachment) => {
     if (!activeId || !userId) return;
     const previewLabel =
-      attachment.kind === "product" ? `📦 ${attachment.title}`
+      attachment.kind === "image" ? "📷 Photo"
+      : attachment.kind === "video" ? "🎥 Video"
+      : attachment.kind === "file" ? `📄 ${attachment.name ?? "Document"}`
+      : attachment.kind === "product" ? `📦 ${attachment.title}`
       : attachment.kind === "supplier" ? `🏬 ${attachment.name}`
       : attachment.kind === "wishlist" ? `❤️ Wishlist · ${attachment.count} items`
       : attachment.kind === "cart-unlock" ? `✅ Cart unlocked · ${attachment.title}`
