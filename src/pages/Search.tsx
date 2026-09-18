@@ -522,6 +522,9 @@ const KIND_META: Record<UniversalHit["kind"], { label: string; icon: any }> = {
   news: { label: "News", icon: Newspaper },
   supplier: { label: "Suppliers", icon: StoreIcon },
   ride: { label: "Rides", icon: Navigation },
+  restaurant: { label: "Restaurants", icon: StoreIcon },
+  live: { label: "Live", icon: Navigation },
+  user: { label: "People", icon: StoreIcon },
 };
 
 function KindFilterChips({

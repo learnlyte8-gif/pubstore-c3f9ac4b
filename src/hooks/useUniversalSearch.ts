@@ -19,7 +19,10 @@ export type UniversalHit = Searchable & {
     | "industrial"
     | "news"
     | "supplier"
-    | "ride";
+    | "ride"
+    | "restaurant"
+    | "live"
+    | "user";
   image?: string | null;
   href: string;
   price?: number | null;

@@ -7,6 +7,7 @@ const FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/semantic-searc
 
 type Row = {
   id: string;
+  kind?: string | null;
   title: string;
   description: string | null;
   category_slug: string | null;
@@ -20,39 +21,53 @@ type Row = {
   moq: number | null;
   lead_time: string | null;
   ready_to_ship: boolean | null;
+  href?: string | null;
+  city?: string | null;
+  country?: string | null;
+  verified?: boolean | null;
   score?: number | null;
 };
 
+/**
+ * The server returns already-prefixed ids (`p:`, `s:`, `sv:`…) that match the
+ * client pool's id scheme, plus the vertical in `kind` and a ready `href`.
+ * Older keyword rows (bare uuid, products only) are still handled.
+ */
 function toHit(row: Row): UniversalHit {
   const moq = row.moq == null ? null : Number(row.moq);
+  const kind = (row.kind ?? "product") as UniversalHit["kind"];
+  const bare = row.id.includes(":") ? row.id.split(":").slice(1).join(":") : row.id;
   return {
-    id: `p:${row.id}`,
-    kind: "product",
+    id: row.id.includes(":") ? row.id : `p:${row.id}`,
+    kind,
     title: row.title,
     category: row.category_slug ?? "products",
-    badge: row.badge,
+    badge: row.badge ?? null,
     description: row.description ?? "",
     image: row.image,
-    href: `/product/${row.id}`,
-    price: Number(row.price ?? 0),
+    href: row.href ?? `/product/${bare}`,
+    price: row.price == null ? null : Number(row.price),
     rating: Number(row.rating ?? 0),
     reviews: row.review_count ?? 0,
     sold: row.sold ?? 0,
     freeShipping: !!row.free_shipping,
     dealEndsAt: null,
     moq,
-    leadTime: row.lead_time,
+    leadTime: row.lead_time ?? null,
     readyToShip: !!row.ready_to_ship,
+    city: row.city ?? null,
+    country: row.country ?? null,
+    verified: !!row.verified,
   };
 }
 
 /**
- * Full-catalog product matches for a query.
+ * Full-catalog matches for a query across every vertical.
  *
  * The client-side pool only holds a slice of the catalog, so submitted searches
- * also hit the server: the `semantic-search` edge function (vector embeddings)
- * first, falling back to the trigram `search_products` RPC whenever AI is
- * unavailable (guest, no credits, embedding error).
+ * also hit the server: the `semantic-search` edge function (vector embeddings +
+ * AI re-ranking over products, suppliers, services, stays, vehicles, news…),
+ * falling back to the trigram `search_products` RPC whenever AI is unavailable.
  */
 export function useSemanticProducts(query: string, limit = 60) {
   const q = query.trim();
