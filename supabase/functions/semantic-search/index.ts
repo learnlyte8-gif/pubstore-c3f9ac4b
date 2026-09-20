@@ -105,9 +105,16 @@ Output ONLY a JSON array of numbers, e.g. [3,0,7].`;
     const text = String(body?.choices?.[0]?.message?.content ?? '');
     const match = text.match(/\[[\s\S]*\]/);
     if (!match) return null;
-    const ids = JSON.parse(match[0]);
-    if (!Array.isArray(ids)) return null;
-    return ids.filter((x: any) => typeof x === 'string').slice(0, 30);
+    const picked = JSON.parse(match[0]);
+    if (!Array.isArray(picked)) return null;
+    const ids: string[] = [];
+    for (const x of picked) {
+      const idx = typeof x === 'number' ? x : Number(x);
+      const c = Number.isInteger(idx) ? pool[idx] : undefined;
+      if (c && !ids.includes(c.id)) ids.push(c.id);
+      if (ids.length >= RANK_OUTPUT) break;
+    }
+    return ids;
   } catch (e) {
     console.error('AI ranking error:', e);
     return null;
