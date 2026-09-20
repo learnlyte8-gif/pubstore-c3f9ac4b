@@ -8,6 +8,26 @@ const corsHeaders = {
 const EMBED_MODEL = 'openai/text-embedding-3-small';
 const DIMS = 1536; // must match products.search_embedding
 const RANK_MODEL = 'google/gemini-3.6-flash';
+// Latency guards: a smaller candidate pool and a short reply keep the AI pass
+// fast, and the timeout means a slow model never stalls a shopper's search.
+const RANK_CANDIDATES = 24;
+const RANK_OUTPUT = 24;
+const RANK_TIMEOUT_MS = 8000;
+
+/** Short-lived in-memory result cache (per warm instance) for repeat searches. */
+const CACHE_TTL_MS = 5 * 60 * 1000;
+const CACHE_MAX = 200;
+const resultCache = new Map<string, { at: number; body: any }>();
+function cacheGet(key: string) {
+  const hit = resultCache.get(key);
+  if (!hit) return null;
+  if (Date.now() - hit.at > CACHE_TTL_MS) { resultCache.delete(key); return null; }
+  return hit.body;
+}
+function cacheSet(key: string, body: any) {
+  if (resultCache.size >= CACHE_MAX) resultCache.delete(resultCache.keys().next().value as string);
+  resultCache.set(key, { at: Date.now(), body });
+}
 
 function productText(product: any) {
   return [
@@ -62,42 +82,42 @@ async function aiRerank(query: string, candidates: Candidate[]): Promise<string[
   if (!key) return null;
   if (candidates.length === 0) return [];
 
-  const cards = candidates.slice(0, 50).map((c) => ({
-    id: c.id,
-    kind: c.kind,
-    title: c.title,
-    category: c.category ?? '',
-    price: c.price != null ? Number(c.price) : null,
-    description: String(c.description ?? '').replace(/\s+/g, ' ').slice(0, 120),
+  // Compact cards: short numeric keys + trimmed text keep the prompt (and the
+  // model's reply) small, which is what actually drives latency here.
+  const pool = candidates.slice(0, RANK_CANDIDATES);
+  const cards = pool.map((c, i) => ({
+    i,
+    k: c.kind,
+    t: String(c.title ?? '').slice(0, 80),
+    c: String(c.category ?? '').slice(0, 40),
+    p: c.price != null ? Number(c.price) : null,
+    d: String(c.description ?? '').replace(/\s+/g, ' ').slice(0, 70),
   }));
 
-  const prompt = `You are a shopping assistant helping a user find what they need across a marketplace.
-
-User searched: ${JSON.stringify(query)}
-
-Here are ${cards.length} candidates from different parts of the marketplace (products, suppliers, services, vehicles, stays, properties, etc.):
+  const prompt = `Shopper searched: ${JSON.stringify(query)}
+Candidates (i = index, k = kind, t = title, c = category, p = price, d = description):
 ${JSON.stringify(cards)}
+Return the indexes of relevant candidates, best match first. Drop only clearly unrelated ones. Max ${RANK_OUTPUT} items.
+Output ONLY a JSON array of numbers, e.g. [3,0,7].`;
 
-Rank these candidates by how well they match what the user is looking for. Consider:
-- How closely the title matches the user's intent
-- Whether the kind/category is relevant to the query
-- Whether the description confirms it's what the user wants
-- Price relevance if the query mentions a budget
-
-Return a JSON array of candidate IDs (strings) in order from best to worst match.
-Keep ALL candidates that are reasonably relevant — only drop ones that are clearly unrelated to the query.
-Maximum 30 items.
-Output ONLY the JSON array, e.g. ["p:id1","s:id2","sv:id3"] — no prose, no markdown, no explanation.`;
-
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), RANK_TIMEOUT_MS);
   try {
     const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: { 'Lovable-API-Key': key, 'Content-Type': 'application/json' },
+      signal: ctl.signal,
       body: JSON.stringify({
         model: RANK_MODEL,
         temperature: 0,
+        // Ranking is a lookup task, not a reasoning one: turning off the
+        // model's internal reasoning cuts this call from ~3s to under 1s and
+        // stops reasoning tokens from eating the reply budget (which silently
+        // truncated the ID list and dropped AI ranking altogether).
+        reasoning_effort: 'none',
+        max_tokens: 800,
         messages: [
-          { role: 'system', content: 'You rank marketplace listings for a shopper. Reply with a JSON array of IDs only.' },
+          { role: 'system', content: 'You rank marketplace listings. Reply with a JSON array of candidate indexes only.' },
           { role: 'user', content: prompt },
         ],
       }),
@@ -110,12 +130,21 @@ Output ONLY the JSON array, e.g. ["p:id1","s:id2","sv:id3"] — no prose, no mar
     const text = String(body?.choices?.[0]?.message?.content ?? '');
     const match = text.match(/\[[\s\S]*\]/);
     if (!match) return null;
-    const ids = JSON.parse(match[0]);
-    if (!Array.isArray(ids)) return null;
-    return ids.filter((x: any) => typeof x === 'string').slice(0, 30);
+    const picked = JSON.parse(match[0]);
+    if (!Array.isArray(picked)) return null;
+    const ids: string[] = [];
+    for (const x of picked) {
+      const idx = typeof x === 'number' ? x : Number(x);
+      const c = Number.isInteger(idx) ? pool[idx] : undefined;
+      if (c && !ids.includes(c.id)) ids.push(c.id);
+      if (ids.length >= RANK_OUTPUT) break;
+    }
+    return ids;
   } catch (e) {
     console.error('AI ranking error:', e);
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -285,46 +314,54 @@ Deno.serve(async (req) => {
     if (query.length < 2) return json({ results: [], source: 'empty' });
     const limit = Math.min(Number(body.limit) || 60, 100);
 
-    // 1. Semantic embedding + vector match for PRODUCTS
-    let semanticResults: any[] = [];
-    let embeddingOk = false;
-    try {
-      const [vector] = await embed(query);
-      embeddingOk = true;
-      const { data, error } = await admin.rpc('search_products_semantic', {
-        search_query: query,
-        query_embedding: JSON.stringify(vector),
-        result_limit: Math.min(limit, 60),
-      });
-      if (error) throw error;
-      semanticResults = data ?? [];
-    } catch (e) {
-      console.error('semantic stage failed:', e);
-    }
+    const cacheKey = `${query.toLowerCase()}|${limit}`;
+    const cached = cacheGet(cacheKey);
+    if (cached) return json(cached);
+    // Cache then return, so repeat searches answer instantly.
+    const done = (payload: any) => { cacheSet(cacheKey, payload); return json(payload); };
 
-    // 1b. If the semantic/embedding stage produced no products, fall back to the
-    // trigram keyword RPC so catalog products are never silently dropped just
-    // because some non-product row happened to match.
+    // 1. Product matching and non-product matching run in parallel — they are
+    // independent, so there's no reason to pay for them one after the other.
+    let embeddingOk = false;
     let productsFromKeyword = false;
-    if (semanticResults.length === 0) {
+
+    const productStage = (async (): Promise<any[]> => {
+      try {
+        const [vector] = await embed(query);
+        embeddingOk = true;
+        const { data, error } = await admin.rpc('search_products_semantic', {
+          search_query: query,
+          query_embedding: JSON.stringify(vector),
+          result_limit: Math.min(limit, 60),
+        });
+        if (error) throw error;
+        if ((data ?? []).length > 0) return data;
+      } catch (e) {
+        console.error('semantic stage failed:', e);
+      }
+      // Fall back to the trigram keyword RPC so catalog products are never
+      // silently dropped just because some non-product row happened to match.
       try {
         const { data: kwData, error: kwErr } = await admin.rpc('search_products', {
           search_query: query,
           result_limit: Math.min(limit, 60),
         });
         if (kwErr) throw kwErr;
-        semanticResults = kwData ?? [];
-        productsFromKeyword = semanticResults.length > 0;
+        productsFromKeyword = (kwData ?? []).length > 0;
+        return kwData ?? [];
       } catch (e) {
         console.error('keyword product fallback failed:', e);
+        return [];
       }
-    }
+    })();
 
-    // 2. Non-product candidates via text matching (all verticals)
-    const nonProductCandidates = await fetchNonProductCandidates(admin, query);
+    const [semanticResults, nonProductCandidates] = await Promise.all([
+      productStage,
+      fetchNonProductCandidates(admin, query),
+    ]);
 
     // 3. Unified candidate list
-    const productCandidates: Candidate[] = semanticResults.slice(0, 35).map((p: any) => ({
+    const productCandidates: Candidate[] = semanticResults.slice(0, 18).map((p: any) => ({
       id: `p:${p.id}`,
       kind: 'product',
       title: p.title,
@@ -351,7 +388,7 @@ Deno.serve(async (req) => {
             if (result) ordered.push(result);
           }
         }
-        if (ordered.length > 0) return json({ results: ordered, source: 'ai-ranked' });
+        if (ordered.length > 0) return done({ results: ordered, source: 'ai-ranked' });
       }
 
       const fallbackResults: any[] = [
@@ -359,7 +396,7 @@ Deno.serve(async (req) => {
         ...nonProductCandidates.map((c) => candidateToResult(c)).filter(Boolean),
       ];
       if (fallbackResults.length > 0) {
-        return json({ results: fallbackResults, source: embeddingOk && !productsFromKeyword ? 'semantic' : 'keyword' });
+        return done({ results: fallbackResults, source: embeddingOk && !productsFromKeyword ? 'semantic' : 'keyword' });
       }
     }
 
@@ -370,7 +407,7 @@ Deno.serve(async (req) => {
     });
     if (keywordError) throw keywordError;
     const keywordResults = ((keywordData ?? []) as any[]).map((p: any) => ({ ...p, id: `p:${p.id}`, kind: 'product' }));
-    return json({
+    return done({
       results: [...keywordResults, ...nonProductCandidates.map((c) => candidateToResult(c)).filter(Boolean)],
       source: 'keyword',
     });
