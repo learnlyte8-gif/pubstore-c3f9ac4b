@@ -359,7 +359,7 @@ Deno.serve(async (req) => {
         ...nonProductCandidates.map((c) => candidateToResult(c)).filter(Boolean),
       ];
       if (fallbackResults.length > 0) {
-        return json({ results: fallbackResults, source: embeddingOk ? 'semantic' : 'keyword' });
+        return json({ results: fallbackResults, source: embeddingOk && !productsFromKeyword ? 'semantic' : 'keyword' });
       }
     }
 
