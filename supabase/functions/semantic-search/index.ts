@@ -307,46 +307,54 @@ Deno.serve(async (req) => {
     if (query.length < 2) return json({ results: [], source: 'empty' });
     const limit = Math.min(Number(body.limit) || 60, 100);
 
-    // 1. Semantic embedding + vector match for PRODUCTS
-    let semanticResults: any[] = [];
-    let embeddingOk = false;
-    try {
-      const [vector] = await embed(query);
-      embeddingOk = true;
-      const { data, error } = await admin.rpc('search_products_semantic', {
-        search_query: query,
-        query_embedding: JSON.stringify(vector),
-        result_limit: Math.min(limit, 60),
-      });
-      if (error) throw error;
-      semanticResults = data ?? [];
-    } catch (e) {
-      console.error('semantic stage failed:', e);
-    }
+    const cacheKey = `${query.toLowerCase()}|${limit}`;
+    const cached = cacheGet(cacheKey);
+    if (cached) return json(cached);
+    // Cache then return, so repeat searches answer instantly.
+    const done = (payload: any) => { cacheSet(cacheKey, payload); return json(payload); };
 
-    // 1b. If the semantic/embedding stage produced no products, fall back to the
-    // trigram keyword RPC so catalog products are never silently dropped just
-    // because some non-product row happened to match.
+    // 1. Product matching and non-product matching run in parallel — they are
+    // independent, so there's no reason to pay for them one after the other.
+    let embeddingOk = false;
     let productsFromKeyword = false;
-    if (semanticResults.length === 0) {
+
+    const productStage = (async (): Promise<any[]> => {
+      try {
+        const [vector] = await embed(query);
+        embeddingOk = true;
+        const { data, error } = await admin.rpc('search_products_semantic', {
+          search_query: query,
+          query_embedding: JSON.stringify(vector),
+          result_limit: Math.min(limit, 60),
+        });
+        if (error) throw error;
+        if ((data ?? []).length > 0) return data;
+      } catch (e) {
+        console.error('semantic stage failed:', e);
+      }
+      // Fall back to the trigram keyword RPC so catalog products are never
+      // silently dropped just because some non-product row happened to match.
       try {
         const { data: kwData, error: kwErr } = await admin.rpc('search_products', {
           search_query: query,
           result_limit: Math.min(limit, 60),
         });
         if (kwErr) throw kwErr;
-        semanticResults = kwData ?? [];
-        productsFromKeyword = semanticResults.length > 0;
+        productsFromKeyword = (kwData ?? []).length > 0;
+        return kwData ?? [];
       } catch (e) {
         console.error('keyword product fallback failed:', e);
+        return [];
       }
-    }
+    })();
 
-    // 2. Non-product candidates via text matching (all verticals)
-    const nonProductCandidates = await fetchNonProductCandidates(admin, query);
+    const [semanticResults, nonProductCandidates] = await Promise.all([
+      productStage,
+      fetchNonProductCandidates(admin, query),
+    ]);
 
     // 3. Unified candidate list
-    const productCandidates: Candidate[] = semanticResults.slice(0, 35).map((p: any) => ({
+    const productCandidates: Candidate[] = semanticResults.slice(0, 18).map((p: any) => ({
       id: `p:${p.id}`,
       kind: 'product',
       title: p.title,
