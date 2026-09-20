@@ -381,7 +381,7 @@ Deno.serve(async (req) => {
             if (result) ordered.push(result);
           }
         }
-        if (ordered.length > 0) return json({ results: ordered, source: 'ai-ranked' });
+        if (ordered.length > 0) return done({ results: ordered, source: 'ai-ranked' });
       }
 
       const fallbackResults: any[] = [
@@ -389,7 +389,7 @@ Deno.serve(async (req) => {
         ...nonProductCandidates.map((c) => candidateToResult(c)).filter(Boolean),
       ];
       if (fallbackResults.length > 0) {
-        return json({ results: fallbackResults, source: embeddingOk && !productsFromKeyword ? 'semantic' : 'keyword' });
+        return done({ results: fallbackResults, source: embeddingOk && !productsFromKeyword ? 'semantic' : 'keyword' });
       }
     }
 
@@ -400,7 +400,7 @@ Deno.serve(async (req) => {
     });
     if (keywordError) throw keywordError;
     const keywordResults = ((keywordData ?? []) as any[]).map((p: any) => ({ ...p, id: `p:${p.id}`, kind: 'product' }));
-    return json({
+    return done({
       results: [...keywordResults, ...nonProductCandidates.map((c) => candidateToResult(c)).filter(Boolean)],
       source: 'keyword',
     });
