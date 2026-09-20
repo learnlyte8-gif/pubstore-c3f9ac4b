@@ -12,7 +12,7 @@ const RANK_MODEL = 'google/gemini-3.6-flash';
 // fast, and the timeout means a slow model never stalls a shopper's search.
 const RANK_CANDIDATES = 24;
 const RANK_OUTPUT = 24;
-const RANK_TIMEOUT_MS = 6000;
+const RANK_TIMEOUT_MS = 8000;
 
 /** Short-lived in-memory result cache (per warm instance) for repeat searches. */
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -110,7 +110,12 @@ Output ONLY a JSON array of numbers, e.g. [3,0,7].`;
       body: JSON.stringify({
         model: RANK_MODEL,
         temperature: 0,
-        max_tokens: 300,
+        // Ranking is a lookup task, not a reasoning one: turning off the
+        // model's internal reasoning cuts this call from ~3s to under 1s and
+        // stops reasoning tokens from eating the reply budget (which silently
+        // truncated the ID list and dropped AI ranking altogether).
+        reasoning_effort: 'none',
+        max_tokens: 800,
         messages: [
           { role: 'system', content: 'You rank marketplace listings. Reply with a JSON array of candidate indexes only.' },
           { role: 'user', content: prompt },
