@@ -143,6 +143,8 @@ Output ONLY a JSON array of numbers, e.g. [3,0,7].`;
   } catch (e) {
     console.error('AI ranking error:', e);
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
