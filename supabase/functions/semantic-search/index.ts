@@ -189,11 +189,11 @@ function candidateToResult(c: Candidate): any {
     case 'user':
       return { id: c.id, kind: 'user', title: r.display_name || r.username, description: r.bio, category_slug: 'user', badge: null, price: null, image: r.avatar_url, rating: 0, review_count: 0, sold: 0, free_shipping: false, moq: null, lead_time: null, ready_to_ship: false, href: `/u/${r.user_id}` };
     case 'restaurant':
-      return { id: c.id, kind: 'restaurant', title: r.name, description: r.description, category_slug: r.cuisine, badge: null, price: r.price_level ? Number(r.price_level) : null, image: r.cover, rating: Number(r.rating ?? 0), review_count: r.review_count ?? 0, sold: 0, free_shipping: false, moq: null, lead_time: null, ready_to_ship: false, city: r.city, country: r.country, href: `/restaurants?id=${r.id}` };
+      return { id: c.id, kind: 'restaurant', title: r.name, description: r.description, category_slug: r.cuisine, badge: null, price: r.price_level ? Number(r.price_level) : null, image: r.cover, rating: Number(r.rating ?? 0), review_count: r.review_count ?? 0, sold: 0, free_shipping: false, moq: null, lead_time: null, ready_to_ship: false, city: r.city, country: r.country, href: `/restaurants/${r.id}` };
     case 'live':
       return { id: c.id, kind: 'live', title: r.title, description: `${r.viewer_count ?? 0} watching`, category_slug: 'live', badge: null, price: null, image: null, rating: 0, review_count: r.viewer_count ?? 0, sold: 0, free_shipping: false, moq: null, lead_time: null, ready_to_ship: false, href: `/live/${r.id}` };
     case 'ride':
-      return { id: c.id, kind: 'ride', title: `${r.pickup_address ?? 'Pickup'} → ${r.dropoff_address ?? 'Destination'}`, description: `${r.pickup_address ?? ''} to ${r.dropoff_address ?? ''}`, category_slug: r.vehicle_class, badge: null, price: r.rider_offer ? Number(r.rider_offer) : null, image: null, rating: 0, review_count: 0, sold: 0, free_shipping: false, moq: null, lead_time: null, ready_to_ship: false, href: `/rides?id=${r.id}` };
+      return { id: c.id, kind: 'ride', title: `${r.pickup_address ?? 'Pickup'} → ${r.dropoff_address ?? 'Destination'}`, description: `${r.pickup_address ?? ''} to ${r.dropoff_address ?? ''}`, category_slug: r.vehicle_class, badge: null, price: r.rider_offer ? Number(r.rider_offer) : null, image: null, rating: 0, review_count: 0, sold: 0, free_shipping: false, moq: null, lead_time: null, ready_to_ship: false, href: `/rides` };
     default:
       return null;
   }
@@ -300,6 +300,24 @@ Deno.serve(async (req) => {
       semanticResults = data ?? [];
     } catch (e) {
       console.error('semantic stage failed:', e);
+    }
+
+    // 1b. If the semantic/embedding stage produced no products, fall back to the
+    // trigram keyword RPC so catalog products are never silently dropped just
+    // because some non-product row happened to match.
+    let productsFromKeyword = false;
+    if (semanticResults.length === 0) {
+      try {
+        const { data: kwData, error: kwErr } = await admin.rpc('search_products', {
+          search_query: query,
+          result_limit: Math.min(limit, 60),
+        });
+        if (kwErr) throw kwErr;
+        semanticResults = kwData ?? [];
+        productsFromKeyword = semanticResults.length > 0;
+      } catch (e) {
+        console.error('keyword product fallback failed:', e);
+      }
     }
 
     // 2. Non-product candidates via text matching (all verticals)
