@@ -8,6 +8,26 @@ const corsHeaders = {
 const EMBED_MODEL = 'openai/text-embedding-3-small';
 const DIMS = 1536; // must match products.search_embedding
 const RANK_MODEL = 'google/gemini-3.6-flash';
+// Latency guards: a smaller candidate pool and a short reply keep the AI pass
+// fast, and the timeout means a slow model never stalls a shopper's search.
+const RANK_CANDIDATES = 24;
+const RANK_OUTPUT = 24;
+const RANK_TIMEOUT_MS = 6000;
+
+/** Short-lived in-memory result cache (per warm instance) for repeat searches. */
+const CACHE_TTL_MS = 5 * 60 * 1000;
+const CACHE_MAX = 200;
+const resultCache = new Map<string, { at: number; body: any }>();
+function cacheGet(key: string) {
+  const hit = resultCache.get(key);
+  if (!hit) return null;
+  if (Date.now() - hit.at > CACHE_TTL_MS) { resultCache.delete(key); return null; }
+  return hit.body;
+}
+function cacheSet(key: string, body: any) {
+  if (resultCache.size >= CACHE_MAX) resultCache.delete(resultCache.keys().next().value as string);
+  resultCache.set(key, { at: Date.now(), body });
+}
 
 function productText(product: any) {
   return [
