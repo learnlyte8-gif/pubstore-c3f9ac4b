@@ -62,42 +62,37 @@ async function aiRerank(query: string, candidates: Candidate[]): Promise<string[
   if (!key) return null;
   if (candidates.length === 0) return [];
 
-  const cards = candidates.slice(0, 50).map((c) => ({
-    id: c.id,
-    kind: c.kind,
-    title: c.title,
-    category: c.category ?? '',
-    price: c.price != null ? Number(c.price) : null,
-    description: String(c.description ?? '').replace(/\s+/g, ' ').slice(0, 120),
+  // Compact cards: short numeric keys + trimmed text keep the prompt (and the
+  // model's reply) small, which is what actually drives latency here.
+  const pool = candidates.slice(0, RANK_CANDIDATES);
+  const cards = pool.map((c, i) => ({
+    i,
+    k: c.kind,
+    t: String(c.title ?? '').slice(0, 80),
+    c: String(c.category ?? '').slice(0, 40),
+    p: c.price != null ? Number(c.price) : null,
+    d: String(c.description ?? '').replace(/\s+/g, ' ').slice(0, 70),
   }));
 
-  const prompt = `You are a shopping assistant helping a user find what they need across a marketplace.
-
-User searched: ${JSON.stringify(query)}
-
-Here are ${cards.length} candidates from different parts of the marketplace (products, suppliers, services, vehicles, stays, properties, etc.):
+  const prompt = `Shopper searched: ${JSON.stringify(query)}
+Candidates (i = index, k = kind, t = title, c = category, p = price, d = description):
 ${JSON.stringify(cards)}
+Return the indexes of relevant candidates, best match first. Drop only clearly unrelated ones. Max ${RANK_OUTPUT} items.
+Output ONLY a JSON array of numbers, e.g. [3,0,7].`;
 
-Rank these candidates by how well they match what the user is looking for. Consider:
-- How closely the title matches the user's intent
-- Whether the kind/category is relevant to the query
-- Whether the description confirms it's what the user wants
-- Price relevance if the query mentions a budget
-
-Return a JSON array of candidate IDs (strings) in order from best to worst match.
-Keep ALL candidates that are reasonably relevant — only drop ones that are clearly unrelated to the query.
-Maximum 30 items.
-Output ONLY the JSON array, e.g. ["p:id1","s:id2","sv:id3"] — no prose, no markdown, no explanation.`;
-
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), RANK_TIMEOUT_MS);
   try {
     const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: { 'Lovable-API-Key': key, 'Content-Type': 'application/json' },
+      signal: ctl.signal,
       body: JSON.stringify({
         model: RANK_MODEL,
         temperature: 0,
+        max_tokens: 300,
         messages: [
-          { role: 'system', content: 'You rank marketplace listings for a shopper. Reply with a JSON array of IDs only.' },
+          { role: 'system', content: 'You rank marketplace listings. Reply with a JSON array of candidate indexes only.' },
           { role: 'user', content: prompt },
         ],
       }),
