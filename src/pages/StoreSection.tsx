@@ -780,13 +780,38 @@ type AliItem = {
   orders_count: number | null;
   url: string | null;
   images?: string[];
+  moq?: number | null;
+  unit?: string | null;
+  ship_from?: string | null;
 };
 
-function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof useQueryClient>; source?: "aliexpress" | "shein" }) {
+type ImportSource = "aliexpress" | "shein" | "alibaba";
+
+function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof useQueryClient>; source?: ImportSource }) {
   const isShein = source === "shein";
-  const ALI_PRICE_MULTIPLIER = 4;
-  const fnName = isShein ? "omkar-shein-search" : "omkar-aliexpress-search";
-  const sourceLabel = isShein ? "SHEIN" : "AliExpress";
+  const isAlibaba = source === "alibaba";
+  const storeKey = `pubstore.import.${source}`;
+  const saved = (() => { try { return JSON.parse(localStorage.getItem(storeKey) || "{}"); } catch { return {}; } })();
+  const [multiplierInput, setMultiplierInput] = useState<string>(String(saved.multiplier ?? 4));
+  const [shipMin, setShipMin] = useState<string>(String(saved.shipMin ?? (isAlibaba ? 10 : 7)));
+  const [shipMax, setShipMax] = useState<string>(String(saved.shipMax ?? (isAlibaba ? 25 : 15)));
+  const [abFilters, setAbFilters] = useState({
+    sort_by: "best_match",
+    trade_assurance: false,
+    verified_supplier: false,
+    verified_pro: false,
+    alibaba_guaranteed: false,
+    delivery_days: "",
+  });
+  useEffect(() => {
+    localStorage.setItem(storeKey, JSON.stringify({ multiplier: multiplierInput, shipMin, shipMax }));
+  }, [storeKey, multiplierInput, shipMin, shipMax]);
+  const ALI_PRICE_MULTIPLIER = Math.max(0.1, Number(multiplierInput) || 1);
+  const sMin = Math.max(0, Math.round(Number(shipMin) || 0));
+  const sMax = Math.max(sMin, Math.round(Number(shipMax) || sMin));
+  const leadTimeLabel = sMin === sMax ? `${sMin} days` : `${sMin}–${sMax} days`;
+  const fnName = isShein ? "omkar-shein-search" : isAlibaba ? "omkar-alibaba-search" : "omkar-aliexpress-search";
+  const sourceLabel = isShein ? "SHEIN" : isAlibaba ? "Alibaba" : "AliExpress";
   const [categorySlug, setCategorySlug] = useState<string>("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
