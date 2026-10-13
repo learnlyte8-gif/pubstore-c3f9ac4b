@@ -167,7 +167,7 @@ function ImportView() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [email, setEmail] = useState<string | null>(null);
-  const [mode, setMode] = useState<"single" | "bulk" | "aliexpress" | "stays">("single");
+  const [mode, setMode] = useState<"single" | "bulk" | "aliexpress" | "shein" | "stays">("single");
 
   // markup (shared by both modes)
   const [markupMode, setMarkupMode] = useState<MarkupMode>("percent");
@@ -201,19 +201,19 @@ function ImportView() {
     <div className="px-4 py-4 space-y-4">
       {/* Mode toggle */}
       <div className="flex bg-muted rounded-full p-1 overflow-x-auto">
-        {(["single", "bulk", "aliexpress", "stays"] as const).map((m) => (
+        {(["single", "bulk", "aliexpress", "shein", "stays"] as const).map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
             className={`flex-1 min-w-[80px] h-9 rounded-full text-xs font-bold transition whitespace-nowrap px-3 ${mode === m ? "bg-background shadow-card" : "text-muted-foreground"}`}
           >
-            {m === "single" ? "Single URL" : m === "bulk" ? "Bulk import" : m === "aliexpress" ? "AliExpress" : "Stays (Airbnb)"}
+            {m === "single" ? "Single URL" : m === "bulk" ? "Bulk import" : m === "aliexpress" ? "AliExpress" : m === "shein" ? "SHEIN" : "Stays (Airbnb)"}
           </button>
         ))}
       </div>
 
       {/* Markup controls — shared (aliexpress uses fixed 4x multiplier, stays has its own) */}
-      {mode !== "aliexpress" && mode !== "stays" && (
+      {mode !== "aliexpress" && mode !== "shein" && mode !== "stays" && (
         <div className="rounded-2xl border bg-card p-3 shadow-card">
           <div className="flex items-center gap-2 mb-2">
             <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
@@ -254,6 +254,10 @@ function ImportView() {
       ) : mode === "aliexpress" ? (
         <PlanGate feature="bulk_import">
           <AliExpressImport qc={qc} />
+        </PlanGate>
+      ) : mode === "shein" ? (
+        <PlanGate feature="bulk_import">
+          <AliExpressImport key="shein" qc={qc} source="shein" />
         </PlanGate>
       ) : (
         <PlanGate feature="bulk_import">
@@ -775,11 +779,14 @@ type AliItem = {
   rating: number | null;
   orders_count: number | null;
   url: string | null;
+  images?: string[];
 };
 
-const ALI_PRICE_MULTIPLIER = 4;
-
-function AliExpressImport({ qc }: { qc: ReturnType<typeof useQueryClient> }) {
+function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof useQueryClient>; source?: "aliexpress" | "shein" }) {
+  const isShein = source === "shein";
+  const ALI_PRICE_MULTIPLIER = 4;
+  const fnName = isShein ? "omkar-shein-search" : "omkar-aliexpress-search";
+  const sourceLabel = isShein ? "SHEIN" : "AliExpress";
   const [categorySlug, setCategorySlug] = useState<string>("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -804,7 +811,7 @@ function AliExpressImport({ qc }: { qc: ReturnType<typeof useQueryClient> }) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Please sign in again.");
-      const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/omkar-aliexpress-search`, {
+      const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${fnName}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -851,7 +858,7 @@ function AliExpressImport({ qc }: { qc: ReturnType<typeof useQueryClient> }) {
         let detail: any = null;
         try {
           const { data: { session } } = await supabase.auth.getSession();
-          if (session?.access_token) {
+          if (session?.access_token && !isShein) {
             const dr = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/omkar-aliexpress-search`, {
               method: "POST",
               headers: {
@@ -871,15 +878,15 @@ function AliExpressImport({ qc }: { qc: ReturnType<typeof useQueryClient> }) {
         const basePrice = it.price ?? detail?.price ?? 0;
         const finalPrice = Math.round(basePrice * ALI_PRICE_MULTIPLIER * 100) / 100;
         const sourceImages: string[] = Array.from(
-          new Set([...(detail?.images ?? []), ...(it.image ? [it.image] : [])].filter(Boolean)),
+          new Set([...(detail?.images ?? []), ...(it.images ?? []), ...(it.image ? [it.image] : [])].filter(Boolean)),
         );
         const stored = sourceImages.length
-          ? await mirrorImages(user.id, sourceImages, `ali-${it.id}`, 10)
+          ? await mirrorImages(user.id, sourceImages, `${source}-${it.id}`, 10)
           : [];
         const gallery = stored.length ? stored : sourceImages;
         const description = detail?.description
           ? `${detail.description}`.slice(0, 4000)
-          : `Imported from AliExpress · ${it.url ?? ""}`.trim();
+          : `Imported from ${sourceLabel} · ${it.url ?? ""}`.trim();
         const { error: insErr } = await supabase.from("products").insert({
           supplier_id: supplier.id,
           title: (detail?.title || it.title).slice(0, 200),
@@ -896,7 +903,7 @@ function AliExpressImport({ qc }: { qc: ReturnType<typeof useQueryClient> }) {
           
           specs: detail?.specs && Object.keys(detail.specs).length ? detail.specs : null,
           active: finalPrice > 0,
-          source: "aliexpress",
+          source,
           source_url: it.url ?? detail?.url ?? null,
           source_id: it.id ?? null,
         });
@@ -916,7 +923,7 @@ function AliExpressImport({ qc }: { qc: ReturnType<typeof useQueryClient> }) {
   return (
     <div className="space-y-3">
       <div className="rounded-2xl border bg-card p-3 shadow-card space-y-2">
-        <p className="text-sm font-bold">Search AliExpress by category</p>
+        <p className="text-sm font-bold">Search {sourceLabel} by category</p>
         <p className="text-[11px] text-muted-foreground">
           Prices are automatically multiplied by <b>{ALI_PRICE_MULTIPLIER}×</b> when importing so you keep a healthy margin.
         </p>
