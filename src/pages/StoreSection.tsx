@@ -167,7 +167,7 @@ function ImportView() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [email, setEmail] = useState<string | null>(null);
-  const [mode, setMode] = useState<"single" | "bulk" | "aliexpress" | "shein" | "stays">("single");
+  const [mode, setMode] = useState<"single" | "bulk" | "aliexpress" | "shein" | "alibaba" | "stays">("single");
 
   // markup (shared by both modes)
   const [markupMode, setMarkupMode] = useState<MarkupMode>("percent");
@@ -201,19 +201,19 @@ function ImportView() {
     <div className="px-4 py-4 space-y-4">
       {/* Mode toggle */}
       <div className="flex bg-muted rounded-full p-1 overflow-x-auto">
-        {(["single", "bulk", "aliexpress", "shein", "stays"] as const).map((m) => (
+        {(["single", "bulk", "aliexpress", "shein", "alibaba", "stays"] as const).map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
             className={`flex-1 min-w-[80px] h-9 rounded-full text-xs font-bold transition whitespace-nowrap px-3 ${mode === m ? "bg-background shadow-card" : "text-muted-foreground"}`}
           >
-            {m === "single" ? "Single URL" : m === "bulk" ? "Bulk import" : m === "aliexpress" ? "AliExpress" : m === "shein" ? "SHEIN" : "Stays (Airbnb)"}
+            {m === "single" ? "Single URL" : m === "bulk" ? "Bulk import" : m === "aliexpress" ? "AliExpress" : m === "shein" ? "SHEIN" : m === "alibaba" ? "Alibaba" : "Stays (Airbnb)"}
           </button>
         ))}
       </div>
 
       {/* Markup controls — shared (aliexpress uses fixed 4x multiplier, stays has its own) */}
-      {mode !== "aliexpress" && mode !== "shein" && mode !== "stays" && (
+      {mode !== "aliexpress" && mode !== "shein" && mode !== "alibaba" && mode !== "stays" && (
         <div className="rounded-2xl border bg-card p-3 shadow-card">
           <div className="flex items-center gap-2 mb-2">
             <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
@@ -258,6 +258,10 @@ function ImportView() {
       ) : mode === "shein" ? (
         <PlanGate feature="bulk_import">
           <AliExpressImport key="shein" qc={qc} source="shein" />
+        </PlanGate>
+      ) : mode === "alibaba" ? (
+        <PlanGate feature="bulk_import">
+          <AliExpressImport key="alibaba" qc={qc} source="alibaba" />
         </PlanGate>
       ) : (
         <PlanGate feature="bulk_import">
@@ -843,7 +847,7 @@ function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ query: q, page: nextPage }),
+        body: JSON.stringify({ query: q, page: nextPage, ...(isAlibaba ? { filters: { ...abFilters, delivery_days: Number(abFilters.delivery_days) || undefined } } : {}) }),
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j?.error || `Search failed (${r.status})`);
@@ -883,7 +887,7 @@ function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof
         let detail: any = null;
         try {
           const { data: { session } } = await supabase.auth.getSession();
-          if (session?.access_token && !isShein) {
+          if (session?.access_token && !isShein && !isAlibaba) {
             const dr = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/omkar-aliexpress-search`, {
               method: "POST",
               headers: {
@@ -921,10 +925,12 @@ function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof
           video_url: detail?.video_url ?? null,
           price: finalPrice,
           original_price: basePrice || null,
-          moq: 1,
-          unit: "piece",
+          moq: it.moq ?? 1,
+          unit: it.unit ?? "piece",
           category_slug: categorySlug || null,
-          ship_from: detail?.ship_from ?? supplier.country ?? null,
+          ship_from: detail?.ship_from ?? it.ship_from ?? supplier.country ?? null,
+          lead_time: leadTimeLabel,
+          lead_time_days: sMax,
           
           specs: detail?.specs && Object.keys(detail.specs).length ? detail.specs : null,
           active: finalPrice > 0,
@@ -950,8 +956,41 @@ function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof
       <div className="rounded-2xl border bg-card p-3 shadow-card space-y-2">
         <p className="text-sm font-bold">Search {sourceLabel} by category</p>
         <p className="text-[11px] text-muted-foreground">
-          Prices are automatically multiplied by <b>{ALI_PRICE_MULTIPLIER}×</b> when importing so you keep a healthy margin.
+          Prices are multiplied by <b>{ALI_PRICE_MULTIPLIER}×</b> and shipping is set to <b>{leadTimeLabel}</b> on import.
         </p>
+        <div className="grid grid-cols-3 gap-2">
+          <label className="text-[10px] font-semibold text-muted-foreground">Price ×
+            <input type="number" step="0.1" min="0.1" value={multiplierInput} onChange={(e) => setMultiplierInput(e.target.value)} className="mt-1 w-full h-9 rounded-xl border bg-background px-2 text-sm text-foreground" />
+          </label>
+          <label className="text-[10px] font-semibold text-muted-foreground">Ship min (days)
+            <input type="number" min="0" value={shipMin} onChange={(e) => setShipMin(e.target.value)} className="mt-1 w-full h-9 rounded-xl border bg-background px-2 text-sm text-foreground" />
+          </label>
+          <label className="text-[10px] font-semibold text-muted-foreground">Ship max (days)
+            <input type="number" min="0" value={shipMax} onChange={(e) => setShipMax(e.target.value)} className="mt-1 w-full h-9 rounded-xl border bg-background px-2 text-sm text-foreground" />
+          </label>
+        </div>
+        {isAlibaba && (
+          <div className="space-y-2 rounded-xl bg-muted/50 p-2">
+            <div className="grid grid-cols-2 gap-2">
+              <select value={abFilters.sort_by} onChange={(e) => setAbFilters((f) => ({ ...f, sort_by: e.target.value }))} className="h-9 rounded-xl border bg-background px-2 text-xs font-semibold">
+                <option value="best_match">Best match</option>
+                <option value="price_low_to_high">Price: low → high</option>
+                <option value="price_high_to_low">Price: high → low</option>
+                <option value="orders">Most orders</option>
+                <option value="newest">Newest</option>
+              </select>
+              <input type="number" min="1" max="60" placeholder="Delivers within (days)" value={abFilters.delivery_days} onChange={(e) => setAbFilters((f) => ({ ...f, delivery_days: e.target.value }))} className="h-9 rounded-xl border bg-background px-2 text-xs" />
+            </div>
+            <div className="grid grid-cols-2 gap-1">
+              {([["trade_assurance", "Trade Assurance"], ["verified_supplier", "Verified supplier"], ["verified_pro", "Verified Pro"], ["alibaba_guaranteed", "Alibaba Guaranteed"]] as const).map(([k, label]) => (
+                <label key={k} className="flex items-center gap-1.5 text-[11px] font-semibold">
+                  <input type="checkbox" checked={abFilters[k]} onChange={(e) => setAbFilters((f) => ({ ...f, [k]: e.target.checked }))} />
+                  {label}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
         <select
           value={categorySlug}
           onChange={(e) => {
@@ -1022,6 +1061,9 @@ function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof
                         {markedUp ? `$${markedUp}` : ""}
                       </span>
                     </div>
+                    {it.moq != null && it.moq > 1 ? (
+                      <p className="text-[10px] font-semibold text-muted-foreground">MOQ {it.moq} {it.unit ?? "pcs"}</p>
+                    ) : null}
                     {it.orders_count != null || it.rating != null ? (
                       <p className="text-[10px] text-muted-foreground">
                         {it.rating != null ? `★ ${it.rating}` : ""}{it.rating != null && it.orders_count != null ? " · " : ""}{it.orders_count != null ? `${it.orders_count} sold` : ""}
