@@ -775,11 +775,14 @@ type AliItem = {
   rating: number | null;
   orders_count: number | null;
   url: string | null;
+  images?: string[];
 };
 
-const ALI_PRICE_MULTIPLIER = 4;
-
-function AliExpressImport({ qc }: { qc: ReturnType<typeof useQueryClient> }) {
+function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof useQueryClient>; source?: "aliexpress" | "shein" }) {
+  const isShein = source === "shein";
+  const ALI_PRICE_MULTIPLIER = isShein ? 2 : 4;
+  const fnName = isShein ? "omkar-shein-search" : "omkar-aliexpress-search";
+  const sourceLabel = isShein ? "SHEIN" : "AliExpress";
   const [categorySlug, setCategorySlug] = useState<string>("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
