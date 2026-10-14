@@ -201,7 +201,7 @@ function ImportView() {
     <div className="px-4 py-4 space-y-4">
       {/* Mode toggle */}
       <div className="flex bg-muted rounded-full p-1 overflow-x-auto">
-        {(["single", "bulk", "aliexpress", "shein", "alibaba", "stays"] as const).map((m) => (
+        {(["single", "bulk", "aliexpress", "shein", "alibaba", "google", "stays"] as const).map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
@@ -794,6 +794,7 @@ type ImportSource = "aliexpress" | "shein" | "alibaba" | "google";
 function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof useQueryClient>; source?: ImportSource }) {
   const isShein = source === "shein";
   const isAlibaba = source === "alibaba";
+  const isGoogle = source === "google";
   const storeKey = `pubstore.import.${source}`;
   const saved = (() => { try { return JSON.parse(localStorage.getItem(storeKey) || "{}"); } catch { return {}; } })();
   const [multiplierInput, setMultiplierInput] = useState<string>(String(saved.multiplier ?? 4));
