@@ -823,6 +823,8 @@ function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof
   const sourceLabel = isShein ? "SHEIN" : isAlibaba ? "Alibaba" : isGoogle ? "Google Shopping" : "AliExpress";
   const [categorySlug, setCategorySlug] = useState<string>("");
   const [query, setQuery] = useState("");
+  const [alibabaMode, setAlibabaMode] = useState<"search" | "supplier">("search");
+  const [supplierSlug, setSupplierSlug] = useState("");
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<AliItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -840,7 +842,12 @@ function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof
 
   const runSearch = async (nextPage = 1) => {
     const q = query.trim();
-    if (!q) { toast.error("Pick a category or type a query"); return; }
+    const bySupplier = isAlibaba && alibabaMode === "supplier";
+    const slug = supplierSlug.trim().toLowerCase().replace(/^https?:\/\/[^/]*alibaba\.com\//, "").replace(/\/.*$/, "").replace(/[^a-z0-9-]/g, "");
+    if (bySupplier ? !slug : !q) {
+      toast.error(bySupplier ? "Enter the supplier's store name (e.g. limingsilver)" : "Pick a category or type a query");
+      return;
+    }
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -852,7 +859,11 @@ function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ query: q, page: nextPage, ...(isAlibaba ? { filters: { ...abFilters, delivery_days: Number(abFilters.delivery_days) || undefined } } : {}) }),
+        body: JSON.stringify(
+          bySupplier
+            ? { supplier: slug, page: nextPage }
+            : { query: q, page: nextPage, ...(isAlibaba ? { filters: { ...abFilters, delivery_days: Number(abFilters.delivery_days) || undefined } } : {}) },
+        ),
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j?.error || `Search failed (${r.status})`);
@@ -975,6 +986,20 @@ function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof
           </label>
         </div>
         {isAlibaba && (
+          <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/50 p-1">
+            {([["search", "Search products"], ["supplier", "By supplier"]] as const).map(([m, label]) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setAlibabaMode(m)}
+                className={`h-8 rounded-lg text-[11px] font-bold transition ${alibabaMode === m ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+        {isAlibaba && alibabaMode === "search" && (
           <div className="space-y-2 rounded-xl bg-muted/50 p-2">
             <div className="grid grid-cols-2 gap-2">
               <select value={abFilters.sort_by} onChange={(e) => setAbFilters((f) => ({ ...f, sort_by: e.target.value }))} className="h-9 rounded-xl border bg-background px-2 text-xs font-semibold">
@@ -1012,13 +1037,23 @@ function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof
           ))}
         </select>
         <div className="flex gap-2">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="e.g. wireless earbuds"
-            className="flex-1 h-10 rounded-xl border bg-background px-3 text-sm"
-          />
+          {isAlibaba && alibabaMode === "supplier" ? (
+            <input
+              type="text"
+              value={supplierSlug}
+              onChange={(e) => setSupplierSlug(e.target.value)}
+              placeholder="Supplier store name, e.g. limingsilver"
+              className="flex-1 h-10 rounded-xl border bg-background px-3 text-sm"
+            />
+          ) : (
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="e.g. wireless earbuds"
+              className="flex-1 h-10 rounded-xl border bg-background px-3 text-sm"
+            />
+          )}
           <Button onClick={() => runSearch(1)} disabled={loading || importing} className="h-10">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
             <span className="ml-1 text-xs">Search</span>
