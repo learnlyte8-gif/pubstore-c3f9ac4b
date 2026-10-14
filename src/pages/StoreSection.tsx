@@ -207,13 +207,13 @@ function ImportView() {
             onClick={() => setMode(m)}
             className={`flex-1 min-w-[80px] h-9 rounded-full text-xs font-bold transition whitespace-nowrap px-3 ${mode === m ? "bg-background shadow-card" : "text-muted-foreground"}`}
           >
-            {m === "single" ? "Single URL" : m === "bulk" ? "Bulk import" : m === "aliexpress" ? "AliExpress" : m === "shein" ? "SHEIN" : m === "alibaba" ? "Alibaba" : "Stays (Airbnb)"}
+            {m === "single" ? "Single URL" : m === "bulk" ? "Bulk import" : m === "aliexpress" ? "AliExpress" : m === "shein" ? "SHEIN" : m === "alibaba" ? "Alibaba" : m === "google" ? "Google Shopping (ZW)" : "Stays (Airbnb)"}
           </button>
         ))}
       </div>
 
       {/* Markup controls — shared (aliexpress uses fixed 4x multiplier, stays has its own) */}
-      {mode !== "aliexpress" && mode !== "shein" && mode !== "alibaba" && mode !== "stays" && (
+      {mode !== "aliexpress" && mode !== "shein" && mode !== "alibaba" && mode !== "google" && mode !== "stays" && (
         <div className="rounded-2xl border bg-card p-3 shadow-card">
           <div className="flex items-center gap-2 mb-2">
             <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
