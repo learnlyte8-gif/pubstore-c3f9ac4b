@@ -986,6 +986,20 @@ function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof
           </label>
         </div>
         {isAlibaba && (
+          <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/50 p-1">
+            {([["search", "Search products"], ["supplier", "By supplier"]] as const).map(([m, label]) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setAlibabaMode(m)}
+                className={`h-8 rounded-lg text-[11px] font-bold transition ${alibabaMode === m ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+        {isAlibaba && alibabaMode === "search" && (
           <div className="space-y-2 rounded-xl bg-muted/50 p-2">
             <div className="grid grid-cols-2 gap-2">
               <select value={abFilters.sort_by} onChange={(e) => setAbFilters((f) => ({ ...f, sort_by: e.target.value }))} className="h-9 rounded-xl border bg-background px-2 text-xs font-semibold">
