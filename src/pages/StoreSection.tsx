@@ -844,9 +844,15 @@ function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof
   const runSearch = async (nextPage = 1) => {
     const q = query.trim();
     const bySupplier = isAlibaba && alibabaMode === "supplier";
-    const slug = supplierSlug.trim().toLowerCase().replace(/^https?:\/\/[^/]*alibaba\.com\//, "").replace(/\/.*$/, "").replace(/[^a-z0-9-]/g, "");
+    // The scraper accepts either a plain slug (limingsilver) or a full store URL
+    // (https://ling.en.alibaba.com/). Pass URLs through untouched, slugs cleaned up.
+    const rawSupplier = supplierSlug.trim();
+    const supplierIsUrl = /^https?:\/\//i.test(rawSupplier);
+    const slug = supplierIsUrl
+      ? rawSupplier
+      : rawSupplier.toLowerCase().replace(/^https?:\/\/[^/]*alibaba\.com\//, "").replace(/\/.*$/, "").replace(/[^a-z0-9-]/g, "");
     if (bySupplier ? !slug : !q) {
-      toast.error(bySupplier ? "Enter the supplier's store name (e.g. limingsilver)" : "Pick a category or type a query");
+      toast.error(bySupplier ? "Enter the supplier's store name or store link (e.g. limingsilver or https://ling.en.alibaba.com/)" : "Pick a category or type a query");
       return;
     }
     setLoading(true);
@@ -1043,7 +1049,7 @@ function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof
               type="text"
               value={supplierSlug}
               onChange={(e) => setSupplierSlug(e.target.value)}
-              placeholder="Supplier store name, e.g. limingsilver"
+              placeholder="Store name or store link, e.g. limingsilver or https://ling.en.alibaba.com/"
               className="flex-1 h-10 rounded-xl border bg-background px-3 text-sm"
             />
           ) : (
