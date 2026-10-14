@@ -788,6 +788,7 @@ type AliItem = {
   orders_count: number | null;
   url: string | null;
   images?: string[];
+  video_url?: string | null;
   moq?: number | null;
   unit?: string | null;
   ship_from?: string | null;
@@ -938,7 +939,7 @@ function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof
           description,
           image: gallery[0] ?? null,
           gallery,
-          video_url: detail?.video_url ?? null,
+          video_url: detail?.video_url ?? it.video_url ?? null,
           price: finalPrice,
           original_price: basePrice || null,
           moq: it.moq ?? 1,

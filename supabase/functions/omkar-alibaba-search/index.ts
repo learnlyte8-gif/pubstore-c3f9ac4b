@@ -64,11 +64,17 @@ Deno.serve(async (req) => {
       const images: string[] = Array.from(new Set([p?.image, ...(Array.isArray(p?.images) ? p.images : [])].filter(Boolean).map(String)));
       const min = num(p?.promotion_price?.min ?? p?.price?.min);
       const max = num(p?.price?.max);
+      // Video can come as a string, an object, or a list depending on the endpoint.
+      const videoRaw = p?.video?.url ?? p?.video?.video_url ?? p?.video_url
+        ?? (typeof p?.video === "string" ? p.video : null)
+        ?? (Array.isArray(p?.videos) ? (typeof p.videos[0] === "string" ? p.videos[0] : p.videos[0]?.url ?? p.videos[0]?.video_url) : null);
+      const video_url = typeof videoRaw === "string" && /^https?:\/\//i.test(videoRaw) ? videoRaw : null;
       return {
         id: String(p?.id ?? crypto.randomUUID()),
         title: String(p?.title ?? "Alibaba product"),
         image: images[0] ?? null,
         images,
+        video_url,
         price: min,
         original_price: max,
         currency: p?.price?.currency ?? "USD",
