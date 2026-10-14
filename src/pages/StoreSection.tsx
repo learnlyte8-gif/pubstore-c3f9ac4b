@@ -263,6 +263,10 @@ function ImportView() {
         <PlanGate feature="bulk_import">
           <AliExpressImport key="alibaba" qc={qc} source="alibaba" />
         </PlanGate>
+      ) : mode === "google" ? (
+        <PlanGate feature="bulk_import">
+          <AliExpressImport key="google" qc={qc} source="google" />
+        </PlanGate>
       ) : (
         <PlanGate feature="bulk_import">
           <StaysImport qc={qc} navigate={navigate} />
