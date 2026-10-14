@@ -47,6 +47,7 @@ import {
 } from "@/data/jobs";
 import EmptyState from "@/components/EmptyState";
 import BnbVerticalScreen from "@/components/bnb/BnbVerticalScreen";
+import GoogleJobsSearch from "@/components/jobs/GoogleJobsSearch";
 import BackButton from "@/components/BackButton";
 
 type Tab = "feed" | "saved" | "applied" | "manage";
@@ -199,6 +200,8 @@ export default function Jobs() {
       </div>
 
       {tab === "feed" && (
+        <>
+        <GoogleJobsSearch />
         <BnbVerticalScreen
           queryKey={["bnb-jobs"]}
           fetcher={(cat) => fetchJobs({ category: cat === "all" ? undefined : cat, limit: 60 })}
