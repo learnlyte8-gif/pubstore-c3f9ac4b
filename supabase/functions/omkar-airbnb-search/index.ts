@@ -42,12 +42,24 @@ const toNum = (v: unknown): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 
-const isoDate = /^\d{4}-\d{2}-\d{2}$/;
-
-function addDays(days: number) {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
+// Nightly rate from the total: "5 nights x $145.60" breakdown, else total / nights.
+function nightlyRate(p: any): number | null {
+  const breakdown = Array.isArray(p?.breakdown) ? p.breakdown : [];
+  for (const b of breakdown) {
+    const m = String(b?.description ?? "").match(/(\d+)\s+nights?\s+x\s+\$?([\d.,]+)/i);
+    if (m) {
+      const n = parseFloat(m[2].replace(/,/g, ""));
+      if (Number.isFinite(n)) return n;
+    }
+  }
+  const total = toNum(p?.amount);
+  const q = String(p?.qualifier ?? "");
+  const nights = q.match(/(\d+)\s+nights?/i);
+  if (total !== null && nights) {
+    const n = parseInt(nights[1], 10);
+    if (n > 0) return Math.round((total / n) * 100) / 100;
+  }
+  return total;
 }
 
 Deno.serve(async (req) => {
@@ -66,35 +78,27 @@ Deno.serve(async (req) => {
     const { data: userData, error: userErr } = await sb.auth.getUser();
     if (userErr || !userData.user) return json({ error: "Unauthorized" }, 401);
 
-    const apiKey = (Deno.env.get("OMKAR_AIRBNB_API_KEY") || Deno.env.get("OMKAR_API_KEY"))?.trim();
-    if (!apiKey) return json({ error: "OMKAR_API_KEY not configured" }, 500);
+    const apiKey = (
+      Deno.env.get("OMKAR_AIRBNB_API_KEY") ||
+      Deno.env.get("OMKAR_API_KEY") ||
+      Deno.env.get("OMKAR_SHEIN_API_KEY")
+    )?.trim();
+    if (!apiKey) return json({ error: "Airbnb API key not configured" }, 500);
 
     const requestUrl = new URL(req.url);
-    const destination = String(requestUrl.searchParams.get("destination_query") ?? requestUrl.searchParams.get("destination") ?? "").trim();
-    const page = Math.max(1, parseInt(String(requestUrl.searchParams.get("page_number") ?? requestUrl.searchParams.get("page") ?? 1), 10) || 1);
+    const destination = String(requestUrl.searchParams.get("destination_query") ?? requestUrl.searchParams.get("destination") ?? requestUrl.searchParams.get("query") ?? "").trim();
+    const page = Math.max(1, Math.min(50, parseInt(String(requestUrl.searchParams.get("page_number") ?? requestUrl.searchParams.get("page") ?? 1), 10) || 1));
     if (!destination) return json({ error: "destination is required" }, 400);
 
-    const arrivalDate = requestUrl.searchParams.get("arrival_date") || addDays(1);
-    const departureDate = requestUrl.searchParams.get("departure_date") || addDays(5);
-    const adultGuests = Math.max(1, Math.min(16, parseInt(String(requestUrl.searchParams.get("adult_guests") ?? 2), 10) || 2));
-    if (!isoDate.test(arrivalDate) || !isoDate.test(departureDate)) {
-      return json({ error: "arrival_date and departure_date must be YYYY-MM-DD" }, 400);
-    }
-
-    const url = new URL("https://airbnb-scraper-api.omkar.cloud/airbnb/listings/search");
-    url.searchParams.set("destination_query", destination);
-    url.searchParams.set("arrival_date", arrivalDate);
-    url.searchParams.set("departure_date", departureDate);
-    url.searchParams.set("adult_guests", String(adultGuests));
-    if (page > 1) url.searchParams.set("page_number", String(page));
+    const url = new URL("https://airbnb-scraper-api.omkar.cloud/airbnb/rooms/search");
+    url.searchParams.set("query", destination);
+    const placeId = requestUrl.searchParams.get("place_id");
+    if (placeId) url.searchParams.set("place_id", placeId);
+    if (page > 1) url.searchParams.set("page", String(page));
 
     const r = await fetch(url.toString(), {
       method: "GET",
-      headers: {
-        "API-Key": apiKey,
-        "Accept": "application/json",
-        "User-Agent": "python-requests/2.32.3",
-      },
+      headers: { "API-Key": apiKey, "Accept": "application/json" },
     });
     const text = await r.text();
     if (!r.ok) {
@@ -110,40 +114,39 @@ Deno.serve(async (req) => {
     let data: any;
     try { data = JSON.parse(text); } catch { return json({ error: "Invalid Airbnb response" }, 502); }
 
-    const listings: any[] = Array.isArray(data?.listings) ? data.listings : [];
-    const items: StayItem[] = listings.map((l) => {
-      const photos: string[] = Array.isArray(l?.photos) ? l.photos.filter(Boolean) : [];
-      const addr = String(l?.full_address ?? "");
-      const parts = addr.split(",").map((s: string) => s.trim()).filter(Boolean);
-      const country = parts.length > 1 ? parts[parts.length - 1] : null;
+    const results: any[] = Array.isArray(data?.results) ? data.results : [];
+    const items: StayItem[] = results.map((l) => {
+      const photos: string[] = Array.isArray(l?.images) ? l.images.filter(Boolean).map(String) : [];
+      const titleParts = String(l?.title ?? "").split(" in ");
       return {
-        id: String(l?.listing_id ?? ""),
-        title: String(l?.title ?? ""),
+        id: String(l?.id ?? ""),
+        title: String(l?.name ?? l?.title ?? ""),
         image: photos[0] ?? null,
         images: photos.slice(0, 12),
-        price: toNum(l?.pricing?.nightly_rate),
-        currency: String(l?.pricing?.currency ?? "USD"),
-        city: l?.city ?? (parts[0] ?? null),
-        country,
-        full_address: addr || null,
-        latitude: toNum(l?.latitude),
-        longitude: toNum(l?.longitude),
-        property_type: l?.property_type ?? null,
-        bedrooms: toNum(l?.bedroom_count),
-        beds: toNum(l?.bed_count),
-        baths: toNum(l?.bathroom_count),
-        guests: toNum(l?.guest_capacity),
-        rating: toNum(l?.overall_rating),
-        review_count: toNum(l?.review_count),
+        price: nightlyRate(l?.price),
+        currency: String(l?.price?.currency ?? data?.currency ?? "USD"),
+        city: titleParts.length > 1 ? titleParts[titleParts.length - 1].trim() : null,
+        country: null,
+        full_address: null,
+        latitude: toNum(l?.coordinates?.latitude),
+        longitude: toNum(l?.coordinates?.longitude),
+        property_type: l?.title ?? null,
+        bedrooms: toNum(l?.bedrooms),
+        beds: toNum(l?.beds),
+        baths: toNum(l?.bathrooms),
+        guests: null,
+        rating: toNum(l?.rating),
+        review_count: toNum(l?.reviews_count),
         superhost: l?.is_superhost === true,
-        url: String(l?.listing_url ?? (l?.listing_id ? `https://www.airbnb.com/rooms/${l.listing_id}` : "")),
+        url: String(l?.link ?? (l?.id ? `https://www.airbnb.com/rooms/${l.id}` : "")),
       };
     }).filter((it) => it.id && it.title);
 
     return json({
       items,
-      total_results: data?.total_results ?? items.length,
-      page,
+      total_results: data?.count ?? items.length,
+      total_pages: data?.total_pages ?? null,
+      page: data?.current_page ?? page,
     });
   } catch (e) {
     console.error("omkar-airbnb-search error", e);
