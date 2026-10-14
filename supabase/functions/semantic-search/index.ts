@@ -45,7 +45,7 @@ function productText(product: any) {
 
 
 const STOP = new Set(['the','a','an','for','with','and','or','of','in','on','to','under','best','cheap','buy','new']);
-const ACCESSORY_MARKERS = /\b(for|compatible|fits|fit|with|replacement|case|cover|bag|backpack|sleeve|stand|holder|charger|cable|adapter|protector|skin|mount)\b/i;
+const ACCESSORY_MARKERS = /\b(for|compatible|fits|fit|with|replacement|case|cover|bag|backpack|sleeve|stand|holder|charger|cable|adapter|protector|skin|mount|bracket|clamp|bolt|rail|strap|attachment|accessory|accessories|organizer|pouch|sticker|insole|lace|laces|socks)\b/i;
 function qTokens(q: string) {
   return q.toLowerCase().replace(/[^a-z0-9\s-]/g, ' ').split(/\s+/).filter((t) => t.length > 1 && !STOP.has(t));
 }
@@ -64,6 +64,8 @@ function titleScore(query: string, title: string, category = ''): number {
       score += 3 + Math.max(0, 3 - pos * 0.5); // early in title = the actual item
       const before = words.slice(Math.max(0, pos - 3), pos).join(' ');
       if (/\b(for|compatible|fit|fits|with)\b/.test(before)) score -= 4; // "... for laptop"
+      const after = words.slice(pos + 1, pos + 4).join(' ');
+      if (ACCESSORY_MARKERS.test(after) && !ACCESSORY_MARKERS.test(query)) score -= 6; // "laptop backpack"
     } else if (words.some((w) => w.startsWith(t) || t.startsWith(w) && w.length > 3)) {
       hits++; score += 1.5;
     } else if (cat.includes(t)) { score += 1; }
@@ -71,8 +73,7 @@ function titleScore(query: string, title: string, category = ''): number {
   if (hits === toks.length) score += 4;
   else score -= (toks.length - hits) * 2;
   // Accessory word at the head of the title while the query isn't asking for one.
-  const head = words.slice(0, 3).join(' ');
-  if (ACCESSORY_MARKERS.test(head) && !ACCESSORY_MARKERS.test(query)) score -= 3;
+  if (ACCESSORY_MARKERS.test(words.join(' ')) && !ACCESSORY_MARKERS.test(query)) score -= 3;
   return score;
 }
 /** Reciprocal-rank fusion of semantic + keyword lists, plus title relevance. */
