@@ -43,6 +43,60 @@ function productText(product: any) {
     .slice(0, 6000);
 }
 
+
+const STOP = new Set(['the','a','an','for','with','and','or','of','in','on','to','under','best','cheap','buy','new']);
+const ACCESSORY_MARKERS = /\b(replacement|case|cover|bag|backpack|sleeve|stand|holder|charger|cable|adapter|protector|skin|mount|bracket|clamp|bolt|rail|strap|attachment|accessory|accessories|organizer|pouch|sticker|insole|lace|laces|socks)\b/i;
+function qTokens(q: string) {
+  return q.toLowerCase().replace(/[^a-z0-9\s-]/g, ' ').split(/\s+/).filter((t) => t.length > 1 && !STOP.has(t));
+}
+function stem(t: string) { return t.replace(/(es|s)$/,''); }
+/** Title relevance: exact-word hits, early position, demote accessory phrasing. */
+function titleScore(query: string, title: string, category = ''): number {
+  const toks = qTokens(query).map(stem);
+  if (!toks.length) return 0;
+  const words = title.toLowerCase().replace(/[^a-z0-9\s-]/g, ' ').split(/\s+/).filter(Boolean).map(stem);
+  const cat = category.toLowerCase();
+  let score = 0, hits = 0;
+  for (const t of toks) {
+    const pos = words.indexOf(t);
+    if (pos >= 0) {
+      hits++;
+      score += 3 + Math.max(0, 3 - pos * 0.5); // early in title = the actual item
+      const before = words.slice(Math.max(0, pos - 3), pos).join(' ');
+      if (/\b(for|compatible|fit|fits|with)\b/.test(before)) score -= 4; // "... for laptop"
+      const after = words.slice(pos + 1, pos + 4).join(' ');
+      if (ACCESSORY_MARKERS.test(after) && !ACCESSORY_MARKERS.test(query)) score -= 6; // "laptop backpack"
+    } else if (words.some((w) => w.startsWith(t) || t.startsWith(w) && w.length > 3)) {
+      hits++; score += 1.5;
+    } else if (cat.includes(t)) { score += 1; }
+  }
+  if (hits === toks.length) score += 4;
+  else score -= (toks.length - hits) * 2;
+  // Accessory word at the head of the title while the query isn't asking for one.
+  if (ACCESSORY_MARKERS.test(words.join(' ')) && !ACCESSORY_MARKERS.test(query)) score -= 3;
+  return score;
+}
+/** Reciprocal-rank fusion of semantic + keyword lists, plus title relevance. */
+function hybridRank(query: string, sem: any[], kw: any[]): any[] {
+  const map = new Map<string, { row: any; s: number }>();
+  const add = (rows: any[], w: number) => rows.forEach((r, i) => {
+    const e = map.get(r.id) ?? { row: r, s: 0 };
+    e.s += w * (60 / (60 + i));
+    map.set(r.id, e);
+  });
+  add(sem, 6); add(kw, 5);
+  const out = [...map.values()].map((e) => {
+    const r = e.row;
+    const pop = Math.log10((Number(r.sold) || 0) + 1) * 0.4 + (Number(r.rating) || 0) * 0.15;
+    return { row: r, s: e.s + titleScore(query, r.title ?? '', r.category_slug ?? '') + pop };
+  });
+  const toks = qTokens(query);
+  return out
+    .filter((e) => e.s > (toks.length ? 2 : -Infinity))
+    .sort((a, b) => b.s - a.s)
+    .map((e) => e.row);
+}
+
 /** Embeddings via the Lovable AI Gateway (no user-supplied API key needed). */
 async function embed(input: string | string[]): Promise<number[][]> {
   const key = Deno.env.get('LOVABLE_API_KEY');
@@ -320,97 +374,48 @@ Deno.serve(async (req) => {
     // Cache then return, so repeat searches answer instantly.
     const done = (payload: any) => { cacheSet(cacheKey, payload); return json(payload); };
 
-    // 1. Product matching and non-product matching run in parallel — they are
-    // independent, so there's no reason to pay for them one after the other.
+    // Hybrid engine (no LLM in the hot path): meaning-based matches and keyword
+    // matches are fetched in parallel, fused, then scored on the title so real
+    // items beat accessories ("Laptop" beats "Backpack for Laptop").
     let embeddingOk = false;
-    let productsFromKeyword = false;
-
-    const productStage = (async (): Promise<any[]> => {
+    const semanticStage = (async (): Promise<any[]> => {
       try {
         const [vector] = await embed(query);
         embeddingOk = true;
         const { data, error } = await admin.rpc('search_products_semantic', {
-          search_query: query,
-          query_embedding: JSON.stringify(vector),
-          result_limit: Math.min(limit, 60),
+          search_query: query, query_embedding: JSON.stringify(vector), result_limit: 100,
         });
         if (error) throw error;
-        if ((data ?? []).length > 0) return data;
-      } catch (e) {
-        console.error('semantic stage failed:', e);
-      }
-      // Fall back to the trigram keyword RPC so catalog products are never
-      // silently dropped just because some non-product row happened to match.
+        return data ?? [];
+      } catch (e) { console.error('semantic stage failed:', e); return []; }
+    })();
+    const keywordStage = (async (): Promise<any[]> => {
       try {
-        const { data: kwData, error: kwErr } = await admin.rpc('search_products', {
-          search_query: query,
-          result_limit: Math.min(limit, 60),
-        });
-        if (kwErr) throw kwErr;
-        productsFromKeyword = (kwData ?? []).length > 0;
-        return kwData ?? [];
-      } catch (e) {
-        console.error('keyword product fallback failed:', e);
-        return [];
-      }
+        const { data, error } = await admin.rpc('search_products', { search_query: query, result_limit: 100 });
+        if (error) throw error;
+        return data ?? [];
+      } catch (e) { console.error('keyword stage failed:', e); return []; }
     })();
 
-    const [semanticResults, nonProductCandidates] = await Promise.all([
-      productStage,
-      fetchNonProductCandidates(admin, query),
+    const [semRows, kwRows, nonProductCandidates] = await Promise.all([
+      semanticStage, keywordStage, fetchNonProductCandidates(admin, query),
     ]);
 
-    // 3. Unified candidate list
-    const productCandidates: Candidate[] = semanticResults.slice(0, 18).map((p: any) => ({
-      id: `p:${p.id}`,
-      kind: 'product',
-      title: p.title,
-      category: p.category_slug ?? null,
-      description: p.description ?? null,
-      price: p.price ?? null,
-      row: p,
-    }));
-    const allCandidates = [...productCandidates, ...nonProductCandidates];
+    const ranked = hybridRank(query, semRows, kwRows).slice(0, limit);
+    const products = ranked.map((p: any) => ({ ...p, id: `p:${p.id}`, kind: 'product' }));
+    const others = nonProductCandidates
+      .map((c) => ({ c, s: titleScore(query, c.title ?? '', c.category ?? '') }))
+      .filter((x) => x.s > 0)
+      .sort((a, b) => b.s - a.s)
+      .map((x) => candidateToResult(x.c))
+      .filter(Boolean);
 
-    // 4. AI re-ranking across ALL verticals
-    if (allCandidates.length > 0) {
-      const rerankedIds = await aiRerank(query, allCandidates);
-
-      if (rerankedIds && rerankedIds.length > 0) {
-        const byId = new Map(allCandidates.map((c) => [c.id, c]));
-        const ordered: any[] = [];
-        for (const id of rerankedIds) {
-          const c = byId.get(id);
-          if (!c) continue;
-          if (c.kind === 'product') ordered.push({ ...c.row, id: c.id, kind: 'product' });
-          else {
-            const result = candidateToResult(c);
-            if (result) ordered.push(result);
-          }
-        }
-        if (ordered.length > 0) return done({ results: ordered, source: 'ai-ranked' });
-      }
-
-      const fallbackResults: any[] = [
-        ...semanticResults.map((p: any) => ({ ...p, id: `p:${p.id}`, kind: 'product' })),
-        ...nonProductCandidates.map((c) => candidateToResult(c)).filter(Boolean),
-      ];
-      if (fallbackResults.length > 0) {
-        return done({ results: fallbackResults, source: embeddingOk && !productsFromKeyword ? 'semantic' : 'keyword' });
-      }
-    }
-
-    // 5. Final fallback: trigram/keyword RPC for products
-    const { data: keywordData, error: keywordError } = await admin.rpc('search_products', {
-      search_query: query,
-      result_limit: limit,
-    });
-    if (keywordError) throw keywordError;
-    const keywordResults = ((keywordData ?? []) as any[]).map((p: any) => ({ ...p, id: `p:${p.id}`, kind: 'product' }));
-    return done({
-      results: [...keywordResults, ...nonProductCandidates.map((c) => candidateToResult(c)).filter(Boolean)],
-      source: 'keyword',
-    });
+    // Put a strong non-product match (e.g. a supplier named exactly like the query) first.
+    const results = [...products, ...others];
+    const source = products.length === 0 && others.length === 0
+      ? 'empty'
+      : embeddingOk && semRows.length ? 'ai-ranked' : 'keyword';
+    return done({ results, source });
   } catch (error: any) {
     return json({ error: error.message ?? 'Semantic search failed' }, 500);
   }
