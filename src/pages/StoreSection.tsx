@@ -167,7 +167,7 @@ function ImportView() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [email, setEmail] = useState<string | null>(null);
-  const [mode, setMode] = useState<"single" | "bulk" | "aliexpress" | "shein" | "alibaba" | "stays">("single");
+  const [mode, setMode] = useState<"single" | "bulk" | "aliexpress" | "shein" | "alibaba" | "google" | "stays">("single");
 
   // markup (shared by both modes)
   const [markupMode, setMarkupMode] = useState<MarkupMode>("percent");
@@ -789,7 +789,7 @@ type AliItem = {
   ship_from?: string | null;
 };
 
-type ImportSource = "aliexpress" | "shein" | "alibaba";
+type ImportSource = "aliexpress" | "shein" | "alibaba" | "google";
 
 function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof useQueryClient>; source?: ImportSource }) {
   const isShein = source === "shein";
