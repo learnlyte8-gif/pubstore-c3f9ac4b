@@ -211,6 +211,7 @@ export default function Jobs() {
           emptyLabel="No jobs match your search"
           toListing={toListing}
         />
+        </>
       )}
 
       {tab === "saved" && (
