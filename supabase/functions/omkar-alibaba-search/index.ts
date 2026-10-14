@@ -28,23 +28,33 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const query = String(body?.query ?? "").trim().slice(0, 200);
+    const supplierSlug = String(body?.supplier ?? "").trim().slice(0, 120);
     const page = Math.max(1, Math.min(50, Number(body?.page) || 1));
-    if (!query) return json({ error: "query is required" }, 400);
+    if (!query && !supplierSlug) return json({ error: "query or supplier is required" }, 400);
     const f = body?.filters ?? {};
 
     const apiKey = (Deno.env.get("OMKAR_ALIBABA_API_KEY") || Deno.env.get("OMKAR_SHEIN_API_KEY") || Deno.env.get("OMKAR_API_KEY"))?.trim();
     if (!apiKey) return json({ error: "Alibaba API key not configured" }, 500);
 
-    const url = new URL("https://alibaba-scraper.omkar.cloud/products/search");
-    url.searchParams.set("query", query);
-    url.searchParams.set("page", String(page));
-    url.searchParams.set("currency", "USD");
-    url.searchParams.set("sort_by", SORTS.has(f.sort_by) ? f.sort_by : "best_match");
-    for (const k of ["trade_assurance", "verified_supplier", "verified_pro", "alibaba_guaranteed"]) {
-      if (f[k] === true) url.searchParams.set(k, "true");
+    const url = new URL(
+      supplierSlug
+        ? "https://alibaba-scraper.omkar.cloud/suppliers/products"
+        : "https://alibaba-scraper.omkar.cloud/products/search",
+    );
+    if (supplierSlug) {
+      url.searchParams.set("supplier", supplierSlug);
+      url.searchParams.set("page", String(page));
+    } else {
+      url.searchParams.set("query", query);
+      url.searchParams.set("page", String(page));
+      url.searchParams.set("currency", "USD");
+      url.searchParams.set("sort_by", SORTS.has(f.sort_by) ? f.sort_by : "best_match");
+      for (const k of ["trade_assurance", "verified_supplier", "verified_pro", "alibaba_guaranteed"]) {
+        if (f[k] === true) url.searchParams.set(k, "true");
+      }
+      const dd = Number(f.delivery_days);
+      if (Number.isFinite(dd) && dd > 0 && dd <= 60) url.searchParams.set("delivery_days", String(Math.round(dd)));
     }
-    const dd = Number(f.delivery_days);
-    if (Number.isFinite(dd) && dd > 0 && dd <= 60) url.searchParams.set("delivery_days", String(Math.round(dd)));
 
     const r = await fetch(url, { headers: { "API-Key": apiKey } });
     const data = await r.json().catch(() => ({}));
