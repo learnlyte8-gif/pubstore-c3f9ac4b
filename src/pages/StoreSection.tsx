@@ -842,7 +842,12 @@ function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof
 
   const runSearch = async (nextPage = 1) => {
     const q = query.trim();
-    if (!q) { toast.error("Pick a category or type a query"); return; }
+    const bySupplier = isAlibaba && alibabaMode === "supplier";
+    const slug = supplierSlug.trim().toLowerCase().replace(/^https?:\/\/[^/]*alibaba\.com\//, "").replace(/\/.*$/, "").replace(/[^a-z0-9-]/g, "");
+    if (bySupplier ? !slug : !q) {
+      toast.error(bySupplier ? "Enter the supplier's store name (e.g. limingsilver)" : "Pick a category or type a query");
+      return;
+    }
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -854,7 +859,11 @@ function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ query: q, page: nextPage, ...(isAlibaba ? { filters: { ...abFilters, delivery_days: Number(abFilters.delivery_days) || undefined } } : {}) }),
+        body: JSON.stringify(
+          bySupplier
+            ? { supplier: slug, page: nextPage }
+            : { query: q, page: nextPage, ...(isAlibaba ? { filters: { ...abFilters, delivery_days: Number(abFilters.delivery_days) || undefined } } : {}) },
+        ),
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j?.error || `Search failed (${r.status})`);
