@@ -64,7 +64,8 @@ Deno.serve(async (req) => {
         ship_from: p?.seller_location ?? "Zimbabwe",
         delivery: p?.delivery ?? p?.shipping ?? null,
       };
-    });
+    }).filter((it) => String(it.currency || "USD").toUpperCase() === "USD" && it.price != null)
+      .map((it) => ({ ...it, currency: "USD" }));
 
     return json({ items, page: data?.current_page ?? page, total_pages: data?.total_pages ?? null });
   } catch (e) {
