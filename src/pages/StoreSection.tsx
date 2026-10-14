@@ -802,8 +802,8 @@ function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof
   const storeKey = `pubstore.import.${source}`;
   const saved = (() => { try { return JSON.parse(localStorage.getItem(storeKey) || "{}"); } catch { return {}; } })();
   const [multiplierInput, setMultiplierInput] = useState<string>(String(saved.multiplier ?? 4));
-  const [shipMin, setShipMin] = useState<string>(String(saved.shipMin ?? (isAlibaba ? 10 : 7)));
-  const [shipMax, setShipMax] = useState<string>(String(saved.shipMax ?? (isAlibaba ? 25 : 15)));
+  const [shipMin, setShipMin] = useState<string>(String(saved.shipMin ?? (isGoogle ? 0 : isAlibaba ? 10 : 7)));
+  const [shipMax, setShipMax] = useState<string>(String(saved.shipMax ?? (isGoogle ? 2 : isAlibaba ? 25 : 15)));
   const [abFilters, setAbFilters] = useState({
     sort_by: "best_match",
     trade_assurance: false,
@@ -819,8 +819,8 @@ function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof
   const sMin = Math.max(0, Math.round(Number(shipMin) || 0));
   const sMax = Math.max(sMin, Math.round(Number(shipMax) || sMin));
   const leadTimeLabel = sMin === sMax ? `${sMin} days` : `${sMin}–${sMax} days`;
-  const fnName = isShein ? "omkar-shein-search" : isAlibaba ? "omkar-alibaba-search" : "omkar-aliexpress-search";
-  const sourceLabel = isShein ? "SHEIN" : isAlibaba ? "Alibaba" : "AliExpress";
+  const fnName = isShein ? "omkar-shein-search" : isAlibaba ? "omkar-alibaba-search" : isGoogle ? "omkar-google-shopping-search" : "omkar-aliexpress-search";
+  const sourceLabel = isShein ? "SHEIN" : isAlibaba ? "Alibaba" : isGoogle ? "Google Shopping" : "AliExpress";
   const [categorySlug, setCategorySlug] = useState<string>("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -892,7 +892,7 @@ function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof
         let detail: any = null;
         try {
           const { data: { session } } = await supabase.auth.getSession();
-          if (session?.access_token && !isShein && !isAlibaba) {
+          if (session?.access_token && !isShein && !isAlibaba && !isGoogle) {
             const dr = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/omkar-aliexpress-search`, {
               method: "POST",
               headers: {
