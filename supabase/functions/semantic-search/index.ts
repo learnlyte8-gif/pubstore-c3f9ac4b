@@ -45,7 +45,7 @@ function productText(product: any) {
 
 
 const STOP = new Set(['the','a','an','for','with','and','or','of','in','on','to','under','best','cheap','buy','new']);
-const ACCESSORY_MARKERS = /\b(for|compatible|fits|fit|with|replacement|case|cover|bag|backpack|sleeve|stand|holder|charger|cable|adapter|protector|skin|mount|bracket|clamp|bolt|rail|strap|attachment|accessory|accessories|organizer|pouch|sticker|insole|lace|laces|socks)\b/i;
+const ACCESSORY_MARKERS = /\b(replacement|case|cover|bag|backpack|sleeve|stand|holder|charger|cable|adapter|protector|skin|mount|bracket|clamp|bolt|rail|strap|attachment|accessory|accessories|organizer|pouch|sticker|insole|lace|laces|socks)\b/i;
 function qTokens(q: string) {
   return q.toLowerCase().replace(/[^a-z0-9\s-]/g, ' ').split(/\s+/).filter((t) => t.length > 1 && !STOP.has(t));
 }
