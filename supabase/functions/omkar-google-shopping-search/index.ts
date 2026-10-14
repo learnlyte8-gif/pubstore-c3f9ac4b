@@ -35,9 +35,6 @@ Deno.serve(async (req) => {
     const url = new URL("https://google-shopping-scraper.omkar.cloud/search");
     url.searchParams.set("query", query);
     url.searchParams.set("page", String(page));
-    // Zimbabwean results
-    url.searchParams.set("gl", "zw");
-    url.searchParams.set("hl", "en");
 
     const r = await fetch(url, { headers: { "API-Key": apiKey } });
     const data = await r.json().catch(() => ({}));
@@ -48,8 +45,8 @@ Deno.serve(async (req) => {
       const images: string[] = Array.from(new Set(
         [p?.image, p?.thumbnail, ...(Array.isArray(p?.images) ? p.images : [])].filter(Boolean).map(String),
       ));
-      const price = num(p?.price?.amount ?? p?.price ?? p?.extracted_price ?? p?.sale_price);
-      const original = num(p?.original_price?.amount ?? p?.original_price ?? p?.compare_at_price);
+      const price = num(p?.pricing?.price ?? p?.price?.amount ?? p?.price ?? p?.extracted_price ?? p?.sale_price);
+      const original = num(p?.pricing?.original_price ?? p?.original_price?.amount ?? p?.original_price ?? p?.compare_at_price);
       return {
         id: String(p?.id ?? p?.product_id ?? p?.position ?? crypto.randomUUID()),
         title: String(p?.title ?? p?.name ?? "Google Shopping product"),
@@ -57,9 +54,9 @@ Deno.serve(async (req) => {
         images,
         price,
         original_price: original && price && original > price ? original : null,
-        currency: p?.price?.currency ?? p?.currency ?? "USD",
+        currency: p?.pricing?.currency ?? p?.price?.currency ?? p?.currency ?? "USD",
         rating: num(p?.rating),
-        orders_count: num(p?.reviews ?? p?.reviews_count),
+        orders_count: num(p?.review_count ?? p?.reviews ?? p?.reviews_count),
         url: p?.link ?? p?.url ?? null,
         moq: 1,
         unit: "piece",
