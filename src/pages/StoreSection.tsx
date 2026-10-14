@@ -1037,13 +1037,23 @@ function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof
           ))}
         </select>
         <div className="flex gap-2">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="e.g. wireless earbuds"
-            className="flex-1 h-10 rounded-xl border bg-background px-3 text-sm"
-          />
+          {isAlibaba && alibabaMode === "supplier" ? (
+            <input
+              type="text"
+              value={supplierSlug}
+              onChange={(e) => setSupplierSlug(e.target.value)}
+              placeholder="Supplier store name, e.g. limingsilver"
+              className="flex-1 h-10 rounded-xl border bg-background px-3 text-sm"
+            />
+          ) : (
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="e.g. wireless earbuds"
+              className="flex-1 h-10 rounded-xl border bg-background px-3 text-sm"
+            />
+          )}
           <Button onClick={() => runSearch(1)} disabled={loading || importing} className="h-10">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
             <span className="ml-1 text-xs">Search</span>
