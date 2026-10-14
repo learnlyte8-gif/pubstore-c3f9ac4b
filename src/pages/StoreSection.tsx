@@ -167,7 +167,7 @@ function ImportView() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [email, setEmail] = useState<string | null>(null);
-  const [mode, setMode] = useState<"single" | "bulk" | "aliexpress" | "shein" | "alibaba" | "stays">("single");
+  const [mode, setMode] = useState<"single" | "bulk" | "aliexpress" | "shein" | "alibaba" | "google" | "stays">("single");
 
   // markup (shared by both modes)
   const [markupMode, setMarkupMode] = useState<MarkupMode>("percent");
@@ -201,19 +201,19 @@ function ImportView() {
     <div className="px-4 py-4 space-y-4">
       {/* Mode toggle */}
       <div className="flex bg-muted rounded-full p-1 overflow-x-auto">
-        {(["single", "bulk", "aliexpress", "shein", "alibaba", "stays"] as const).map((m) => (
+        {(["single", "bulk", "aliexpress", "shein", "alibaba", "google", "stays"] as const).map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
             className={`flex-1 min-w-[80px] h-9 rounded-full text-xs font-bold transition whitespace-nowrap px-3 ${mode === m ? "bg-background shadow-card" : "text-muted-foreground"}`}
           >
-            {m === "single" ? "Single URL" : m === "bulk" ? "Bulk import" : m === "aliexpress" ? "AliExpress" : m === "shein" ? "SHEIN" : m === "alibaba" ? "Alibaba" : "Stays (Airbnb)"}
+            {m === "single" ? "Single URL" : m === "bulk" ? "Bulk import" : m === "aliexpress" ? "AliExpress" : m === "shein" ? "SHEIN" : m === "alibaba" ? "Alibaba" : m === "google" ? "Google Shopping (ZW)" : "Stays (Airbnb)"}
           </button>
         ))}
       </div>
 
       {/* Markup controls — shared (aliexpress uses fixed 4x multiplier, stays has its own) */}
-      {mode !== "aliexpress" && mode !== "shein" && mode !== "alibaba" && mode !== "stays" && (
+      {mode !== "aliexpress" && mode !== "shein" && mode !== "alibaba" && mode !== "google" && mode !== "stays" && (
         <div className="rounded-2xl border bg-card p-3 shadow-card">
           <div className="flex items-center gap-2 mb-2">
             <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
@@ -262,6 +262,10 @@ function ImportView() {
       ) : mode === "alibaba" ? (
         <PlanGate feature="bulk_import">
           <AliExpressImport key="alibaba" qc={qc} source="alibaba" />
+        </PlanGate>
+      ) : mode === "google" ? (
+        <PlanGate feature="bulk_import">
+          <AliExpressImport key="google" qc={qc} source="google" />
         </PlanGate>
       ) : (
         <PlanGate feature="bulk_import">
@@ -789,16 +793,17 @@ type AliItem = {
   ship_from?: string | null;
 };
 
-type ImportSource = "aliexpress" | "shein" | "alibaba";
+type ImportSource = "aliexpress" | "shein" | "alibaba" | "google";
 
 function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof useQueryClient>; source?: ImportSource }) {
   const isShein = source === "shein";
   const isAlibaba = source === "alibaba";
+  const isGoogle = source === "google";
   const storeKey = `pubstore.import.${source}`;
   const saved = (() => { try { return JSON.parse(localStorage.getItem(storeKey) || "{}"); } catch { return {}; } })();
   const [multiplierInput, setMultiplierInput] = useState<string>(String(saved.multiplier ?? 4));
-  const [shipMin, setShipMin] = useState<string>(String(saved.shipMin ?? (isAlibaba ? 10 : 7)));
-  const [shipMax, setShipMax] = useState<string>(String(saved.shipMax ?? (isAlibaba ? 25 : 15)));
+  const [shipMin, setShipMin] = useState<string>(String(saved.shipMin ?? (isGoogle ? 0 : isAlibaba ? 10 : 7)));
+  const [shipMax, setShipMax] = useState<string>(String(saved.shipMax ?? (isGoogle ? 2 : isAlibaba ? 25 : 15)));
   const [abFilters, setAbFilters] = useState({
     sort_by: "best_match",
     trade_assurance: false,
@@ -814,8 +819,8 @@ function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof
   const sMin = Math.max(0, Math.round(Number(shipMin) || 0));
   const sMax = Math.max(sMin, Math.round(Number(shipMax) || sMin));
   const leadTimeLabel = sMin === sMax ? `${sMin} days` : `${sMin}–${sMax} days`;
-  const fnName = isShein ? "omkar-shein-search" : isAlibaba ? "omkar-alibaba-search" : "omkar-aliexpress-search";
-  const sourceLabel = isShein ? "SHEIN" : isAlibaba ? "Alibaba" : "AliExpress";
+  const fnName = isShein ? "omkar-shein-search" : isAlibaba ? "omkar-alibaba-search" : isGoogle ? "omkar-google-shopping-search" : "omkar-aliexpress-search";
+  const sourceLabel = isShein ? "SHEIN" : isAlibaba ? "Alibaba" : isGoogle ? "Google Shopping" : "AliExpress";
   const [categorySlug, setCategorySlug] = useState<string>("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -887,7 +892,7 @@ function AliExpressImport({ qc, source = "aliexpress" }: { qc: ReturnType<typeof
         let detail: any = null;
         try {
           const { data: { session } } = await supabase.auth.getSession();
-          if (session?.access_token && !isShein && !isAlibaba) {
+          if (session?.access_token && !isShein && !isAlibaba && !isGoogle) {
             const dr = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/omkar-aliexpress-search`, {
               method: "POST",
               headers: {
