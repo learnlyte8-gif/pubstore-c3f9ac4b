@@ -518,15 +518,17 @@ export default function Cart() {
   const selectedAddr = addresses.find((a) => a.id === addressId);
 
   return (
-    <div className="">
-      <div className="px-3 pt-2 pb-2 flex items-center gap-2">
+    <div className="pb-32 lg:pb-8 lg:max-w-7xl lg:mx-auto lg:px-6">
+      <div className="px-3 pt-2 pb-2 lg:px-4 lg:pt-6 lg:pb-4 flex items-center gap-2">
         <BackButton iconOnly />
-        <h1 className="text-xl font-bold">Cart ({cartProducts.length})</h1>
+        <h1 className="text-xl lg:text-2xl font-bold">Cart ({cartProducts.length})</h1>
         <button onClick={clearCart} className="ml-auto text-xs text-muted-foreground hover:text-destructive">
           Clear all
         </button>
       </div>
 
+      <div className="lg:grid lg:grid-cols-12 lg:gap-6">
+      <div className="lg:col-span-7 xl:col-span-8">
       {/* Address picker */}
       <div className="mx-4 mb-2 rounded-xl border bg-card p-3 flex items-start gap-2">
         <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
@@ -547,9 +549,9 @@ export default function Cart() {
         </Link>
       </div>
 
-      <ul className="divide-y divide-border">
+      <ul className="divide-y divide-border lg:mx-4 lg:mt-4 lg:rounded-2xl lg:border lg:bg-card">
         {cartProducts.map(({ product, qty }) => (
-          <li key={product.id} className="flex gap-3 px-4 py-3">
+          <li key={product.id} className="flex gap-3 lg:gap-4 px-4 py-3 lg:py-4 [&>img]:lg:w-28 [&>img]:lg:h-28">
             <img src={product.image} alt={product.title} loading="lazy" className="w-20 h-20 rounded-lg object-cover bg-muted shrink-0" />
             <div className="flex-1 min-w-0 flex flex-col">
               <p className="text-sm leading-snug line-clamp-2">{product.title}</p>
@@ -572,9 +574,11 @@ export default function Cart() {
           </li>
         ))}
       </ul>
+      </div>
 
+      <div className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-4 lg:self-start lg:pb-8">
       {/* Coupon */}
-      <div className="mx-4 mt-4 rounded-2xl border bg-card p-3">
+      <div className="mx-4 mt-4 lg:mt-0 rounded-2xl border bg-card p-3">
         <div className="flex items-center gap-2 mb-2">
           <Tag className="w-4 h-4 text-primary" />
           <p className="text-xs font-bold">Discount code</p>
@@ -742,9 +746,25 @@ export default function Cart() {
 
       </div>
 
+      {/* Desktop order summary */}
+      <div className="hidden lg:block mx-4 mt-4 rounded-2xl border bg-card p-4">
+        <p className="text-sm font-bold mb-3">Order summary</p>
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between"><span className="text-muted-foreground">Items ({cartProducts.reduce((s, c) => s + c.qty, 0)})</span><span>{fmt(cartProducts.reduce((s, c) => s + c.product.price * c.qty, 0))}</span></div>
+          {totalDiscount > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Discount</span><span className="text-primary">-{fmt(totalDiscount)}</span></div>}
+          <div className="flex justify-between"><span className="text-muted-foreground">Delivery</span><span>{Object.values(shippingBySupplier).some((s) => s.negotiated) ? "Negotiated" : shipping === 0 ? "Free" : fmt(shipping)}</span></div>
+          <div className="border-t pt-2 flex justify-between items-baseline"><span className="font-bold">Total</span><span className="text-xl font-bold text-destructive">{fmt(total)}</span></div>
+        </div>
+        <Button onClick={placeOrder} disabled={placing} className="mt-4 w-full h-12 rounded-full bg-primary text-primary-foreground font-semibold">
+          {placing ? <><CircleSpinner size={16} className="mr-1" /> Placing…</> : <>Pay {fmt(total)} <ArrowRight className="w-4 h-4 ml-1" /></>}
+        </Button>
+        <p className="mt-3 text-[11px] text-muted-foreground flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" /> Buyer protection: paid to seller only after delivery.</p>
+      </div>
+      </div>
+      </div>
 
-      {/* Sticky checkout bar */}
-      <div className="fixed bottom-14 lg:bottom-0 inset-x-0 z-30 bg-background border-t border-border safe-bottom">
+      {/* Sticky checkout bar (mobile) */}
+      <div className="lg:hidden fixed bottom-14 inset-x-0 z-30 bg-background border-t border-border safe-bottom">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <div className="flex-1">
             <p className="text-[11px] text-muted-foreground">
