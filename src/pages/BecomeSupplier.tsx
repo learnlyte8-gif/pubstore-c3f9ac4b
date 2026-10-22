@@ -35,10 +35,12 @@ export default function BecomeSupplier() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate("/auth"); return; }
 
-      // Upsert supplier role (composite primary key on user_id+role isn't there,
-      // so we delete-then-insert to stay idempotent)
-      await supabase.from("user_roles").delete().eq("user_id", user.id).eq("role", "supplier");
-      await supabase.from("user_roles").insert({ user_id: user.id, role: "supplier" });
+      // Add supplier status without replacing existing buyer/admin roles.
+      const { error: roleErr } = await supabase.from("user_roles").upsert(
+        { user_id: user.id, role: "supplier" },
+        { onConflict: "user_id,role", ignoreDuplicates: true },
+      );
+      if (roleErr) throw roleErr;
 
       // Seed supplier verticals from the buyer's onboarding picks so MyStore
       // immediately shows just the relevant tools.

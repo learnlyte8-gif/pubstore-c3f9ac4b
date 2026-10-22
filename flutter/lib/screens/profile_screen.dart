@@ -89,17 +89,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final roleFuture = supabase
           .from('user_roles')
           .select('role')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
+          .eq('user_id', session.user.id);
 
-      final results = await Future.wait([profileFuture, roleFuture]);
+      final results = await Future.wait<dynamic>([profileFuture, roleFuture]);
       final p = results[0] as Map<String, dynamic>?;
-      final r = results[1] as Map<String, dynamic>?;
+      final roleRows = results[1] as List<dynamic>;
+      final accountRoles = roleRows.map((row) => row['role'] as String).toSet();
 
       if (!mounted) return;
       setState(() {
         _profile = p;
-        _role = (r?['role'] as String?) ?? 'buyer';
+        _role = accountRoles.contains('supplier')
+            ? 'supplier'
+            : accountRoles.contains('admin') ? 'admin' : 'buyer';
         _buyerTier = (p?['buyer_tier'] as String?) ?? 'bronze';
         _buyerPoints = ((p?['buyer_points'] as num?) ?? 0).toInt();
         _supplierTier = (p?['supplier_tier'] as String?) ?? 'bronze';

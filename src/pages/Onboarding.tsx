@@ -170,10 +170,11 @@ export default function Onboarding() {
         throw profErr;
       }
 
-      await supabase.from("user_roles").delete().eq("user_id", userId);
       const { error: roleErr } = await supabase
         .from("user_roles")
-        .insert({ user_id: userId, role: parsed.data.role });
+        .upsert({ user_id: userId, role: parsed.data.role }, {
+          onConflict: "user_id,role", ignoreDuplicates: true,
+        });
       if (roleErr) throw roleErr;
 
       toast.success("Profile created 🎉");
