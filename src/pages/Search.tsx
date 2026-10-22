@@ -488,9 +488,31 @@ export default function SearchPage() {
                   </span>
                 )}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-                {ranked.slice(0, 80).map(({ item }) => (<UniversalResultCard key={item.id} hit={item} />))}
-              </div>
+              {(() => {
+                const productItems = ranked.filter((r) => r.item.kind === "product").slice(0, 80).map((r) => r.item);
+                const otherItems = ranked.filter((r) => r.item.kind !== "product").slice(0, 80).map((r) => r.item);
+                return (
+                  <>
+                    {productItems.length > 0 && (
+                      <MasonryGrid className="mt-1">
+                        {productItems.map((item) => (
+                          <ProductCard key={item.id} product={hitToProduct(item)} />
+                        ))}
+                      </MasonryGrid>
+                    )}
+                    {otherItems.length > 0 && (
+                      <>
+                        {productItems.length > 0 && (
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-6 mb-3">Other matches</p>
+                        )}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                          {otherItems.map((item) => (<UniversalResultCard key={item.id} hit={item} />))}
+                        </div>
+                      </>
+                    )}
+                  </>
+                );
+              })()}
             </>
           )}
         </div>
@@ -555,6 +577,32 @@ function KindFilterChips({
       })}
     </div>
   );
+}
+
+function hitToProduct(hit: UniversalHit): Product {
+  const bare = hit.id.startsWith("p:") ? hit.id.slice(2) : hit.id;
+  const moq = hit.moq ?? 1;
+  return {
+    id: bare,
+    title: hit.title,
+    image: hit.image ?? "",
+    price: hit.price ?? 0,
+    rating: hit.rating ?? 0,
+    reviews: hit.reviews ?? 0,
+    sold: hit.sold ?? 0,
+    category: hit.category?.split(" ")[0] || "products",
+    freeShipping: hit.freeShipping,
+    supplierId: hit.supplierId ?? "",
+    supplierVerified: hit.verified,
+    supplierLocation: [hit.city, hit.country].filter(Boolean).join(", ") || null,
+    moq,
+    unit: "unit",
+    tradeType: moq > 1 ? "wholesale" : "retail",
+    leadTime: hit.leadTime ?? "—",
+    shipFrom: hit.country ?? "",
+    description: hit.description,
+    dealEndsAt: hit.dealEndsAt ?? null,
+  };
 }
 
 function UniversalResultCard({ hit }: { hit: UniversalHit }) {
