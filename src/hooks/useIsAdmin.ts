@@ -1,20 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-const CACHE_KEY = "pubstore.isAdmin";
-
-function cachedFor(userId: string | null): boolean {
-  if (!userId) return false;
-  try {
-    const raw = sessionStorage.getItem(CACHE_KEY);
-    if (!raw) return false;
-    const parsed = JSON.parse(raw) as { userId: string; isAdmin: boolean };
-    return parsed.userId === userId && !!parsed.isAdmin;
-  } catch {
-    return false;
-  }
-}
-
 export function useIsAdmin() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [ready, setReady] = useState(false);
@@ -35,16 +21,9 @@ export function useIsAdmin() {
           setTimeout(() => { if (!cancelled) check(attempt + 1); }, 300 * (attempt + 1));
           return;
         }
-        try { sessionStorage.removeItem(CACHE_KEY); } catch { /* ignore */ }
         setIsAdmin(false);
         setReady(true);
         return;
-      }
-
-      // Show the cached answer immediately so the entry doesn't flicker away.
-      if (!cancelled && cachedFor(userId)) {
-        setIsAdmin(true);
-        setReady(true);
       }
 
       const { data, error } = await supabase
@@ -62,6 +41,7 @@ export function useIsAdmin() {
           setTimeout(() => { if (!cancelled) check(attempt + 1); }, 500 * (attempt + 1));
           return;
         }
+        setIsAdmin(false);
         setReady(true);
         return;
       }
@@ -69,16 +49,12 @@ export function useIsAdmin() {
       const admin = !!data;
       setIsAdmin(admin);
       setReady(true);
-      try {
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ userId, isAdmin: admin }));
-      } catch { /* ignore */ }
     };
 
     check();
 
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") {
-        try { sessionStorage.removeItem(CACHE_KEY); } catch { /* ignore */ }
         setIsAdmin(false);
         setReady(true);
         return;

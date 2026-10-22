@@ -161,8 +161,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         'profile_completed': true,
       };
       await supabase.from('profiles').update(update).eq('user_id', _userId!);
-      await supabase.from('user_roles').delete().eq('user_id', _userId!);
-      await supabase.from('user_roles').insert({'user_id': _userId!, 'role': _role});
+      await supabase.from('user_roles').upsert(
+        {'user_id': _userId!, 'role': _role},
+        onConflict: 'user_id,role',
+        ignoreDuplicates: true,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile created 🎉')));
       Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
