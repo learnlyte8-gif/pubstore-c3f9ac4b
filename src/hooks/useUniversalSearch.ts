@@ -33,6 +33,7 @@ export type UniversalHit = Searchable & {
   leadTime?: string | null;
   readyToShip?: boolean;
   verified?: boolean;
+  supplierId?: string | null;
 };
 
 const empty = <T,>(arr: T[] | null | undefined): T[] => arr ?? [];
@@ -84,6 +85,7 @@ async function loadUniversalPool(): Promise<UniversalHit[]> {
       readyToShip: !!p.ready_to_ship || (moq != null && moq <= 1 && /ready|in[- ]?stock|stock/i.test(p.lead_time ?? "")),
       country: sup?.country ?? null,
       verified: sup?.verified ?? false,
+      supplierId: p.supplier_id ?? null,
     });
   }
 
