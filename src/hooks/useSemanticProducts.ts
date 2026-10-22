@@ -21,6 +21,7 @@ type Row = {
   moq: number | null;
   lead_time: string | null;
   ready_to_ship: boolean | null;
+  supplier_id?: string | null;
   href?: string | null;
   city?: string | null;
   country?: string | null;
@@ -58,6 +59,7 @@ function toHit(row: Row): UniversalHit {
     city: row.city ?? null,
     country: row.country ?? null,
     verified: !!row.verified,
+    supplierId: row.supplier_id ?? null,
   };
 }
 
