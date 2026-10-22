@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Restore the reported account's admin role alongside supplier and verify multi-role access.
+
 - [x] Add reusable multi-image product ad templates.
 - [x] Carry product gallery images into generated ads.
 - [x] Render hero-plus-five, staggered, and marketplace layouts.

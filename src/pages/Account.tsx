@@ -26,7 +26,8 @@ export default function Account() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [email, setEmail] = useState<string>("");
-  const [role, setRole] = useState<string>("buyer");
+  const [roles, setRoles] = useState<string[]>(["buyer"]);
+  const isSupplier = roles.includes("supplier");
   const [isGuest, setIsGuest] = useState(false);
   const { wishlist, cartCount } = useShop();
   const { balance, transactions } = useWallet();
@@ -44,10 +45,10 @@ export default function Account() {
 
       const [{ data: p }, { data: r }] = await Promise.all([
         supabase.from("profiles").select("display_name, username, avatar_url, address, contact").eq("user_id", session.user.id).maybeSingle(),
-        supabase.from("user_roles").select("role").eq("user_id", session.user.id).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", session.user.id),
       ]);
       if (p) setProfile(p);
-      if (r) setRole(r.role);
+      if (r?.length) setRoles(r.map((row) => row.role));
     })();
   }, []);
 
@@ -137,7 +138,7 @@ export default function Account() {
                 <p className="font-black text-lg leading-tight tracking-tight truncate">
                   {profile?.display_name || profile?.username || "Welcome"}
                 </p>
-                {role === "supplier" && (
+                {isSupplier && (
                   <span className="px-1.5 py-0.5 rounded-md bg-amber-400 text-amber-950 text-[9px] font-black uppercase tracking-wider">
                     Pro
                   </span>
@@ -146,12 +147,12 @@ export default function Account() {
               <p className="text-[11px] opacity-80 truncate">{email}</p>
               <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
                 <span className="px-2 py-0.5 rounded-full bg-primary-foreground/15 backdrop-blur text-[10px] font-bold uppercase tracking-wider">
-                  {role}
+                  {roles.join(" · ")}
                 </span>
                 {tierInfo && (
                   <TierBadge tier={tierInfo.buyer_tier} role="buyer" size="xs" className="bg-primary-foreground/20 border-primary-foreground/30 text-primary-foreground" />
                 )}
-                {tierInfo && role === "supplier" && (
+                {tierInfo && isSupplier && (
                   <TierBadge tier={tierInfo.supplier_tier} role="supplier" size="xs" className="bg-primary-foreground/20 border-primary-foreground/30 text-primary-foreground" />
                 )}
               </div>
@@ -215,7 +216,7 @@ export default function Account() {
               </div>
             </div>
             <TierProgressRow label="Buyer" tier={tierInfo.buyer_tier} points={tierInfo.buyer_points} />
-            {role === "supplier" && (
+            {isSupplier && (
               <div className="mt-3">
                 <TierProgressRow label="Supplier" tier={tierInfo.supplier_tier} points={tierInfo.supplier_points} />
               </div>
@@ -261,7 +262,7 @@ export default function Account() {
           <Row icon={MapPin} label="Addresses" hint={profile?.address || "Add address"} to="/addresses" />
           <Row icon={CreditCard} label="Payment methods" hint="Cards, wallets" to="/payment-methods" />
           <Row icon={ShieldCheck} label="Identity verification" hint="Required for Cash on delivery" to="/verification" />
-          <Row icon={Store} label={role === "supplier" ? "My store" : "Become a supplier"} hint="Sell on PUBSTORE" to={role === "supplier" ? "/store" : "/become-supplier"} />
+          <Row icon={Store} label={isSupplier ? "My store" : "Become a supplier"} hint="Sell on PUBSTORE" to={isSupplier ? "/store" : "/become-supplier"} />
         </Section>
 
         <Section title="Support">
